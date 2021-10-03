@@ -24,8 +24,6 @@
  *  version:  2.00
  *  date:     2021-09-28
  *  authors:  nvitya
- *  ------------------------------
- *    v2.00: new heap allocator using the linker script defined heap size
 */
 
 #include <errno.h>

@@ -23,7 +23,7 @@ OUTPUT_ARCH(riscv)
 
 INCLUDE vihal_stack_predef.ld
 
-ENTRY(_start)
+ENTRY(_reset_entry)
 
 SECTIONS
 {
@@ -82,6 +82,8 @@ SECTIONS
     . = ALIGN(4);
 
   } > RAM AT > TEXT
+  
+  __global_pointer$ = ADDR(.data) + 0x800;    
 
   .bss_DTCRAM (NOLOAD) : ALIGN(4) { *(.bss_DTCRAM) } > DTCRAM
   .bss_ITCRAM (NOLOAD) : ALIGN(4) { *(.bss_ITCRAM) } > ITCRAM
@@ -104,7 +106,7 @@ SECTIONS
     . = ALIGN(4) ;
     _end_noinit = .;
   } > RAM
-
+  
   INCLUDE vihal_stack_heap.ld
   INCLUDE vihal_debug_sections.ld
 }

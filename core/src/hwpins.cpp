@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
- * Copyright (c) 2018 Viktor Nagy, nvitya
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+ * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -19,25 +19,38 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     errors.h
- *  brief:    NVCM error codes
- *  version:  1.00
- *  date:     2018-02-10
+ *  file:     hwpins.cpp
+ *  brief:    Pin/Pad and GPIO configuration vendor-independent implementations
+ *  date:     2021-10-02
  *  authors:  nvitya
 */
 
-#ifndef ERRORS_H_
-#define ERRORS_H_
+#include "platform.h"
+#include "hwpins.h"
 
-#define ERROR_OK  0
+THwPinCtrl hwpinctrl;
 
-#define ERROR_NOTINIT  -1   // the device is not initialized
-#define ERROR_TIMEOUT  -2   // operation timed out
-#define ERROR_NOTIMPL  -3   // not implemented
-#define ERROR_BUSY     -4   // unit busy
-#define ERROR_UNKNOWN  -5   // unknown hardware
-#define ERROR_READ     -6   // read error
-#define ERROR_WRITE    -7   // write error
+TGpioPin::TGpioPin()
+{
+	// keep field defaults
+}
 
+TGpioPin::TGpioPin(int aportnum, int apinnum, bool ainvert)
+{
+	Assign(aportnum, apinnum, ainvert);
+}
 
-#endif /* ERRORS_H_ */
+bool TGpioPin::Setup(unsigned flags)
+{
+	if (!Assigned())
+	{
+		return false;
+	}
+
+	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
+}
+
+void TGpioPin::IrqSetup(int amode)
+{
+	hwpinctrl.GpioIrqSetup(portnum, pinnum, amode);
+}
