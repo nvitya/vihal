@@ -18,39 +18,32 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-/*
- *  file:     hwuart_vrv100.h
- *  brief:    VexRiscV / SpinalHDL UART for VRV100
- *  version:  1.00
- *  date:     2021-10-02
- *  authors:  nvitya
-*/
+// file:     hwspi_vrv100.h
+// brief:    VexRiscV / SpinalHDL SPI Master for VRV100
+// created:  2021-10-04
+// authors:  nvitya
 
-#ifndef HWUART_VRV100_H_
-#define HWUART_VRV100_H_
+#ifndef HWSPI_VRV100_H_
+#define HWSPI_VRV100_H_
 
-#define HWUART_PRE_ONLY
-#include "hwuart.h"
+#define HWSPI_PRE_ONLY
+#include "hwspi.h"
 
-class THwUart_vrv100 : public THwUart_pre
+class THwSpi_vrv100 : public THwSpi_pre
 {
 public:
-	bool Init(int adevnum);  // 1 or 2
+	bool Init(int adevnum);
 
-	bool TrySendChar(char ach);
-	bool TryRecvChar(char * ach);
-
+	bool TrySendData(unsigned short adata);
+	bool TryRecvData(unsigned short * dstptr);
 	bool SendFinished();
 
-	//void DmaAssign(bool istx, THwDmaChannel * admach);
-
-	//bool DmaStartSend(THwDmaTransfer * axfer);
-	//bool DmaStartRecv(THwDmaTransfer * axfer);
-
 public:
-	vexriscv_uart_t *      regs = nullptr;
+	unsigned  					basespeed;
+	vexriscv_spim_t *		regs;
 };
 
-#define HWUART_IMPL THwUart_vrv100
 
-#endif // def HWUART_VRV100_H_
+#define HWSPI_IMPL THwSpi_vrv100
+
+#endif // def HWSPI_VRV100_H_

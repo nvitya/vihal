@@ -30,11 +30,29 @@ typedef struct
 //
 } vexriscv_uart_t;
 
+typedef struct
+{
+  volatile uint32_t  DATA; 					  // 0x00
+  volatile uint32_t  STATUS;   			  // 0x04
+  volatile uint32_t  CONFIG;          // 0x08
+  volatile uint32_t  CLOCK_DIVIDER;   // W 0x0C SPI frequency = FCLK / (2 * clockDivider)
+  volatile uint32_t  SSSETUP;    			// W 0x10 time between chip select enable and the next byte
+  volatile uint32_t  SSHOLD;          // W 0x14 time between the last byte transmission and the chip select disable
+  volatile uint32_t  SSDISABLE;       // W 0x18 time between chip select disable and chip select enable
+//
+} vexriscv_spim_t;
+
 #define GPIOA_BASE   0xF0000000
 #define GPIOB_BASE   0xF0001000
 
 #define UART1_BASE   0xF0010000
 #define UART2_BASE   0xF0011000
+
+#define SPIM1_BASE   0xF0040000
+#define SPIM2_BASE   0xF0041000
+
+#define UART_TXFIFO_DEPTH  1024
+#define SPIM_TXFIFO_DEPTH  1024
 
 #ifdef __cplusplus
 }

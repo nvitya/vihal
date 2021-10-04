@@ -20,7 +20,7 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     hwuart_vrv100.cpp
- *  brief:    VexRiscV UART for VRV100
+ *  brief:    VexRiscV / SpinalHDL UART for VRV100
  *  version:  1.00
  *  date:     2021-10-02
  *  authors:  nvitya

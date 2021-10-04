@@ -19,7 +19,7 @@
 #endif
 
 #ifdef HWSPI_H_
-  // #include "hwspi_vrv100.h"
+  #include "hwspi_vrv100.h"
 #endif
 
 #ifdef HWI2C_H_
