@@ -27,6 +27,8 @@
 #include "platform.h"
 #include "hwspi.h"
 
+static_assert(HWSPI_MAX_XFER_BLOCK >= 4, "Minimum 4 SPI transfer blocks are required!");
+
 void THwSpi::BeginTransaction()
 {
 	if (manualcspin)
@@ -51,6 +53,7 @@ void THwSpi::WaitSendFinish()
 	}
 }
 
+#if 0
 int THwSpi::RunTransfer(TSpiTransfer * axfer)
 {
 	int result = 0;
@@ -104,3 +107,74 @@ int THwSpi::RunTransfer(TSpiTransfer * axfer)
 
 	return result;
 }
+#endif
+
+void THwSpi_pre::PrepareTransfer(uint32_t acmd, uint32_t aaddr, uint32_t aflags,
+		                             uint32_t alen, uint8_t * asrc, uint8_t * adst)
+{
+	TSpiXferBlock * pblock = &xferblock[0];
+
+	blockcnt = 0;
+	finished = false;
+	state = 0; // sets back to start state
+
+	if (acmd & SPITR_CMD_MASK) // send command ?
+	{
+		data_cmd = acmd;
+		pblock->src = (uint8_t *)&data_cmd;
+		pblock->dst = nullptr; // may be redirected to data_void
+		if (acmd & SPITR_CMD) // use default size?
+		{
+			pblock->len = default_cmd_len;
+		}
+		else
+		{
+			pblock->len = (acmd & 7);
+			if (pblock->len > 4)  pblock->len = 4;
+		}
+		++blockcnt;
+		++pblock;
+	}
+
+	if (acmd & SPITR_CMD_MASK) // send address ?
+	{
+		data_addr = aaddr;
+		pblock->src = (uint8_t *)&data_addr;
+		pblock->dst = nullptr; // may be redirected to data_void
+		if (acmd & SPITR_ADDR) // use default size?
+		{
+			pblock->len = default_addr_len;
+		}
+		else
+		{
+			pblock->len = ((acmd >> 4) & 7);
+			if (pblock->len > 4)  pblock->len = 4;
+		}
+		++blockcnt;
+		++pblock;
+	}
+
+	if (acmd & SPITR_EXTRA_MASK) // send extra ?
+	{
+		pblock->src = (uint8_t *)&data_extra;
+		pblock->dst = nullptr; // may be redirected to data_void
+		if (acmd & SPITR_EXTRA) // use default size?
+		{
+			pblock->len = default_extra_len;
+		}
+		else
+		{
+			pblock->len = ((acmd >> 8) & 7);
+			if (pblock->len > 4)  pblock->len = 4;
+		}
+		++blockcnt;
+		++pblock;
+	}
+
+	// finally the data block
+	pblock->src = asrc;
+	pblock->dst = adst;
+	pblock->len = alen;
+	++blockcnt;
+}
+

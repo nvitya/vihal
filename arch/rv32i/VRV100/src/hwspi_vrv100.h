@@ -34,6 +34,8 @@ class THwSpi_vrv100 : public THwSpi_pre
 public:
 	bool Init(int adevnum);
 
+	void Run();
+
 	bool TrySendData(unsigned short adata);
 	bool TryRecvData(unsigned short * dstptr);
 	bool SendFinished();
@@ -41,6 +43,18 @@ public:
 public:
 	unsigned  					basespeed;
 	vexriscv_spim_t *		regs;
+
+	uint8_t             txstate = 0;
+	uint8_t             rxstate = 0;
+
+	uint32_t            rx_remaining = 0;
+	uint32_t            tx_remaining = 0;
+	bool                tx_finished = false;
+	bool                rx_finished = false;
+
+	TSpiXferBlock *     txblock = nullptr;
+	TSpiXferBlock *     rxblock = nullptr;
+	TSpiXferBlock *     lastblock = nullptr;
 };
 
 

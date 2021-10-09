@@ -162,3 +162,82 @@ bool THwSpi_vrv100::SendFinished()
 	}
 }
 
+void THwSpi_vrv100::Run()
+{
+	if (finished)
+	{
+		return;
+	}
+
+	if (0 == state)  // start phase
+	{
+		if (blockcnt < 1)  // wrong config ?
+		{
+			finished = true;
+			return;
+		}
+
+		// empty tx fifo
+		while ((regs->STATUS >> 16) != SPIM_TXFIFO_DEPTH)
+		{
+			// wait until the fifo will be empty
+		}
+
+		// empty rx fifo
+		while (regs->DATA & SPIM_DATA_VALID)
+		{
+			// do nothing
+		}
+
+	  regs->DATA = 0x11000000 | cs_number; // enable the CS
+
+		txblock = &xferblock[0];
+		rxblock = &xferblock[0];
+		lastblock = &xferblock[blockcnt];
+
+		tx_remaining = (txblock->src ? txblock->len : 0);
+		rx_remaining = (rxblock->dst ? rxblock->len : 0);
+
+		tx_finished = false;
+		rx_finished = false;
+
+		state = 1;
+	}
+
+	if (1 == state) // run phase
+	{
+		// handle tx and rx separately
+
+		// TX
+		while (!tx_finished) // repeat until the TX fifo is full
+		{
+			if (0 == tx_remaining)
+			{
+				// go to the next block
+				if (txblock == lastblock)
+				{
+					tx_finished = true;
+					break;
+				}
+				else
+				{
+					++txblock;
+					tx_remaining = (txblock->src ? txblock->len : 0);
+				}
+			}
+			else
+			{
+				// send the characters ....
+			}
+		}
+
+		while (!rx_finished) // repeat until there are RX bytes
+		{
+			if (tx_finished && rx_finished)
+			{
+				finished = true;
+				state = 100;
+			}
+		}
+	}
+}

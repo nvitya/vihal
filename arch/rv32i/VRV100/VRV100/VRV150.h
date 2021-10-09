@@ -54,6 +54,8 @@ typedef struct
 #define UART_TXFIFO_DEPTH  1024
 #define SPIM_TXFIFO_DEPTH  1024
 
+#define SPIM_DATA_VALID    (1u << 31)
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
