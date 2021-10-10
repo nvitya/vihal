@@ -193,7 +193,7 @@ void THwSpi_vrv100::Run()
 
 		txblock = &xferblock[0];
 		rxblock = &xferblock[0];
-		lastblock = &xferblock[blockcnt];
+		lastblock = &xferblock[blockcnt - 1];
 
 		tx_remaining = txblock->len; // also for rx only mode cmds are still required
 		rx_remaining = (rxblock->dst ? rxblock->len : 0);
@@ -214,7 +214,11 @@ void THwSpi_vrv100::Run()
 				// go to the next block
 				if (txblock == lastblock)
 				{
-				  tx_finished = true;
+					if ((regs->STATUS >> 16) > 0)
+					{
+					  regs->DATA = 0x10000000 | cs_number; // disable the CS
+						tx_finished = true;
+					}
 				  break;
 				}
 				else
@@ -273,7 +277,7 @@ void THwSpi_vrv100::Run()
 				else
 				{
 				  ++rxblock;
-				  rx_remaining = rxblock->len;
+					rx_remaining = (rxblock->dst ? rxblock->len : 0);
 				}
 			}
 			else
