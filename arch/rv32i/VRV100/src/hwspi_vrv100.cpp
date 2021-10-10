@@ -195,7 +195,7 @@ void THwSpi_vrv100::Run()
 		rxblock = &xferblock[0];
 		lastblock = &xferblock[blockcnt];
 
-		tx_remaining = (txblock->src ? txblock->len : 0);
+		tx_remaining = txblock->len; // also for rx only mode cmds are still required
 		rx_remaining = (rxblock->dst ? rxblock->len : 0);
 
 		tx_finished = false;
@@ -216,28 +216,95 @@ void THwSpi_vrv100::Run()
 				// go to the next block
 				if (txblock == lastblock)
 				{
-					tx_finished = true;
-					break;
+				  tx_finished = true;
+				  break;
 				}
 				else
 				{
-					++txblock;
-					tx_remaining = (txblock->src ? txblock->len : 0);
+				  ++txblock;
+				  tx_remaining = txblock->len;
 				}
 			}
 			else
 			{
-				// send the characters ....
+				// send the characters ...
+				uint32_t cmd = (txblock->dst ? 0x01000000 : 0x00000000);
+				uint32_t pushcnt = (regs->STATUS >> 16);  // tx fifo free
+				if (pushcnt > tx_remaining)  pushcnt = tx_remaining;
+				tx_remaining -= pushcnt;
+				if (txblock->src)  // send data ?
+				{
+				  uint8_t * dp = txblock->src;
+				  uint8_t * endp = dp + pushcnt;
+				  while (dp < endp)
+				  {
+				    regs->DATA = cmd + *dp;
+				    ++dp;
+				  }
+				}
+				else
+				{
+				  // just push zeroes
+				  while (pushcnt)
+				  {
+				    regs->DATA = cmd;
+				    --pushcnt;
+				  }
+				}
+				
+				if (tx_remaining)
+				{
+				  break; // go on with rx
+				}
 			}
 		}
 
 		while (!rx_finished) // repeat until there are RX bytes
 		{
-			if (tx_finished && rx_finished)
+			if (0 == rx_remaining)
 			{
-				finished = true;
-				state = 100;
+				// go to the next block
+				if (rxblock == lastblock)
+				{
+				  rx_finished = true;
+				  break;
+				}
+				else
+				{
+				  ++rxblock;
+				  rx_remaining = rxblock->len;
+				}
+			}
+			else
+			{
+				// receive characters ...
+				while (rx_remaining)
+				{
+				  uint32_t d = regs->DATA;
+				  if (d & SPIM_DATA_VALID)
+				  {
+				    *(rxblock->dst) = d;
+				    ++(rxblock->dst);
+				    --rx_remaining;
+				  }
+				  else
+				  {
+				    break;
+				  }
+				}
+				
+				if (rx_remaining)
+				{
+				  break;
+				}
 			}
 		}
+
+		if (tx_finished && rx_finished)
+		{
+			finished = true;
+			state = 100;
+		}
+
 	}
 }
