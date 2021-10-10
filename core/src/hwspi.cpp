@@ -118,53 +118,53 @@ void THwSpi_pre::PrepareTransfer(uint32_t acmd, uint32_t aaddr, uint32_t aflags,
 	finished = false;
 	state = 0; // sets back to start state
 
-	if (acmd & SPITR_CMD_MASK) // send command ?
+	if (aflags & SPITR_CMD_MASK) // send command ?
 	{
 		data_cmd = acmd;
 		pblock->src = (uint8_t *)&data_cmd;
 		pblock->dst = nullptr; // may be redirected to data_void
-		if (acmd & SPITR_CMD) // use default size?
+		if (aflags & SPITR_CMD) // use default size?
 		{
 			pblock->len = default_cmd_len;
 		}
 		else
 		{
-			pblock->len = (acmd & 7);
+			pblock->len = (aflags & 7);
 			if (pblock->len > 4)  pblock->len = 4;
 		}
 		++blockcnt;
 		++pblock;
 	}
 
-	if (acmd & SPITR_CMD_MASK) // send address ?
+	if (aflags & SPITR_ADDR_MASK) // send address ?
 	{
 		data_addr = aaddr;
 		pblock->src = (uint8_t *)&data_addr;
 		pblock->dst = nullptr; // may be redirected to data_void
-		if (acmd & SPITR_ADDR) // use default size?
+		if (aflags & SPITR_ADDR) // use default size?
 		{
 			pblock->len = default_addr_len;
 		}
 		else
 		{
-			pblock->len = ((acmd >> 4) & 7);
+			pblock->len = ((aflags >> 4) & 7);
 			if (pblock->len > 4)  pblock->len = 4;
 		}
 		++blockcnt;
 		++pblock;
 	}
 
-	if (acmd & SPITR_EXTRA_MASK) // send extra ?
+	if (aflags & SPITR_EXTRA_MASK) // send extra ?
 	{
 		pblock->src = (uint8_t *)&data_extra;
 		pblock->dst = nullptr; // may be redirected to data_void
-		if (acmd & SPITR_EXTRA) // use default size?
+		if (aflags & SPITR_EXTRA) // use default size?
 		{
 			pblock->len = default_extra_len;
 		}
 		else
 		{
-			pblock->len = ((acmd >> 8) & 7);
+			pblock->len = ((aflags >> 8) & 7);
 			if (pblock->len > 4)  pblock->len = 4;
 		}
 		++blockcnt;
@@ -178,3 +178,10 @@ void THwSpi_pre::PrepareTransfer(uint32_t acmd, uint32_t aaddr, uint32_t aflags,
 	++blockcnt;
 }
 
+void THwSpi::WaitFinish()
+{
+	while (!finished)
+	{
+		Run();
+	}
+}

@@ -206,8 +206,6 @@ void THwSpi_vrv100::Run()
 
 	if (1 == state) // run phase
 	{
-		// handle tx and rx separately
-
 		// TX
 		while (!tx_finished) // repeat until the TX fifo is full
 		{
@@ -227,7 +225,8 @@ void THwSpi_vrv100::Run()
 			}
 			else
 			{
-				// send the characters ...
+				// the TX fifo is 1024 big, so this is ompimized for multiple characters
+
 				uint32_t cmd = (txblock->dst ? 0x01000000 : 0x00000000);
 				uint32_t pushcnt = (regs->STATUS >> 16);  // tx fifo free
 				if (pushcnt > tx_remaining)  pushcnt = tx_remaining;
@@ -254,11 +253,13 @@ void THwSpi_vrv100::Run()
 				
 				if (tx_remaining)
 				{
-				  break; // go on with rx
+					// tx fifo is full, wait another round
+				  break;
 				}
 			}
 		}
 
+		// RX
 		while (!rx_finished) // repeat until there are RX bytes
 		{
 			if (0 == rx_remaining)
@@ -277,7 +278,7 @@ void THwSpi_vrv100::Run()
 			}
 			else
 			{
-				// receive characters ...
+				// store the received characters, until the fifo is empty
 				while (rx_remaining)
 				{
 				  uint32_t d = regs->DATA;
@@ -295,6 +296,7 @@ void THwSpi_vrv100::Run()
 				
 				if (rx_remaining)
 				{
+					// rx fifo is empty, wait another round
 				  break;
 				}
 			}
@@ -305,6 +307,5 @@ void THwSpi_vrv100::Run()
 			finished = true;
 			state = 100;
 		}
-
 	}
 }

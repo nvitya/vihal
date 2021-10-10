@@ -174,6 +174,8 @@ public:
   	Run();
   }
 
+  void            WaitFinish();
+
 };
 
 #endif // ndef HWSPI_H_ */
