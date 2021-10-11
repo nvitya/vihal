@@ -79,6 +79,7 @@ public:
 	bool             datasample_late = false;
 	bool             inter_frame_pulse = false; // CS pulse between frames
 	uint8_t          cs_number = 0; // if multiple CS lines are supported
+	bool             bigendian_addr = true;  // the "address" block will be sent in big-endian byte order
 
 	uint8_t          fifo_size = 1;
 

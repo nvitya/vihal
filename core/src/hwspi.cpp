@@ -150,6 +150,10 @@ void THwSpi_pre::PrepareTransfer(uint32_t acmd, uint32_t aaddr, uint32_t aflags,
 			pblock->len = ((aflags >> 4) & 7);
 			if (pblock->len > 4)  pblock->len = 4;
 		}
+		if (bigendian_addr)
+		{
+			data_addr = (__builtin_bswap32(data_addr) >> (8 * (4 - pblock->len)));
+		}
 		++blockcnt;
 		++pblock;
 	}

@@ -244,6 +244,7 @@ void THwSpi_vrv100::Run()
 				    regs->DATA = cmd + *dp;
 				    ++dp;
 				  }
+				  txblock->src = endp;
 				}
 				else
 				{

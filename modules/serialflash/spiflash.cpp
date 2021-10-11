@@ -40,9 +40,7 @@ bool TSpiFlash::ReadIdCode()
 	spi->StartTransfer(0x9F, 0, SPITR_CMD1, 3, nullptr, &rxbuf[0]);
 	spi->WaitFinish();
 
-	unsigned * up = (unsigned *)&(rxbuf[0]);
-	idcode = (*up >> 8);
-
+	idcode = *(unsigned *)&(rxbuf[0]);
 	if ((idcode == 0) || (idcode == 0x00FFFFFF))
 	{
 		// SPI communication error
@@ -114,11 +112,11 @@ void TSpiFlash::Run()
 				}
 
 				// program page command
-				spi->StartTransfer(0x03, address, SPITR_CMD1 | SPITR_ADDR3, datalen, dataptr, nullptr);
+				spi->StartTransfer(0x02, address, SPITR_CMD1 | SPITR_ADDR3, datalen, dataptr, nullptr);
 				++phase;
 				break;
 
-			case 4: // wait for page write completition
+			case 3: // wait for page write completition
 				if (spi->finished)
 				{
 					++phase;  Run();  // phase jump
@@ -126,12 +124,12 @@ void TSpiFlash::Run()
 				}
 				break;
 
-			case 5: // read status register, repeat until BUSY flag is set
+			case 4: // read status register, repeat until BUSY flag is set
 				StartReadStatus();
 				++phase;
 				break;
 
-			case 6:
+			case 5:
 				if (!spi->finished)
 				{
 					return;
@@ -144,6 +142,9 @@ void TSpiFlash::Run()
 					return;
 				}
 				// Write finished.
+				address += chunksize;
+				dataptr += chunksize;
+				remaining -= chunksize;
 				phase = 1; Run();  // phase jump
 
 				// TODO: timeout
