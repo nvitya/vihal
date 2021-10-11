@@ -23,10 +23,15 @@ OUTPUT_ARCH(riscv)
 
 INCLUDE vihal_stack_predef.ld
 
-ENTRY(_reset_entry)
+ENTRY(_self_flashing_entry)
 
 SECTIONS
 {
+  .app_header : ALIGN(4)  /* application header (32 byte) for the bootloader, might not exist */
+  {
+    KEEP(*(.application_header))
+  } > TEXT
+
   .startup : ALIGN(4)  {  KEEP(*(.startup))  } > TEXT
 
   .inits : ALIGN(4)
@@ -82,8 +87,10 @@ SECTIONS
     . = ALIGN(4);
 
   } > RAM AT > TEXT
-  
-  __global_pointer$ = ADDR(.data) + 0x800;    
+
+  __app_image_end = LOADADDR(.data) + SIZEOF(.data);
+
+  __global_pointer$ = ADDR(.data) + 0x800;
 
   .bss_DTCRAM (NOLOAD) : ALIGN(4) { *(.bss_DTCRAM) } > DTCRAM
   .bss_ITCRAM (NOLOAD) : ALIGN(4) { *(.bss_ITCRAM) } > ITCRAM
@@ -106,7 +113,7 @@ SECTIONS
     . = ALIGN(4) ;
     _end_noinit = .;
   } > RAM
-  
+
   INCLUDE vihal_stack_heap.ld
   INCLUDE vihal_debug_sections.ld
 }

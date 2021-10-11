@@ -42,6 +42,24 @@ typedef struct
 //
 } vexriscv_spim_t;
 
+// bootloader application header
+// position dependent of the used FPGA bitstream size, which always comes first
+
+typedef struct
+{
+  volatile uint32_t  signature;   	  // = 0xC0DEBA5E
+  volatile uint32_t  length;  		    //
+  volatile uint32_t  addr_load;       //
+  volatile uint32_t  addr_entry;      //
+  volatile uint32_t  _reserved10;			//
+  volatile uint32_t  compid;          //
+  volatile uint32_t  csum_body;       //
+  volatile uint32_t  csum_head;       //
+//
+} bootblock_header_t;
+
+#define BOOTBLOCK_SIGNATURE  0xC0DEBA5E
+
 #define GPIOA_BASE   0xF0000000
 #define GPIOB_BASE   0xF0001000
 

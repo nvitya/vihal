@@ -33,7 +33,7 @@
 .balign 4
 
 //-------------------------------------------------
-// Reset and Development entry point
+// Reset entry point
 //-------------------------------------------------
 .global _reset_entry
 _reset_entry:
@@ -42,6 +42,19 @@ _reset_entry:
 .cfi_undefined ra
 
   nop
+  li    x15, 0
+  j init_start
+
+//-------------------------------------------------
+// Development entry point for self-flashing
+//-------------------------------------------------
+.global _self_flashing_entry
+_self_flashing_entry:
+
+  nop
+  li    x15, 1
+
+init_start:
 
   la    sp, __stack  // stack pointer
 
@@ -148,7 +161,8 @@ exec_start_c:
   addi   x7, x0, 0  // t2: temporary
   addi   x8, x0, 0  // s0/fp saved register / frame pointer
   addi   x9, x0, 0  // s1 saved register
-  addi  x10, x0, 0  // a0: function argument / return value
+  // restore self flashing flag:
+  addi  x10, x15, 0 // a0: function argument / return value
   addi  x11, x0, 0  // a1: function argument / return value
   addi  x12, x0, 0  // a2: function argument
   addi  x13, x0, 0  // a3: function argument
