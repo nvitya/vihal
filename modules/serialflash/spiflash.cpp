@@ -111,8 +111,11 @@ void TSpiFlash::Run()
 					return;
 				}
 
+        chunksize = 256 - (address & 0xFF); // page size
+        if (chunksize > remaining)  chunksize = remaining;
+
 				// program page command
-				spi->StartTransfer(0x02, address, SPITR_CMD1 | SPITR_ADDR3, datalen, dataptr, nullptr);
+				spi->StartTransfer(0x02, address, SPITR_CMD1 | SPITR_ADDR3, chunksize, dataptr, nullptr);
 				++phase;
 				break;
 

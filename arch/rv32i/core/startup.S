@@ -26,7 +26,7 @@
 //   The NEORV32 (https://github.com/stnolting/neorv32) startup code was used as an example,
 //   but at the end only a few lines was kept from there
 
-.section .startup  // goes to the very beginning
+.section .resetentry  // goes to the very beginning
 
 .option  norelax   // important, because the GP register is not set yet
 

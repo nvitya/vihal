@@ -70,7 +70,7 @@ typedef struct
 #define SPIM2_BASE   0xF0041000
 
 #define UART_TXFIFO_DEPTH  1024
-#define SPIM_TXFIFO_DEPTH  1024
+#define SPIM_TXFIFO_DEPTH   512
 
 #define SPIM_DATA_VALID    (1u << 31)
 

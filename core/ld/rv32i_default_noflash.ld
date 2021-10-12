@@ -32,7 +32,11 @@ SECTIONS
     KEEP(*(.application_header))
   } > TEXT
 
-  .startup : ALIGN(4)  {  KEEP(*(.startup))  } > TEXT
+  .resetentry : ALIGN(4)
+  {
+    KEEP(*(.resetentry))
+    KEEP(*(.startup))
+  } > TEXT
 
   .inits : ALIGN(4)
   {
