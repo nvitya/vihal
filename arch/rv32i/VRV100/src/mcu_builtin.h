@@ -31,18 +31,12 @@
 
 #if 0
 
-//----------------------------------------------------------------------
-// STM32
-//----------------------------------------------------------------------
-
-// STM32F0: Cortex-M0
-
-#elif defined(MCU_VRV153)
+#elif defined(MCU_VRV1_104) || defined(MCU_VRV1_103) || defined(MCU_VRV1_241) \
+  || defined(MCU_VRV1_403) || defined(MCU_VRV1_441) || defined(MCU_VRV1_443) || defined(MCU_VRV1_543)
 
   #define MCUF_VRV100
-  #define MCUSF_150
 
-  #include "VRV150.h"
+  #include "VRV100.h"
 
 #else
 
