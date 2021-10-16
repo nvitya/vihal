@@ -41,9 +41,16 @@ bool TSerialFlash::Init()
 	}
 
 	// read ID value
-	if (!ReadIdCode())
+	ReadIdCode(); // might be invalid.
+
+	unsigned trycnt = 0;
+	while (!ReadIdCode())
 	{
-		return false;
+	  ++trycnt;
+	  if (trycnt >= 3)
+	  {
+	    return false;
+	  }
 	}
 
 	// process ID code

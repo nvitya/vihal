@@ -109,9 +109,21 @@ bool THwSpi_vrv100::Init(int adevnum)
 	if (datasample_late)  cfg |= (1 << 1);
 	regs->CONFIG = cfg;
 
-	regs->SSSETUP    =  1;  // time between chip select enable and the next byte
-	regs->SSHOLD     =  1;  // time between the last byte transmission and the chip select disable
-	regs->SSDISABLE  =  1;  // time between chip select disable and chip select enable
+	regs->SSSETUP    =  4;  // time between chip select enable and the next byte
+	regs->SSHOLD     =  4;  // time between the last byte transmission and the chip select disable
+	regs->SSDISABLE  =  4;  // time between chip select disable and chip select enable
+
+  // empty tx fifo
+  while ((regs->STATUS >> 16) != SPIM_TXFIFO_DEPTH)
+  {
+    // wait until the fifo will be empty
+  }
+
+  // empty rx fifo
+  while (regs->DATA & SPIM_DATA_VALID)
+  {
+    // do nothing
+  }
 
 	initialized = true;
 
