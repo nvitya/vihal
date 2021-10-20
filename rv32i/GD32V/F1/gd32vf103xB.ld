@@ -1,0 +1,14 @@
+MEMORY
+{
+  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 128K
+  RAM (xrw) :  ORIGIN = 0x20000000, LENGTH = 32K
+}
+
+REGION_ALIAS("TEXT", RAM);
+REGION_ALIAS("ITCRAM", RAM);
+REGION_ALIAS("DTCRAM", RAM);
+REGION_ALIAS("RAM2", RAM);
+
+INCLUDE rv32i_default_noflash.ld
+/* INCLUDE nvcm_default_flash.ld */
+

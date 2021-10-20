@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -18,23 +19,29 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     boards_builti.h
- *  brief:    some pre-defined FPGA boards with VRV100 SoC
+ *  file:     mcu_builtin.h (VRV100)
+ *  brief:    Built-In VRV100 (VexRiscV FPGA) Variants
  *  version:  1.00
- *  date:     2021-10-20
+ *  date:     2021-10-02
  *  authors:  nvitya
 */
 
-#ifndef BOARDS_BUILTIN_H_
-#define BOARDS_BUILTIN_H_
+#ifndef __MCU_BUILTIN_H
+#define __MCU_BUILTIN_H
 
-#if 0 // to use elif everywhere
+#if 0
+
+#elif defined(MCU_GD32VF103CB)
+
+  #define MCUF_VRV100
+  #define MAX_CLOCK_SPEED  108000000
+
+  #include "gd32vf103.h"
 
 #else
 
-  #error "Unknown board."
+  #error "Unknown MCU"
 
 #endif
 
-
-#endif /* BOARDS_BUILTIN_H_ */
+#endif

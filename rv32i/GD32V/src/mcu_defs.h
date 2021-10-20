@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -18,23 +19,20 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     boards_builti.h
- *  brief:    some pre-defined FPGA boards with VRV100 SoC
+ *  file:     mcu_defs.h (GD32V)
+ *  brief:    GD32V special MCU definitions
  *  version:  1.00
  *  date:     2021-10-20
  *  authors:  nvitya
 */
 
-#ifndef BOARDS_BUILTIN_H_
-#define BOARDS_BUILTIN_H_
+#ifndef __MCU_DEFS_H
+#define __MCU_DEFS_H
 
-#if 0 // to use elif everywhere
+#define MCUF_GD32V
 
-#else
+inline void __attribute__((always_inline)) mcu_preinit_code()
+{
+}
 
-  #error "Unknown board."
-
-#endif
-
-
-#endif /* BOARDS_BUILTIN_H_ */
+#endif // __MCU_DEFS_H

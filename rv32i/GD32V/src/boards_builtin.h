@@ -19,7 +19,7 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     boards_builti.h
- *  brief:    some pre-defined FPGA boards with VRV100 SoC
+ *  brief:    some pre-defined boards with GD32V
  *  version:  1.00
  *  date:     2021-10-20
  *  authors:  nvitya
@@ -29,6 +29,13 @@
 #define BOARDS_BUILTIN_H_
 
 #if 0 // to use elif everywhere
+
+#elif defined(BOARD_LONGAN_NANO)
+
+  #define BOARD_NAME "Longan Nano GD32VF103CB board"
+  #define MCU_GD32VF103CB
+  #define MCU_INPUT_FREQ   8000000
+  #define HXTAL_VALUE      MCU_INPUT_FREQ
 
 #else
 
