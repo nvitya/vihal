@@ -36,7 +36,6 @@
 // Reset entry point
 //-------------------------------------------------
 .global _reset_entry
-.global _start0800
 _reset_entry:
 
 .cfi_startproc
@@ -57,10 +56,10 @@ _self_flashing_entry:
 
 init_start:
 
-  // The GD32V MCU starts at address 0x00000000 while the code was targeted to 0x08000000
+  // The GD32V MCU starts at address 0x00000000 while the code was targeted to 0x08000000.
   // This leads false immediates for instructions that use the PC partially (like luipc)
 
-  // With this jump we ensure that the execution continues there where the original code was targeted:
+  // This jump ensures that the execution continues there where the original code was targeted:
   lui    x5, %hi(_start0800)
   li     x6, %lo(_start0800)
   or     x5, x5, x6
