@@ -31,6 +31,8 @@
 
 #define MCUF_GD32V
 
+#define MCU_INTERNAL_RC_SPEED   8000000
+
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
 }

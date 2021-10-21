@@ -34,8 +34,7 @@
 
   #define BOARD_NAME "Longan Nano GD32VF103CB board"
   #define MCU_GD32VF103CB
-  #define MCU_INPUT_FREQ   8000000
-  #define HXTAL_VALUE      MCU_INPUT_FREQ
+  #define EXTERNAL_XTAL_HZ   8000000
 
 #else
 

@@ -28,6 +28,7 @@
 
 #include "generic_defs.h"
 
+__attribute__ ((section(".noinit"),used))
 unsigned SystemCoreClock;  // standard CMSIS variable, this is used almost everywhere
 
 
