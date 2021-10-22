@@ -18,30 +18,36 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-/*
- *  file:     mcu_builtin.h (GD32V)
- *  brief:    Built-in GD32V MCU definitions
- *  version:  1.00
- *  date:     2021-10-21
- *  authors:  nvitya
-*/
+// file:     hwuart_gd32v.h
+// brief:    GD32V UART driver
+// created:  2021-10-21
+// authors:  nvitya
 
-#ifndef __MCU_BUILTIN_H
-#define __MCU_BUILTIN_H
+#ifndef HWUART_GD32V_H_
+#define HWUART_GD32V_H_
 
-#if 0
+#define HWUART_PRE_ONLY
+#include "hwuart.h"
 
-#elif defined(MCU_GD32VF103CB)
+class THwUart_gd32v : public THwUart_pre
+{
+public:
+	bool Init(int adevnum);  // 0x101 = LPUART1
 
-  #define MCUF_GD32V
-  #define MAX_CLOCK_SPEED  108000000
+	bool TrySendChar(char ach);
+	bool TryRecvChar(char * ach);
 
-  #include "gd32vf103.h"
+	bool SendFinished();
 
-#else
+	//void DmaAssign(bool istx, THwDmaChannel * admach);
 
-  #error "Unknown MCU"
+	//bool DmaStartSend(THwDmaTransfer * axfer);
+	//bool DmaStartRecv(THwDmaTransfer * axfer);
 
-#endif
+public:
+	gd32v_usart_t *    regs = nullptr;
+};
 
-#endif
+#define HWUART_IMPL THwUart_gd32v
+
+#endif // def HWUART_GD32V_H_

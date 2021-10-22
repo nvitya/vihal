@@ -1,5 +1,4 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -19,29 +18,29 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     mcu_builtin.h (GD32V)
- *  brief:    Built-in GD32V MCU definitions
+ *  file:     gd32v_utils.cpp
+ *  brief:    GD32V Utilities
  *  version:  1.00
  *  date:     2021-10-21
  *  authors:  nvitya
 */
 
-#ifndef __MCU_BUILTIN_H
-#define __MCU_BUILTIN_H
+#include "gd32v_utils.h"
 
-#if 0
+uint32_t gd32v_bus_speed(uint8_t abusid)
+{
+	uint32_t tmp;
+	uint32_t clockshr;  // clock shift right = division
 
-#elif defined(MCU_GD32VF103CB)
+	if ((GD32V_BUSID_APB1 == abusid) && (SystemCoreClock > 54000000))
+	{
+		clockshr = 1;
+	}
+	else
+	{
+		clockshr = 0; // unhandled, no division by default
+	}
 
-  #define MCUF_GD32V
-  #define MAX_CLOCK_SPEED  108000000
+	return (SystemCoreClock >> clockshr);
+}
 
-  #include "gd32vf103.h"
-
-#else
-
-  #error "Unknown MCU"
-
-#endif
-
-#endif

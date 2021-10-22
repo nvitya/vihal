@@ -1012,6 +1012,89 @@ typedef FlagStatus bit_status;
 #define GPIO_TIMER1ITI1_REMAP            ((uint32_t)0x00202000U)   /*!< TIMER1 internal trigger 1 remapping */
 #define GPIO_EXMC_NADV_REMAP             ((uint32_t)0x80000400U)   /*!< EXMC_NADV connect/disconnect */
 
+//---------------------------------------------------------------------------------------
+// USART
+//---------------------------------------------------------------------------------------
+
+typedef struct gd32v_usart_t
+{
+  volatile uint32_t  STAT;    // 0x00: USART status register
+  volatile uint32_t  DATA;    // 0x04: USART data register
+  volatile uint32_t  BAUD;    // 0x08: USART baud rate register
+  volatile uint32_t  CTL0;    // 0x0C: USART control register 0
+  volatile uint32_t  CTL1;    // 0x10: USART control register 1
+  volatile uint32_t  CTL2;    // 0x14: USART control register 2
+  volatile uint32_t  GP;      // 0x18: USART guard time and prescaler register
+//
+} gd32v_usart_t;
+
+#define USART1                        ((gd32v_usart_t *)(USART_BASE))
+#define USART2                        ((gd32v_usart_t *)(USART_BASE+(0x00000400U)))
+#define UART3                         ((gd32v_usart_t *)(USART_BASE+(0x00000800U)))
+#define UART4                         ((gd32v_usart_t *)(USART_BASE+(0x00000C00U)))
+#define USART0                        ((gd32v_usart_t *)(USART_BASE+(0x0000F400U)))
+
+
+/* bits definitions */
+/* USARTx_STAT */
+#define USART_STAT_PERR               BIT(0)                            /*!< parity error flag */
+#define USART_STAT_FERR               BIT(1)                            /*!< frame error flag */
+#define USART_STAT_NERR               BIT(2)                            /*!< noise error flag */
+#define USART_STAT_ORERR              BIT(3)                            /*!< overrun error */
+#define USART_STAT_IDLEF              BIT(4)                            /*!< IDLE frame detected flag */
+#define USART_STAT_RBNE               BIT(5)                            /*!< read data buffer not empty */
+#define USART_STAT_TC                 BIT(6)                            /*!< transmission complete */
+#define USART_STAT_TBE                BIT(7)                            /*!< transmit data buffer empty */
+#define USART_STAT_LBDF               BIT(8)                            /*!< LIN break detected flag */
+#define USART_STAT_CTSF               BIT(9)                            /*!< CTS change flag */
+
+/* USARTx_DATA */
+#define USART_DATA_DATA               BITS(0,8)                         /*!< transmit or read data value */
+
+/* USARTx_BAUD */
+#define USART_BAUD_FRADIV             BITS(0,3)                         /*!< fraction part of baud-rate divider */
+#define USART_BAUD_INTDIV             BITS(4,15)                        /*!< integer part of baud-rate divider */
+
+/* USARTx_CTL0 */
+#define USART_CTL0_SBKCMD             BIT(0)                            /*!< send break command */
+#define USART_CTL0_RWU                BIT(1)                            /*!< receiver wakeup from mute mode */
+#define USART_CTL0_REN                BIT(2)                            /*!< receiver enable */
+#define USART_CTL0_TEN                BIT(3)                            /*!< transmitter enable */
+#define USART_CTL0_IDLEIE             BIT(4)                            /*!< idle line detected interrupt enable */
+#define USART_CTL0_RBNEIE             BIT(5)                            /*!< read data buffer not empty interrupt and overrun error interrupt enable */
+#define USART_CTL0_TCIE               BIT(6)                            /*!< transmission complete interrupt enable */
+#define USART_CTL0_TBEIE              BIT(7)                            /*!< transmitter buffer empty interrupt enable */
+#define USART_CTL0_PERRIE             BIT(8)                            /*!< parity error interrupt enable */
+#define USART_CTL0_PM                 BIT(9)                            /*!< parity mode */
+#define USART_CTL0_PCEN               BIT(10)                           /*!< parity check function enable */
+#define USART_CTL0_WM                 BIT(11)                           /*!< wakeup method in mute mode */
+#define USART_CTL0_WL                 BIT(12)                           /*!< word length */
+#define USART_CTL0_UEN                BIT(13)                           /*!< USART enable */
+
+/* USARTx_CTL1 */
+#define USART_CTL1_ADDR               BITS(0,3)                         /*!< address of USART */
+#define USART_CTL1_LBLEN              BIT(5)                            /*!< LIN break frame length */
+#define USART_CTL1_LBDIE              BIT(6)                            /*!< LIN break detected interrupt eanble */
+#define USART_CTL1_CLEN               BIT(8)                            /*!< CK length */
+#define USART_CTL1_CPH                BIT(9)                            /*!< CK phase */
+#define USART_CTL1_CPL                BIT(10)                           /*!< CK polarity */
+#define USART_CTL1_CKEN               BIT(11)                           /*!< CK pin enable */
+#define USART_CTL1_STB                BITS(12,13)                       /*!< STOP bits length */
+#define USART_CTL1_LMEN               BIT(14)                           /*!< LIN mode enable */
+
+/* USARTx_CTL2 */
+#define USART_CTL2_ERRIE              BIT(0)                            /*!< error interrupt enable */
+#define USART_CTL2_IREN               BIT(1)                            /*!< IrDA mode enable */
+#define USART_CTL2_IRLP               BIT(2)                            /*!< IrDA low-power */
+#define USART_CTL2_HDEN               BIT(3)                            /*!< half-duplex enable */
+#define USART_CTL2_NKEN               BIT(4)                            /*!< NACK enable in smartcard mode */
+#define USART_CTL2_SCEN               BIT(5)                            /*!< smartcard mode enable */
+#define USART_CTL2_DENR               BIT(6)                            /*!< DMA request enable for reception */
+#define USART_CTL2_DENT               BIT(7)                            /*!< DMA request enable for transmission */
+#define USART_CTL2_RTSEN              BIT(8)                            /*!< RTS enable */
+#define USART_CTL2_CTSEN              BIT(9)                            /*!< CTS enable */
+#define USART_CTL2_CTSIE              BIT(10)                           /*!< CTS interrupt enable */
+
 
 #ifdef cplusplus
 }

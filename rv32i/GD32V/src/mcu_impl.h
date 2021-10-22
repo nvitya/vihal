@@ -15,7 +15,7 @@
 #endif
 
 #ifdef HWUART_H_
-  //#include "hwuart_gd32v.h"
+  #include "hwuart_gd32v.h"
 #endif
 
 #ifdef HWSPI_H_
