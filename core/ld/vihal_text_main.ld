@@ -25,7 +25,18 @@ KEEP(*(SORT(.fini_array.*)))
 KEEP(*(.fini_array))
 PROVIDE_HIDDEN (__fini_array_end = .);
 
+*(.rela.iplt)
+*(.rela.plt)
+
 *(.text .text.* )
+
+*(.text.unlikely .text.*_unlikely .text.unlikely.*)
+*(.text.exit .text.exit.*)
+*(.text.startup .text.startup.*)
+*(.text.hot .text.hot.*)
+*(SORT(.text.sorted.*))
+*(.stub)
+*(.gnu.warning)
 
 *(.srodata .srodata.*)
 *(.rodata .rodata.* .constdata .constdata.* .gnu.linkonce.r.*)

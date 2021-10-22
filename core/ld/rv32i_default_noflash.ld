@@ -86,8 +86,17 @@ SECTIONS
   .data : ALIGN(4)
   {
     *(.data_begin .data_begin.*)
-    *(.data .data.*)
+    *(.data .data.* .gnu.linkonce.d.*)
     *(.data_end .data_end.*)
+
+    *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
+
+    SORT(CONSTRUCTORS)
+
+    *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata .srodata.*)
+    *(.sdata .sdata.* .gnu.linkonce.s.*)
+	 *(.tdata .tdata.* .gnu.linkonce.td.*)
+
     . = ALIGN(4);
 
   } > RAM AT > TEXT
@@ -103,8 +112,15 @@ SECTIONS
   {
     *(.bss_begin .bss_begin.*)
     *(.bss .bss.*)
+    *(.gnu.linkonce.b.*)
     *(COMMON)
     *(.bss_end .bss_end.*)
+
+    *(.dynsbss)
+    *(.sbss .sbss.* .gnu.linkonce.sb.*)
+    *(.scommon)
+    *(.dynbss)
+
   } > RAM
 
   .noinit_DTCRAM (NOLOAD) : ALIGN(4)  { *(.noinit_DTCRAM) } > DTCRAM
