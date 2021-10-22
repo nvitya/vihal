@@ -73,7 +73,8 @@ SECTIONS
   .text_RAM2    : ALIGN(4)  { *(.text_RAM2) }   > RAM2    AT > TEXT
   .text : ALIGN(4)
   {
-    INCLUDE vihal_text_main.ld
+    INCLUDE vihal_text_section.ld
+
   } > TEXT
 
   . = ALIGN(4);
@@ -85,9 +86,8 @@ SECTIONS
   .data_RAM2    : ALIGN(4)  { *(.data_RAM2) }   > RAM2    AT > TEXT
   .data : ALIGN(4)
   {
-    *(.data_begin .data_begin.*)
-    *(.data .data.*)
-    *(.data_end .data_end.*)
+    INCLUDE vihal_data_section.ld
+
     . = ALIGN(4);
 
   } > RAM AT > TEXT
@@ -101,10 +101,8 @@ SECTIONS
   .bss_RAM2   (NOLOAD) : ALIGN(4) { *(.bss_RAM2) }   > RAM2
   .bss (NOLOAD) : ALIGN(4)
   {
-    *(.bss_begin .bss_begin.*)
-    *(.bss .bss.*)
-    *(COMMON)
-    *(.bss_end .bss_end.*)
+    INCLUDE vihal_bss_section.ld
+
   } > RAM
 
   .noinit_DTCRAM (NOLOAD) : ALIGN(4)  { *(.noinit_DTCRAM) } > DTCRAM

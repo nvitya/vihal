@@ -73,7 +73,8 @@ SECTIONS
   .text_RAM2    : ALIGN(4)  { *(.text_RAM2) }   > RAM2    AT > TEXT
   .text : ALIGN(4)
   {
-    INCLUDE vihal_text_main.ld
+    INCLUDE vihal_text_section.ld
+
   } > TEXT
 
   . = ALIGN(4);
@@ -85,20 +86,8 @@ SECTIONS
   .data_RAM2    : ALIGN(4)  { *(.data_RAM2) }   > RAM2    AT > TEXT
   .data : ALIGN(4)
   {
-    *(.data_begin .data_begin.*)
-    *(.data .data.* .gnu.linkonce.d.*)
-    *(.data_end .data_end.*)
-
-    *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
-
-    SORT(CONSTRUCTORS)
-
-    *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata .srodata.*)
-    *(.sdata .sdata.* .gnu.linkonce.s.*)
-	 *(.tdata .tdata.* .gnu.linkonce.td.*)
-
+    INCLUDE vihal_data_section.ld
     . = ALIGN(4);
-
   } > RAM AT > TEXT
 
   __app_image_end = LOADADDR(.data) + SIZEOF(.data);
@@ -110,16 +99,7 @@ SECTIONS
   .bss_RAM2   (NOLOAD) : ALIGN(4) { *(.bss_RAM2) }   > RAM2
   .bss (NOLOAD) : ALIGN(4)
   {
-    *(.bss_begin .bss_begin.*)
-    *(.bss .bss.*)
-    *(.gnu.linkonce.b.*)
-    *(COMMON)
-    *(.bss_end .bss_end.*)
-
-    *(.dynsbss)
-    *(.sbss .sbss.* .gnu.linkonce.sb.*)
-    *(.scommon)
-    *(.dynbss)
+    INCLUDE vihal_bss_section.ld
 
   } > RAM
 
