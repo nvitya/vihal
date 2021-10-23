@@ -1,14 +1,7 @@
-/*
- *  file:     mcu_impl.h (GD32V)
- *  brief:    GD32V HW Driver list
- *  version:  1.00
- *  date:     2021-10-20
- *  authors:  nvitya
-*/
-
-#ifdef HWCLKCTRL_H_
-  // #include "hwclkctrl_.h"
-#endif
+//  file:     mcu_impl.h (GD32V)
+//  brief:    GD32V HW Driver list
+//  created:  2021-10-20
+//  authors:  nvitya
 
 #ifdef HWPINS_H_
   #include "hwpins_gd32v.h"

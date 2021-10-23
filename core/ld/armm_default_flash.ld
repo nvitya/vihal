@@ -1,4 +1,3 @@
-
 /* memory definition required, like
 
   MEMORY
@@ -88,7 +87,6 @@ SECTIONS
   {
     *(.ARM.exidx* .gnu.linkonce.armexidx.*)
   } > TEXT
-  PROVIDE_HIDDEN (__exidx_end = .);
 
   . = ALIGN(4);
   _etext = .;
@@ -106,6 +104,8 @@ SECTIONS
   } > RAM AT > TEXT
 
   __app_image_end = LOADADDR(.data) + SIZEOF(.data);
+
+  __global_pointer$ = ADDR(.data) + 0x800;
 
   .bss_DTCRAM (NOLOAD) : ALIGN(4) { *(.bss_DTCRAM) } > DTCRAM
   .bss_ITCRAM (NOLOAD) : ALIGN(4) { *(.bss_ITCRAM) } > ITCRAM

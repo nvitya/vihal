@@ -29,6 +29,55 @@
 #ifndef __ARMM_GENERIC_H
 #define __ARMM_GENERIC_H
 
+#define MCU_ARMM
+
+#if defined(DEBUG)
+  #define __DEBUG_BKPT()  asm volatile ("bkpt 0")
+#else
+  #define __DEBUG_BKPT()
+#endif
+
+#ifndef CLOCKCNT
+
+#if __CORTEX_M >= 3
+
+  // from Cortex-M3 use the DWT_CYCCNT:
+  #define CLOCKCNT (*((volatile unsigned *)0xE0001004))
+  #define CLOCKCNT_BITS  32
+
+#elif defined(CLOCKCNT16)
+
+  // !!! WARNING !!!
+  // providing the 32 bit CLOCKCNT for the Cortex-M0 platforms has the following disadvantages:
+  //   - works properly only when it is called repeatedly within 0.683 ms
+  //   - not safe to call from interrupt context
+
+  #define ELAPSEDCLOCKS16(t1, t0) ((uint16_t)(t1 - t0))
+
+  extern uint32_t clockcnt32_high;
+  extern uint16_t last_clockcnt16;
+
+  inline unsigned clockcnt16_to_32()
+  {
+    uint16_t t0 = CLOCKCNT16;
+    if (t0 < last_clockcnt16)
+    {
+      clockcnt32_high += 0x10000;
+    }
+    last_clockcnt16 = t0;
+    return clockcnt32_high + t0;
+  }
+
+  #define CLOCKCNT clockcnt16_to_32()
+
+#else
+  // On Cortex-M0 a 16 or 32 bit timer hw required
+  #error "Define CLOCKCNT_BITS for Cortex-M0 processors (hw timer required)"
+#endif
+
+#endif
+
+
 inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {
   __asm volatile ("cpsid i");

@@ -35,12 +35,6 @@
 
 #define ALWAYS_INLINE  inline __attribute__((always_inline))
 
-#if defined(DEBUG)
-  #define __DEBUG_BKPT()  asm volatile ("bkpt 0")
-#else
-  #define __DEBUG_BKPT()
-#endif
-
 #define SETREGPART(areg, ashift, amask, avalue) { areg &= ~(amask << ashift); areg |= (avalue << ashift); }
 
 extern unsigned SystemCoreClock;  // standard CMSIS variable, this is used almost everywhere

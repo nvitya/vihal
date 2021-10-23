@@ -29,6 +29,73 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+extern unsigned __data_regions_array_start;
+extern unsigned __data_regions_array_end;
+
+extern unsigned __bss_regions_array_start;
+extern unsigned __bss_regions_array_end;
+
+// ----------------------------------------------------------------------------
+
+inline void __attribute__((always_inline)) __initialize_data(unsigned * from, unsigned * region_begin, unsigned * region_end)
+{
+  // Iterate and copy word by word.
+  // It is assumed that the pointers are word aligned.
+  unsigned int *p = region_begin;
+  while (p < region_end)
+  {
+    *p++ = *from++;
+  }
+}
+
+inline void __attribute__((always_inline)) __initialize_bss(unsigned * region_begin, unsigned * region_end)
+{
+  // Iterate and clear word by word.
+  // It is assumed that the pointers are word aligned.
+  unsigned int *p = region_begin;
+  while (p < region_end)
+  {
+    *p++ = 0;
+  }
+}
+
+__attribute__((section(".startup")))
+void memory_region_setup(void)
+{
+  unsigned * recp;
+  unsigned * loadaddr;
+  unsigned * destaddrbegin;
+  unsigned * destaddrend;
+
+  // section initialization based on the .init section tables
+
+  // 1. Copy preinitialized data sections
+
+  recp =  (unsigned *)&__data_regions_array_start;
+  while (recp < &__data_regions_array_end)
+  {
+    loadaddr = (unsigned *)(*recp);
+    ++recp;
+    destaddrbegin = (unsigned *)(*recp);
+    ++recp;
+    destaddrend = (unsigned *)(*recp);
+    ++recp;
+    __initialize_data(loadaddr, destaddrbegin, destaddrend);
+  }
+
+  // 2. Zero BSS data sections
+  recp =  (unsigned *)&__bss_regions_array_start;
+  while (recp < &__bss_regions_array_end)
+  {
+    destaddrbegin = (unsigned *)(*recp);
+    ++recp;
+    destaddrend = (unsigned *)(*recp);
+    ++recp;
+    __initialize_bss(destaddrbegin, destaddrend);
+  }
+}
+
+
 // These magic symbols are provided by the linker.
 extern void (*__preinit_array_start[]) (void) __attribute__((weak));
 extern void (*__preinit_array_end[]) (void) __attribute__((weak));

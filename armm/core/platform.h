@@ -21,28 +21,17 @@
 /*
  *  file:     platform.h (armm)
  *  brief:    Main ARM Cortex-M platform include
- *  version:  1.00
- *  date:     2021-09-28
+ *  created:  2021-09-28
  *  authors:  nvitya
 */
 
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
 
+#include "generic_defs.h"
+
 // board.h must be provided by the application. It should minimum define the cpu.
 #include "board.h"
-
-#ifndef MCU_EXTERNAL_INPUT_FREQ
-  // Use the internal oscillator then
-  #define MCU_EXTERNAL_INPUT_FREQ  0
-#endif
-
-#define DONT_USE_CMSIS_INIT
-
-// some CMSIS definition define it
-#ifdef LITTLE_ENDIAN
-	#undef LITTLE_ENDIAN
-#endif
 
 #if defined(MCU_DEFINED)
 
@@ -54,15 +43,13 @@
 
 #endif
 
-#if defined(DEBUG)
-  #define __DEBUG_BKPT()  asm volatile ("bkpt 0")
-#else
-  #define __DEBUG_BKPT()
+#define DONT_USE_CMSIS_INIT
+
+// some CMSIS definition define it
+#ifdef LITTLE_ENDIAN
+	#undef LITTLE_ENDIAN
 #endif
 
-#ifndef LITTLE_ENDIAN
-	#define LITTLE_ENDIAN
-#endif
 
 //------------------------------------------------------------------
 
@@ -72,25 +59,21 @@
 
 // handle some required definitions
 
-#if !defined(MAX_IRQ_HANDLER_COUNT)
-	#if defined(NUMBER_OF_INT_VECTORS)
-		#define MAX_IRQ_HANDLER_COUNT  (NUMBER_OF_INT_VECTORS - 16)
-	#else
-		#define MAX_IRQ_HANDLER_COUNT  72
-	#endif
-#endif
-
 #if !defined(MAX_CLOCK_SPEED)
   #error "MCU Maximal clock speed is not defined!"
-#endif
-
-#ifndef MCU_CLOCK_SPEED
-  #define MCU_CLOCK_SPEED  MAX_CLOCK_SPEED
 #endif
 
 #ifndef HW_DMA_MAX_COUNT
   // usually this is the maximum amount that the DMA can transfer
   #define HW_DMA_MAX_COUNT  32768
+#endif
+
+#if !defined(MAX_IRQ_HANDLER_COUNT)
+  #if defined(NUMBER_OF_INT_VECTORS)
+    #define MAX_IRQ_HANDLER_COUNT  (NUMBER_OF_INT_VECTORS - 16)
+  #else
+    #define MAX_IRQ_HANDLER_COUNT  72
+  #endif
 #endif
 
 #ifndef IRQVECTAB_OFFS_24_VALUE
@@ -101,8 +84,10 @@
   #define IRQVECTAB_OFFS_28_VALUE  0
 #endif
 
-//------------------------------------------------------------------
+#ifndef MCU_CLOCK_SPEED
+  #define MCU_CLOCK_SPEED  MAX_CLOCK_SPEED
+#endif
 
-#include "mcu_generic.h"
+#include "armm_generic.h"
 
 #endif

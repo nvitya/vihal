@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+ * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -19,18 +19,35 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     cppinit.h
- *  brief:    Standard C++ Initialization definitions
+ *  file:     clockcnt_stm32.cpp
+ *  brief:    STM32 Clock Counter for M0 MCUs
  *  version:  1.00
- *  date:     2021-09-28
+ *  date:     2018-02-10
  *  authors:  nvitya
 */
 
-#ifndef CPPINIT_H_
-#define CPPINIT_H_
+#include "platform.h"
 
-void memory_region_setup(void);  // used by ARMM, for RV32I is done in assembly
+#if __CORTEX_M < 3
 
-void cppinit(void);
+// clock timer initialization for Cortex-M0 processors
 
-#endif /* CPPINIT_H_ */
+void clockcnt_init()
+{
+#if defined(TIM14)
+	RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+  #define CCTIMER  TIM14
+
+#else
+	RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
+  #define CCTIMER  TIM21
+#endif
+
+	CCTIMER->CR1 = 0;
+	CCTIMER->PSC = 0; // count every clock
+	CCTIMER->CR1 = 1;
+	CCTIMER->EGR = 1; // reinit, start the timer
+}
+
+#endif
+

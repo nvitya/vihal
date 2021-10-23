@@ -40,7 +40,7 @@
 
 #else
 
-  #error "Unknown MCU"
+  #error "Unknown GD32V MCU"
 
 #endif
 

@@ -18,62 +18,39 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     rv32i_generic.h
-// brief:    RV32I Generic definitions
-// created:  2021-10-02
-// authors:  nvitya
+/*
+ *  file:     hwuart_stm32.h
+ *  brief:    STM32 UART
+ *  version:  1.00
+ *  date:     2018-02-10
+ *  authors:  nvitya
+*/
 
-#ifndef __RV32I_GENERIC_H
-#define __RV32I_GENERIC_H
+#ifndef HWUART_STM32_H_
+#define HWUART_STM32_H_
 
-#define MCU_RV32I
+#define HWUART_PRE_ONLY
+#include "hwuart.h"
 
-// read mtime:
-#define CLOCKCNT  (riscv_cpu_csr_read(0xB00))
-
-inline void __attribute__((always_inline)) mcu_disable_interrupts()
+class THwUart_stm32 : public THwUart_pre
 {
-  //__asm volatile ("cpsid i");
-}
+public:
+	bool Init(int adevnum);  // 0x101 = LPUART1
 
-inline void __attribute__((always_inline)) mcu_enable_interrupts()
-{
-  //__asm volatile ("cpsie i");
-}
+	bool TrySendChar(char ach);
+	bool TryRecvChar(char * ach);
 
-//extern "C" void (* __isr_vectors [])();
+	bool SendFinished();
 
-inline void __attribute__((always_inline)) mcu_init_vector_table()
-{
-}
+	void DmaAssign(bool istx, THwDmaChannel * admach);
 
-inline void __attribute__((always_inline)) mcu_enable_fpu()
-{
-}
+	bool DmaStartSend(THwDmaTransfer * axfer);
+	bool DmaStartRecv(THwDmaTransfer * axfer);
 
-inline void __attribute__((always_inline)) mcu_enable_icache()
-{
-}
+public:
+	USART_TypeDef *      regs = nullptr;
+};
 
-inline void __attribute__((always_inline)) mcu_enable_dcache()
-{
-}
+#define HWUART_IMPL THwUart_stm32
 
-inline void __attribute__((always_inline)) mcu_disable_icache()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_disable_dcache()
-{
-}
-
-inline uint32_t __attribute__ ((always_inline)) riscv_cpu_csr_read(const int csr_id)
-{
-  register uint32_t csr_data;
-
-  asm volatile ("csrr %[result], %[input_i]" : [result] "=r" (csr_data) : [input_i] "i" (csr_id));
-
-  return csr_data;
-}
-
-#endif
+#endif // def HWUART_STM32_H_
