@@ -37,7 +37,9 @@ void hwclk_start_ext_osc()
   }
 }
 
+//---------------------------------------------------------------------------------------------------------------------------
 #if defined(MCUSF_F1) || defined(MCUSF_F3)
+//---------------------------------------------------------------------------------------------------------------------------
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
@@ -179,6 +181,126 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #if defined(RCC_APB2ENR_SYSCFGEN)
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 #endif
+
+  SystemCoreClock = target_speed_hz;
+  return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+#elif defined(MCUSF_F4)
+//---------------------------------------------------------------------------------------------------------------------------
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN;  // Enable Power Control clock
+
+  // set voltage scaling for maximal speed
+#if defined(PWR_CR_ODEN)
+
+  // enabling overdrive
+  PWR->CR |= PWR_CR_ODEN;
+  while (!(PWR->CSR & PWR_CSR_ODRDY)) { }  // wait for status flag
+
+  PWR->CR |= PWR_CR_ODSWEN;
+  while (!(PWR->CSR & PWR_CSR_ODSWRDY)) { }  // wait for status flag
+
+  PWR->CR |= PWR_CR_VOS; // set voltage scaling
+
+#else
+  PWR->CR |= PWR_CR_VOS; // set voltage scaling
+#endif
+
+  // set Flash latency
+  FLASH->ACR &= ~FLASH_ACR_LATENCY;
+  FLASH->ACR |= FLASH_ACR_LATENCY_5WS;
+
+  // enable caches and prefetch
+  FLASH->ACR |= (FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
+}
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  // select the HSI as clock source (required if this is called more times)
+
+  RCC->CFGR &= ~3;
+  RCC->CFGR |= RCC_CFGR_SW_HSI;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  {
+    // wait until it is set
+  }
+
+  RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
+
+  while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+  {
+    // Wait until the PLL is ready
+  }
+
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  unsigned basespeed;
+  unsigned pllsrc;
+  if (external_clock_hz)
+  {
+    hwclk_start_ext_osc();
+    basespeed = external_clock_hz;
+    pllsrc = 1;
+  }
+  else
+  {
+    pllsrc = 0;
+    basespeed = MCU_INTERNAL_RC_SPEED;
+  }
+
+  unsigned vcospeed = target_speed_hz * 2;
+  unsigned pllp = 2; // divide by 2 to get the final CPU speed
+
+  unsigned pll_input_freq = 2000000;
+  if ((external_clock_hz / 1000000) & 1)  // is the input MHz divisible by 2 ?
+  {
+    pll_input_freq = 1000000;
+  }
+  unsigned pllm = basespeed / pll_input_freq;   // generate 1-2 MHz VCO input
+  unsigned plln = vcospeed  / pll_input_freq;   // the vco multiplier
+  unsigned pllq = vcospeed / 48000000;          // usb speed
+
+  RCC->PLLCFGR =
+      (pllsrc << 22)  // select PLL source
+    | (pllm <<  0)
+    | (plln <<  6)
+    | (((pllp >> 1) - 1) << 16)
+    | (pllq << 24)
+  ;
+
+  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
+  while((RCC->CR & RCC_CR_PLLRDY) == 0)
+  {
+    // Wait till PLL is ready
+  }
+
+  // Set AHBCLK divider:
+  RCC->CFGR &= ~RCC_CFGR_HPRE;
+  RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
+
+  // Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
+  // clocks dividers
+
+  RCC->CFGR &= ~3;
+  RCC->CFGR |= RCC_CFGR_SW_PLL;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
+  {
+    // wait until it is set
+  }
+
+  // Set APB1CLK Divider:
+  RCC->CFGR &= ~RCC_CFGR_PPRE1;
+  RCC->CFGR |= RCC_CFGR_PPRE1_DIV4;
+
+  // Set APB2CLK Divider:
+  RCC->CFGR &= ~RCC_CFGR_PPRE2;
+  RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
 
   SystemCoreClock = target_speed_hz;
   return true;
