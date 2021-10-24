@@ -76,6 +76,8 @@
     #define MAX_CLOCK_SPEED  216000000
   #endif
 
+  #define MCU_INTERNAL_RC_SPEED     16000000
+
 #endif
 
 #ifndef MCU_INTERNAL_RC_SPEED

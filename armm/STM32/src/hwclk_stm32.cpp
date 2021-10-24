@@ -37,9 +37,23 @@ void hwclk_start_ext_osc()
   }
 }
 
-//---------------------------------------------------------------------------------------------------------------------------
-#if defined(MCUSF_F1) || defined(MCUSF_F3)
-//---------------------------------------------------------------------------------------------------------------------------
+#if !defined(RCC_CFGR_PLLMUL) && defined(RCC_CFGR_PLLMULL)
+  #define RCC_CFGR_PLLMUL RCC_CFGR_PLLMULL
+#endif
+
+#if defined(MCUSF_F0) || defined(MCUSF_L0)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  /* Enable Prefetch Buffer and set Flash Latency */
+#ifdef FLASH_ACR_PRFTBE
+  FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY;
+#else
+  FLASH->ACR = FLASH_ACR_LATENCY | FLASH_ACR_PRFTEN;
+#endif
+}
+
+#elif defined(MCUSF_F1) || defined(MCUSF_F3)
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
@@ -67,6 +81,172 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 
   //FLASH->ACR |= (1 << 3);
 }
+
+#elif defined(MCUSF_F4)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN;  // Enable Power Control clock
+
+  // set voltage scaling for maximal speed
+#if defined(PWR_CR_ODEN)
+
+  // enabling overdrive
+  PWR->CR |= PWR_CR_ODEN;
+  while (!(PWR->CSR & PWR_CSR_ODRDY)) { }  // wait for status flag
+
+  PWR->CR |= PWR_CR_ODSWEN;
+  while (!(PWR->CSR & PWR_CSR_ODSWRDY)) { }  // wait for status flag
+
+  PWR->CR |= PWR_CR_VOS; // set voltage scaling
+
+#else
+  PWR->CR |= PWR_CR_VOS; // set voltage scaling
+#endif
+
+  // set Flash latency
+  FLASH->ACR &= ~FLASH_ACR_LATENCY;
+  FLASH->ACR |= FLASH_ACR_LATENCY_5WS;
+
+  // enable caches and prefetch
+  FLASH->ACR |= (FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
+}
+
+#elif defined(MCUSF_G4)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  unsigned tmp;
+
+  RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;  // Enable Power Control clock
+
+  if (acpuspeed > 150000000)  // 1.28 V (Boost) required for the core
+  {
+    PWR->CR5 &= ~PWR_CR5_R1MODE;  // Enable boost
+  }
+  else // 1.2 V required for the Core (1.0 V not supported (up to 26 MHz))
+  {
+    PWR->CR5 |= PWR_CR5_R1MODE;   // Disable boost
+  }
+
+  // Set Voltage Scaling Range 1 (normal mode), (1.0 V mode (up to 26 MHz) not supported)
+
+  tmp = PWR->CR1;
+  tmp &= ~(PWR_CR1_VOS);
+  tmp |= PWR_CR1_VOS_0;
+  PWR->CR1 = tmp;
+  while (PWR->SR2 & PWR_SR2_VOSF)
+  {
+    // Wait until VOSF is cleared
+  }
+
+  // set Flash latency
+
+  unsigned ws;
+  if      (acpuspeed <=  60000000)  ws = FLASH_ACR_LATENCY_2WS;  // this is the safest minimum that works always, not the fastest one
+  else if (acpuspeed <=  80000000)  ws = FLASH_ACR_LATENCY_3WS;
+  else if (acpuspeed <= 100000000)  ws = FLASH_ACR_LATENCY_4WS;
+  else if (acpuspeed <= 120000000)  ws = FLASH_ACR_LATENCY_5WS;
+  else if (acpuspeed <= 140000000)  ws = FLASH_ACR_LATENCY_6WS;
+  else if (acpuspeed <= 160000000)  ws = FLASH_ACR_LATENCY_7WS;
+  else
+  {
+    ws = FLASH_ACR_LATENCY_8WS;
+  }
+
+  FLASH->ACR &= ~FLASH_ACR_LATENCY;
+  FLASH->ACR |= ws;
+
+  // enable caches and prefetch
+  FLASH->ACR |= (FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
+}
+
+#elif defined(MCUSF_F7)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN;  // Enable Power Control clock
+
+  // The voltage scaling allows optimizing the power consumption when the
+  // device is clocked below the maximum system frequency, to update the
+  // voltage scaling value regarding system frequency refer to product
+  // datasheet.
+
+  // Enable the Over-drive to extend the clock frequency to 216 MHz
+  PWR->CR1 |= PWR_CR1_ODEN;
+  while((PWR->CSR1 & PWR_CSR1_ODRDY) == 0) { }
+
+  // Enable the Over-drive switch
+  PWR->CR1 |= (uint32_t)PWR_CR1_ODSWEN;
+  while((PWR->CSR1 & PWR_CSR1_ODRDY) == 0) { }
+
+  PWR->CR1 |= PWR_CR1_VOS;  // voltage scaling for maximum speed (Scale 1)
+
+  // set Flash latency
+  FLASH->ACR &= ~FLASH_ACR_LATENCY;
+  FLASH->ACR |= FLASH_ACR_LATENCY_6WS;
+
+  FLASH->ACR |= FLASH_ACR_ARTEN | FLASH_ACR_PRFTEN;  // turn on the ART accelerator
+}
+
+#elif defined(MCUSF_H7)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+#if defined(SYSCFG_PWRCR_ODEN) /* STM32H74xxx and STM32H75xxx lines */
+  uint32_t tmp;
+
+  // set LDO
+  tmp = PWR->CR3;
+  tmp &= ~(PWR_CR3_SCUEN | PWR_CR3_LDOEN | PWR_CR3_BYPASS);
+  tmp |= PWR_CR3_LDOEN;
+  PWR->CR3 = tmp;
+
+  while ((PWR->CSR1 & PWR_CSR1_ACTVOSRDY) != PWR_CSR1_ACTVOSRDY)
+  {
+    // wait until ready....
+  }
+
+  tmp = PWR->D3CR;
+  tmp &= PWR_D3CR_VOS_Msk;
+  tmp |= (3 << PWR_D3CR_VOS_Pos); // VOS0 (=Scale 3) required for maximal speed
+  PWR->D3CR = tmp;
+
+  if (PWR->D3CR) { } // some delay
+  if (PWR->D3CR) { } // some delay
+
+  // Enable the PWR overdrive for the maximal speed
+  SYSCFG->PWRCR |= SYSCFG_PWRCR_ODEN;
+  if (SYSCFG->PWRCR) { } // some delay
+  if (SYSCFG->PWRCR) { } // some delay
+  if (SYSCFG->PWRCR) { } // some delay
+
+  while (0 == (PWR->D3CR & PWR_D3CR_VOSRDY))
+  {
+    // wait until ready
+  }
+
+#else
+  #error "implement H7_v2"
+#endif
+
+  // set Flash latency
+  tmp = FLASH->ACR;
+  tmp &= ~(FLASH_ACR_LATENCY | FLASH_ACR_WRHIGHFREQ);
+  tmp |= FLASH_ACR_LATENCY_4WS;
+  tmp |= FLASH_ACR_WRHIGHFREQ_1;
+  FLASH->ACR = tmp;
+
+  //FLASH->ACR |= FLASH_ACR_ARTEN | FLASH_ACR_PRFTEN;  // turn on the ART accelerator
+}
+
+#else
+  #error "STM32 hi-speed setup missing for this subfamily"
+#endif
+
+//---------------------------------------------------------------------------------------------------------------------------
+#if defined(MCUSF_F1) || defined(MCUSF_F3)
+//---------------------------------------------------------------------------------------------------------------------------
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
@@ -116,7 +296,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // setup PLL
 
-  cfgr &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE |  RCC_CFGR_PLLMULL);
+  cfgr &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE |  RCC_CFGR_PLLMUL);
 
 #if defined(MCUSF_F1)
 
@@ -187,50 +367,25 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 }
 
 //---------------------------------------------------------------------------------------------------------------------------
-#elif defined(MCUSF_F4)
+#elif defined(MCUSF_F4) || defined(MCUSF_F7)
 //---------------------------------------------------------------------------------------------------------------------------
-
-void hwclk_prepare_hispeed(unsigned acpuspeed)
-{
-  RCC->APB1ENR |= RCC_APB1ENR_PWREN;  // Enable Power Control clock
-
-  // set voltage scaling for maximal speed
-#if defined(PWR_CR_ODEN)
-
-  // enabling overdrive
-  PWR->CR |= PWR_CR_ODEN;
-  while (!(PWR->CSR & PWR_CSR_ODRDY)) { }  // wait for status flag
-
-  PWR->CR |= PWR_CR_ODSWEN;
-  while (!(PWR->CSR & PWR_CSR_ODSWRDY)) { }  // wait for status flag
-
-  PWR->CR |= PWR_CR_VOS; // set voltage scaling
-
-#else
-  PWR->CR |= PWR_CR_VOS; // set voltage scaling
-#endif
-
-  // set Flash latency
-  FLASH->ACR &= ~FLASH_ACR_LATENCY;
-  FLASH->ACR |= FLASH_ACR_LATENCY_5WS;
-
-  // enable caches and prefetch
-  FLASH->ACR |= (FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
-}
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   // select the HSI as clock source (required if this is called more times)
 
-  RCC->CFGR &= ~3;
-  RCC->CFGR |= RCC_CFGR_SW_HSI;
+  uint32_t tmp;
+
+  tmp = RCC->CFGR;
+  tmp &= ~3;
+  tmp |= RCC_CFGR_SW_HSI;
+  RCC->CFGR = tmp;
   while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
   {
     // wait until it is set
   }
 
   RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
-
   while ((RCC->CR & RCC_CR_PLLRDY) != 0)
   {
     // Wait until the PLL is ready
@@ -280,27 +435,25 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // Wait till PLL is ready
   }
 
-  // Set AHBCLK divider:
-  RCC->CFGR &= ~RCC_CFGR_HPRE;
-  RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
+  // select bus dividers AHB=1, ABP1=4, APB2=2
+  tmp = RCC->CFGR;
+  tmp &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
+  tmp |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2);
+  RCC->CFGR = tmp;
 
-  // Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
-  // clocks dividers
+  // Select PLL as system clock source
 
-  RCC->CFGR &= ~3;
-  RCC->CFGR |= RCC_CFGR_SW_PLL;
+  tmp &= ~3;
+  tmp |= RCC_CFGR_SW_PLL;
+  RCC->CFGR = tmp;
   while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
   {
     // wait until it is set
   }
 
-  // Set APB1CLK Divider:
-  RCC->CFGR &= ~RCC_CFGR_PPRE1;
-  RCC->CFGR |= RCC_CFGR_PPRE1_DIV4;
-
-  // Set APB2CLK Divider:
-  RCC->CFGR &= ~RCC_CFGR_PPRE2;
-  RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
+#ifdef MCUSF_F7
+  RCC->DCKCFGR2 &= ~(RCC_DCKCFGR2_CK48MSEL); // select the 48 MHz from the PLL
+#endif
 
   SystemCoreClock = target_speed_hz;
   return true;
