@@ -29,6 +29,13 @@
 #include "platform.h"
 #include "clockcnt.h"
 
+#if defined(CLOCKCNT16)
+
+  uint32_t clockcnt32_high = 0;
+  uint16_t last_clockcnt16 = 0;
+
+#endif
+
 // clockcnt_init() is architecture / platform dependent
 
 void delay_clocks(unsigned aclocks)

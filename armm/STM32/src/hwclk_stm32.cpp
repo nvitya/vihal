@@ -245,7 +245,134 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 #endif
 
 //---------------------------------------------------------------------------------------------------------------------------
-#if defined(MCUSF_F1) || defined(MCUSF_F3)
+#if defined(MCUSF_F0) || defined(MCUSF_L0)
+//---------------------------------------------------------------------------------------------------------------------------
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  // select the HSI as clock source (required if this is called more times)
+
+  uint32_t cfgr;
+
+  cfgr = RCC->CFGR;
+  cfgr &= ~3;
+  cfgr |= RCC_CFGR_SW_HSI;
+  RCC->CFGR = cfgr;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  {
+    // wait until it is set
+  }
+
+  RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
+  while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+  {
+    // Wait until the PLL is ready
+  }
+
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  unsigned basespeed;
+  unsigned pllsrc;
+  if (external_clock_hz)
+  {
+    hwclk_start_ext_osc();
+    basespeed = external_clock_hz;
+  }
+  else
+  {
+    // the internal oscillator is usually 8 MHz, but it will be divided by 2 at the PLL input
+    basespeed = (MCU_INTERNAL_RC_SPEED >> 1);
+  }
+
+  unsigned freqmul = target_speed_hz / basespeed;
+  if ((freqmul < 2) or (freqmul > 16))
+  {
+    return false;
+  }
+
+  cfgr = RCC->CFGR;
+
+#if defined(MCUSF_L0)
+
+  // only a few combinations supported, but usually the max speed will be used.
+
+  unsigned plldiv = 1;  // = 2, using this fix value
+  unsigned pllmul = 0;
+  switch (freqmul)
+  {
+    case  2:  pllmul = 1; break;
+    case  3:  pllmul = 2; break;
+    case  4:  pllmul = 3; break;
+    case  6:  pllmul = 4; break;
+    case  8:  pllmul = 5; break;
+    case 12:  pllmul = 6; break;
+    case 16:  pllmul = 7; break;
+    case 24:  pllmul = 8; break;
+    default:  pllmul = 0; break;
+  }
+
+  // do not divide the peripheral clocks:
+  cfgr &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
+
+  /* PLL configuration = HSE * 6 = 48 MHz */
+  cfgr &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLDIV | RCC_CFGR_PLLMUL));
+  cfgr |= (uint32_t)((pllmul << 18) | (plldiv << 22));
+  if (external_clock_hz)
+  {
+    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSE);
+  }
+
+#else
+
+  unsigned pllmul = ((freqmul - 2) & 0xF);  // STM32F0 multiplyer code
+
+  // setup bus dividers AHB=1, PERIPH=1
+  cfgr &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE);
+  cfgr |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE_DIV1);
+
+  cfgr &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMUL);
+  cfgr |= (pllmul << 18);
+
+  if (external_clock_hz)
+  {
+    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSE_PREDIV | RCC_CFGR_PLLXTPRE_HSE_PREDIV_DIV1);
+  }
+  else
+  {
+#ifdef RCC_CFGR_PLLSRC_HSI_DIV2
+    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSI_DIV2);
+#else
+    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSI_PREDIV);
+#endif
+  }
+
+#endif
+
+  RCC->CFGR = cfgr;
+
+  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
+  while((RCC->CR & RCC_CR_PLLRDY) == 0)
+  {
+    // Wait till PLL is ready
+  }
+
+  // Select PLL as system clock source
+  cfgr &= ~3;
+  cfgr |= RCC_CFGR_SW_PLL;
+  RCC->CFGR = cfgr;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
+  {
+    // wait until it is set
+  }
+
+  SystemCoreClock = target_speed_hz;
+  return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+#elif defined(MCUSF_F1) || defined(MCUSF_F3)
 //---------------------------------------------------------------------------------------------------------------------------
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
@@ -361,6 +488,118 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #if defined(RCC_APB2ENR_SYSCFGEN)
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 #endif
+
+  SystemCoreClock = target_speed_hz;
+  return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+#elif defined(MCUSF_G4)
+//---------------------------------------------------------------------------------------------------------------------------
+
+static bool is_divisible(unsigned nom, unsigned div)
+{
+  unsigned res = nom / div;
+  return (res * div == nom);
+}
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  uint32_t tmp;
+
+  // set back to the internal oscillator
+  tmp = RCC->CFGR;
+  tmp &= ~3;
+  tmp |= RCC_CFGR_SW_HSI;
+  RCC->CFGR = tmp;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  {
+    // wait until it is set
+  }
+
+  RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
+  while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+  {
+    // Wait until the PLL is ready
+  }
+
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  unsigned basespeed;
+  unsigned pllsrc;
+  if (external_clock_hz)
+  {
+    hwclk_start_ext_osc();
+    basespeed = external_clock_hz;
+    pllsrc = 3;  // HSE
+  }
+  else
+  {
+    pllsrc = 2; // HSI (16 MHz)
+    basespeed = MCU_INTERNAL_RC_SPEED;
+  }
+
+  unsigned vcospeed = target_speed_hz * 2;
+  unsigned pllp = 2; // divide by 2 to get the final CPU speed
+
+  // try some round frequencies for VCO input:
+  unsigned vco_in_hz;
+  vco_in_hz = 4000000; // this is the default
+  if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+  {
+    vco_in_hz = 5000000; // for 25 MHz input cristals
+    if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+    {
+      vco_in_hz = 3000000;
+      if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+      {
+        vco_in_hz = 4000000;  // not synthetizable properly, stay with the default
+      }
+    }
+  }
+
+  unsigned pllm = basespeed / vco_in_hz;
+  unsigned plln = vcospeed / vco_in_hz;
+
+  if (pllm > 1)  --pllm;
+
+  RCC->PLLCFGR = 0
+    | (pllsrc <<  0)  // PLLSRC(2)
+    | (pllm   <<  4)  // PLLM(4)
+    | (plln   <<  8)  // PLLN(7)
+    | (1      << 16)  // PLLPEN
+    | (0      << 17)  // PLLP: 0 = use PLLPDIV
+    | (1      << 20)  // PLLQEN
+    | (2      << 21)  // PLLQ(2): divide by 6, this gives only 48 MHz at 144 MHz CPU speed
+    | (1      << 24)  // PLLREN
+    | (0      << 25)  // PLLR(2): system clock = VCO speed / 2
+    | (2      << 27)  // PLLPDIV(5): divide by 2
+  ;
+
+  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
+  while((RCC->CR & RCC_CR_PLLRDY) == 0)
+  {
+    // Wait till PLL is ready
+  }
+
+  // on the G4 devices the APB1 and APB2 buses allowed to run with system clock speed
+  // select bus dividers AHB=1, ABP1=1, APB2=1
+  tmp = RCC->CFGR;
+  tmp &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
+  tmp |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1);
+  RCC->CFGR = tmp;
+
+  // Select PLL as system clock source
+
+  tmp &= ~3;
+  tmp |= RCC_CFGR_SW_PLL;
+  RCC->CFGR = tmp;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
+  {
+    // wait until it is set
+  }
 
   SystemCoreClock = target_speed_hz;
   return true;
