@@ -82,23 +82,18 @@
   #define MCU_INTERNAL_RC_SPEED    8000000
 #endif
 
-/*
-
-#define HW_GPIO_REGS  GPIO_TypeDef
-#define HW_UART_REGS  USART_TypeDef
-#define HW_SPI_REGS   SPI_TypeDef
-#ifdef QUADSPI
-  #define HW_QSPI_REGS  QUADSPI_TypeDef
-#endif
-
 #if defined(MCUSF_H7)
   #define HWDMA_MXB
 #elif defined(MCUSF_F1) || defined(MCUSF_F0) || defined(MCUSF_L0) || defined(MCUSF_F3) || defined(MCUSF_G4)
-  #define HW_DMA_REGS 	DMA_Channel_TypeDef
+  #define HW_DMA_REGS   DMA_Channel_TypeDef
 #else
   #define HW_DMA_REGS   DMA_Stream_TypeDef
 #endif
 
+/*
+#ifdef QUADSPI
+  #define HW_QSPI_REGS  QUADSPI_TypeDef
+#endif
 */
 
 #if __CORTEX_M < 3

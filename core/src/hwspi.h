@@ -137,11 +137,12 @@ class THwSpi_noimpl : public THwSpi_pre
 public: // mandatory
 	bool Init(int adevnum)        { return false; }
 
-	bool TrySendData(unsigned short adata)     { return false; }
-	bool TryRecvData(unsigned short * dstptr)  { return false; }
-	bool SendFinished()                        { return true; }
+	bool TrySendData(uint8_t adata)     { return false; }
+	bool TryRecvData(uint8_t * dstptr)  { return false; }
+	bool SendFinished()                 { return true; }
 
-	void Run() { } // runs the prepared transaction
+	//void Run() { } // runs the prepared transaction
+  void SetCs(unsigned avalue) { }
 
 	void DmaAssign(bool istx, THwDmaChannel * admach)  { }
 
@@ -163,8 +164,6 @@ public:
 	void            BeginTransaction(); // puts the chip select low
 	void            EndTransaction(); // puts the chip select high
 
-	//int             RunTransfer(TSpiTransfer * axfer);
-
 	inline void     SendData(unsigned short adata) { while (!TrySendData(adata)) {} }; // wait until it successfully started, but does not wait to finish !
 	void            WaitSendFinish();
 
@@ -176,6 +175,28 @@ public:
   }
 
   void            WaitFinish();
+
+#ifndef HWSPI_OWN_RUN
+
+public:
+  bool                dmaused = false;
+
+  uint32_t            datazero = 0; // for ignored TX
+  uint32_t            datavoid = 0; // for ignored RX
+
+  uint32_t            rx_fifo_wait = 0;
+  uint32_t            rx_remaining = 0;
+  uint32_t            tx_remaining = 0;
+
+  TSpiXferBlock *     curblock = nullptr;
+  TSpiXferBlock *     lastblock = nullptr;
+
+  THwDmaTransfer      rxfer;
+  THwDmaTransfer      txfer;
+
+  void Run(); // runs the prepared transaction
+
+#endif
 
 };
 

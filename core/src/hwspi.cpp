@@ -53,62 +53,6 @@ void THwSpi::WaitSendFinish()
 	}
 }
 
-#if 0
-int THwSpi::RunTransfer(TSpiTransfer * axfer)
-{
-	int result = 0;
-
-	TSpiTransfer * xfer = axfer;
-
-	while (xfer)
-	{
-		if (xfer->length > 0)
-		{
-			// sending and receiving
-			unsigned char * psrc = (unsigned char *)xfer->src;
-			unsigned char * pdst = (unsigned char *)xfer->dst;
-			unsigned txremaining = xfer->length;
-			unsigned rxremaining = xfer->length;
-			unsigned short rxdata;
-
-			while ((txremaining > 0) || (rxremaining > 0))
-			{
-				if (txremaining > 0)
-				{
-					if (psrc)
-					{
-						if (TrySendData(*psrc))
-						{
-							++psrc;
-							--txremaining;
-						}
-					}
-					else if (TrySendData(0))
-					{
-						--txremaining;
-					}
-				}
-
-				if ((rxremaining > 0) && (TryRecvData(&rxdata)))
-				{
-					if (pdst)
-					{
-						*pdst = rxdata;
-						++pdst;
-					}
-					--rxremaining;
-				}
-			}
-
-			result += xfer->length;
-		}
-		xfer = xfer->next;
-	}
-
-	return result;
-}
-#endif
-
 void THwSpi_pre::PrepareTransfer(uint32_t acmd, uint32_t aaddr, uint32_t aflags,
 		                             uint32_t alen, uint8_t * asrc, uint8_t * adst)
 {
@@ -176,10 +120,13 @@ void THwSpi_pre::PrepareTransfer(uint32_t acmd, uint32_t aaddr, uint32_t aflags,
 	}
 
 	// finally the data block
-	pblock->src = asrc;
-	pblock->dst = adst;
-	pblock->len = alen;
-	++blockcnt;
+	if (alen > 0)
+	{
+    pblock->src = asrc;
+    pblock->dst = adst;
+    pblock->len = alen;
+    ++blockcnt;
+	}
 }
 
 void THwSpi::WaitFinish()
@@ -189,3 +136,179 @@ void THwSpi::WaitFinish()
 		Run();
 	}
 }
+
+#ifndef HWSPI_OWN_RUN
+
+void THwSpi::Run()
+{
+  if (finished)
+  {
+    return;
+  }
+
+  if (0 == state)  // start phase
+  {
+    if (blockcnt < 1)  // wrong config ?
+    {
+      finished = true;
+      return;
+    }
+
+    dmaused = (rxdma && txdma);
+    if (dmaused)
+    {
+      rxdma->Disable();
+      txdma->Disable();
+    }
+
+    SetCs(0);
+
+    curblock = &xferblock[0];
+    lastblock = &xferblock[blockcnt - 1];
+    rx_fifo_wait = 0;
+
+    if (dmaused)
+    {
+      state = 1;
+    }
+    else
+    {
+      tx_remaining = curblock->len; // also for rx only mode cmds are still required
+      rx_remaining = curblock->len;
+
+      state = 10;
+    }
+  }
+
+  // With DMA
+
+  //TODO: handle DMA chunking (the DMA transfer counts are limited to 65536)
+
+  if (1 == state) // start dma transfers
+  {
+    txfer.srcaddr = curblock->src;
+    txfer.bytewidth = 1;
+    txfer.count = curblock->len;
+    txfer.flags = 0;
+    if (!txfer.srcaddr)
+    {
+      txfer.srcaddr = &datazero;
+      txfer.flags = DMATR_NO_SRC_INC;
+    }
+
+    rxfer.dstaddr = curblock->dst;
+    rxfer.bytewidth = 1;
+    rxfer.flags = 0;
+    rxfer.count = curblock->len;
+    if (!rxfer.dstaddr)
+    {
+      rxfer.dstaddr = &datavoid;
+      rxfer.flags = DMATR_NO_DST_INC;
+    }
+
+    DmaStartRecv(&rxfer);
+    DmaStartSend(&txfer);
+
+    state = 2;
+  }
+  else if (2 == state)
+  {
+    if (rxdma->Active() || txdma->Active())  // wait until the DMAs finish
+    {
+      // todo: timeout handling
+      return;
+    }
+
+    // go to the next block
+
+    if (curblock == lastblock)
+    {
+      state = 3; // all finished
+    }
+    else
+    {
+      ++curblock;
+      state = 1;
+    }
+  }
+  else if (3 == state)
+  {
+    SetCs(1);
+    finished = true;
+    state = 100;
+  }
+
+  // without DMA
+
+  else if (10 == state)  // start / run block
+  {
+    uint8_t txdata;
+    uint8_t rxdata;
+
+    while (tx_remaining && (rx_fifo_wait < fifo_size))
+    {
+      if (curblock->src)
+      {
+        txdata = *curblock->src;
+      }
+      else
+      {
+        txdata = 0;
+      }
+      if (TrySendData(txdata))
+      {
+        if (curblock->src)
+        {
+          ++(curblock->src);
+        }
+        ++rx_fifo_wait;
+        --tx_remaining;
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    while (rx_remaining && rx_fifo_wait)
+    {
+      if (TryRecvData(&rxdata))
+      {
+        if (curblock->dst)
+        {
+          *curblock->dst = rxdata;
+          ++(curblock->dst);
+        }
+
+        --rx_remaining;
+        --rx_fifo_wait;
+      }
+      else
+      {
+        break;
+      }
+    }
+
+    if (rx_remaining)
+    {
+      return;
+    }
+
+    // go to the next block
+
+    if (curblock == lastblock)
+    {
+      SetCs(1);
+      finished = true;
+      state = 100;
+    }
+    else
+    {
+      ++curblock;
+      tx_remaining = curblock->len; // also for rx only mode cmds are still required
+      rx_remaining = curblock->len;
+    }
+  }
+}
+
+#endif

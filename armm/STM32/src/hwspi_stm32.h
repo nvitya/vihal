@@ -18,35 +18,46 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     clockcnt_stm32.cpp
- *  brief:    STM32 Clock Counter for M0 MCUs
+ *  file:     hwspi_stm32.h
+ *  brief:    STM32 SPI (master only)
  *  version:  1.00
  *  date:     2018-02-10
  *  authors:  nvitya
 */
 
-#include "platform.h"
+#ifndef HWSPI_STM32_H_
+#define HWSPI_STM32_H_
 
-#if __CORTEX_M < 3
+#define HWSPI_PRE_ONLY
+#include "hwspi.h"
 
-// clock timer initialization for Cortex-M0 processors
-
-void clockcnt_init()
+class THwSpi_stm32 : public THwSpi_pre
 {
-#if defined(TIM14)
-	RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
-  #define CCTIMER  TIM14
+public:
+	bool Init(int adevnum);
 
-#else
-	RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
-  #define CCTIMER  TIM21
-#endif
+	bool TrySendData(uint8_t adata);
+	bool TryRecvData(uint8_t * dstptr);
+	bool SendFinished();
 
-	CCTIMER->CR1 = 0;
-	CCTIMER->PSC = 0; // count every clock
-	CCTIMER->CR1 = 1;
-	CCTIMER->EGR = 1; // reinit, start the timer
-}
+	void Run();
 
-#endif
+	void DmaAssign(bool istx, THwDmaChannel * admach);
 
+	bool DmaStartSend(THwDmaTransfer * axfer);
+	bool DmaStartRecv(THwDmaTransfer * axfer);
+	bool DmaSendCompleted();
+	bool DmaRecvCompleted();
+
+public:
+	unsigned  					basespeed;
+	SPI_TypeDef * 			regs;
+
+
+	void SetCs(unsigned value);
+};
+
+
+#define HWSPI_IMPL THwSpi_stm32
+
+#endif // def HWSPI_STM32_H_

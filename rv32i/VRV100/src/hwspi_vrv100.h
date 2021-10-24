@@ -26,6 +26,8 @@
 #ifndef HWSPI_VRV100_H_
 #define HWSPI_VRV100_H_
 
+#define HWSPI_OWN_RUN
+
 #define HWSPI_PRE_ONLY
 #include "hwspi.h"
 
