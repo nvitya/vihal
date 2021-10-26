@@ -76,6 +76,10 @@ typedef struct
   #define MCU_FIXED_SPEED  100000000  // 100 MHz by default
 #endif
 
+#if !defined(SPI_SELF_FLASHING)
+  #define SPI_SELF_FLASHING 1
+#endif
+
 #define BOOTBLOCK_SIGNATURE     0xC0DEBA5E
 #define BOOTROM_INFO_SIGNATURE  0xBB5AC100
 #define BOOTROM_INFO_ADDRESS    0x80000010

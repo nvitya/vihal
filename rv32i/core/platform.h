@@ -45,6 +45,10 @@
   #define MCU_CLOCK_SPEED  MAX_CLOCK_SPEED
 #endif
 
+#if !defined(SPI_SELF_FLASHING)
+  #define SPI_SELF_FLASHING 0
+#endif
+
 #include "rv32i_generic.h"
 
 #endif
