@@ -37,6 +37,12 @@ void hwclk_start_ext_osc()
   }
 }
 
+static bool is_divisible(unsigned nom, unsigned div)
+{
+  unsigned res = nom / div;
+  return (res * div == nom);
+}
+
 #if !defined(RCC_CFGR_PLLMUL) && defined(RCC_CFGR_PLLMULL)
   #define RCC_CFGR_PLLMUL RCC_CFGR_PLLMULL
 #endif
@@ -497,12 +503,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #elif defined(MCUSF_G4)
 //---------------------------------------------------------------------------------------------------------------------------
 
-static bool is_divisible(unsigned nom, unsigned div)
-{
-  unsigned res = nom / div;
-  return (res * div == nom);
-}
-
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   uint32_t tmp;
@@ -693,6 +693,158 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #ifdef MCUSF_F7
   RCC->DCKCFGR2 &= ~(RCC_DCKCFGR2_CK48MSEL); // select the 48 MHz from the PLL
 #endif
+
+  SystemCoreClock = target_speed_hz;
+  return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+#elif defined(MCUSF_H7)
+//---------------------------------------------------------------------------------------------------------------------------
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  // select the HSI as clock source (required if this is called more times)
+
+  uint32_t tmp;
+
+  tmp = RCC->CFGR;
+  tmp &= ~3;
+  tmp |= RCC_CFGR_SW_HSI;
+  RCC->CFGR = tmp;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  {
+    // wait until it is set
+  }
+
+  RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
+  while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+  {
+    // Wait until the PLL is ready
+  }
+
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  unsigned basespeed;
+  unsigned pllsrc;
+  if (external_clock_hz)
+  {
+    hwclk_start_ext_osc();
+    basespeed = external_clock_hz;
+    pllsrc = 2;
+  }
+  else
+  {
+    pllsrc = 0;
+    basespeed = MCU_INTERNAL_RC_SPEED;
+  }
+
+  unsigned pllp = 2; // divide by 2 to get the final CPU speed
+  unsigned vcospeed = target_speed_hz * 2;
+
+  // try some round frequencies for VCO input:
+  unsigned pllrange;
+  unsigned vco_in_hz;
+  vco_in_hz = 8000000; // this provides lower jitter
+  pllrange = 3;
+  if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+  {
+    vco_in_hz = 5000000; // for 25 MHz input cristals
+    pllrange = 2;
+    if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+    {
+      vco_in_hz = 4000000; // try this one then
+      pllrange = 2;
+      if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+      {
+        vco_in_hz = 3000000;
+        pllrange = 1;
+        if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+        {
+          vco_in_hz = 2000000;  // hoping that works, 2MHz is the minimal PLL input freq.
+          pllrange = 0;
+        }
+      }
+    }
+  }
+
+  unsigned pllm = basespeed / vco_in_hz;   // vco input pre-divider
+  unsigned plln = vcospeed  / vco_in_hz;   // the vco multiplier
+  unsigned pllq = vcospeed / 48000000;     // usb speed
+  unsigned pllr = 2;
+
+  tmp = RCC->PLLCKSELR;
+  tmp &= ~(RCC_PLLCKSELR_PLLSRC | RCC_PLLCKSELR_DIVM1);
+  tmp |= (0
+         | (pllsrc << RCC_PLLCKSELR_PLLSRC_Pos)
+         | (pllm   << RCC_PLLCKSELR_DIVM1_Pos)
+  );
+  RCC->PLLCKSELR = tmp;
+
+  // configure PLL1 dividers:
+  RCC->PLL1DIVR = (0
+    | (plln <<  0)
+    | (pllp <<  8)
+    | (pllq << 16)
+    | (pllr << 24)
+  );
+
+  tmp = RCC->PLLCFGR;
+  tmp &= ~((0xF << 0) | (7 << 16)); // clear PLL1 configuration
+  tmp |= (0
+    | (7 << 16) // enable all outputs (P, Q, R)
+    | (pllrange <<  2) // PLLRGE(2): 0 = 1-2 MHz PLL1 input clock range
+    | (0 <<  1) // PLL1VCOSEL: 0 = wide range (192-836 MHz), 1 = medium range (150 - 420 MHz)
+    | (0 <<  0) // PLL1FRACEN: 0 = disable fractional divider
+  );
+  RCC->PLLCFGR = tmp;
+
+  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
+  while((RCC->CR & RCC_CR_PLLRDY) == 0)
+  {
+    // Wait till PLL is ready
+  }
+
+  // set CPU divider to 1, and all bus dividers to 2:
+
+  unsigned ahbdiv = 8;
+  unsigned apbdiv = 0;  // 0 = same as the AHB bus speed
+  if (target_speed_hz <= MAX_CLOCK_SPEED / 2)
+  {
+    // no bus speed division required.
+    ahbdiv = 0;
+  }
+
+  RCC->D1CFGR = (0
+    | (0       <<  8)  // D1CPRE(4): CPU clock division, 0 = not divided
+    | (apbdiv  <<  4)  // D1PPRE(3): APB3 division, 4 = divided by 2
+    | (ahbdiv  <<  0)  // HPRE(4):   AHB division, 8 = divided by 2
+  );
+
+  RCC->D2CFGR = (0
+    | (apbdiv <<  8)  // D2PPRE2(3): APB2 division, 4 = divided by 2
+    | (apbdiv <<  4)  // D2PPRE1(3): APB1 division, 4 = divided by 2
+  );
+
+  RCC->D3CFGR = (0
+    | (apbdiv <<  4)  // D2PPRE1(3): APB4 division, 4 = divided by 2
+  );
+
+  // Select PLL as system clock source
+
+  tmp = RCC->CFGR;
+  tmp &= ~RCC_CFGR_SW;
+  tmp |= RCC_CFGR_SW_PLL1;
+  RCC->CFGR = tmp;
+  while (((RCC->CFGR & RCC_CFGR_SWS_Msk) >> RCC_CFGR_SWS_Pos) != RCC_CFGR_SW_PLL1)
+  {
+    // wait until it is set
+  }
+
+  // USB !
+  //RCC->DCKCFGR2 &= ~(RCC_DCKCFGR2_CK48MSEL); // select the 48 MHz from the PLL
 
   SystemCoreClock = target_speed_hz;
   return true;

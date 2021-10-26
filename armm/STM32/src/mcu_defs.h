@@ -78,6 +78,14 @@
 
   #define MCU_INTERNAL_RC_SPEED     16000000
 
+#elif defined(MCUSF_H7)
+
+  #if !defined(MAX_CLOCK_SPEED)
+    #define MAX_CLOCK_SPEED  400000000
+  #endif
+
+  #define MCU_INTERNAL_RC_SPEED     64000000
+
 #endif
 
 #ifndef MCU_INTERNAL_RC_SPEED

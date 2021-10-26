@@ -10,7 +10,8 @@ MEMORY
 }
 
 REGION_ALIAS("TEXT", FLASH);
-REGION_ALIAS("RAM", RAM2);
+REGION_ALIAS("RAM", DTCRAM);  /* much faster than the AXI ram */
+/* REGION_ALIAS("RAM", RAM2); */ /* if you need bigger memory */
 
 INCLUDE armm_default_flash.ld
 
