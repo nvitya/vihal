@@ -30,6 +30,8 @@
 
 #include "generic_defs.h"
 
+#define DONT_USE_CMSIS_INIT
+
 // board.h must be provided by the application. It should minimum define the cpu.
 #include "board.h"
 
@@ -42,8 +44,6 @@
   #include "mcu_builtin.h"
 
 #endif
-
-#define DONT_USE_CMSIS_INIT
 
 // some CMSIS definition define it
 #ifdef LITTLE_ENDIAN
