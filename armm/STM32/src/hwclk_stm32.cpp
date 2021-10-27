@@ -230,7 +230,7 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
   }
 
   tmp = PWR->D3CR;
-  tmp &= PWR_D3CR_VOS_Msk;
+  tmp &= ~PWR_D3CR_VOS_Msk;
   tmp |= (LL_PWR_REGU_VOLTAGE_SCALE0 << PWR_D3CR_VOS_Pos); // VOS0 (=Scale 3) required for maximal speed
   PWR->D3CR = tmp;
 
@@ -721,66 +721,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #elif defined(MCUSF_H7)
 //---------------------------------------------------------------------------------------------------------------------------
 
-void h7_SystemInit(void)
-{
-  /* Reset the RCC clock configuration to the default reset state ------------*/
-  /* Set HSION bit */
-  RCC->CR |= RCC_CR_HSION;
-
-  /* Reset CFGR register */
-  RCC->CFGR = 0x00000000;
-
-  /* Reset HSEON, CSSON , CSION,RC48ON, CSIKERON PLL1ON, PLL2ON and PLL3ON bits */
-  RCC->CR &= 0xEAF6ED7FU;
-
-  /* Reset D1CFGR register */
-  RCC->D1CFGR = 0x00000000;
-
-  /* Reset D2CFGR register */
-  RCC->D2CFGR = 0x00000000;
-
-  /* Reset D3CFGR register */
-  RCC->D3CFGR = 0x00000000;
-
-  /* Reset PLLCKSELR register */
-  RCC->PLLCKSELR = 0x00000000;
-
-  /* Reset PLLCFGR register */
-  RCC->PLLCFGR = 0x00000000;
-  /* Reset PLL1DIVR register */
-  RCC->PLL1DIVR = 0x00000000;
-  /* Reset PLL1FRACR register */
-  RCC->PLL1FRACR = 0x00000000;
-
-  /* Reset PLL2DIVR register */
-  RCC->PLL2DIVR = 0x00000000;
-
-  /* Reset PLL2FRACR register */
-
-  RCC->PLL2FRACR = 0x00000000;
-  /* Reset PLL3DIVR register */
-  RCC->PLL3DIVR = 0x00000000;
-
-  /* Reset PLL3FRACR register */
-  RCC->PLL3FRACR = 0x00000000;
-
-  /* Reset HSEBYP bit */
-  RCC->CR &= 0xFFFBFFFFU;
-
-  /* Disable all interrupts */
-  RCC->CIER = 0x00000000;
-
-}
-
-
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
-  // select the HSI as clock source (required if this is called more times)
-
-  h7_SystemInit();
-
   uint32_t tmp;
 
+  // select the HSI as clock source (required if this is called more times)
   tmp = RCC->CFGR;
   tmp &= ~3;
   tmp |= RCC_CFGR_SW_HSI;
@@ -814,7 +759,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
 
-  unsigned vcospeed = target_speed_hz;  // no * 2 here like other models !
+  unsigned vcospeed = target_speed_hz;  // no * 2 here like by the other models !
 
   // try some round frequencies for VCO input:
   unsigned pllrange;
@@ -841,9 +786,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
       }
     }
   }
-
-  //vco_in_hz = 2000000;  // hoping that works, 2MHz is the minimal PLL input freq.
-  //pllrange = 1;
 
   unsigned pllm = basespeed / vco_in_hz;   // vco input pre-divider
 
