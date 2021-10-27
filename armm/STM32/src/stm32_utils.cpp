@@ -47,6 +47,13 @@ uint32_t stm32_bus_speed(uint8_t abusid)
 		clockshr = 0;
 	}
 
+  #if defined(MCUSF_H7_V2)
+	if (abusid > STM32_BUSID_AHB)
+	{
+	  ++clockshr;
+	}
+  #endif
+
 	return (SystemCoreClock >> clockshr);
 }
 

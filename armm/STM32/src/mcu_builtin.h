@@ -151,6 +151,17 @@
 
   #include "stm32h750xx.h"
 
+// STM32H7 v2: Cortex-M7 (520/550 MHz)
+
+#elif defined(MCU_STM32H723ZG)
+
+  #define MCUF_STM32
+  #define MCUSF_H7
+  #define MCUSF_H7_V2
+  #define MAX_CLOCK_SPEED  520000000  // actually 550 MHz with FREQ_BOOST
+
+  #include "stm32h723xx.h"
+
 #else
 
   #error "Unknown STM32 MCU"

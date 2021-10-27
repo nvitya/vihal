@@ -41,6 +41,8 @@
 #define STM32_BUSID_AHB     0
 #define STM32_BUSID_APB1    1
 #define STM32_BUSID_APB2    2
+#define STM32_BUSID_APB3    3
+#define STM32_BUSID_APB4    4
 
 uint32_t stm32_bus_speed(uint8_t abusid);
 

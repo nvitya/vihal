@@ -27,9 +27,16 @@
 #include "platform.h"
 #include "hwclk.h"
 
-void hwclk_start_ext_osc()
+void hwclk_start_ext_osc(unsigned aextspeed)
 {
-  RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+  uint32_t crreg = RCC->CR;
+  if (aextspeed & HWCLK_EXTCLK_BYPASS)
+  {
+    crreg |= RCC_CR_HSEBYP;
+    RCC->CR = crreg;
+  }
+  crreg |= RCC_CR_HSEON;
+  RCC->CR = crreg;
 
   while (0 == (RCC->CR & RCC_CR_HSERDY))
   {
@@ -197,9 +204,18 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 
 #elif defined(MCUSF_H7)
 
+// && defined(SYSCFG_PWRCR_ODEN) /* STM32H74xxx and STM32H75xxx lines */
+
+#ifndef MCUSF_H7_V2
+  // STM32H74xxx and STM32H75xxx lines
+  #define LL_PWR_REGU_VOLTAGE_SCALE0      (PWR_D3CR_VOS_0 | PWR_D3CR_VOS_1) /*!< Select voltage scale 0 */
+#else
+  // STM32H73xx and newer
+  #define LL_PWR_REGU_VOLTAGE_SCALE0      0x00000000U                       /*!< Select voltage scale 0 */
+#endif
+
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
-#if defined(SYSCFG_PWRCR_ODEN) /* STM32H74xxx and STM32H75xxx lines */
   uint32_t tmp;
 
   // set LDO
@@ -215,35 +231,34 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 
   tmp = PWR->D3CR;
   tmp &= PWR_D3CR_VOS_Msk;
-  tmp |= (3 << PWR_D3CR_VOS_Pos); // VOS0 (=Scale 3) required for maximal speed
+  tmp |= (LL_PWR_REGU_VOLTAGE_SCALE0 << PWR_D3CR_VOS_Pos); // VOS0 (=Scale 3) required for maximal speed
   PWR->D3CR = tmp;
 
   if (PWR->D3CR) { } // some delay
   if (PWR->D3CR) { } // some delay
 
+#ifndef MCUSF_H7_V2
   // Enable the PWR overdrive for the maximal speed
   SYSCFG->PWRCR |= SYSCFG_PWRCR_ODEN;
   if (SYSCFG->PWRCR) { } // some delay
   if (SYSCFG->PWRCR) { } // some delay
   if (SYSCFG->PWRCR) { } // some delay
+#endif
 
   while (0 == (PWR->D3CR & PWR_D3CR_VOSRDY))
   {
     // wait until ready
   }
 
-#else
-  #error "implement H7_v2"
-#endif
-
   // set Flash latency
   tmp = FLASH->ACR;
   tmp &= ~(FLASH_ACR_LATENCY | FLASH_ACR_WRHIGHFREQ);
-  tmp |= FLASH_ACR_LATENCY_4WS;
-  tmp |= FLASH_ACR_WRHIGHFREQ_1;
+#ifndef MCUSF_H7_V2
+  tmp |= (FLASH_ACR_LATENCY_4WS | FLASH_ACR_WRHIGHFREQ_1);
+#else
+  tmp |= (FLASH_ACR_LATENCY_3WS | FLASH_ACR_WRHIGHFREQ_1 | FLASH_ACR_WRHIGHFREQ_0);
+#endif
   FLASH->ACR = tmp;
-
-  //FLASH->ACR |= FLASH_ACR_ARTEN | FLASH_ACR_PRFTEN;  // turn on the ART accelerator
 }
 
 #else
@@ -283,8 +298,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned pllsrc;
   if (external_clock_hz)
   {
-    hwclk_start_ext_osc();
-    basespeed = external_clock_hz;
+    hwclk_start_ext_osc(external_clock_hz);
+    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
   }
   else
   {
@@ -405,12 +420,16 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   hwclk_prepare_hispeed(target_speed_hz);
 
+  unsigned basespeed;
   if (external_clock_hz)
   {
-    hwclk_start_ext_osc();
+    hwclk_start_ext_osc(external_clock_hz);
+    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
   }
-
-  unsigned basespeed = (external_clock_hz ? external_clock_hz : MCU_INTERNAL_RC_SPEED);
+  else
+  {
+    basespeed = MCU_INTERNAL_RC_SPEED;
+  }
 
   unsigned freqmul = target_speed_hz / basespeed;
   if ((freqmul < 2) or (freqmul > 16))
@@ -531,8 +550,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned pllsrc;
   if (external_clock_hz)
   {
-    hwclk_start_ext_osc();
-    basespeed = external_clock_hz;
+    hwclk_start_ext_osc(external_clock_hz);
+    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
     pllsrc = 3;  // HSE
   }
   else
@@ -638,8 +657,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned pllsrc;
   if (external_clock_hz)
   {
-    hwclk_start_ext_osc();
-    basespeed = external_clock_hz;
+    hwclk_start_ext_osc(external_clock_hz);
+    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
     pllsrc = 1;
   }
   else
@@ -702,9 +721,63 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #elif defined(MCUSF_H7)
 //---------------------------------------------------------------------------------------------------------------------------
 
+void h7_SystemInit(void)
+{
+  /* Reset the RCC clock configuration to the default reset state ------------*/
+  /* Set HSION bit */
+  RCC->CR |= RCC_CR_HSION;
+
+  /* Reset CFGR register */
+  RCC->CFGR = 0x00000000;
+
+  /* Reset HSEON, CSSON , CSION,RC48ON, CSIKERON PLL1ON, PLL2ON and PLL3ON bits */
+  RCC->CR &= 0xEAF6ED7FU;
+
+  /* Reset D1CFGR register */
+  RCC->D1CFGR = 0x00000000;
+
+  /* Reset D2CFGR register */
+  RCC->D2CFGR = 0x00000000;
+
+  /* Reset D3CFGR register */
+  RCC->D3CFGR = 0x00000000;
+
+  /* Reset PLLCKSELR register */
+  RCC->PLLCKSELR = 0x00000000;
+
+  /* Reset PLLCFGR register */
+  RCC->PLLCFGR = 0x00000000;
+  /* Reset PLL1DIVR register */
+  RCC->PLL1DIVR = 0x00000000;
+  /* Reset PLL1FRACR register */
+  RCC->PLL1FRACR = 0x00000000;
+
+  /* Reset PLL2DIVR register */
+  RCC->PLL2DIVR = 0x00000000;
+
+  /* Reset PLL2FRACR register */
+
+  RCC->PLL2FRACR = 0x00000000;
+  /* Reset PLL3DIVR register */
+  RCC->PLL3DIVR = 0x00000000;
+
+  /* Reset PLL3FRACR register */
+  RCC->PLL3FRACR = 0x00000000;
+
+  /* Reset HSEBYP bit */
+  RCC->CR &= 0xFFFBFFFFU;
+
+  /* Disable all interrupts */
+  RCC->CIER = 0x00000000;
+
+}
+
+
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   // select the HSI as clock source (required if this is called more times)
+
+  h7_SystemInit();
 
   uint32_t tmp;
 
@@ -731,18 +804,17 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned pllsrc;
   if (external_clock_hz)
   {
-    hwclk_start_ext_osc();
-    basespeed = external_clock_hz;
-    pllsrc = 2;
+    hwclk_start_ext_osc(external_clock_hz);
+    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
+    pllsrc = RCC_PLLCKSELR_PLLSRC_HSE;
   }
   else
   {
-    pllsrc = 0;
+    pllsrc = RCC_PLLCKSELR_PLLSRC_HSI;
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
 
-  unsigned pllp = 2; // divide by 2 to get the final CPU speed
-  unsigned vcospeed = target_speed_hz * 2;
+  unsigned vcospeed = target_speed_hz;  // no * 2 here like other models !
 
   // try some round frequencies for VCO input:
   unsigned pllrange;
@@ -770,26 +842,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     }
   }
 
+  //vco_in_hz = 2000000;  // hoping that works, 2MHz is the minimal PLL input freq.
+  //pllrange = 1;
+
   unsigned pllm = basespeed / vco_in_hz;   // vco input pre-divider
+
   unsigned plln = vcospeed  / vco_in_hz;   // the vco multiplier
   unsigned pllq = vcospeed / 48000000;     // usb speed
+  unsigned pllp = 1;  // no processor division
   unsigned pllr = 2;
-
-  tmp = RCC->PLLCKSELR;
-  tmp &= ~(RCC_PLLCKSELR_PLLSRC | RCC_PLLCKSELR_DIVM1);
-  tmp |= (0
-         | (pllsrc << RCC_PLLCKSELR_PLLSRC_Pos)
-         | (pllm   << RCC_PLLCKSELR_DIVM1_Pos)
-  );
-  RCC->PLLCKSELR = tmp;
-
-  // configure PLL1 dividers:
-  RCC->PLL1DIVR = (0
-    | (plln <<  0)
-    | (pllp <<  8)
-    | (pllq << 16)
-    | (pllr << 24)
-  );
 
   tmp = RCC->PLLCFGR;
   tmp &= ~((0xF << 0) | (7 << 16)); // clear PLL1 configuration
@@ -801,11 +862,29 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   );
   RCC->PLLCFGR = tmp;
 
+  tmp = RCC->PLLCKSELR;
+  tmp &= ~(RCC_PLLCKSELR_PLLSRC | RCC_PLLCKSELR_DIVM1);
+  tmp |= (0
+         | (pllsrc   << RCC_PLLCKSELR_PLLSRC_Pos)
+         | (pllm     << RCC_PLLCKSELR_DIVM1_Pos)
+  );
+  RCC->PLLCKSELR = tmp;
+
+  // configure PLL1 dividers:
+  RCC->PLL1DIVR = (0
+    | ((plln - 1) << RCC_PLL1DIVR_N1_Pos)
+    | ((pllp - 1) << RCC_PLL1DIVR_P1_Pos)
+    | ((pllq - 1) << RCC_PLL1DIVR_Q1_Pos)
+    | ((pllr - 1) << RCC_PLL1DIVR_R1_Pos)
+  );
+
   RCC->CR |= RCC_CR_PLLON;  // enable the PLL
   while((RCC->CR & RCC_CR_PLLRDY) == 0)
   {
     // Wait till PLL is ready
   }
+
+#ifndef MCUSF_H7_V2  // at the H74x, H75x all the APB buses can run at 200 MHz
 
   // set CPU divider to 1, and all bus dividers to 2:
 
@@ -816,6 +895,22 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // no bus speed division required.
     ahbdiv = 0;
   }
+
+#else  // newer models, where the APB buses limited to 137.5 MHz
+
+  unsigned ahbdiv = 8;
+  unsigned apbdiv = 4;  // 4 = /2 of the AHB
+  if (target_speed_hz <= MAX_CLOCK_SPEED / 2)
+  {
+    // no bus speed division required.
+    ahbdiv = 0;
+    if (target_speed_hz <= MAX_CLOCK_SPEED / 4)
+    {
+      apbdiv = 0;
+    }
+  }
+
+#endif
 
   RCC->D1CFGR = (0
     | (0       <<  8)  // D1CPRE(4): CPU clock division, 0 = not divided

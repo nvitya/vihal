@@ -10,6 +10,9 @@
 
 #include "platform.h"
 
+#define HWCLK_EXTCLK_BYPASS  0x80000000
+#define HWCLK_EXTCLK_MASK    0x0FFFFFFF
+
 // external_clock_hz: 0 = use the internal RC oscillator
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz);  // implemented MCU specific sources
 
