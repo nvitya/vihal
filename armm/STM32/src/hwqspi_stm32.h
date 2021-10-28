@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+ * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -18,56 +18,42 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     spiflash.h
-// brief:    SPI Flash Memory Implementation
-// created:  2018-02-10
-// authors:  nvitya
+/*
+ *  file:     hwqspi_stm32.h
+ *  brief:    STM32 QSPI
+ *  version:  1.00
+ *  date:     2018-09-21
+ *  authors:  nvitya
+*/
 
-#ifndef SPIFLASH_H_
-#define SPIFLASH_H_
+#ifndef HWQSPI_STM32_H_
+#define HWQSPI_STM32_H_
 
-#include "platform.h"
-#include "hwpins.h"
-#include "hwspi.h"
+#define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
-#include "serialflash.h"
-#include "hwerrors.h"
 
-class TSpiFlash : public TSerialFlash
+class THwQspi_stm32 : public THwQspi_pre
 {
-public:
-	typedef TSerialFlash super;
-
-	// Required HW resources
-	THwSpi *       spi = nullptr;
-	THwQspi *      qspi = nullptr;
-
-	// overrides
-	virtual bool   InitInherited();
-	virtual bool   ReadIdCode();
-	virtual void   Run();
+public: // default DMA channels (for G4)
+	uint8_t   dmanum = 2;
+	uint8_t   dmach  = 7;
 
 public:
+	QUADSPI_TypeDef * regs = nullptr;
 
-	// smaller buffers for simple things
-	unsigned char  txbuf[16];
-	unsigned char  rxbuf[16];
+	bool Init();
 
-	unsigned       curcmdlen = 0;
+	virtual bool InitInterface(); // override
 
-	void ResetChip();
+	int  StartReadData(unsigned acmd, unsigned address, void * dstptr, unsigned len);
+	int  StartWriteData(unsigned acmd, unsigned address, void * srcptr, unsigned len);
+	void SetMemMappedMode();
+	void Run();
 
-protected:
-
-	void CmdRead();
-	void CmdProgramPage();
-	void CmdEraseBlock();
-
-	bool CmdReadStatus();
-	bool CmdWriteEnable();
-
-	bool CmdFinished();
-
+	uint32_t   mlcode = 0;
+	int        runstate = 0;
 };
 
-#endif /* SPIFLASH_H_ */
+#define HWQSPI_IMPL THwQspi_stm32
+
+#endif // def HWQSPI_STM32_H_

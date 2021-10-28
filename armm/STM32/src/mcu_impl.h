@@ -18,9 +18,10 @@
 #endif
 
 #ifdef HWDMA_H_
-  #define SKIP_UNIMPLEMENTED_WARNING
-
   #include "hwdma_stm32.h"
   //#include "hwdma_stm32_mxb.h"
 #endif
 
+#if defined(QUADSPI) && defined(HWQSPI_H_)
+  #include "hwqspi_stm32.h"
+#endif

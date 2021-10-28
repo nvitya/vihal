@@ -74,14 +74,10 @@ public:
 
 	inline bool Enabled()        { return ((*crreg & 1) != 0); }
 
-#ifndef DMASTREAMS
-  // the EN flag based termination check does not work on G4
-  inline bool Active()         { return (regs->DMA_NDTR_REG != 0);  }
-#else
+  // the pure EN flag based termination check does not always work on G4
   // using the NDTR register for the termination is not reliable
   // because sometimes it might overflow due bursts
-  inline bool Active()         { return ((*crreg & 1) != 0);  }
-#endif
+  inline bool Active()         { return ((*crreg & 1) && (regs->DMA_NDTR_REG)); }  // combined termination check
 
 	inline uint16_t Remaining()  { return regs->DMA_NDTR_REG; }
 

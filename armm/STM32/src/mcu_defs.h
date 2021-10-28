@@ -100,12 +100,6 @@
   #define HW_DMA_REGS   DMA_Stream_TypeDef
 #endif
 
-/*
-#ifdef QUADSPI
-  #define HW_QSPI_REGS  QUADSPI_TypeDef
-#endif
-*/
-
 #if __CORTEX_M < 3
   #if defined(TIM14)
     #define CLOCKCNT16       (TIM14->CNT)      // use the worst timer for clock counting

@@ -27,20 +27,36 @@
 
 bool TSpiFlash::InitInherited()
 {
-	if (!spi)
-	{
-		return false;
-	}
+  if (qspi && qspi->initialized)
+  {
+    // using qspi
+  }
+  else if (spi && spi->initialized)
+  {
+    // using spi
+  }
+  else
+  {
+    return false;
+  }
 
-	return true;
+  return true;
 }
 
 bool TSpiFlash::ReadIdCode()
 {
-	spi->StartTransfer(0x9F, 0, SPITR_CMD1, 3, nullptr, &rxbuf[0]);
-	spi->WaitFinish();
+  if (qspi)
+  {
+    qspi->StartReadData(0x9F, 0, &rxbuf[0], 4);
+    qspi->WaitFinish();
+  }
+  else
+  {
+    spi->StartTransfer(0x9F, 0, SPITR_CMD1, 4, nullptr, &rxbuf[0]);
+    spi->WaitFinish();
+  }
 
-	idcode = *(unsigned *)&(rxbuf[0]);
+	idcode = (*(unsigned *)&(rxbuf[0]) & 0xFFFFFF);
 	if ((idcode == 0) || (idcode == 0x00FFFFFF))
 	{
 		// SPI communication error
@@ -52,12 +68,18 @@ bool TSpiFlash::ReadIdCode()
 
 void TSpiFlash::Run()
 {
-	if (!spi)
-	{
-		return;
-	}
-
-	spi->Run();
+  if (qspi)
+  {
+    qspi->Run();
+  }
+  else if (spi)
+  {
+    spi->Run();
+  }
+  else
+  {
+    return;
+  }
 
 	if (0 == state)
 	{
@@ -67,21 +89,50 @@ void TSpiFlash::Run()
 
 	if (SERIALFLASH_STATE_READMEM == state)  // read memory
 	{
-		switch (phase)
-		{
-			case 0: // start
-				// normal read command up to 30 MHz, no dummy
-				spi->StartTransfer(0x03, address, SPITR_CMD1 | SPITR_ADDR3, datalen, nullptr, dataptr);
-				phase = 1;
-				break;
-			case 1: // wait for complete
-				if (spi->finished)
-				{
-					completed = true;
-					state = 0;
-				}
-			  break;
-		}
+    switch (phase)
+    {
+      case 0: // start
+        remaining = datalen;
+        phase = 2;
+        // no break !
+
+      case 2: // start read next data chunk
+        if (remaining == 0)
+        {
+          // finished.
+          phase = 10; Run();  // phase jump
+          return;
+        }
+
+        // start data phase
+
+        chunksize = maxchunksize;
+        if (chunksize > remaining)  chunksize = remaining;
+
+        CmdRead();
+        phase = 3;
+        break;
+
+      case 3:  // wait for completion
+        if (CmdFinished())
+        {
+          // read next chunk
+          address   += chunksize;
+          dataptr   += chunksize;
+          remaining -= chunksize;
+          phase = 2; Run();  // phase jump
+          return;
+        }
+
+        // TODO: timeout handling
+
+        break;
+
+      case 10: // finished
+        completed = true;
+        state = 0; // go to idle
+        break;
+    }
 	}
 	else if (SERIALFLASH_STATE_WRITEMEM == state)  // write memory
 	{
@@ -101,12 +152,12 @@ void TSpiFlash::Run()
 					return;
 				}
 
-				StartWriteEnable();
+				CmdWriteEnable();
 				++phase;
 				break;
 
 			case 2: // write data
-				if (!spi->finished)
+        if (!CmdFinished())
 				{
 					return;
 				}
@@ -114,13 +165,12 @@ void TSpiFlash::Run()
         chunksize = 256 - (address & 0xFF); // page size
         if (chunksize > remaining)  chunksize = remaining;
 
-				// program page command
-				spi->StartTransfer(0x02, address, SPITR_CMD1 | SPITR_ADDR3, chunksize, dataptr, nullptr);
+        CmdProgramPage();
 				++phase;
 				break;
 
 			case 3: // wait for page write completition
-				if (spi->finished)
+        if (CmdFinished())
 				{
 					++phase;  Run();  // phase jump
 					return;
@@ -128,12 +178,12 @@ void TSpiFlash::Run()
 				break;
 
 			case 4: // read status register, repeat until BUSY flag is set
-				StartReadStatus();
+				CmdReadStatus();
 				++phase;
 				break;
 
 			case 5:
-				if (!spi->finished)
+        if (!CmdFinished())
 				{
 					return;
 				}
@@ -141,7 +191,7 @@ void TSpiFlash::Run()
 				if (rxbuf[0] & 1) // busy
 				{
 					// repeat status register read
-					StartReadStatus();
+					CmdReadStatus();
 					return;
 				}
 				// Write finished.
@@ -189,47 +239,33 @@ void TSpiFlash::Run()
 				}
 
 			  // set write enable first
-				StartWriteEnable();
+				CmdWriteEnable();
 				++phase;
 				break;
 
 			case 2: // erase sector / block
-				if (!spi->finished) // write enable finished ?
+        if (!CmdFinished()) // write enable finished ?
 				{
 					return;
 				}
 
-				if (has4kerase && ((address & 0xFFFF) || (datalen < 0x10000)))
-				{
-					// 4k sector erase
-					chunksize = 0x01000;
-					txbuf[0] = 0x20;
-				}
-				else
-				{
-					// 64k block erase
-					chunksize = 0x10000;
-					txbuf[0] = 0xD8;
-				}
-
-				// page / block erase command
-				spi->StartTransfer(txbuf[0], address, SPITR_CMD1 | SPITR_ADDR3, 0, nullptr, nullptr);
+        CmdEraseBlock();
 				++phase;
 				break;
 
 			case 3: // wait for erase command completition
-				if (!spi->finished)
+        if (!CmdFinished())
 				{
 					return;
 				}
 
 			  // read status register, repeat until BUSY flag is set
-				StartReadStatus();
+				CmdReadStatus();
 				++phase;
 				break;
 
 			case 4:
-				if (!spi->finished)
+        if (!CmdFinished())
 				{
 					return;
 				}
@@ -238,7 +274,7 @@ void TSpiFlash::Run()
 				{
 					// repeat status register read
 					// TODO: timeout
-					StartReadStatus();
+					CmdReadStatus();
 					return;
 				}
 
@@ -257,25 +293,149 @@ void TSpiFlash::Run()
 }
 
 
-bool TSpiFlash::StartReadStatus()
+bool TSpiFlash::CmdReadStatus()
 {
-	spi->StartTransfer(0x05, 0, SPITR_CMD1, 1, nullptr, &rxbuf[0]);
+  rxbuf[0] = 0xFF;
+  rxbuf[1] = 0xFF;
+  rxbuf[2] = 0xFF;
+  rxbuf[3] = 0xFF;
+
+  if (qspi)
+  {
+    qspi->StartReadData(0x05, 0, &rxbuf[0], 4);  // some QSPI drivers support only 32 bit access
+  }
+  else
+  {
+    spi->StartTransfer(0x05, 0, SPITR_CMD1, 1, nullptr, &rxbuf[0]);
+  }
 	return true;
 }
 
-bool TSpiFlash::StartWriteEnable()
+bool TSpiFlash::CmdWriteEnable()
 {
-  // set write enable
-  spi->StartTransfer(0x06, 0, SPITR_CMD1, 0, nullptr, nullptr);
+  if (qspi)
+  {
+    qspi->StartWriteData(0x06, 0, nullptr, 0);
+  }
+  else
+  {
+    spi->StartTransfer(0x06, 0, SPITR_CMD1, 0, nullptr, nullptr);
+  }
   return true;
 }
 
 
 void TSpiFlash::ResetChip()
 {
-  spi->StartTransfer(0x66, 0, SPITR_CMD1, 0, nullptr, nullptr);
-  spi->WaitFinish();
+  if (qspi)
+  {
+    qspi->StartWriteData(0x66, 0, nullptr, 0);
+    qspi->WaitFinish();
 
-  spi->StartTransfer(0x99, 0, SPITR_CMD1, 0, nullptr, nullptr);
-  spi->WaitFinish();
+    qspi->StartWriteData(0x99, 0, nullptr, 0);
+    qspi->WaitFinish();
+  }
+  else
+  {
+    spi->StartTransfer(0x66, 0, SPITR_CMD1, 0, nullptr, nullptr);
+    spi->WaitFinish();
+
+    spi->StartTransfer(0x99, 0, SPITR_CMD1, 0, nullptr, nullptr);
+    spi->WaitFinish();
+  }
+}
+
+bool TSpiFlash::CmdFinished()
+{
+  if (qspi)
+  {
+    return !qspi->busy;
+  }
+  else
+  {
+    return spi->finished;
+  }
+}
+
+void TSpiFlash::CmdRead()
+{
+  if (qspi)
+  {
+    if (qspi->multi_line_count == 4)
+    {
+      // 0x6B is safer
+      qspi->StartReadData(0x6B | QSPICM_SSM | QSPICM_ADDR | QSPICM_DUMMY, address, dataptr, chunksize);
+
+      // the 0xEB does not work sometime, requires mode implementation
+      //qspi.StartReadData(0xEB | QSPICM_SMM | QSPICM_ADDR3 | QSPICM_MODE1 | QSPICM_DUMMY2, address, dataptr, chunksize);
+    }
+    else if (qspi->multi_line_count == 2)
+    {
+      // 0x3B is safer
+      qspi->StartReadData(0x3B | QSPICM_SSM | QSPICM_ADDR | QSPICM_DUMMY, address, dataptr, chunksize);
+
+      // 0xBB does not work sometime, requires mode impementation and enable quad command (?)
+      //qspi.StartReadData(0xBB | QSPICM_SMM | QSPICM_ADDR | QSPICM_MODE1, address, dataptr, chunksize);
+    }
+    else
+    {
+      qspi->StartReadData(0x0B | QSPICM_SSS | QSPICM_ADDR | QSPICM_DUMMY, address, dataptr, chunksize);
+    }
+  }
+  else
+  {
+    // normal read command up to 30 MHz, no dummy
+    spi->StartTransfer(0x03, address, SPITR_CMD1 | SPITR_ADDR3, datalen, nullptr, dataptr);
+  }
+}
+
+void TSpiFlash::CmdProgramPage()
+{
+  if (qspi)
+  {
+    if ((qspi->multi_line_count == 4) && ((idcode & 0xFF) != 0xC2))
+    {
+      qspi->StartWriteData(0x32 | QSPICM_SSM | QSPICM_ADDR, address, dataptr, chunksize);
+    }
+    else
+    {
+      qspi->StartWriteData(0x02 | QSPICM_SSS | QSPICM_ADDR, address, dataptr, chunksize);
+    }
+  }
+  else
+  {
+    spi->StartTransfer(0x02, address, SPITR_CMD1 | SPITR_ADDR3, chunksize, dataptr, nullptr);
+  }
+}
+
+void TSpiFlash::CmdEraseBlock()
+{
+  uint8_t cmd;
+  if (has4kerase && ((address & 0xFFFF) || (datalen < 0x10000)))
+  {
+    // 4k sector erase
+    chunksize = 0x01000;
+    cmd = 0x20;
+  }
+  else
+  {
+    // 64k block erase
+    chunksize = 0x10000;
+    cmd = 0xD8;
+  }
+
+  if (qspi)
+  {
+    txbuf[0] = ((address >> 16) & 0xFF);
+    txbuf[1] = ((address >>  8) & 0xFF);
+    txbuf[2] = ((address >>  0) & 0xFF);
+    txbuf[3] = 0;
+
+    qspi->StartWriteData(cmd, 0, &txbuf[0], 3);
+  }
+  else
+  {
+    // page / block erase command
+    spi->StartTransfer(cmd, address, SPITR_CMD1 | SPITR_ADDR3, 0, nullptr, nullptr);
+  }
 }

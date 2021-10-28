@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+ * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -18,56 +18,35 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     spiflash.h
-// brief:    SPI Flash Memory Implementation
-// created:  2018-02-10
-// authors:  nvitya
-
-#ifndef SPIFLASH_H_
-#define SPIFLASH_H_
+/*
+ *  file:     hwqspi.cpp
+ *  brief:    Internal QSPI/SPIFI vendor-independent implementations
+ *  version:  1.00
+ *  date:     2018-02-10
+ *  authors:  nvitya
+*/
 
 #include "platform.h"
-#include "hwpins.h"
-#include "hwspi.h"
-#include "hwqspi.h"
-#include "serialflash.h"
-#include "hwerrors.h"
+#include <hwqspi.h>
 
-class TSpiFlash : public TSerialFlash
+bool THwQspi::Finished()
 {
-public:
-	typedef TSerialFlash super;
+	Run();
 
-	// Required HW resources
-	THwSpi *       spi = nullptr;
-	THwQspi *      qspi = nullptr;
+	return !busy;
+}
 
-	// overrides
-	virtual bool   InitInherited();
-	virtual bool   ReadIdCode();
-	virtual void   Run();
+int THwQspi::WaitFinish()
+{
+	if (!busy)
+	{
+		return HWERR_OK;
+	}
 
-public:
+	while (!Finished())
+	{
+		// wait
+	}
 
-	// smaller buffers for simple things
-	unsigned char  txbuf[16];
-	unsigned char  rxbuf[16];
-
-	unsigned       curcmdlen = 0;
-
-	void ResetChip();
-
-protected:
-
-	void CmdRead();
-	void CmdProgramPage();
-	void CmdEraseBlock();
-
-	bool CmdReadStatus();
-	bool CmdWriteEnable();
-
-	bool CmdFinished();
-
-};
-
-#endif /* SPIFLASH_H_ */
+	return HWERR_OK;
+}
