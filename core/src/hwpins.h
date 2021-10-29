@@ -131,6 +131,8 @@ public:
 	unsigned         clrbitvalue = 0;
 	unsigned         getbitshift = 0;
 
+	void InitDummy(); // for unassigned ports
+
 	inline void Set1()                 { *setbitptr = setbitvalue; }
 	inline void Set0()                 { *clrbitptr = clrbitvalue; }
 	inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
@@ -191,6 +193,8 @@ public: // mandatory
 	unsigned char Value()    { return 0; }
 	unsigned char OutValue() { return 0; }
 	void SwitchDirection(int adirection)  { }
+
+	void InitDummy() { }
 };
 
 #define HWPINCTRL_IMPL   THwPinCtrl_noimpl
@@ -214,7 +218,7 @@ public:
 class TGpioPin : public HWGPIOPIN_IMPL
 {
 public:
-	TGpioPin(); // for empty constructor
+	TGpioPin(); // for empty constructor for dummy pins
 	TGpioPin(int aportnum, int apinnum, bool ainvert);
 
 	bool Assigned() { return pinnum != 0xFF; }

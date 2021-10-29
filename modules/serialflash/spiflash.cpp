@@ -25,8 +25,10 @@
 
 #include "spiflash.h"
 
-bool TSpiFlash::InitInherited()
+bool TSpiFlash::Init()
 {
+  initialized = false;
+
   if (qspi && qspi->initialized)
   {
     // using qspi
@@ -40,7 +42,180 @@ bool TSpiFlash::InitInherited()
     return false;
   }
 
+  // read ID value
+  ReadIdCode(); // might be invalid.
+
+  unsigned trycnt = 0;
+  while (!ReadIdCode())
+  {
+    ++trycnt;
+    if (trycnt >= 3)
+    {
+      return false;
+    }
+  }
+
+  // process ID code
+
+  if ((idcode == 0) || (idcode == 0x00FFFFFF))
+  {
+    // SPI communication error
+    return false;
+  }
+
+  bytesize = (1 << (idcode >> 16));
+
+  if (qspi && (4 == qspi->multi_line_count))
+  {
+    // The Quad mode must be enabled (switch HOLD and WP pins to IO2 and IO3)
+    // This is done usually with status register write but the bit number is manufacturer specific
+
+    unsigned qenable = 0;
+    unsigned qenable_len = 0;
+
+    unsigned char mnfid = (idcode & 0xFF);
+
+    if ((0x9D == mnfid) || (0xC2 == mnfid))
+    {
+      // 0x9D = ISSI
+      // 0xC2 = MXIC / Macronix
+      // Quad enable is status bit 6
+      qenable = 0x40;
+      qenable_len = 1;
+    }
+    else if (0xEF == mnfid)
+    {
+      // Winbond
+      // Quad enable is status register bit 9
+      qenable = 0x200;
+      qenable_len = 2;
+    }
+    else
+    {
+      // unknown SPI chip hardware
+      qspi->multi_line_count = 2; // falling back to dual mode
+    }
+
+    if (qenable_len)
+    {
+      CmdWriteEnable();
+      qspi->WaitFinish();
+
+      qspi->StartWriteData(0x01, 0, &qenable, qenable_len);
+      qspi->WaitFinish();
+
+      do
+      {
+        CmdReadStatus();
+        qspi->WaitFinish();
+      }
+      while (rxbuf[0] & 1);
+    }
+  }
+
+  erasemask = (has4kerase ? 0x0FFF : 0xFFFF);
+
+  initialized = true;
+
   return true;
+}
+
+bool TSpiFlash::StartReadMem(unsigned aaddr, void * adstptr, unsigned alen)
+{
+  if (!initialized)
+  {
+    errorcode = HWERR_NOTINIT;
+    completed = true;
+    return false;
+  }
+
+  if (!completed)
+  {
+    errorcode = HWERR_BUSY;  // this might be overwriten later
+    return false;
+  }
+
+  dataptr = (uint8_t *)adstptr;
+  datalen = alen;
+  address = aaddr;
+
+  state = SERIALFLASH_STATE_READMEM; // read memory
+  phase = 0;
+
+  errorcode = 0;
+  completed = false;
+
+  Run();
+
+  return (errorcode == 0);
+}
+
+bool TSpiFlash::StartWriteMem(unsigned aaddr, void* asrcptr, unsigned alen)
+{
+  if (!initialized)
+  {
+    errorcode = HWERR_NOTINIT;
+    completed = true;
+    return false;
+  }
+
+  if (!completed)
+  {
+    errorcode = HWERR_BUSY;  // this might be overwriten later
+    return false;
+  }
+
+  dataptr = (uint8_t *)asrcptr;
+  datalen = alen;
+  address = aaddr;
+
+  state = SERIALFLASH_STATE_WRITEMEM; // write page
+  phase = 0;
+
+  errorcode = 0;
+  completed = false;
+
+  Run();
+
+  return (errorcode == 0);
+}
+
+bool TSpiFlash::StartEraseMem(unsigned aaddr, unsigned alen)
+{
+  if (!initialized)
+  {
+    errorcode = HWERR_NOTINIT;
+    completed = true;
+    return false;
+  }
+
+  if (!completed)
+  {
+    errorcode = HWERR_BUSY;  // this might be overwriten later
+    return false;
+  }
+
+  dataptr = nullptr;
+  datalen = alen;
+  address = aaddr;
+
+  state = SERIALFLASH_STATE_ERASE; // erase memory
+  phase = 0;
+
+  errorcode = 0;
+  completed = false;
+
+  Run();
+
+  return (errorcode == 0);
+}
+
+void TSpiFlash::WaitForComplete()
+{
+  while (!completed)
+  {
+    Run();
+  }
 }
 
 bool TSpiFlash::ReadIdCode()

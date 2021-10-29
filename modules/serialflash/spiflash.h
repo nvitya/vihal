@@ -19,8 +19,8 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 // file:     spiflash.h
-// brief:    SPI Flash Memory Implementation
-// created:  2018-02-10
+// brief:    SPI Flash Memory Handling with SPI/QSPI
+// created:  2021-10-29
 // authors:  nvitya
 
 #ifndef SPIFLASH_H_
@@ -30,32 +30,65 @@
 #include "hwpins.h"
 #include "hwspi.h"
 #include "hwqspi.h"
-#include "serialflash.h"
 #include "hwerrors.h"
 
-class TSpiFlash : public TSerialFlash
-{
-public:
-	typedef TSerialFlash super;
+#define SERIALFLASH_STATE_READMEM   1
+#define SERIALFLASH_STATE_WRITEMEM  2
+#define SERIALFLASH_STATE_ERASE     3
 
+#ifdef HW_DMA_MAX_COUNT
+  #define SERIALFLASH_MAX_CHUNK  HW_DMA_MAX_COUNT
+#else
+  #define SERIALFLASH_MAX_CHUNK  (16*1024*1024)
+#endif
+
+class TSpiFlash
+{
+public: // settings
+  unsigned       has4kerase = false;
 	// Required HW resources
 	THwSpi *       spi = nullptr;
 	THwQspi *      qspi = nullptr;
 
-	// overrides
-	virtual bool   InitInherited();
-	virtual bool   ReadIdCode();
-	virtual void   Run();
+public:
+  unsigned       idcode = 0;
+  unsigned       bytesize = 0; // auto-detected from JEDEC ID
+
+  bool           initialized = false;
+  bool           completed = true;
+  int            errorcode = 0;
+
+	bool           Init();
+	void           Run();
+  void           WaitForComplete();
+
+  bool           StartReadMem(unsigned aaddr, void * adstptr, unsigned alen);
+  bool           StartEraseMem(unsigned aaddr, unsigned alen);
+  bool           StartWriteMem(unsigned aaddr, void * asrcptr, unsigned alen); // must be erased before
 
 public:
 
-	// smaller buffers for simple things
-	unsigned char  txbuf[16];
-	unsigned char  rxbuf[16];
+  bool           ReadIdCode(); // done automatically in init
+	void           ResetChip();
 
-	unsigned       curcmdlen = 0;
+protected:
+  // state machine
+  int            state = 0;
+  int            phase = 0;
 
-	void ResetChip();
+  unsigned       curcmdlen = 0;
+  unsigned       chunksize = 0;
+  unsigned       maxchunksize = SERIALFLASH_MAX_CHUNK;
+
+  uint8_t *      dataptr = nullptr;
+  unsigned       datalen = 0;
+  unsigned       address = 0;
+  unsigned       remaining = 0;
+  unsigned       erasemask = 0;
+
+  // smaller buffers for simple things
+  unsigned char  txbuf[16];
+  unsigned char  rxbuf[16];
 
 protected:
 

@@ -30,9 +30,11 @@
 
 THwPinCtrl hwpinctrl;
 
+unsigned hwpinctrl_dummy = 0;
+
 TGpioPin::TGpioPin()
 {
-	// keep field defaults
+  InitDummy();
 }
 
 TGpioPin::TGpioPin(int aportnum, int apinnum, bool ainvert)
@@ -53,4 +55,13 @@ bool TGpioPin::Setup(unsigned flags)
 void TGpioPin::IrqSetup(int amode)
 {
 	hwpinctrl.GpioIrqSetup(portnum, pinnum, amode);
+}
+
+void TGpioPin_common::InitDummy()
+{
+  // Initialize the pointers with harmless target
+  setbitptr = &hwpinctrl_dummy;
+  clrbitptr = &hwpinctrl_dummy;
+  getbitptr = &hwpinctrl_dummy;
+  getoutbitptr = &hwpinctrl_dummy;
 }
