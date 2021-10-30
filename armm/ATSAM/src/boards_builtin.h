@@ -50,6 +50,12 @@
   #define EXTERNAL_XTAL_HZ  12000000
   #define MCU_CLOCK_SPEED  288000000  // because the SDRAM shares the data bus with the FPGA
 
+#elif defined(BOARD_ENEBO_A)
+
+  #define BOARD_NAME "ENEBO-A by nvitya"
+  #define MCU_ATSAME70N20
+  #define EXTERNAL_XTAL_HZ  12000000
+
 #else
 
   #error "Unknown board."
