@@ -197,12 +197,12 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 	// Prepare the PLLB for USB, 48 MHz
 
 	unsigned usbdiv = 1;
-	freqmul = usbdiv * 48000000 / abasespeed;
+	freqmul = usbdiv * 48000000 / external_clock_hz;
 	// the minimal multiplier is 7, so we use a /2 divider here
 	while (freqmul < 7)
 	{
 		++usbdiv;
-		freqmul = usbdiv * 48000000 / abasespeed;
+		freqmul = usbdiv * 48000000 / external_clock_hz;
 	}
 
 	// setup PLLB for the USB clock
