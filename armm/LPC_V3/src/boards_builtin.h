@@ -15,7 +15,7 @@
 // NXP
 //-------------------------------------------------------------------------------------------------
 
-#elif defined(BOARD_MIBO100_LPC546)
+#elif defined(BOARD_MIBO100_LPC546XX) ||  defined(BOARD_MIBO100_LPC546)
 
   #define BOARD_NAME "MIBO-100 LPC546xx by nvitya"
   #define MCU_LPC54606
