@@ -25,3 +25,9 @@
 #ifdef HWSPI_H_
   #include "hwspi_atsam.h"
 #endif
+
+#ifdef QSPI
+	#ifdef HWQSPI_H_
+		#include "hwqspi_atsam.h"
+	#endif
+#endif

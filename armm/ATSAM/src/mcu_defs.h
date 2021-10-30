@@ -50,10 +50,6 @@
 
 #define HW_UART_ALT_REGS  Usart
 
-//#ifdef QSPI
-//  #define HW_QSPI_REGS      Qspi
-//#endif
-
 #ifdef DMACCH_NUM_NUMBER
   #define HW_DMA_REGS  DmacCh_num
 #elif defined(XDMAC)

@@ -27,6 +27,10 @@
   #define MCU_ATSAME70Q21
   #define EXTERNAL_XTAL_HZ   12000000
 
+//-----------------------------------------------------
+// boards made by nvitya
+//-----------------------------------------------------
+
 #elif defined(BOARD_MIBO100_ATSAME70)
 
   #define BOARD_NAME "MIBO-100 ATSAME70N by nvitya"
@@ -38,6 +42,13 @@
   #define BOARD_NAME "MIBO-64 ATSAM4S by nvitya"
   #define MCU_ATSAM4S2B
   #define EXTERNAL_XTAL_HZ   12000000
+
+#elif defined(BOARD_VERTIBO_A)
+
+  #define BOARD_NAME "VERTIBO-A by nvitya"
+  #define MCU_ATSAME70Q20
+  #define EXTERNAL_XTAL_HZ  12000000
+  #define MCU_CLOCK_SPEED  288000000  // because the SDRAM shares the data bus with the FPGA
 
 #else
 

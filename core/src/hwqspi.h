@@ -126,8 +126,8 @@ class THwQspi_noimpl : public THwQspi_pre
 public: // mandatory
 	bool Init()                   { return false; }
 
-	int  StartReadData(unsigned acmd, unsigned address, void * dstptr, unsigned len)   { return ERROR_NOTIMPL; }
-	int  StartWriteData(unsigned acmd, unsigned address, void * srcptr, unsigned len)  { return ERROR_NOTIMPL; }
+	int  StartReadData(unsigned acmd, unsigned address, void * dstptr, unsigned len)   { return HWERR_NOTIMPL; }
+	int  StartWriteData(unsigned acmd, unsigned address, void * srcptr, unsigned len)  { return HWERR_NOTIMPL; }
 	void SetMemMappedMode() { }
 	void Run()  { }
 };
