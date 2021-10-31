@@ -26,6 +26,12 @@
   #define MCU_STM32F401CC
   #define EXTERNAL_XTAL_HZ   25000000
 
+#elif defined(BOARD_MIN_F411)
+
+  #define BOARD_NAME "STM32F411CE Minimum Develompent Board" // aka. Black Pill
+  #define MCU_STM32F411CE
+  #define EXTERNAL_XTAL_HZ   25000000
+
 #elif defined(BOARD_MIBO48_STM32F303)
 
   #define BOARD_NAME "STM32F303Cx 48-pin Develompent Board by nvitya"
@@ -119,7 +125,7 @@
   #define BOARD_NAME "STM32F429 Discovery"
   #define MCU_STM32F429ZI
   #define EXTERNAL_XTAL_HZ   8000000
-  
+
 #elif defined(BOARD_NUCLEO_H723)
 
   #define BOARD_NAME "STM32H723 Nucleo-144"

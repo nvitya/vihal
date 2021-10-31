@@ -86,13 +86,21 @@
 
   #include "stm32f429xx.h"
 
-#elif defined(MCU_STM32F401CC) || defined(MCU_STM32F401CB)
+#elif defined(MCU_STM32F401CC) || defined(MCU_STM32F401BC) || defined(MCU_STM32F401VC) || defined(MCU_STM32F401VB)
 
   #define MCUF_STM32
   #define MCUSF_F4
   #define MAX_CLOCK_SPEED  84000000
 
   #include "stm32f401xc.h"
+
+#elif defined(MCU_STM32F411CE) || defined(MCU_STM32F411VE) || defined(MCU_STM32F411CC) || defined(MCU_STM32F411VC)
+
+  #define MCUF_STM32
+  #define MCUSF_F4
+  #define MAX_CLOCK_SPEED  100000000
+
+  #include "stm32f411xe.h"
 
 #elif defined(MCU_STM32F405RG) || defined(MCU_STM32F405VE) || defined(MCU_STM32F405VG) || defined(MCU_STM32F405ZE) || defined(MCU_STM32F405ZG)
 
