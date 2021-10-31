@@ -31,8 +31,6 @@
 
 #include "hwdma.h"
 
-#warning "DMA remaining is not implemented."
-
 #if defined(HW_DMA_ALT_REGS)
 
 bool THwDmaChannel_atsam::InitPeriphDma(bool aistx, void * aregs, void * aaltregs)  // special function for Atmel PDMA
@@ -106,14 +104,41 @@ void THwDmaChannel_atsam::PrepareTransfer(THwDmaTransfer * axfer)
 		altregs->TCR = axfer->count;
 		altregs->TNCR = 0;
 		altregs->TNPR = 0;
+
+    // This DMA does not support DMATR_NO_SRC_INC (no address increment)
+    // but if DMATR_NO_DST_INC is given then random bytes beyond the axfer->srcaddr buffer will be sent
+		// in case of SPI flash this is not a problem
 	}
 	else
 	{
 		altregs->RPR = (uint32_t)axfer->dstaddr;
-		altregs->RCR = axfer->count;
+		if (axfer->flags & DMATR_NO_DST_INC)
+		{
+	    // This DMA does not support DMATR_NO_DST_INC (no address increment)
+	    // which might lead to write beyond the allocated buffer, so in this case the RX DMA
+		  // will be deactivated.
+		  rxvoid = true; // this is a flag to the peripheral that unread bytes must be flushed
+      altregs->RCR = 0;
+		}
+		else
+		{
+		  altregs->RCR = axfer->count;
+		}
 		altregs->RNCR = 0;
 		altregs->RNPR = 0;
 	}
+}
+
+unsigned THwDmaChannel_atsam::Remaining()
+{
+  if (istx)
+  {
+    return altregs->TCR;
+  }
+  else
+  {
+    return altregs->RCR;
+  }
 }
 
 #endif
@@ -257,6 +282,11 @@ void THwDmaChannel_atsam::PrepareTransfer(THwDmaTransfer * axfer)
 
 	regs->XDMAC_CUBC = axfer->count;
 	regs->XDMAC_CC = ccreg;
+}
+
+unsigned THwDmaChannel_atsam::Remaining()
+{
+  return regs->XDMAC_CUBC;
 }
 
 #endif

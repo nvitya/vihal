@@ -40,6 +40,7 @@ bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0
 
 	regs = nullptr;
 	usartregs = nullptr;
+	initialized = false;
 
 	// because of the peripheral IDs we need full multiple definitions
 	// advanced SPIs
@@ -193,6 +194,7 @@ bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0
 		usartregs->US_CR = (US_CR_RXEN | US_CR_TXEN);
 	}
 
+  initialized = true;
 	return true;
 }
 
@@ -309,6 +311,15 @@ bool THwSpi_atsam::DmaStartRecv(THwDmaTransfer * axfer)
 	if (!rxdma)
 	{
 		return false;
+	}
+
+	if (rxdma->rxvoid)
+	{
+	  uint8_t u8;
+	  while (TryRecvData(&u8))
+	  {
+	    // clear untransferred data
+	  }
 	}
 
 	rxdma->StartTransfer(axfer);

@@ -37,6 +37,7 @@ class THwDmaChannel_atsam : public THwDmaChannel_pre
 public:
 	unsigned           chbit = 0;
 	int                perid = -1;
+  bool               rxvoid = false;     // special flags to signalize that RX DMA was not activated via DMATR_NO_DST_INC flag
 	HW_DMA_REGS *      regs = nullptr;
 
 	bool Init(int achnum, int aperid);
@@ -62,7 +63,7 @@ public:
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer() { Enable(); }
 
-	unsigned Remaining() { return 0; } // todo: implement
+	unsigned Remaining();
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_atsam
