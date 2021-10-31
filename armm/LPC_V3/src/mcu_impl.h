@@ -18,3 +18,10 @@
   #include "hwdma_lpc_v3.h"
 #endif
 
+#ifdef HWSPI_H_
+  #include "hwspi_lpc_v3.h"
+#endif
+
+#ifdef HWQSPI_H_
+  #include "hwqspi_lpc_v3.h"
+#endif
