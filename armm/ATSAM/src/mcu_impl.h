@@ -31,3 +31,7 @@
 		#include "hwqspi_atsam.h"
 	#endif
 #endif
+
+#ifdef HWI2C_H_
+  #include "hwi2c_atsam.h"
+#endif

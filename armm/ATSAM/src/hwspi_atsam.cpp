@@ -383,7 +383,7 @@ void THwSpi_atsam::SetCs(unsigned value)
   }
   else
   {
-#warning "implement SPI CS control"
+    //TODO: "implement SPI CS control"
   }
 }
 

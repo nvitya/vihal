@@ -46,7 +46,7 @@ bool THwDmaChannel_atsam::Init(int achnum, int aperid)  // perid = peripheral re
 {
   initialized = false;
 
-  PMC->PMC_PCER1 = (1 << 26); // enable XDMAC
+  atsam_enable_peripheral(ID_XDMAC);  // enable XDMAC
 
   chnum = achnum;
   perid = aperid;
@@ -297,7 +297,7 @@ bool THwDmaChannel_atsam::Init(int achnum, int aperid)  // perid = peripheral re
 {
   initialized = false;
 
-  atsam_enable_peripheral(39);  // enable DMAC
+  atsam_enable_peripheral(ID_DMAC);  // enable DMAC
 
   DMAC->DMAC_EN = 1; // enable the DMA Controller
 
