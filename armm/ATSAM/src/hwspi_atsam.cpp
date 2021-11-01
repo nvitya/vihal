@@ -256,7 +256,7 @@ bool THwSpi_atsam::TryRecvData(uint8_t * dstptr)
 	}
 }
 
-#ifdef HW_HAS_PDMA
+#ifdef HW_PDMA_REGS
 
 void THwSpi_atsam::PdmaInit(bool istx, THwDmaChannel * admach)
 {

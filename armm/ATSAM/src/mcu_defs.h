@@ -50,37 +50,6 @@
 
 #define HW_UART_ALT_REGS  Usart
 
-#ifdef DMACCH_NUM_NUMBER
-  #define HW_DMA_REGS  DmacCh_num
-#elif defined(XDMAC)
-  #define HW_DMA_REGS  XdmacChid
-#else
-  #define HW_DMA_REGS  void  // the older versions don't have central DMA
-#endif
-
-#ifdef HW_HAS_PDMA
-
-  // DMA channel coupled to the peripheral, in documentation referred as PDC: Peripheral DMA Controller
-  // (older Atmel chips)
-  typedef struct HW_PDMA_REGS
-  {
-    __IO uint32_t RPR;      /**< \brief (Offset: 0x100) Receive Pointer Register */
-    __IO uint32_t RCR;      /**< \brief (Offset: 0x104) Receive Counter Register */
-    __IO uint32_t TPR;      /**< \brief (Offset: 0x108) Transmit Pointer Register */
-    __IO uint32_t TCR;      /**< \brief (Offset: 0x10C) Transmit Counter Register */
-    __IO uint32_t RNPR;     /**< \brief (Offset: 0x110) Receive Next Pointer Register */
-    __IO uint32_t RNCR;     /**< \brief (Offset: 0x114) Receive Next Counter Register */
-    __IO uint32_t TNPR;     /**< \brief (Offset: 0x118) Transmit Next Pointer Register */
-    __IO uint32_t TNCR;     /**< \brief (Offset: 0x11C) Transmit Next Counter Register */
-    __O  uint32_t PTCR;     /**< \brief (Offset: 0x120) Transfer Control Register */
-    __I  uint32_t PTSR;     /**< \brief (Offset: 0x124) Transfer Status Register */
-  //
-  } HW_PDMA_REGS;
-
-  #define HW_DMA_ALT_REGS  HW_PDMA_REGS
-
-#endif
-
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
   // some Atmel processors start with watchdog enabled
