@@ -33,6 +33,8 @@
 #if defined(MCUSF_3X)
 
   #define MAX_CLOCK_SPEED   84000000
+
+  #define HW_DMA_MAX_COUNT      4092  // 4096 was not working properly when it was used with USART0
   #define HW_HAS_PDMA
 
 #elif defined(MCUSF_E70)

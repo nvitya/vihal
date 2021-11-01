@@ -343,7 +343,7 @@ void THwDmaChannel_atsam::DmacPrepareTransfer(THwDmaTransfer * axfer)
     | (0  << 20)  // LOCK_IF
     | (0  << 21)  // LOCK_B
     | (0  << 22)  // LOCK_IF_L
-    | (7  << 24)  // AHB_PROT(3): ???
+    | (0  << 24)  // AHB_PROT(3): ???
     | (2  << 28)  // FIFOCFG(2): 2 = ASAP
   );
 

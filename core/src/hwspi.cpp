@@ -175,7 +175,6 @@ void THwSpi::Run()
     {
       tx_remaining = curblock->len; // also for rx only mode cmds are still required
       rx_remaining = curblock->len;
-
       state = 10;
     }
   }
@@ -186,9 +185,12 @@ void THwSpi::Run()
 
   if (1 == state) // start dma transfers
   {
+    chunksize = curblock->len;
+    if (chunksize > HW_DMA_MAX_COUNT)  chunksize = HW_DMA_MAX_COUNT;
+
     txfer.srcaddr = curblock->src;
     txfer.bytewidth = 1;
-    txfer.count = curblock->len;
+    txfer.count = chunksize;
     txfer.flags = 0;
     if (!txfer.srcaddr)
     {
@@ -199,7 +201,7 @@ void THwSpi::Run()
     rxfer.dstaddr = curblock->dst;
     rxfer.bytewidth = 1;
     rxfer.flags = 0;
-    rxfer.count = curblock->len;
+    rxfer.count = chunksize;
     if (!rxfer.dstaddr)
     {
       rxfer.dstaddr = &datavoid;
@@ -219,6 +221,16 @@ void THwSpi::Run()
       return;
     }
 
+    curblock->len -= chunksize;
+    if (curblock->src)  curblock->src += chunksize;
+    if (curblock->dst)  curblock->dst += chunksize;
+
+    if (curblock->len)
+    {
+      state = 1;  Run(); // jump to state 1 to process the next chunk
+      return;
+    }
+
     // go to the next block
 
     if (curblock == lastblock)
@@ -228,7 +240,8 @@ void THwSpi::Run()
     else
     {
       ++curblock;
-      state = 1;
+      state = 1;  Run(); // jump to state 1 to process the next block
+      return;
     }
   }
   else if (3 == state)

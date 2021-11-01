@@ -187,6 +187,7 @@ public:
   uint32_t            rx_fifo_wait = 0;
   uint32_t            rx_remaining = 0;
   uint32_t            tx_remaining = 0;
+  uint32_t            chunksize = 0;
 
   TSpiXferBlock *     curblock = nullptr;
   TSpiXferBlock *     lastblock = nullptr;

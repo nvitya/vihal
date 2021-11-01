@@ -282,6 +282,7 @@ void TSpiFlash::Run()
         // start data phase
 
         chunksize = maxchunksize;
+        if (qspi && (chunksize > HW_DMA_MAX_COUNT))  chunksize = HW_DMA_MAX_COUNT;
         if (chunksize > remaining)  chunksize = remaining;
 
         CmdRead();
