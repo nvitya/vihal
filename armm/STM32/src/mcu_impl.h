@@ -25,3 +25,7 @@
 #if defined(QUADSPI) && defined(HWQSPI_H_)
   #include "hwqspi_stm32.h"
 #endif
+
+#ifdef HWI2C_H_
+  #include "hwi2c_stm32.h"
+#endif
