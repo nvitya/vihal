@@ -97,6 +97,8 @@ bool THwI2c_atsam::Init(int adevnum)
 	// Enable the peripheral
 	atsam_enable_peripheral(perid);
 
+  regs->CR = (1 << 7);  // Reset
+
 	unsigned periphclock = SystemCoreClock;
 	if (periphclock > 150000000)  periphclock = periphclock / 2;
 
@@ -116,7 +118,7 @@ bool THwI2c_atsam::Init(int adevnum)
 		| (halfclockdiv << 0)  // CLDIV
   ;
 
-	regs->CR = (1 << 2);  // Master mode enable
+	regs->CR = ((1 << 2) | (1 << 5));  // Master mode enable + slave disable
 
 	initialized = true;
 
@@ -194,6 +196,8 @@ int THwI2c_atsam::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, 
 		rxdma->StartTransfer(&xfer);
 	}
 
+  if (regs->SR)  { }  // read the SR register to clear flags
+
 	// Start
 
 	unsigned tmp = (1 << 0);  // send a start condition
@@ -204,7 +208,7 @@ int THwI2c_atsam::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, 
 	regs->CR = tmp;
 
 	runstate = 0;
-
+  error = 0;
 	busy = true;
 
 	return HWERR_OK;
@@ -248,6 +252,8 @@ int THwI2c_atsam::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr,
 		remainingbytes = 1;
 	}
 
+  if (regs->SR)  { }  // read the SR register to clear flags
+
 	// Start
 
 	unsigned tmp = (1 << 0);  // send a start condition
@@ -262,6 +268,7 @@ int THwI2c_atsam::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr,
 		txdma->StartTransfer(&xfer);
 	}
 
+  error = 0;
 	runstate = 0;
 
 	Run();
@@ -279,64 +286,98 @@ void THwI2c_atsam::Run()
 		return;
 	}
 
-	if (istx)
-	{
-		if (dmaused && txdma->Active())
-		{
-			return;
-		}
+	uint32_t sr = regs->SR; // clears flags on read !
 
-		if (remainingbytes > 0)
-		{
-			if ((regs->SR & (1 << 2)) == 0)  // TX Ready?
-			{
-				return;
-			}
+  // check error flags
+  if (!error)
+  {
+    if (sr & (1 << 8))
+    {
+      error = ERR_I2C_ACK;
+    }
+    else if (sr & (1 << 9))
+    {
+      error = ERR_I2C_ARBLOST;
+    }
+    else if (sr & (1 << 6))
+    {
+      error = ERR_I2C_OVERRUN;
+    }
+#if 0
+    else if (sr & (1 << xxx))
+    {
+      error = ERR_I2C_BUS;
+    }
+#endif
 
-			if (remainingbytes == 1)
-			{
-				regs->CR = (1 << 1);  // send stop condition after the following read
-			}
+    if (error)
+    {
+      regs->CR = (1 << 1);  // send stop condition
+      runstate = 90;
+    }
+  }
 
-			regs->THR = *dataptr++;
-			--remainingbytes;
+  if (0 == runstate)
+  {
+    if (istx)
+    {
+      if (dmaused && txdma->Active())
+      {
+        return;
+      }
 
-			if (remainingbytes > 0)
-			{
-				return;
-			}
-		}
-	}
-	else
-	{
-		if (dmaused && rxdma->Active())
-		{
-			return;
-		}
+      if (remainingbytes > 0)
+      {
+        if ((sr & (1 << 2)) == 0)  // TX Ready?
+        {
+          return;
+        }
 
-		if (remainingbytes > 0)
-		{
-			if ((regs->SR & (1 << 1)) == 0)  // RX Ready?
-			{
-				return;
-			}
+        if (remainingbytes == 1)
+        {
+          regs->CR = (1 << 1);  // send stop condition after the following read
+        }
 
-			if (remainingbytes == 2)
-			{
-				regs->CR = (1 << 1);  // send stop condition after the following read
-			}
+        regs->THR = *dataptr++;
+        --remainingbytes;
 
-			*dataptr++ = regs->RHR;
-			--remainingbytes;
+        if (remainingbytes > 0)
+        {
+          return;
+        }
+      }
+    }
+    else
+    {
+      if (dmaused && rxdma->Active())
+      {
+        return;
+      }
 
-			if (remainingbytes > 0)
-			{
-				return;
-			}
-		}
-	}
+      if (remainingbytes > 0)
+      {
+        if ((sr & (1 << 1)) == 0)  // RX Ready?
+        {
+          return;
+        }
 
-	if ((regs->SR & 1) == 0)   // transfer completed?
+        if (remainingbytes == 2)
+        {
+          regs->CR = (1 << 1);  // send stop condition after the following read
+        }
+
+        *dataptr++ = regs->RHR;
+        --remainingbytes;
+
+        if (remainingbytes > 0)
+        {
+          return;
+        }
+      }
+    }
+  }
+
+	if ((sr & 1) == 0)   // transfer completed?
 	{
 		return;
 	}
