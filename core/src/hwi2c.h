@@ -84,15 +84,15 @@ public: // run state
 
 #ifndef HWI2C_IMPL
 
-//#warning "HWI2C is not implemented!"
+#warning "HWI2C is not implemented!"
 
 class THwI2c_noimpl : public THwI2c_pre
 {
 public: // mandatory
 	bool Init(int adevnum)      { return false; }
 
-	int  StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len)  { return ERROR_NOTIMPL; }
-	int  StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)  { return ERROR_NOTIMPL; }
+	int  StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len)  { return HWERR_NOTIMPL; }
+	int  StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)  { return HWERR_NOTIMPL; }
 
   void DmaAssign(bool istx, THwDmaChannel * admach)  { }
 

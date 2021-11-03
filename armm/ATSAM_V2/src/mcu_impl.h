@@ -18,3 +18,14 @@
   #include "hwdma_atsam_v2.h"
 #endif
 
+#ifdef HWSPI_H_
+//  #include "hwspi_atsam_v2.h"
+#endif
+
+#ifdef HWQSPI_H_
+//  #include "hwqspi_atsam_v2.h"
+#endif
+
+#ifdef HWI2C_H_
+  #include "hwi2c_atsam_v2.h"
+#endif
