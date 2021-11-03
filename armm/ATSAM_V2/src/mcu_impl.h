@@ -19,11 +19,11 @@
 #endif
 
 #ifdef HWSPI_H_
-//  #include "hwspi_atsam_v2.h"
+  #include "hwspi_atsam_v2.h"
 #endif
 
 #ifdef HWQSPI_H_
-//  #include "hwqspi_atsam_v2.h"
+  #include "hwqspi_atsam_v2.h"
 #endif
 
 #ifdef HWI2C_H_
