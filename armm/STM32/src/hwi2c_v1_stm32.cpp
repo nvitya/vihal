@@ -496,7 +496,8 @@ void THwI2c_stm32::Run()
 				return;
 			}
 
-			runstate = 29; // terminate
+	    regs->CR1 |= I2C_CR1_STOP;  // send stop condition
+	    runstate = 30; // closing
 		}
 		break;
 
