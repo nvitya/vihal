@@ -291,7 +291,7 @@ int THwQspi_atsam::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 	unsigned char calen = ((acmd >> 16) & 0xF);
 	if (calen != 0)
 	{
-		//regs->QSPI_IAR = address;
+		regs->QSPI_IAR = address;  // required for commands without data (like erase)
 		if (8 == calen)  calen = addrlen;
 		if (4 == calen)  ifr |= (1 << 10); // 32 bit address, 24 bit otherwise
 		else if (3 != calen)

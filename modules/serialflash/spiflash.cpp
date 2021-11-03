@@ -24,6 +24,7 @@
 // authors:  nvitya
 
 #include "spiflash.h"
+//#include "traces.h"
 
 bool TSpiFlash::Init()
 {
@@ -425,7 +426,7 @@ void TSpiFlash::Run()
 					return;
 				}
 
-        CmdEraseBlock();
+        CmdEraseBlock();  // chunksize will be set
 				++phase;
 				break;
 
@@ -455,6 +456,7 @@ void TSpiFlash::Run()
 				}
 
 				// erase finished.
+				if (chunksize > remaining)  chunksize = remaining;
 				address   += chunksize;
 				remaining -= chunksize;
 				phase = 1; Run();  // phase jump
@@ -600,14 +602,11 @@ void TSpiFlash::CmdEraseBlock()
     cmd = 0xD8;
   }
 
+  //TRACE("ERASE: cmd=%02X  addr=%06X  chunk=%u\r\n", cmd, address, chunksize);
+
   if (qspi)
   {
-    txbuf[0] = ((address >> 16) & 0xFF);
-    txbuf[1] = ((address >>  8) & 0xFF);
-    txbuf[2] = ((address >>  0) & 0xFF);
-    txbuf[3] = 0;
-
-    qspi->StartWriteData(cmd, 0, &txbuf[0], 3);
+    qspi->StartWriteData(cmd | QSPICM_SSS | QSPICM_ADDR, address, nullptr, 0);
   }
   else
   {
