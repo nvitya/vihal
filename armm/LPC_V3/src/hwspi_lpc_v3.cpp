@@ -33,6 +33,8 @@ static const unsigned fcbaseaddr[] = FLEXCOMM_BASE_ADDRS;
 
 bool THwSpi_lpc_v3::Init(int adevnum)
 {
+  initialized = false;
+
 	if ((adevnum < 0) || (adevnum > 9))
 	{
 		devnum = -1;
@@ -109,6 +111,7 @@ bool THwSpi_lpc_v3::Init(int adevnum)
 	// Enable
 	regs->CFG |= 1;
 
+  initialized = true;
 	return true;
 }
 
@@ -209,6 +212,6 @@ void THwSpi_lpc_v3::SetCs(unsigned value)
   }
   else
   {
-#warning "implement SPI CS control"
+    //#warning "implement SPI CS control"
   }
 }

@@ -59,7 +59,7 @@ bool THwPinCtrl_lpc_v3::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 	GPIO_Type * regs = GPIO;
 
-	SYSCON->AHBCLKCTRLSET[0] = 1 << 13; // enable IOCON clock
+  SYSCON->AHBCLKCTRLSET[0] = 1 << 13; // enable IOCON clock
 
 	icptr = (unsigned *)(IOCON_BASE);
 	icptr += ((aportnum << 5) + apinnum);
@@ -128,12 +128,22 @@ bool THwPinCtrl_lpc_v3::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 bool THwPinCtrl_lpc_v3::GpioPortEnable(int aportnum)
 {
-	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
+	if (aportnum < 0)
 	{
 		return false;
 	}
-
-  SYSCON->AHBCLKCTRLSET[0] = (1 << (14 + aportnum));
+	else if (aportnum < 4)
+	{
+	  SYSCON->AHBCLKCTRLSET[0] = (1 << (14 + aportnum));
+	}
+	else if (aportnum < 6)
+	{
+	  SYSCON->AHBCLKCTRLSET[2] = (1 << (9 + aportnum - 4));
+	}
+	else
+	{
+	  return false;
+	}
 
   return true;
 }
