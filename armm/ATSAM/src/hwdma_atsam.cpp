@@ -251,7 +251,7 @@ bool THwDmaChannel_atsam::InitPeriphDma(bool aistx, void * aregs, void * aaltreg
 	return true;
 }
 
-void THwDmaChannel_atsam::PerDmaDisable()
+void THwDmaChannel_atsam::PdmaDisable()
 {
 	if (istx)
 	{
@@ -263,7 +263,7 @@ void THwDmaChannel_atsam::PerDmaDisable()
 	}
 }
 
-void THwDmaChannel_atsam::PerDmaEnable()
+void THwDmaChannel_atsam::PdmaEnable()
 {
 	// start the channel
 	if (istx)
@@ -276,7 +276,7 @@ void THwDmaChannel_atsam::PerDmaEnable()
 	}
 }
 
-bool THwDmaChannel_atsam::PerDmaEnabled()
+bool THwDmaChannel_atsam::PdmaEnabled()
 {
 	if (istx)
 	{
@@ -290,18 +290,32 @@ bool THwDmaChannel_atsam::PerDmaEnabled()
 	}
 }
 
-void THwDmaChannel_atsam::PerDmaPrepareTransfer(THwDmaTransfer * axfer)
+void THwDmaChannel_atsam::PdmaPrepareTransfer(THwDmaTransfer * axfer)
 {
 	if (istx)
 	{
 		pdmaregs->TPR = (uint32_t)axfer->srcaddr;
 		pdmaregs->TCR = axfer->count;
-		pdmaregs->TNCR = 0;
-		pdmaregs->TNPR = 0;
 
     // This DMA does not support DMATR_NO_SRC_INC (no address increment)
     // but if DMATR_NO_DST_INC is given then random bytes beyond the axfer->srcaddr buffer will be sent
 		// in case of SPI flash this is not a problem
+
+	  if (axfer->flags & DMATR_CIRCULAR)
+	  {
+	    circular_mode = true;
+	    circmode_addr = pdmaregs->TPR;
+	    circmode_count = pdmaregs->TCR;
+
+	    pdmaregs->TNPR = circmode_addr;   // countinuously updated in the Remaining() function
+	    pdmaregs->TNCR = circmode_count;
+	  }
+	  else
+	  {
+	    circular_mode = false;
+	    pdmaregs->TNCR = 0;
+	    pdmaregs->TNPR = 0;
+	  }
 	}
 	else
 	{
@@ -318,19 +332,44 @@ void THwDmaChannel_atsam::PerDmaPrepareTransfer(THwDmaTransfer * axfer)
 		{
 		  pdmaregs->RCR = axfer->count;
 		}
-		pdmaregs->RNCR = 0;
-		pdmaregs->RNPR = 0;
+
+    if (axfer->flags & DMATR_CIRCULAR)
+    {
+      circular_mode = true;
+      circmode_addr = pdmaregs->RPR;
+      circmode_count = pdmaregs->RCR;
+
+      pdmaregs->RNPR = circmode_addr;  // countinuously updated in the Remaining() function
+      pdmaregs->RNCR = circmode_count;
+    }
+    else
+    {
+      pdmaregs->RNCR = 0;
+      pdmaregs->RNPR = 0;
+    }
 	}
 }
 
-unsigned THwDmaChannel_atsam::PerDmaRemaining()
+unsigned THwDmaChannel_atsam::PdmaRemaining()  // also updates the next dma transfer for the circular mode
 {
   if (istx)
   {
+    if (circular_mode && !pdmaregs->TNCR)
+    {
+      pdmaregs->TNCR = circmode_count;
+      pdmaregs->TNPR = circmode_addr;
+    }
+
     return pdmaregs->TCR;
   }
   else
   {
+    if (circular_mode && !pdmaregs->RNCR)
+    {
+      pdmaregs->RNCR = circmode_count;
+      pdmaregs->RNPR = circmode_addr;
+    }
+
     return pdmaregs->RCR;
   }
 }
@@ -544,7 +583,7 @@ void THwDmaChannel_atsam::PrepareTransfer(THwDmaTransfer * axfer)
 
 void THwDmaChannel_atsam::Enable()
 {
-  PerDmaEnable();
+  PdmaEnable();
 }
 
 bool THwDmaChannel_atsam::Enabled()
@@ -568,7 +607,7 @@ void THwDmaChannel_atsam::PrepareTransfer(THwDmaTransfer * axfer)
 {
   if (pdmaregs)
   {
-    PerDmaPrepareTransfer(axfer);
+    PdmaPrepareTransfer(axfer);
   }
   else
   {
@@ -580,7 +619,7 @@ void THwDmaChannel_atsam::Enable()
 {
   if (pdmaregs)
   {
-    PerDmaEnable();
+    PdmaEnable();
   }
   else
   {
@@ -592,7 +631,7 @@ bool THwDmaChannel_atsam::Enabled()
 {
   if (pdmaregs)
   {
-    return PerDmaEnabled();
+    return PdmaEnabled();
   }
   else
   {
@@ -604,7 +643,7 @@ void THwDmaChannel_atsam::Disable()
 {
   if (pdmaregs)
   {
-    PerDmaDisable();
+    PdmaDisable();
   }
   else
   {
@@ -616,7 +655,7 @@ unsigned THwDmaChannel_atsam::Remaining()
 {
   if (pdmaregs)
   {
-    return PerDmaRemaining();
+    return PdmaRemaining();
   }
   else
   {

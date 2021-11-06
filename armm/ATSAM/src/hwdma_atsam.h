@@ -78,6 +78,10 @@ public:
 
 #if defined(HW_PDMA_REGS)
 
+	bool               circular_mode = false;
+	uint32_t           circmode_addr = 0;
+	uint32_t           circmode_count = 0;
+
 	HW_PDMA_REGS *     pdmaregs = nullptr;  // Some Atmel systems have two different DMA system
   bool InitPeriphDma(bool aistx, void * aregs, void * aaltregs);  // special function for Atmel PDMA
 
@@ -104,11 +108,11 @@ public:
 
 #if defined(HW_PDMA_REGS)
 private:
-  ALWAYS_INLINE void      PerDmaEnable();
-  ALWAYS_INLINE bool      PerDmaEnabled();
-  ALWAYS_INLINE void      PerDmaDisable();
-  ALWAYS_INLINE unsigned  PerDmaRemaining();
-  ALWAYS_INLINE void      PerDmaPrepareTransfer(THwDmaTransfer * axfer);
+  ALWAYS_INLINE void      PdmaEnable();
+  ALWAYS_INLINE bool      PdmaEnabled();
+  ALWAYS_INLINE void      PdmaDisable();
+  ALWAYS_INLINE unsigned  PdmaRemaining();
+  ALWAYS_INLINE void      PdmaPrepareTransfer(THwDmaTransfer * axfer);
 #endif
 
 #if defined(DMAC)
