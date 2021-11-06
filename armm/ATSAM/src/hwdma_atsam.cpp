@@ -42,6 +42,18 @@ void THwDmaChannel_atsam::Prepare(bool aistx, void * aperiphaddr, unsigned aflag
 
 #define MAX_DMA_CHANNELS  XDMACCHID_NUMBER
 
+typedef struct
+{
+  uint32_t    NDA;  // next descriptor address
+  uint32_t    UBC;  // microblock control member
+  uint32_t    SA;   // source address
+  uint32_t    DA;   // destination address
+//
+} xdmac_lli_view1_t;
+
+// this LLI array is used for circular mode
+xdmac_lli_view1_t  hwdma_lli_array[MAX_DMA_CHANNELS]  __attribute__((aligned(4)));
+
 bool THwDmaChannel_atsam::Init(int achnum, int aperid)  // perid = peripheral request id
 {
   initialized = false;
@@ -167,11 +179,48 @@ void THwDmaChannel_atsam::PrepareTransfer(THwDmaTransfer * axfer)
     }
   }
 
+  if (axfer->flags & DMATR_IRQ)
+  {
+    regs->XDMAC_CIE = 1;  // enable IRQ at block
+  }
+  else
+  {
+    regs->XDMAC_CID = 1;  // disable IRQ at block
+  }
+
   //regs->XDMAC_CBC = 0; // already set to 0 at the Init()
 
   orig_count = axfer->count;
   regs->XDMAC_CUBC = axfer->count;
   regs->XDMAC_CC = ccreg;
+
+  if (axfer->flags & DMATR_CIRCULAR)
+  {
+    xdmac_lli_view1_t *  lli = &hwdma_lli_array[chnum];
+    lli->UBC = (0
+      | (1  <<  27)  // NVIEW(2): 1 = type 1 records
+      | (1  <<  26)  // NDEN: 1 = enable DST address update
+      | (1  <<  25)  // NSEN: 1 = enable SRC address update
+      | (1  <<  24)  // NDE: 1 = enable next descriptor fetch
+      | (axfer->count & 0x00FFFFFF)
+    );
+    lli->NDA = (uint32_t)(lli); // point to self
+    lli->SA = regs->XDMAC_CSA;
+    lli->DA = regs->XDMAC_CDA;
+
+    regs->XDMAC_CNDA = (uint32_t)(lli);
+    regs->XDMAC_CNDC = (0
+      | (1  <<  0)  // NDE: 1 = enable next descriptor fetch
+      | (1  <<  1)  // NDSUP: 1 = enable SRC address update
+      | (1  <<  2)  // NDDUP: 1 = enable DST address update
+      | (1  <<  3)  // NDVIEW(2): 1 = view1 type
+    );
+  }
+  else
+  {
+    regs->XDMAC_CNDC = 0; // disable next descriptor fetch
+  }
+
 }
 
 #endif
