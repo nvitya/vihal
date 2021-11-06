@@ -342,6 +342,19 @@ unsigned THwDmaChannel_atsam::PerDmaRemaining()
 
 #define MAX_DMA_CHANNELS  DMACCH_NUM_NUMBER
 
+typedef struct
+{
+  uint32_t    SADDR;  // source address
+  uint32_t    DADDR;  // destination address
+  uint32_t    CTRLA;  //
+  uint32_t    CTRLB;  //
+  uint32_t    DSCR;   // next descriptor
+//
+} dmac_lli_t;
+
+// this LLI array is used for circular mode
+dmac_lli_t  hwdma_lli_array[MAX_DMA_CHANNELS]  __attribute__((aligned(4)));
+
 bool THwDmaChannel_atsam::Init(int achnum, int aperid)  // perid = peripheral request id
 {
   initialized = false;
@@ -388,7 +401,7 @@ void THwDmaChannel_atsam::DmacPrepareTransfer(THwDmaTransfer * axfer)
     | (0  <<  4)  // DST_PER(4): peripheral id
     | (0  <<  9)  // SRC_H2SEL: 1 = HW handshaking
     | (0  << 13)  // DST_H2SEL: 1 = HW handshaking
-    | (1  << 16)  // SOD
+    | (0  << 16)  // SOD
     | (0  << 20)  // LOCK_IF
     | (0  << 21)  // LOCK_B
     | (0  << 22)  // LOCK_IF_L
@@ -475,7 +488,22 @@ void THwDmaChannel_atsam::DmacPrepareTransfer(THwDmaTransfer * axfer)
   orig_count = (axfer->count & 0xFFFF);
   ctrla |= orig_count;  // BTSIZE(16)
 
-  regs->DMAC_DSCR = 0;
+  if (axfer->flags & DMATR_CIRCULAR)
+  {
+    dmac_lli_t *  lli = &hwdma_lli_array[chnum];
+    lli->SADDR = regs->DMAC_SADDR;
+    lli->DADDR = regs->DMAC_DADDR;
+    lli->CTRLA = ctrla;
+    lli->CTRLB = ctrlb;
+    lli->DSCR  = (uint32_t)(lli);  // link back to self
+
+    regs->DMAC_DSCR = (uint32_t)(lli);  // set to lli operation
+  }
+  else
+  {
+    regs->DMAC_DSCR = 0;  // disable next descriptor fetch
+  }
+
   regs->DMAC_CFG = cfg;
   regs->DMAC_CTRLB = ctrlb;
   regs->DMAC_CTRLA = ctrla;
