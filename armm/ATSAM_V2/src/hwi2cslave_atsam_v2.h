@@ -19,46 +19,33 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwintflash_atsam.h
- *  brief:    Internal Flash Handling for ATSAM
+ *  file:     hwi2cslave_atsam_v2.h
+ *  brief:    ATSAM v2 I2C / TWI Slave
  *  version:  1.00
- *  date:     2019-04-07
+ *  date:     2020-03-07
  *  authors:  nvitya
 */
 
-#ifndef HWINTFLASH_ATSAM_H_
-#define HWINTFLASH_ATSAM_H_
+#ifndef HWI2CSLAVE_ATSAM_V2_H_
+#define HWI2CSLAVE_ATSAM_V2_H_
 
-#define HWINTFLASH_PRE_ONLY
-#include "hwintflash.h"
+#define HWI2CSLAVE_PRE_ONLY
+#include "hwi2cslave.h"
 
-class THwIntFlash_atsam : public THwIntFlash_pre
+class THwI2cSlave_atsam_v2 : public THwI2cSlave_pre
 {
 public:
-	bool           HwInit();
+	SercomI2cs *   regs = nullptr;
 
-public:
-	Efc *          regs = nullptr;
-	uint32_t       ctrl_bytesize = 0;
-	uint32_t       ctrl2_addr = 0xF0000000;
+	bool InitHw(int adevnum);
 
-	bool           StartFlashCmd(uint8_t acmd);
+	void HandleIrq();
 
-	void           CmdEraseBlock(); // at address
-	void           CmdWritePage();
-	void           CmdClearPageBuffer();
+	void Run();
 
-	inline bool    CmdFinished() { return (regs->EEFC_FSR & 1); }
-
-  uint32_t       EraseSize(uint32_t aaddress);
-
-#if defined(MCUSF_3X)
-public:
-  void           SelectController(uint32_t aaddress);
-#endif
-
+	uint8_t        runstate = 0;
 };
 
-#define HWINTFLASH_IMPL THwIntFlash_atsam
+#define HWI2CSLAVE_IMPL THwI2cSlave_atsam_v2
 
-#endif // def HWINTFLASH_ATSAM_H_
+#endif // def HWI2CSLAVE_ATSAM_V2_H_

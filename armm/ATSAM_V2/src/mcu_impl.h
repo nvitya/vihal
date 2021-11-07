@@ -29,3 +29,27 @@
 #ifdef HWI2C_H_
   #include "hwi2c_atsam_v2.h"
 #endif
+
+#ifdef HWI2CSLAVE_H_
+  #include "hwi2cslave_atsam_v2.h"
+#endif
+
+#ifdef HWINTFLASH_H_
+  #include "hwintflash_atsam_v2.h"
+#endif
+
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_atsam_v2.h"
+#endif
+
+#ifdef HWCAN_H_
+  #include "hwcan_atsam_v2.h"
+#endif
+
+/* not migrated yet from NVCM:
+
+#if defined(HWUSBCTRL_H_)
+  #include "hwusbctrl_atsam_v2.h"
+#endif
+
+*/

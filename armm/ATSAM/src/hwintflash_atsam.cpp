@@ -95,10 +95,10 @@ bool THwIntFlash_atsam::HwInit()
 	start_address = HWINTFLASH_ADDRESS;
 
 #ifdef EFC1
-	ctrl_count = 2;
+	bank_count = 2;
 	bytesize = (bytesize << 1);
 #else
-	ctrl_count = 1;
+	bank_count = 1;
 #endif
 
   ctrl2_addr = start_address + ctrl_bytesize;

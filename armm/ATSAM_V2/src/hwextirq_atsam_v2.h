@@ -19,46 +19,37 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwintflash_atsam.h
- *  brief:    Internal Flash Handling for ATSAM
+ *  file:     hwextirq_atsam_v2.h
+ *  brief:    ATSAM V2 Extenal Pin Interrupt
  *  version:  1.00
- *  date:     2019-04-07
+ *  date:     2020-04-01
  *  authors:  nvitya
 */
 
-#ifndef HWINTFLASH_ATSAM_H_
-#define HWINTFLASH_ATSAM_H_
+#ifndef _HWEXTIRQ_ATSAM_V2_H
+#define _HWEXTIRQ_ATSAM_V2_H
 
-#define HWINTFLASH_PRE_ONLY
-#include "hwintflash.h"
+#define HWEXTIRQ_PRE_ONLY
+#include "hwextirq.h"
 
-class THwIntFlash_atsam : public THwIntFlash_pre
+class THwExtIrq_atsam_v2 : public THwExtIrq_pre
 {
 public:
-	bool           HwInit();
+	volatile uint32_t *   irqpend_reg = nullptr;
+	volatile uint32_t *   irqack_reg = nullptr;
+	uint32_t              irq_mask = 0;
 
-public:
-	Efc *          regs = nullptr;
-	uint32_t       ctrl_bytesize = 0;
-	uint32_t       ctrl2_addr = 0xF0000000;
+	// platform specific
+	bool Init(int aextintnum, unsigned flags);
 
-	bool           StartFlashCmd(uint8_t acmd);
+	void Enable();
+	void Disable();
 
-	void           CmdEraseBlock(); // at address
-	void           CmdWritePage();
-	void           CmdClearPageBuffer();
-
-	inline bool    CmdFinished() { return (regs->EEFC_FSR & 1); }
-
-  uint32_t       EraseSize(uint32_t aaddress);
-
-#if defined(MCUSF_3X)
-public:
-  void           SelectController(uint32_t aaddress);
-#endif
-
+	ALWAYS_INLINE void IrqBegin()   {  } // not reqired for this MCU
+	ALWAYS_INLINE bool IrqPending() { return (*irqpend_reg & irq_mask); }
+	ALWAYS_INLINE void IrqAck()     { *irqack_reg = irq_mask; }
 };
 
-#define HWINTFLASH_IMPL THwIntFlash_atsam
+#define HWEXTIRQ_IMPL   THwExtIrq_atsam_v2
 
-#endif // def HWINTFLASH_ATSAM_H_
+#endif /* HWEXTIRQ_ATSAM_V2_H_ */
