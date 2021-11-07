@@ -50,9 +50,9 @@ bool THwIntFlash::Init()
 
 void THwIntFlash::TraceFlashInfo()
 {
-	TRACE("Internal Flash = %u k, erase = %u k, page = %u\r\n",
+	TRACE("Internal Flash = %u k, erase = %u, page = %u\r\n",
 	    bytesize >> 10,
-	    EraseSize(start_address + (bytesize >> 1)) >> 10,  // erase size may vary, take at the half
+	    EraseSize(start_address + (bytesize >> 1)),  // erase size may vary, take at the half
 	    pagesize);
 }
 
@@ -189,7 +189,7 @@ void THwIntFlash::Run()
 				// no break!
 
 			case 1: // prepare / continue
-				ebchunk = erasesize;
+				ebchunk = EraseSize(address);
 				if (remaining < ebchunk)  ebchunk = remaining;  // important for the uint remaining
 
 				CmdEraseBlock();
@@ -285,7 +285,7 @@ void THwIntFlash::Run()
 
 			case 1: // prepare / continue
 			{
-				ebchunk = erasesize;
+				ebchunk = EraseSize(address);
 				if (remaining < ebchunk)  ebchunk = remaining;  // important for the uint remaining
 
 				ebremaining = ebchunk;

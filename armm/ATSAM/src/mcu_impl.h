@@ -35,3 +35,45 @@
 #ifdef HWI2C_H_
   #include "hwi2c_atsam.h"
 #endif
+
+#ifdef HWI2CSLAVE_H_
+  #include "hwi2cslave_atsam.h"
+#endif
+
+#ifdef HWINTFLASH_H_
+  #include "hwintflash_atsam.h"
+#endif
+
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_atsam.h"
+#endif
+
+#ifdef HWADC_H_
+  #include "hwadc_atsam.h"
+#endif
+
+#if defined(HWCAN_H_)
+  #include "hwcan_atsam.h"
+#endif
+
+#if defined(HWETH_H_) && defined(GMAC)
+  #include "hweth_atsam.h"
+#endif
+
+#if defined(SDRAMC) && defined(HWSDRAM_H_)
+  #include "hwsdram_atsam.h"
+#endif
+
+/*  not yet migrated from NVCM
+
+#if defined(HWUSBCTRL_H_)
+  #include "hwusbctrl_atsam.h"
+  #include "hwusbctrl_atsam_hs.h"
+#endif
+
+#if defined(HSMCI) && defined(HWSDCARD_H_)
+  #include "hwsdcard_atsam.h"
+#endif
+
+
+*/
