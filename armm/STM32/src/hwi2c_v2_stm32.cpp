@@ -215,7 +215,7 @@ int THwI2c_stm32::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, 
 
 	//extraremaining = 0;
 
-	dmaused = (rxdma != nullptr);
+	dmaused = ((rxdma != nullptr) && (datalen > 1));
 	if (dmaused)
 	{
 		regs->CR1 &= ~I2C_CR1_TXDMAEN;
@@ -294,7 +294,7 @@ int THwI2c_stm32::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr,
 	}
 	extraremaining = extracnt;
 
-	dmaused = (txdma != nullptr);
+	dmaused = ((txdma != nullptr) && (datalen > 1));
 	if (dmaused)
 	{
 		regs->CR1 &= ~I2C_CR1_RXDMAEN;
@@ -658,7 +658,10 @@ void THwI2c_stm32::Run()
 		  if (txdma)  txdma->Disable();
 		}
 
-		regs->CR2 |= I2C_CR2_STOP;  // send stop condition
+		if (isr & I2C_ISR_BUSY)
+		{
+		  regs->CR2 |= I2C_CR2_STOP;  // send stop condition
+		}
 		runstate = 91;
 		break;
 
@@ -668,7 +671,7 @@ void THwI2c_stm32::Run()
 		{
 			return;
 		}
-		regs->ICR = I2C_ICR_STOPCF;
+		regs->ICR = (I2C_ICR_STOPCF | I2C_ICR_NACKCF); // clear the stop flag
 		busy = false; // finished.
 		runstate = 50;
 		break;
