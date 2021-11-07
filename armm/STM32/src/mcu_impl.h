@@ -29,3 +29,52 @@
 #ifdef HWI2C_H_
   #include "hwi2c_stm32.h"
 #endif
+
+#ifdef HWI2CSLAVE_H_
+  #include "hwi2cslave_stm32.h"
+#endif
+
+#ifdef HWINTFLASH_H_
+  #include "hwintflash_stm32.h"
+#endif
+
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_stm32.h"
+#endif
+
+#ifdef HWADC_H_
+  #include "hwadc_stm32.h"
+#endif
+
+#ifdef HWPWM_H_
+  #include "hwpwm_stm32.h"
+#endif
+
+#if defined(HWCAN_H_)
+  #include "hwcan_stm32.h"
+#endif
+
+#ifdef HWETH_H_
+  #include "hweth_stm32.h"
+#endif
+
+#if defined(FMC_SDCR1_CAS) && defined(HWSDRAM_H_)
+  #include "hwsdram_stm32.h"
+#endif
+
+/* not yet migrated from NVCM
+
+#ifdef HWUSBCTRL_H_
+  #include "hwusbctrl_stm32.h"
+  #include "hwusbctrl_stm32_otg.h"
+#endif
+
+#if defined(HWSDCARD_H_) && (defined(SDIO) || defined(SDMMC) || defined(SDMMC1))
+  #include "hwsdcard_stm32.h"
+#endif
+
+#if defined(LTDC_SRCR_IMR) && defined(HWLCDCTRL_H_)
+  #include "hwlcdctrl_stm32.h"
+#endif
+
+*/

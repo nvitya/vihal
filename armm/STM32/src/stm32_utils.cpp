@@ -107,3 +107,17 @@ uint32_t stm32_bus_speed(uint8_t abusid)
 
 #endif
 
+void stm32_start_internal_hs_rc_osc()
+{
+#ifdef RCC_CR_HSIKERON
+  RCC->CR |= (RCC_CR_HSION | RCC_CR_HSIKERON);
+#else
+  RCC->CR |= RCC_CR_HSION;
+#endif
+  while ((RCC->CR & RCC_CR_HSIRDY) == 0)
+  {
+    // wait until it is ready
+  }
+}
+
+

@@ -1,5 +1,6 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+/* -----------------------------------------------------------------------------
+ * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -18,34 +19,18 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     stm32_utils.h
- *  brief:    STM32 Utilities
- *  created:  2019-11-22
+ *  file:     hwi2cslave.h
+ *  brief:    Internal I2C / TWI Slave vendor-independent implementations
+ *  version:  1.00
+ *  date:     2019-10-13
  *  authors:  nvitya
 */
 
-#ifndef STM32_UTILS_H_
-#define STM32_UTILS_H_
+#ifndef HWI2CSLAVE_CPP_
+#define HWI2CSLAVE_CPP_
 
-#include "platform.h"
 
-#if defined(MCUSF_G4)
-  #define APB1ENR_REGISTER  RCC->APB1ENR1
-#elif defined(MCUSF_H7)
-  #define APB1ENR_REGISTER  RCC->APB1LENR
-#else
-  #define APB1ENR_REGISTER  RCC->APB1ENR
-#endif
 
-// constants helping determine peripheral bus base frequencies
-#define STM32_BUSID_AHB     0
-#define STM32_BUSID_APB1    1
-#define STM32_BUSID_APB2    2
-#define STM32_BUSID_APB3    3
-#define STM32_BUSID_APB4    4
 
-uint32_t stm32_bus_speed(uint8_t abusid);
 
-void stm32_start_internal_hs_rc_osc();
-
-#endif /* STM32_UTILS_H_ */
+#endif /* HWI2CSLAVE_CPP_ */
