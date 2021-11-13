@@ -315,6 +315,170 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	return true;
 }
 
+#elif defined(MCUSF_F3)
+
+bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
+{
+  initialized = false;
+
+  devnum = adevnum;
+  initialized = false;
+  channel_map = achannel_map;
+
+  uint8_t dmamux;
+  uint16_t defaultdma;
+
+  regs = nullptr;
+  if      (1 == devnum)
+  {
+    RCC->AHBENR |= RCC_AHBENR_ADC12EN;
+    regs = ADC1;
+    commonregs = ADC12_COMMON;
+    defaultdma = 0x101;  // no alternatives for the ADC1 !
+  }
+#ifdef ADC2
+  else if (2 == devnum)
+  {
+    RCC->AHBENR |= RCC_AHBENR_ADC12EN;
+    regs = ADC2;
+    commonregs = ADC12_COMMON;
+    defaultdma = 0x102; // alternative: 0x201
+  }
+#endif
+#ifdef ADC3
+  else if (3 == devnum)
+  {
+    RCC->AHBENR |= RCC_AHBENR_ADC34EN;
+    regs = ADC3;
+    commonregs = ADC34_COMMON;
+    defaultdma = 0x205;  // no alternatives for the ADC3 !
+  }
+#endif
+#ifdef ADC4
+  else if (4 == devnum)
+  {
+    RCC->AHBENR |= RCC_AHBENR_ADC34EN;
+    regs = ADC4;
+    commonregs = ADC34_COMMON;
+    defaultdma = 0x202; // alternative: 0x204 (with SYSCFG)
+  }
+#endif
+  else
+  {
+    return false;
+  }
+
+  if (dmaalloc < 0)  dmaalloc = defaultdma;
+  dmach.Init((dmaalloc >> 8), dmaalloc & 15, 0);
+
+  dmach.Prepare(false, (void *)&regs->DR, 0);
+
+  // ADC Common register
+  commonregs->CCR = 0
+    | (1 << 24)  // VBATSEL: 1 = VBAT ch enable
+    | (1 << 23)  // VSENSESEL: 1 = temp sensor channel enable
+    | (1 << 22)  // VREFEN: 1 = Vrefint channel enable
+    | (1 << 16)  // CLKMODE(2): ADC clock mode, 1 = AHB clock (synchronous clock mode)
+  ;
+
+  // current setup: ADC clock = System Clock (AHB clock) = 72 MHz
+  adc_clock = stm32_bus_speed(0) / 1;
+
+  // stop adc adc
+
+  if (regs->CR & ADC_CR_ADEN)
+  {
+    regs->CR |= ADC_CR_ADDIS;
+    while (regs->CR & ADC_CR_ADDIS) { } // wait until disabled
+  }
+
+  regs->DIFSEL = 0; // all channels are single ended
+
+  regs->CR = 0
+    | (0 << 31)  // ADCAL: ADC calibration
+    | (0 << 30)  // ADCALDIF: Differential mode for calibration
+    | (1 << 28)  // ADVREGEN(2): 1 = ADC voltage regulator enable
+    | (0 <<  5)  // JADSTP: ADC stop of injected conversion command
+    | (0 <<  4)  // ADSTP: ADC stop of regular conversion command
+    | (0 <<  3)  // JADSTART: ADC start of injected conversion
+    | (0 <<  2)  // ADSTART: ADC start of regular conversion
+    | (0 <<  1)  // ADDIS: ADC disable command
+    | (0 <<  0)  // ADEN: ADC enable control
+  ;
+
+  delay_us(30); // wait for ADC the reference voltage
+
+  // start the calibration
+  regs->CR |= ADC_CR_ADCAL;
+  while (regs->CR & ADC_CR_ADCAL)
+  {
+    // wait for the calibration
+  }
+
+  // enable the ADC to be able to modify the other registers
+  regs->CR |= ADC_CR_ADEN;
+
+  regs->CFGR = 0
+    | (0 << 26)  // AWD1CH(5): Analog watchdog 1 channel selection
+    | (0 << 25)  // JAUTO: Automatic injected group conversion
+    | (0 << 24)  // JAWD1EN: Analog watchdog 1 enable on injected channels
+    | (0 << 23)  // AWD1EN: Analog watchdog 1 enable on regular channels
+    | (0 << 22)  // AWD1SGL: Enable the watchdog 1 on a single channel or on all channels
+    | (0 << 21)  // JQM: JSQR queue mode
+    | (0 << 20)  // JDISCEN: Discontinuous mode on injected channels
+    | (0 << 17)  // DISCNUM(3): Discontinuous mode channel count
+    | (0 << 16)  // DISCEN: Discontinuous mode for regular channels
+
+    | (0 << 14)  // AUTDLY: Delayed conversion mode
+    | (1 << 13)  // CONT: Single / continuous conversion mode for regular conversions
+    | (1 << 12)  // OVRMOD: Overrun mode, 1 = overwrite
+    | (0 << 10)  // EXTEN(2): External trigger enable and polarity selection for regular channels
+    | (0 <<  6)  // EXTSEL(4): External trigger selection for regular group
+    | (1 <<  5)  // ALIGN: Data alignment, 0 = right alignment, 1 = left alignment
+    | (0 <<  3)  // RES(2): Data resolution, 0 = 12 bit, 1 = 10 bit, 2 = 8 bit, 3 = 6 bit
+    | (1 <<  1)  // DMACFG: Direct memory access configuration, 0 = One shot mode, 1 = circular mode
+    | (1 <<  0)  // DMAEN: Direct memory access enable
+  ;
+
+  // disable ADC Watchdogs
+  regs->TR1 = 0;
+  regs->TR2 = 0;
+  regs->TR3 = 0;
+
+  regs->AWD2CR = 0;
+  regs->AWD3CR = 0;
+
+  // setup sampling time
+
+  uint32_t stcode = 0; // sampling time code, index for the following array
+  uint32_t sampling_clocks[8] = {2, 3, 5, 8, 20, 62, 182, 602};  // actually its 0.5 CLK less
+  uint32_t target_sampling_clocks = (sampling_time_ns * 1000) / (adc_clock / 1000);
+  while ((stcode < 7) && (sampling_clocks[stcode] < target_sampling_clocks))
+  {
+    ++stcode;
+  }
+
+  int i;
+  uint32_t tmp = 0;
+  for (i = 0; i < 9; ++i)
+  {
+    tmp |= (stcode << (i * 3));
+  }
+  regs->SMPR1 = tmp;
+  regs->SMPR2 = tmp;
+
+  // total conversion cycles:  12 ADC clocks + sampling time
+  conv_adc_clocks = sampling_clocks[stcode] + 12;
+  act_conv_rate = adc_clock / conv_adc_clocks;
+
+  // setup the regular sequence based on the channel map and start the cyclic conversion
+  StartFreeRun(channel_map);
+
+  initialized = true;
+  return true;
+}
+
+
 #elif defined(MCUSF_G4) || defined(MCUSF_H7)
 
 bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
@@ -331,7 +495,9 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	regs = nullptr;
 	if      (1 == devnum)
 	{
-		#if defined(RCC_AHB1ENR_ADC12EN) // H7
+    #if defined(RCC_AHBENR_ADC12EN) // F3
+      RCC->AHB1ENR |= RCC_AHB1ENR_ADC12EN;
+		#elif defined(RCC_AHB1ENR_ADC12EN) // H7
 	  	RCC->AHB1ENR |= RCC_AHB1ENR_ADC12EN;
 			dmamux = 9;
 		#else
