@@ -26,6 +26,7 @@
  *  authors:  nvitya
 */
 
+#include "platform.h"
 #include "atsam_v2_utils.h"
 
 const Sercom * sercom_inst_list[] = SERCOM_INSTS;

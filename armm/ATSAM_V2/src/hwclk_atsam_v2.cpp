@@ -182,6 +182,7 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 //   GCLK2: 48 MHz from the internal DFLL48M (the I2C requires that)
 //   GCLK3: 32 kHz Slow Clock
 //   GCLK4: 48 MHz, used by the USB
+//   GCLK5: CPU Clock / 2 (for ADC when the CPU clock > 100 MHz)
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
@@ -351,6 +352,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // turn on the slow clock, some peripherals (e.g. SERCOM) require it
     GCLK->PCHCTRL[3].reg = 0x00000043;
 
+    // GCLK5 = CPU clock / 2
+    atsam2_gclk_setup(5, pllid, cpu_gclk_div << 1);
 
   #elif defined(MCUSF_C2X)
 
@@ -370,6 +373,9 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     {
       atsam2_gclk_setup(4, dfll48id, 1);
     }
+
+    // GCLK5 = CPU clock / 2
+    atsam2_gclk_setup(5, pllid, cpu_gclk_div << 1);
 
   #elif defined(MCUSF_DXX)
 
@@ -391,6 +397,10 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // GCLK4: USB 48 MHz
     GCLK->GENCTRL.reg = 0x00010704; // Select DFLL48M
     GCLK->GENDIV.reg  = 0x00000004; // no division for GCLK4
+
+    // GCLK5: 24 MHz
+    GCLK->GENCTRL.reg = 0x00010705; // Select DFLL48M
+    GCLK->GENDIV.reg  = 0x00000105; // divide by 2
 
   #else
     #error "Implement clock settings for this subfamily"

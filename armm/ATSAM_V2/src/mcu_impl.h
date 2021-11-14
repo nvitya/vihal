@@ -42,6 +42,10 @@
   #include "hwextirq_atsam_v2.h"
 #endif
 
+#ifdef HWADC_H_
+  #include "hwadc_atsam_v2.h"
+#endif
+
 #ifdef HWCAN_H_
   #include "hwcan_atsam_v2.h"
 #endif
