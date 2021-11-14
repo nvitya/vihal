@@ -55,6 +55,8 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	chnum = achnum;
 	outnum = (aoutnum & 1);
 
+	unsigned busid = 1;
+
 	regs = nullptr;
 
   if (false)
@@ -67,6 +69,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 		regs = TIM1;
 		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
 		advanced_timer = true;
+		busid = 2;
 	}
 #endif
 #ifdef TIM2
@@ -117,6 +120,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 		regs = TIM8;
 		RCC->APB2ENR |= RCC_APB2ENR_TIM8EN;
 		advanced_timer = true;
+    busid = 2;
 	}
 #endif
 #ifdef TIM9
@@ -124,6 +128,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	{
 		regs = TIM9;
 		RCC->APB2ENR |= RCC_APB2ENR_TIM9EN;
+    busid = 2;
 	}
 #endif
 #ifdef TIM10
@@ -131,6 +136,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	{
 		regs = TIM10;
 		RCC->APB2ENR |= RCC_APB2ENR_TIM10EN;
+    busid = 2;
 	}
 #endif
 #ifdef TIM11
@@ -138,6 +144,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	{
 		regs = TIM11;
 		RCC->APB2ENR |= RCC_APB2ENR_TIM11EN;
+    busid = 2;
 	}
 #endif
 
@@ -169,6 +176,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 
 	chpos = (chnum - 1);
 
+	timer_base_speed = (stm32_bus_speed(busid) << 1); // the timer clock speed is twice of the APB speed
 
 	regs->SMCR = 0;
 
@@ -249,13 +257,11 @@ void THwPwmChannel_stm32::SetFrequency(uint32_t afrequency)
 {
 	frequency = afrequency;
 
-	uint32_t baseclock = SystemCoreClock;
-
 	uint32_t prescaler = 0;
 	do
 	{
 		++prescaler;
-		periodclocks = baseclock / (prescaler * frequency);
+		periodclocks = timer_base_speed / (prescaler * frequency);
 	}
 	while (periodclocks > 65535);
 

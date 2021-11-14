@@ -51,6 +51,7 @@ public:
 
 	uint32_t                chpos = 0;     // = chnum - 1
 	uint32_t						    outenbit = 0;
+	uint32_t                timer_base_speed = 0;
 	volatile uint32_t *     valreg = nullptr;
 };
 
