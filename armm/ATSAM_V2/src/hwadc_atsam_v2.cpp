@@ -89,36 +89,37 @@ bool THwAdc_atsam_v2::Init(int adevnum, uint32_t achannel_map)
 	}
 
 	regs->CTRLA.reg = (0
-	  || (0  << 15)  // R2R: 0 = single ended mode
-	  || (adc_presc <<  8)  // PRESCALER(3):
-	  || (0  <<  7)  // ONDEMAND
-	  || (0  <<  6)  // RUNSTDBY
-	  || (0  <<  5)  // SLAVEEN
-	  || (0  <<  3)  // DUALSEL(2)
-	  || (0  <<  1)  // ENABLE
-	  || (0  <<  0)  // SWRST
+	  | (0  << 15)  // R2R: 0 = single ended mode
+	  | (adc_presc <<  8)  // PRESCALER(3):
+	  | (0  <<  7)  // ONDEMAND
+	  | (0  <<  6)  // RUNSTDBY
+	  | (0  <<  5)  // SLAVEEN
+	  | (0  <<  3)  // DUALSEL(2)
+	  | (0  <<  1)  // ENABLE
+	  | (0  <<  0)  // SWRST
 	);
 
 	regs->CTRLB.reg = (0
-	  || (0  << 11)  // WINSS
-	  || (0  <<  8)  // WINMODE(3)
-	  || (0  <<  3)  // RESSEL(2): 0 = 12 bit, 1 = 16 bit for averaging mode
-	  || (0  <<  2)  // CORREN: 0 = no gain or offset correction
-	  || (0  <<  1)  // FREERUN: 0 = disable freerun, it works only with single channel
-	  || (1  <<  0)  // LEFTADJ: 0 = right adjusted result, 1 = left adjusted result
+	  | (0  << 11)  // WINSS
+	  | (0  <<  8)  // WINMODE(3)
+	  | (0  <<  3)  // RESSEL(2): 0 = 12 bit, 1 = 16 bit for averaging mode
+	  | (0  <<  2)  // CORREN: 0 = no gain or offset correction
+	  | (0  <<  1)  // FREERUN: 0 = disable freerun, it works only with single channel
+	  | (1  <<  0)  // LEFTADJ: 0 = right adjusted result, 1 = left adjusted result
 	);
 
 	regs->EVCTRL.reg = 0; // disable events
 	regs->REFCTRL.reg = (0
-	  || (0  <<  7)  // REFCOMP: 0 = disable compensation
-	  || (0  <<  0)  // REFSEL(4): 0 = INTDEF, 3 = INTVCC1 = VDDANA
+	  | (0  <<  7)  // REFCOMP: 0 = disable compensation
+	  | (3  <<  0)  // REFSEL(4): 0 = INTDEF, 3 = INTVCC1 = VDDANA
 	);
 
 	regs->AVGCTRL.reg = 0; // no averaging
 
   // sampling time
   uint32_t sampling_clocks = (sampling_time_ns * 1000) / (adc_clock / 1000);
-  if (sampling_clocks > 64)  sampling_clocks = 64;
+  if       (sampling_clocks <  4)  sampling_clocks = 4;
+  else if (sampling_clocks  > 64)  sampling_clocks = 64;
 
   regs->SAMPCTRL.reg = sampling_clocks; // no offset compensation
 
@@ -132,19 +133,7 @@ bool THwAdc_atsam_v2::Init(int adevnum, uint32_t achannel_map)
 
   regs->INTENCLR.reg = 7; // disable interrupts
 
-  regs->DSEQCTRL.reg = (0
-    || (0  << 31)  // AUTOSTART
-    || (0  <<  0)  //
-    || (0  <<  8)  // OFFSETCORR
-    || (0  <<  7)  // GAINCORR
-    || (0  <<  6)  // WINUT
-    || (0  <<  5)  // WINLT
-    || (0  <<  4)  // SAMPCTRL
-    || (0  <<  3)  // AVGCTRL
-    || (0  <<  2)  // REFCTRL
-    || (0  <<  1)  // CTRLB
-    || (1  <<  0)  // INPUTCTRL
-  );
+  regs->DSEQCTRL.reg = 0; // disable the sequencer
 
   // Prepare DMA for sequencing, update only the INPUTCTRL
   seq_dmach.Prepare(true, (void *)&regs->DSEQDATA.reg, 0);
@@ -156,7 +145,7 @@ bool THwAdc_atsam_v2::Init(int adevnum, uint32_t achannel_map)
   regs->CTRLA.bit.ENABLE = 1;
 
   // setup the regular sequence based on the channel map and start the cyclic conversion
-  StartFreeRun(channel_map);
+  StartFreeRun(achannel_map);
 
 	initialized = true;
 	return true;
@@ -212,42 +201,63 @@ void THwAdc_atsam_v2::StartFreeRun(uint32_t achsel)
   dmaxfer.flags = DMATR_CIRCULAR;
   dmach.StartTransfer(&dmaxfer);
 
-  regs->DSEQCTRL.bit.AUTOSTART = 1; // start the DMA sequencer
-  regs->SWTRIG.bit.START = 1; // start the conversions
+  // start the sequencer
+
+  regs->DSEQCTRL.reg = (0
+    | (1  << 31)  // AUTOSTART
+    | (0  <<  0)  //
+    | (0  <<  8)  // OFFSETCORR
+    | (0  <<  7)  // GAINCORR
+    | (0  <<  6)  // WINUT
+    | (0  <<  5)  // WINLT
+    | (0  <<  4)  // SAMPCTRL
+    | (0  <<  3)  // AVGCTRL
+    | (0  <<  2)  // REFCTRL
+    | (0  <<  1)  // CTRLB
+    | (1  <<  0)  // INPUTCTRL
+  );
+
+  //regs->SWTRIG.reg = (ADC_SWTRIG_START); // start the conversions
 }
 
 void THwAdc_atsam_v2::StopFreeRun()
 {
   regs->DSEQCTRL.bit.AUTOSTART = 0; // stop the DMA sequencer
-
+  while (regs->STATUS.bit.ADCBUSY)
+  {
+    // wait until it is stopped propery
+  }
+  dmach.Disable();
 }
 
-void THwAdc_atsam_v2::StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adstptr)
+void THwAdc_atsam_v2::StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr)
 {
 	StopFreeRun();
 
-#if 0
+	SetupChannels(achsel);
 
-	// enable the selected channels
+  // Setup DMA for the results
+  dmaxfer.bytewidth = 2;
+  dmaxfer.count = (abufsize >> 1);
+  dmaxfer.dstaddr = adstptr;
+  dmaxfer.flags = 0; // normal transfer
+  dmach.StartTransfer(&dmaxfer);
 
-	channel_map = achsel;
-	regs->ADC_CHDR = (~channel_map & 0xFFFF);
-	regs->ADC_CHER = channel_map; // enable channels
+  // start the sequencer
 
-	dmaxfer.dstaddr = adstptr;
-	dmaxfer.count = acount;
-	dmach.StartTransfer(&dmaxfer);
-
-	regs->ADC_MR |= 0
-		|	(1 <<  7)  // FREERUN: Free Run Mode, 1 = never wait for any trigger
-	;
-
-	// Start the conversion
-	regs->ADC_CR = 0
-		| (0 <<  0)  // SWRST: Software Reset
-		| (1 <<  1)  // START: Start Conversion
-	;
-#endif
+  regs->DSEQCTRL.reg = (0
+    | (1  << 31)  // AUTOSTART
+    | (0  <<  0)  //
+    | (0  <<  8)  // OFFSETCORR
+    | (0  <<  7)  // GAINCORR
+    | (0  <<  6)  // WINUT
+    | (0  <<  5)  // WINLT
+    | (0  <<  4)  // SAMPCTRL
+    | (0  <<  3)  // AVGCTRL
+    | (0  <<  2)  // REFCTRL
+    | (0  <<  1)  // CTRLB
+    | (1  <<  0)  // INPUTCTRL
+  );
 }
 
 

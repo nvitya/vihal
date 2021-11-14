@@ -201,6 +201,8 @@ unsigned THwDmaChannel_atsam_v2::Remaining()
 
 void THwDmaChannel_atsam_v2::PrepareTransfer(THwDmaTransfer * axfer)
 {
+  Disable();
+
 	uint16_t ccreg = 0
 	  | (0 << 13)  // STEPSIZE(3): 0 = beat size
 	  | (0 << 12)  // STEPSEL: 0 = dst, 1 = src

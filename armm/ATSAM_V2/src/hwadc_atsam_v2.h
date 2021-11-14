@@ -64,7 +64,7 @@ public:
 
 	void             StartFreeRun(uint32_t achsel);
 	void             StopFreeRun();
-	void             StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adstptr);
+	void             StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr);
 	bool             RecordFinished() { return !dmach.Active(); }
 
 public: // helper functions

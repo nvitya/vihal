@@ -986,15 +986,15 @@ void THwAdc_stm32::StartContConv()
 }
 
 
-void THwAdc_stm32::StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adstptr)
+void THwAdc_stm32::StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr)
 {
 	StopFreeRun();
 
 	SetupChannels(achsel); // this makes now a little bit more than what is necessary, but it is simpler this way
 
 	dmaxfer.dstaddr = adstptr;
-	dmaxfer.count = acount;
 	dmaxfer.bytewidth = 2;
+  dmaxfer.count = (abufsize >> 1);
 	dmaxfer.flags = 0; // not circular this time
 	dmach.StartTransfer(&dmaxfer);
 

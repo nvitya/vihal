@@ -170,7 +170,7 @@ void THwAdc_atsam::StopFreeRun()
 	}
 }
 
-void THwAdc_atsam::StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adstptr)
+void THwAdc_atsam::StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr)
 {
 	StopFreeRun();
 
@@ -181,7 +181,7 @@ void THwAdc_atsam::StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adst
 	regs->ADC_CHER = channel_map; // enable channels
 
 	dmaxfer.dstaddr = adstptr;
-	dmaxfer.count = acount;
+	dmaxfer.count = (abufsize >> 1);
 	dmach.StartTransfer(&dmaxfer);
 
 	regs->ADC_MR |= 0
@@ -362,7 +362,7 @@ void THwAdc_atsam::StopFreeRun()
 	}
 }
 
-void THwAdc_atsam::StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adstptr)
+void THwAdc_atsam::StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr)
 {
 	StopFreeRun();
 
@@ -374,7 +374,7 @@ void THwAdc_atsam::StartRecord(uint32_t achsel, uint32_t acount, uint16_t * adst
 	regs->AFEC_CHER = channel_map; // enable channels
 
 	dmaxfer.dstaddr = adstptr;
-	dmaxfer.count = acount;
+	dmaxfer.count = (abufsize >> 1);
 	dmach.StartTransfer(&dmaxfer);
 
 	regs->AFEC_MR |= 0
