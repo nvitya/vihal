@@ -37,7 +37,6 @@ bool THwAdc_atsam_v2::Init(int adevnum, uint32_t achannel_map)
   devnum = adevnum;
 
   uint32_t tmp;
-  unsigned perid;
 	unsigned periphclock = SystemCoreClock;
 	unsigned gclkid = 0;
 	if (periphclock > 100000000)
@@ -52,7 +51,6 @@ bool THwAdc_atsam_v2::Init(int adevnum, uint32_t achannel_map)
 		regs = ADC0;
 	  atsam2_set_periph_gclk(ADC0_GCLK_ID, gclkid);
     MCLK->APBDMASK.reg |= MCLK_APBDMASK_ADC0;
-		perid = ID_ADC0;
 
     dmach.Init(dmachannel, ADC0_DMAC_ID_RESRDY);
 	  seq_dmach.Init(seq_dmachannel, ADC0_DMAC_ID_SEQ);
@@ -62,7 +60,6 @@ bool THwAdc_atsam_v2::Init(int adevnum, uint32_t achannel_map)
     regs = ADC1;
     atsam2_set_periph_gclk(ADC1_GCLK_ID, gclkid);
     MCLK->APBDMASK.reg |= MCLK_APBDMASK_ADC1;
-    perid = ID_ADC1;
 
     dmach.Init(dmachannel, ADC1_DMAC_ID_RESRDY);
     seq_dmach.Init(seq_dmachannel, ADC1_DMAC_ID_SEQ);

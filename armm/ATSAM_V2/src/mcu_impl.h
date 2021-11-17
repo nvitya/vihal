@@ -46,6 +46,10 @@
   #include "hwadc_atsam_v2.h"
 #endif
 
+#ifdef HWPWM_H_
+  #include "hwpwm_atsam_v2.h"
+#endif
+
 #ifdef HWCAN_H_
   #include "hwcan_atsam_v2.h"
 #endif
