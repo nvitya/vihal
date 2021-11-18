@@ -578,7 +578,7 @@ unsigned THwDmaChannel_atsam::DmacRemaining()
 
 void THwDmaChannel_atsam::PrepareTransfer(THwDmaTransfer * axfer)
 {
-  PerDmaPrepareTransfer(axfer);
+  PdmaPrepareTransfer(axfer);
 }
 
 void THwDmaChannel_atsam::Enable()
@@ -588,17 +588,17 @@ void THwDmaChannel_atsam::Enable()
 
 bool THwDmaChannel_atsam::Enabled()
 {
-  return PerDmaEnabled();
+  return PdmaEnabled();
 }
 
 void THwDmaChannel_atsam::Disable()
 {
-  PerDmaDisable();
+  PdmaDisable();
 }
 
 unsigned THwDmaChannel_atsam::Remaining()
 {
-  return PerDmaRemaining();
+  return PdmaRemaining();
 }
 
 #elif defined(HW_PDMA_REGS) && defined(DMAC) // peripheral DMA and DMAC

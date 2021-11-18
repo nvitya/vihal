@@ -68,12 +68,12 @@
   #include "hwsdram_atsam.h"
 #endif
 
-/*  not yet migrated from NVCM
-
 #if defined(HWUSBCTRL_H_)
   #include "hwusbctrl_atsam.h"
   #include "hwusbctrl_atsam_hs.h"
 #endif
+
+/*  not yet migrated from NVCM
 
 #if defined(HSMCI) && defined(HWSDCARD_H_)
   #include "hwsdcard_atsam.h"
