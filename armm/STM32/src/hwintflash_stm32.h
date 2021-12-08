@@ -58,6 +58,7 @@ public:
 public:
 
 	void             Unlock();
+  uint32_t         EraseSize(uint32_t aaddress);
 
 protected:
 
@@ -78,7 +79,6 @@ protected:
 
 	uint8_t          fixblock_size_shift = 0;
 
-  uint32_t         EraseSize(uint32_t aaddress);
 	int              BlockIdFromAddress(uint32_t aaddress);
 
 };
