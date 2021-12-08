@@ -109,7 +109,7 @@ bool THwSpi_stm32::Init(int adevnum)
 
 	// speed: the base speed will be divided with the powers of 2
 	unsigned dcode = 0;
-	while ((basespeed / (1 << dcode) > speed) && (dcode < 7))
+	while ((basespeed / (2 << dcode) > speed) && (dcode < 7))
 	{
 		++dcode;
 	}
