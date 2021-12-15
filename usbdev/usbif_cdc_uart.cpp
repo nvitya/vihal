@@ -66,18 +66,22 @@ bool TUifCdcUartControl::InitInterface()
 	intfdesc.interface_subclass = 2; // Abstract Control Model
 	intfdesc.interface_protocol = 0; // 0 = no class specitic control
 
-	interface_name = "VCP Control";
+	interface_name = "USB-UART Control";
 
 	// some other descriptors are required
 
+  desc_cdc_callmgmt.data_interface = index + 1;  // the following interface must be the data interface
+  desc_cdc_union.master_interface = index;
+  desc_cdc_union.slave_interface = index + 1;
+
 	AddConfigDesc((void *)&cdc_desc_header_func[0],     true);
-	AddConfigDesc((void *)&cdc_desc_call_management[0], true);
+	AddConfigDesc((void *)&desc_cdc_callmgmt,           true);
 	AddConfigDesc((void *)&cdc_desc_call_acm_func[0],   true);
-	AddConfigDesc((void *)&cdc_desc_call_union_func[0], true);
+	AddConfigDesc((void *)&desc_cdc_union,              true);
 
 	// endpoints
 
-	ep_manage.Init(HWUSB_EP_TYPE_INTERRUPT, false, 64);
+	ep_manage.Init(HWUSB_EP_TYPE_INTERRUPT, false, 8);
 	ep_manage.interval = 10; // polling interval
 	AddEndpoint(&ep_manage);
 
@@ -102,19 +106,19 @@ bool TUifCdcUartControl::HandleSetupRequest(TUsbSetupRequest * psrq)
 {
 	if (0x20 == psrq->request) // set line coding, data stage follows !
 	{
-		TRACE("VCP Set line coding (SETUP)\r\n");
+		TRACE("USB-UART Set line coding (SETUP)\r\n");
 		device->StartSetupData();  // start receiving the data part, which will be handled at the HandleSetupData()
 		return true;
 	}
 	else if (0x21 == psrq->request) // Get line coding
 	{
-		TRACE("VCP Get line coding\r\n");
+		TRACE("USB-UART Get line coding\r\n");
 		device->StartSendControlData(&linecoding, sizeof(linecoding));
 		return true;
 	}
 	else if (0x22 == psrq->request) // Set Control Line State
 	{
-		TRACE("VCP Set Control Line State: %04X\r\n", psrq->value);
+		TRACE("USB-UART Set Control Line State: %04X\r\n", psrq->value);
 		device->SendControlStatus(true);
 		return true;
 	}
@@ -129,7 +133,7 @@ bool TUifCdcUartControl::HandleSetupData(TUsbSetupRequest * psrq, void * adata, 
 	{
 		memcpy(&linecoding, adata, sizeof(linecoding));
 
-		TRACE("VCP Line Coding data:\r\n  baud=%i, format=%i, parity=%i, bits=%i\r\n",
+		TRACE("USB-UART Line Coding data:\r\n  baud=%i, format=%i, parity=%i, bits=%i\r\n",
 				linecoding.baudrate, linecoding.charformat, linecoding.paritytype, linecoding.databits
 		);
 
@@ -283,7 +287,7 @@ bool TUifCdcUartData::InitInterface()
 	intfdesc.interface_subclass = 0;
 	intfdesc.interface_protocol = 0; // no specific protocol
 
-	interface_name = "VCP Data";
+	interface_name = "USB-UART Data";
 
 	// endpoints
 
@@ -306,7 +310,7 @@ void TUifCdcUartData::Reset()
 
 void TUifCdcUartData::OnConfigured()
 {
-	TRACE("VCP Data Configured.\r\n");
+	TRACE("USB-UART Data Configured.\r\n");
 
 	Reset();
 

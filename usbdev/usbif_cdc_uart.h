@@ -66,6 +66,24 @@ public:
 	uint8_t           serial_txbufidx = 0;
 	uint8_t           serial_txlen = 0;
 
+	TUsbCdcDescCallUnionFunc  desc_cdc_union =
+  {
+    .length = 5,
+    .descriptor_type = 0x24,  // 0x24 = CS_INTERFACE
+    .descriptor_subtype = 6,  // 6 = union func
+    .master_interface = 0,    // will be set automatically
+    .slave_interface = 1      // will be set automatically
+  };
+
+	TUsbCdcDescCallManagement  desc_cdc_callmgmt =
+  {
+    .length = 5,
+    .descriptor_type = 0x24,  // 0x24 = CS_INTERFACE
+    .descriptor_subtype = 6,  // 6 = union func
+    .capabilities = 0,        // 0 = no call management
+    .data_interface = 0       // will be set automatically
+  };
+
 public: // interface specific
 	bool              InitCdcUart(TUifCdcUartData * adataif, THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx);
 	void              Run(); // must be called periodically

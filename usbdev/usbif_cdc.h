@@ -37,9 +37,32 @@ struct TCdcLineCoding
 	uint8_t    databits;
 };
 
+typedef struct TUsbCdcDescCallManagement
+{
+  uint8_t   length; // = 5
+  uint8_t   descriptor_type; // = 24 = CS_INTERFACE
+  uint8_t   descriptor_subtype;  // 1 = call management func
+  uint8_t   capabilities;  // 0 = no call management
+  uint8_t   data_interface;
+//
+} TUsbCdcDescCallManagement;
+
+typedef struct TUsbCdcDescCallUnionFunc
+{
+  uint8_t   length; // = 5
+  uint8_t   descriptor_type; // = 24 = CS_INTERFACE
+  uint8_t   descriptor_subtype;  // = 6 = union func desc
+  uint8_t   master_interface;  // communication class interface
+  uint8_t   slave_interface;   // data class interface
+//
+} TUsbCdcDescCallUnionFunc;
+
 extern const uint8_t cdc_desc_header_func[5];
-extern const uint8_t cdc_desc_call_management[5];
 extern const uint8_t cdc_desc_call_acm_func[4];
+
+#if 0
+extern const uint8_t cdc_desc_call_management[5];
 extern const uint8_t cdc_desc_call_union_func[5];
+#endif
 
 #endif /* USBIF_CDC_H_ */

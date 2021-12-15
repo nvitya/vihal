@@ -34,7 +34,7 @@
 
 #include "hwusbctrl.h"
 
-#define USBDEV_CTRL_BUF_SIZE   128  // every decriptor must fit into this, some are bigger than 64 byte !
+#define USBDEV_CTRL_BUF_SIZE   192  // every decriptor must fit into this, some are bigger than 64 byte !
 #define USBDEV_MAX_STRINGS      16
 #define USBDEV_MAX_INTERFACES    6
 #define USBDEV_MAX_DESCREC       8
@@ -178,6 +178,7 @@ public:
 	TUsbInterface *      interface = nullptr;  // will be set on interface add
 
 	uint8_t              interval = 10; // polling interval
+	uint16_t             status = 0;    // response to GETSTATUS bit0: 1 = halted
 
 	bool Init(uint8_t aattr, bool adir_htod, uint16_t amaxlen);
 	void SetIndex(uint8_t aindex);
@@ -187,6 +188,8 @@ public:
 
 	virtual bool         HandleTransferEvent(bool htod);
 	virtual bool         HandleSetupRequest(TUsbSetupRequest * psrq);
+
+	virtual void         OnStatusChange() { }
 
 };
 

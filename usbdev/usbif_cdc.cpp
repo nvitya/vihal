@@ -39,6 +39,16 @@ const uint8_t cdc_desc_header_func[5] =
 	0x01,
 };
 
+const uint8_t cdc_desc_call_acm_func[4] =
+{
+  /*ACM Functional Descriptor*/
+  0x04,   /* bFunctionLength */
+  0x24,   /* bDescriptorType: CS_INTERFACE */
+  0x02,   /* bDescriptorSubtype: Abstract Control Management desc */
+  0x02,   /* bmCapabilities */
+};
+
+#if 0
 const uint8_t cdc_desc_call_management[5] =
 {
 	/*Call Management Functional Descriptor*/
@@ -49,14 +59,6 @@ const uint8_t cdc_desc_call_management[5] =
 	0x00,   /* bDataInterface: 0 */   // ???
 };
 
-const uint8_t cdc_desc_call_acm_func[4] =
-{
-	/*ACM Functional Descriptor*/
-	0x04,   /* bFunctionLength */
-	0x24,   /* bDescriptorType: CS_INTERFACE */
-	0x02,   /* bDescriptorSubtype: Abstract Control Management desc */
-	0x02,   /* bmCapabilities */
-};
 
 const uint8_t cdc_desc_call_union_func[5] =
 {
@@ -68,3 +70,4 @@ const uint8_t cdc_desc_call_union_func[5] =
 	0x01,   /* bSlaveInterface0: Data Class Interface */
 };
 
+#endif

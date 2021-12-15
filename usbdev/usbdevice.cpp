@@ -72,6 +72,31 @@ bool TUsbEndpoint::HandleTransferEvent(bool htod) // can be overridden
 
 bool TUsbEndpoint::HandleSetupRequest(TUsbSetupRequest * psrq)
 {
+  if (0 == psrq->request)  // get status feature
+  {
+    status &= ~(1 << psrq->value);
+    interface->device->StartSendControlData(&status,  sizeof(status));
+    return true;
+  }
+  else  if (1 == psrq->request)  // clear feature
+  {
+    status &= ~(1 << psrq->value);
+    OnStatusChange();
+    interface->device->SendControlStatus(true);
+    return true;
+  }
+  else if (3 == psrq->request)  // set feature
+  {
+    status |= (1 << psrq->value);
+    OnStatusChange();
+    interface->device->SendControlStatus(true);
+    return true;
+  }
+  else if (0x12 == psrq->request)  // sync frame
+  {
+    interface->device->SendControlStatus(true);
+    return true;
+  }
 	return false;
 }
 
@@ -427,6 +452,8 @@ void TUsbDevice::AddInterface(TUsbInterface * aintf)
 
 	aintf->device = this;
 	interfaces[interface_count] = aintf;
+  aintf->index = interface_count;
+
 	++interface_count;
 }
 
@@ -464,7 +491,6 @@ bool TUsbDevice::PrepareInterface(uint8_t ifidx, TUsbInterface * pif)
 		return false;
 	}
 
-	pif->index = ifidx;
 	pif->intfdesc.interface_number = ifidx;
 	pif->intfdesc.stri_interface = AddString(pif->interface_name);
 	pif->intfdesc.num_endpoints = pif->epcount;
@@ -837,7 +863,7 @@ void TUsbDevice::ProcessSetupRequest()
 	}
 	else if ((setuprq.rqtype & 0x1F) == 1) // interface requests
 	{
-		i = setuprq.index;
+		i = (setuprq.index & 0xFF);
 		if (i < interface_count)
 		{
 			if (interfaces[i]->HandleSetupRequest(&setuprq))
@@ -850,7 +876,7 @@ void TUsbDevice::ProcessSetupRequest()
 	}
 	else if ((setuprq.rqtype & 0x1F) == 2) // endpoint requests
 	{
-		i = setuprq.index;
+		i = (setuprq.index & 0x0F);
 		if (i < epcount)
 		{
 			if (eplist[i]->HandleSetupRequest(&setuprq))
