@@ -35,8 +35,10 @@
 
 #if defined(MCUSF_F1) || defined(MCUSF_F3) // actually F3 D/E devices are different
   #define HWUSB_16_32 1
+  #define PACKET_MEMORY_SIZE    512
 #else
   #define HWUSB_16_32 0
+  #define PACKET_MEMORY_SIZE    1024
 #endif
 
 #define HWUSBCTRL_PRE_ONLY
@@ -44,7 +46,6 @@
 
 #define USB_MAX_ENDPOINTS       8
 
-#define PACKET_MEMORY_SIZE    512
 
 #if HWUSB_16_32
 
