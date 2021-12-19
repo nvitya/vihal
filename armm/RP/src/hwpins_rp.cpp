@@ -28,6 +28,7 @@
 
 #include "platform.h"
 #include "hwpins.h"
+#include "rp_utils.h"
 
 #define MAX_GPIOPIN   NUM_BANK0_GPIOS
 
@@ -52,12 +53,7 @@ bool THwPinCtrl_rp::PinSetup(int aportnum, int apinnum, unsigned flags)
   }
 
   // remove resets
-  if (resets_hw->reset & (RESETS_RESET_PADS_BANK0_BITS | RESETS_RESET_IO_BANK0_BITS))
-  {
-    uint32_t rst = resets_hw->reset;
-    rst &= ~(RESETS_RESET_PADS_BANK0_BITS | RESETS_RESET_IO_BANK0_BITS);
-    resets_hw->reset = rst;
-  }
+  rp_reset_control(RESETS_RESET_PADS_BANK0_BITS | RESETS_RESET_IO_BANK0_BITS, false);
 
 	// port power control is not necessary ?
 
@@ -115,7 +111,7 @@ bool THwPinCtrl_rp::PinSetup(int aportnum, int apinnum, unsigned flags)
   ctrl = 0x00000000; // reset all to defaults
 	if (flags & PINCFG_AF_MASK)
 	{
-	  ctrl |= ((flags >> PINCFG_AF_SHIFT) & 0x1F);
+	  ctrl |= ((flags >> PINCFG_AF_SHIFT) & 0xF);  // only 16 functions are supported here !
 	}
 	else
 	{

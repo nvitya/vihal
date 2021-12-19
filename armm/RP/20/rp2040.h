@@ -58,6 +58,7 @@ typedef enum
 #include "hardware/structs/clocks.h"
 #include "hardware/structs/xosc.h"
 #include "hardware/structs/pll.h"
+#include "hardware/structs/uart.h"
 
 #endif /* _RP2040_H_ */
 

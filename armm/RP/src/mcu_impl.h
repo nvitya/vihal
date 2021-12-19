@@ -10,9 +10,9 @@
   #include "hwpins_rp.h"
 #endif
 
-//#ifdef HWUART_H_
-//  #include "hwuart_rp.h"
-//#endif
+#ifdef HWUART_H_
+  #include "hwuart_rp.h"
+#endif
 
 /* not migrated yet from NVCM:
 
