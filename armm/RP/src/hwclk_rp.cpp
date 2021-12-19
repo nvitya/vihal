@@ -30,6 +30,7 @@
 
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
+  xosc_hw->status = (1 << 24); // clear badwrite
   xosc_hw->ctrl = 0x00FABAA0;  // enable with Freq range 1-15 MHz
   while (0 == (xosc_hw->status & (1u << 31)))
   {
