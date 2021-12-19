@@ -29,11 +29,14 @@
 
 #if __CORTEX_M < 3
 
+__attribute__((section(".noinit")))
+uint32_t  rp_watchdog_tick_mul = 1;
+
 // clock timer initialization for Cortex-M0 processors
 
 void clockcnt_init()
 {
-  watchdog_hw->tick = (1 | (1 << 9));  // generate the tick at the clock speed !
+  watchdog_hw->tick = (1 | (1 << 9));  // generate the tick at the clk_ref speed !
 }
 
 #endif

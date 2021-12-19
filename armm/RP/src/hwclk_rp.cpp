@@ -30,17 +30,151 @@
 
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
+  xosc_hw->ctrl = 0x00FABAA0;  // enable with Freq range 1-15 MHz
+  while (0 == (xosc_hw->status & (1u << 31)))
+  {
+    // wait until it is stable
+  }
 }
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
-
+  // nothing to do, no internal flash memory or voltage scaling
 }
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   SystemCoreClock = MCU_INTERNAL_RC_SPEED;
 
+  uint32_t tmp;
+
+  // swithc the reference clock to ring osc
+  tmp = clocks_hw->clk[clk_ref].ctrl;
+  tmp &= ~(3);
+  clocks_hw->clk[clk_ref].ctrl = tmp;
+
+  // switch back to ref_clk (driven by the ring oscillator)
+  clock_hw_t * pclk_sys = &clocks_hw->clk[clk_sys];
+  pclk_sys->ctrl &= ~(1u); // select the clk_ref
+  while (0 == (pclk_sys->selected & 1))
+  {
+    __NOP();
+  }
+
+  // now it is safe to modify the PLLs
+
+  if (!external_clock_hz)
+  {
+    // no external crystal, the PLL does not supports it !
+    SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+    return true;
+  }
+
+  hwclk_start_ext_osc(external_clock_hz);
+
+  tmp = clocks_hw->clk[clk_ref].ctrl;
+  tmp &= ~(3);
+  tmp |= 2; // select XOSC for the reference clock
+  clocks_hw->clk[clk_ref].ctrl = tmp;
+
+  unsigned basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  // PLL CONSTRAINTS:
+  //   Reference clock frequency min=5MHz, max=800MHz
+  //   Feedback divider min=16, max=320
+  //   VCO frequency min=400MHz, max=1600MHz
+
+  // VCO freq      = (input_freq / input_div) * input_mul
+  // pll_out_freq  = (input_freq / input_div1) * input_mul / (pll_postdiv1 * pll_postdiv2)
+
+  uint32_t vco_div  = 12;
+  uint32_t vco_freq = target_speed_hz * vco_div; // target speed * 12 is almost universal
+
+  if (vco_freq < 400000000) // speeds smaller than 33 MHz
+  {
+    vco_div = 24;
+    vco_freq = target_speed_hz * vco_div;
+  }
+
+  uint32_t pll_postdiv1 = vco_freq / target_speed_hz;
+  uint32_t pll_postdiv2 = 1;
+  while ((pll_postdiv1 > 7) && (pll_postdiv2 < 4))
+  {
+    ++pll_postdiv2;
+    pll_postdiv1 = (vco_freq / (target_speed_hz * pll_postdiv2));
+  }
+
+  // handle input
+
+  uint32_t input_div = 1;
+  uint32_t input_mul = vco_freq / basespeed;
+  while (input_mul < 16)
+  {
+    ++input_div;
+    input_mul = input_div * (vco_freq / basespeed);
+  }
+
+  pll_sys_hw->prim = ((pll_postdiv1 << 16) | (pll_postdiv2 << 12));
+  pll_sys_hw->fbdiv_int = input_mul;
+
+  tmp = pll_sys_hw->cs;
+  tmp &= ~(0x3F | (1 << 8)); // clear refdiv and bypass
+  tmp |= input_div;
+  pll_sys_hw->cs = tmp;
+
+  // tur on the power...
+  tmp = pll_sys_hw->pwr;
+
+  // first turn all off
+  tmp |= (0
+    | (1 << 5) // VCOPD
+    | (1 << 3) // POSTDIVPD
+    | (1 << 2) // DSMPD
+    | (1 << 0) // PD
+  );
+
+  pll_sys_hw->pwr = tmp;
+
+  for (unsigned n = 0; n < 100; ++n)
+  {
+    __NOP();
+  }
+
+  tmp &= ~((1 << 5) | (1 << 0));  // enable PLL and VCO
+  pll_sys_hw->pwr = tmp;
+
+  while (!(pll_sys_hw->cs & PLL_CS_LOCK_BITS))
+  {
+    __NOP();
+  }
+
+  tmp &= ~(1 << 3);  // enable post divider
+  pll_sys_hw->pwr = tmp;
+
+  // select the pll for the system clock
+  tmp = pclk_sys->ctrl;
+  tmp &= ~((7 << 5) | (1 << 0)); // select the PLL, keep with reference
+  pclk_sys->ctrl = tmp;
+  for (unsigned n = 0; n < 10; ++n)
+  {
+    __NOP();
+  }
+  tmp |= 1; // swith to PLL
+  pclk_sys->ctrl = tmp;
+
+  // now we running hi-speed...
+
+  // set the peripheral clocks
+  tmp = clocks_hw->clk[clk_peri].ctrl;
+  tmp &= ~(3 << 5);  // 0 = clk_sys
+  tmp |= (1 << 11);  // enable
+  clocks_hw->clk[clk_peri].ctrl = tmp;
+
+  // inform the system of the clock speeds
+
+  rp_watchdog_tick_mul = target_speed_hz / basespeed;
   SystemCoreClock = target_speed_hz;
 
   return true;

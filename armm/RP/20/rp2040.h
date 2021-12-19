@@ -55,6 +55,9 @@ typedef enum
 #include "hardware/structs/watchdog.h"
 #include "hardware/structs/timer.h"
 #include "hardware/structs/resets.h"
+#include "hardware/structs/clocks.h"
+#include "hardware/structs/xosc.h"
+#include "hardware/structs/pll.h"
 
 #endif /* _RP2040_H_ */
 
