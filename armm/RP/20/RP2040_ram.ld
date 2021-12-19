@@ -1,0 +1,12 @@
+MEMORY
+{
+  ITCRAM (xrw) :  ORIGIN = 0x21000000, LENGTH = 64K
+  RAM (xrw)    :  ORIGIN = 0x21010000, LENGTH = 64K
+}
+
+REGION_ALIAS("TEXT", ITCRAM);
+REGION_ALIAS("DTCRAM",  RAM);
+REGION_ALIAS("RAM2",    RAM);
+
+INCLUDE armm_default_noflash.ld
+
