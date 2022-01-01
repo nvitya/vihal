@@ -684,6 +684,14 @@ void TUsbDevice::HandleControlEndpoint(bool htod)
 
 			if (USBCTRL_STAGE_STATUS == ctrlstage) // ACK sent
 			{
+			  if (double_ctrl_ack)
+			  {
+			    // send the ACK again (the ACK must be sent with DATA1 and some devices can not control it)
+			    double_ctrl_ack = false;
+			    ep_ctrl.SendAck();
+			    return;
+			  }
+
 				//LTRACE("CTRL ack sent.\r\n");
 				if (set_devaddr_on_ack)
 				{
@@ -723,6 +731,7 @@ void TUsbDevice::ProcessSetupRequest()
 	int i;
 
 #if 1
+	//LTRACE("%u ", CLOCKCNT / (SystemCoreClock / 1000));
 	LTRACE("SETUP request: %02X %02X  %04X %04X %04X\r\n", setuprq.rqtype, setuprq.request, setuprq.value, setuprq.index, setuprq.length);
 #endif
 

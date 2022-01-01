@@ -191,6 +191,19 @@ void THwUsbEndpoint_atsam::SendAck()
 		{
 			udp_ep_csreg_bit_clear(csreg, UDP_CSR_RXSETUP);
 		}
+
+    if (*csreg & UDP_CSR_RX_DATA_BK0)
+    {
+      udp_ep_csreg_bit_clear(csreg, UDP_CSR_RX_DATA_BK0);
+    }
+	}
+
+	// The ACK must be sent with DATA1 !
+  // The DATA0 / DATA1 are selected on this MCU automatically, somethimes wrong
+
+	if (0 == (*csreg & UDP_CSR_DTGLE))  // will be sent with DATA0 ?
+	{
+	  usbctrl->double_ctrl_ack = true;  // send another ACK, which will be with DATA1
 	}
 
 	udp_ep_csreg_bit_set(csreg, UDP_CSR_TXPKTRDY);
@@ -207,30 +220,32 @@ void THwUsbEndpoint_atsam::Nak()
 
 void THwUsbEndpoint_atsam::EnableRecv()
 {
+  uint32_t csr = *csreg;
+
 	if (iscontrol)
 	{
-#if 0
+#if 1
 		// the DIR bit must be set before the RXSETUP is cleared !
-		if (*csreg & UDP_CSR_DIR)
+		if (csr & UDP_CSR_DIR)
 		{
 			udp_ep_csreg_bit_clear(csreg, UDP_CSR_DIR);
 		}
 #endif
 
-		if (*csreg & UDP_CSR_RXSETUP)
+		if (csr & UDP_CSR_RXSETUP)
 		{
 			udp_ep_csreg_bit_clear(csreg, UDP_CSR_RXSETUP);
 		}
 	}
 
 #if 0
-	if (*csreg & UDP_CSR_TXCOMP)
+	if (csr & UDP_CSR_TXCOMP)
 	{
 		udp_ep_csreg_bit_clear(csreg, UDP_CSR_TXCOMP);
 	}
 #endif
 
-	if (*csreg & (UDP_CSR_FORCESTALL | UDP_CSR_STALLSENT))
+	if (csr & (UDP_CSR_FORCESTALL | UDP_CSR_STALLSENT))
 	{
 		udp_ep_csreg_bit_clear(csreg, UDP_CSR_FORCESTALL | UDP_CSR_STALLSENT);
 	}
@@ -377,6 +392,7 @@ void THwUsbCtrl_atsam::HandleIrq()
 
 			volatile uint32_t * pepreg = &regs->UDP_CSR[epid];
 			uint32_t epreg = *pepreg;
+		  //TRACE("%u ", CLOCKCNT / (SystemCoreClock / 1000));
 			//TRACE("[EP(%i)=%08X]\r\n", epid, epreg);
 
 			if (epreg & UDP_CSR_TXCOMP)
@@ -435,6 +451,8 @@ void THwUsbCtrl_atsam::HandleIrq()
 			{
 				udp_ep_csreg_bit_clear(pepreg, UDP_CSR_STALLSENT);
 			}
+
+      //TRACE("[%08X]\r\n", *pepreg);
 
 			rev_epirq &= ~(1 << (31-epid));
 		}

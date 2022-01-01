@@ -76,6 +76,9 @@ public:
 	virtual void HandleReset() { }
 	virtual void SetPullUp(bool aenable) { }
 	virtual bool HandleEpTransferEvent(uint8_t epid, bool htod) { return false; }
+
+public:
+	bool            double_ctrl_ack = false;  // some ATSAM devices require to send the ACK twice (for DATA1)
 };
 
 #endif // ndef HWUSBCTRL_H_PRE_
