@@ -70,6 +70,16 @@
 
 	#define MAX_IRQ_HANDLER_COUNT  101
 
+#elif	defined(MCUSF_WB)
+
+  #if !defined(MAX_CLOCK_SPEED)
+    #define MAX_CLOCK_SPEED  64000000
+  #endif
+
+  #define MCU_INTERNAL_RC_SPEED     16000000
+
+	#define MAX_IRQ_HANDLER_COUNT  101
+
 #elif	defined(MCUSF_F7)
 
   #if !defined(MAX_CLOCK_SPEED)

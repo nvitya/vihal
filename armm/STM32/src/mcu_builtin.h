@@ -132,6 +132,13 @@
 
   #include "stm32g431xx.h"
 
+#elif defined(MCU_STM32WB55VG) || defined(MCU_STM32WB5MMG)
+
+  #define MCUF_STM32
+  #define MCUSF_WB
+
+  #include "stm32wb55xx.h"
+
 // STM32F7: Cortex-M7
 
 #elif defined(MCU_STM32F746ZG) || defined(MCU_STM32F746NG)
