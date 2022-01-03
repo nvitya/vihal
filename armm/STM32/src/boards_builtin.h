@@ -106,6 +106,12 @@
   #define EXTERNAL_XTAL_HZ         0
   //#define EXTERNAL_XTAL_HZ   24000000
 
+#elif defined(BOARD_DISCOVERY_WB5M)
+
+  #define BOARD_NAME "STM32WB5M Discovery"
+  #define MCU_STM32WB55VG
+  #define EXTERNAL_XTAL_HZ   32000000
+
 #elif defined(BOARD_NUCLEO_F746)
 
   #define BOARD_NAME "STM32F746 Nucleo-144"

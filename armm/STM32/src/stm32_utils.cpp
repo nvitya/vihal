@@ -57,6 +57,15 @@ uint32_t stm32_bus_speed(uint8_t abusid)
 	return (SystemCoreClock >> clockshr);
 }
 
+#elif defined(MCUSF_WB)
+
+// missing RCC_CFGR_HPRE_DIV2 etc. defines here ....
+
+uint32_t stm32_bus_speed(uint8_t abusid)
+{
+  return SystemCoreClock; // no division is set up
+}
+
 #else
 
 // classic

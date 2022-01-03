@@ -30,11 +30,13 @@
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
   uint32_t crreg = RCC->CR;
+#ifdef RCC_CR_HSEBYP
   if (aextspeed & HWCLK_EXTCLK_BYPASS)
   {
     crreg |= RCC_CR_HSEBYP;
     RCC->CR = crreg;
   }
+#endif
   crreg |= RCC_CR_HSEON;
   RCC->CR = crreg;
 
@@ -169,6 +171,43 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 
   FLASH->ACR &= ~FLASH_ACR_LATENCY;
   FLASH->ACR |= ws;
+
+  // enable caches and prefetch
+  FLASH->ACR |= (FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
+}
+
+#elif defined(MCUSF_WB)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  unsigned tmp;
+
+  // Set Voltage Scaling Range 1 (normal mode), (Range 2 (up to 16 MHz) not supported)
+
+  tmp = PWR->CR1;
+  tmp &= ~(PWR_CR1_VOS);
+  tmp |= PWR_CR1_VOS_0;  // VOS_0 = Range 1, VOS_1 = Range 2
+  PWR->CR1 = tmp;
+  while (PWR->SR2 & PWR_SR2_VOSF)
+  {
+    // Wait until VOSF is cleared
+  }
+
+  // set Flash latency
+
+  unsigned ws;
+  if      (acpuspeed <= 18000000)  ws = FLASH_ACR_LATENCY_0WS;
+  else if (acpuspeed <= 36000000)  ws = FLASH_ACR_LATENCY_1WS;
+  else if (acpuspeed <= 54000000)  ws = FLASH_ACR_LATENCY_2WS;
+  else
+  {
+    ws = FLASH_ACR_LATENCY_3WS;
+  }
+
+  tmp = FLASH->ACR;
+  tmp &= ~FLASH_ACR_LATENCY;
+  tmp |= ws;
+  FLASH->ACR = ws;
 
   // enable caches and prefetch
   FLASH->ACR |= (FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN);
@@ -519,22 +558,55 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 }
 
 //---------------------------------------------------------------------------------------------------------------------------
-#elif defined(MCUSF_G4)
+#elif defined(MCUSF_G4) || defined(MCUSF_WB)
 //---------------------------------------------------------------------------------------------------------------------------
+
+#ifndef RCC_CFGR_SW_PLL  // MCUSF_WB has no such define
+  #define RCC_CFGR_SW_PLL  3
+#endif
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   uint32_t tmp;
 
   // set back to the internal oscillator
-  tmp = RCC->CFGR;
-  tmp &= ~3;
-  tmp |= RCC_CFGR_SW_HSI;
-  RCC->CFGR = tmp;
-  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
-  {
-    // wait until it is set
-  }
+  #if defined(MCUSF_WB)
+
+    // for the WB the MSI will be selected as it is the default source after the reset
+
+    // ensure that the MSI is running at 4 MHz
+    tmp = RCC->CR;
+    tmp &= ~(RCC_CR_MSIRANGE);
+    tmp |= RCC_CR_MSIRANGE_6; // range6 = 4 MHz
+    tmp |= RCC_CR_MSION;
+    RCC->CR = tmp;
+    while (0 == (RCC->CR & RCC_CR_MSIRDY))
+    {
+      // wait until it is ready
+    }
+
+    // select the MSI as the clock source
+    #if !defined(RCC_CFGR_SW_MSI)
+      #define RCC_CFGR_SW_MSI 0
+    #endif
+    tmp = RCC->CFGR;
+    tmp &= ~3;
+    tmp |= RCC_CFGR_SW_MSI;
+    RCC->CFGR = tmp;
+    while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_MSI)
+    {
+      // wait until it is set
+    }
+  #else
+    tmp = RCC->CFGR;
+    tmp &= ~3;
+    tmp |= RCC_CFGR_SW_HSI;
+    RCC->CFGR = tmp;
+    while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+    {
+      // wait until it is set
+    }
+  #endif
 
   RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
   while ((RCC->CR & RCC_CR_PLLRDY) != 0)
@@ -556,6 +628,14 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   }
   else
   {
+    #if defined(MCUSF_WB)  // start the HSI
+      RCC->CR |= RCC_CR_HSION;
+      while (0 == (RCC->CR & RCC_CR_HSIRDY))
+      {
+        // wait until it is ready
+      }
+    #endif
+
     pllsrc = 2; // HSI (16 MHz)
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
@@ -584,18 +664,32 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   if (pllm > 1)  --pllm;
 
-  RCC->PLLCFGR = 0
-    | (pllsrc <<  0)  // PLLSRC(2)
-    | (pllm   <<  4)  // PLLM(4)
-    | (plln   <<  8)  // PLLN(7)
-    | (1      << 16)  // PLLPEN
-    | (0      << 17)  // PLLP: 0 = use PLLPDIV
-    | (1      << 20)  // PLLQEN
-    | (2      << 21)  // PLLQ(2): divide by 6, this gives only 48 MHz at 144 MHz CPU speed
-    | (1      << 24)  // PLLREN
-    | (0      << 25)  // PLLR(2): system clock = VCO speed / 2
-    | (2      << 27)  // PLLPDIV(5): divide by 2
-  ;
+  #if defined(MCUSF_WB)  // the register layout is different
+    RCC->PLLCFGR = 0
+      | (pllsrc <<  0)  // PLLSRC(2)
+      | (pllm   <<  4)  // PLLM(4)
+      | (plln   <<  8)  // PLLN(7)
+      | (1      << 16)  // PLLPEN
+      | (1      << 17)  // PLLP(5): 1 = VCO / 2, same as PCLK
+      | (1      << 24)  // PLLQEN
+      | (1      << 25)  // PLLQ(3): 1 = VCO / 2, same as PCLK
+      | (1      << 28)  // PLLREN
+      | (1      << 29)  // PLLR(3): system clock = VCO speed / 2
+    ;
+  #else
+    RCC->PLLCFGR = 0
+      | (pllsrc <<  0)  // PLLSRC(2)
+      | (pllm   <<  4)  // PLLM(4)
+      | (plln   <<  8)  // PLLN(7)
+      | (1      << 16)  // PLLPEN
+      | (0      << 17)  // PLLP: 0 = use PLLPDIV
+      | (1      << 20)  // PLLQEN
+      | (2      << 21)  // PLLQ(2): divide by 6, this gives only 48 MHz at 144 MHz CPU speed
+      | (1      << 24)  // PLLREN
+      | (0      << 25)  // PLLR(2): system clock = VCO speed / 2
+      | (2      << 27)  // PLLPDIV(5): divide by 2
+    ;
+  #endif
 
   RCC->CR |= RCC_CR_PLLON;  // enable the PLL
   while((RCC->CR & RCC_CR_PLLRDY) == 0)
@@ -603,12 +697,30 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // Wait till PLL is ready
   }
 
-  // on the G4 devices the APB1 and APB2 buses allowed to run with system clock speed
-  // select bus dividers AHB=1, ABP1=1, APB2=1
-  tmp = RCC->CFGR;
-  tmp &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
-  tmp |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1);
-  RCC->CFGR = tmp;
+  #if defined(MCUSF_G4)
+
+    // on the G4 devices the APB1 and APB2 buses allowed to run with system clock speed
+    // select bus dividers AHB=1, ABP1=1, APB2=1
+    tmp = RCC->CFGR;
+    tmp &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
+    tmp |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1);
+    RCC->CFGR = tmp;
+
+  #elif defined(MCUSF_WB)
+
+    // select bus dividers AHB=1, ABP1=1, APB2=1 (no divisions required)
+    tmp = RCC->CFGR;
+    tmp &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2); // clearing all these means do not divide
+    RCC->CFGR = tmp;
+
+    tmp = RCC->EXTCFGR;
+    tmp &= ~(RCC_EXTCFGR_C2HPRE | RCC_EXTCFGR_SHDHPRE);
+    //tmp |= (8 << RCC_EXTCFGR_C2HPRE_Pos);  // HCLK2: 8 = divide by 2
+    RCC->EXTCFGR = tmp;
+
+  #else
+    #error "Unimplemented sub-family handling here"
+  #endif
 
   // Select PLL as system clock source
 

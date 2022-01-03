@@ -171,7 +171,7 @@ bool THwIntFlash_stm32::HwInit()
 		cr_reg_base = (2 << FLASH_CR_PSIZE_Pos); // select x32 (4 byte) mode
 
   #else
-    #ifdef MCUSF_G4
+    #if defined(MCUSF_G4)
 
       uint32_t fopt = *(uint32_t *)(0x1FFF7800); // flash option bytes
       dbank = ((fopt & (1 << 22)) != 0);
@@ -184,6 +184,10 @@ bool THwIntFlash_stm32::HwInit()
       {
         fixblock_size_shift = 11;
       }
+
+    #elif defined(MCUSF_WB)
+
+      fixblock_size_shift = 12;
 
     #else
 
@@ -311,23 +315,35 @@ void THwIntFlash_stm32::Write32(uint32_t * adst, uint32_t avalue)
 
 void THwIntFlash_stm32::CmdEraseBlock()
 {
-#if HWINTFLASH_BIGBLOCKS
+  #if HWINTFLASH_BIGBLOCKS
 
-  int blid = BlockIdFromAddress(address);
-  if (blid < 0)
-  {
-  	return;
-  }
+    int blid = BlockIdFromAddress(address);
+    if (blid < 0)
+    {
+      return;
+    }
 
-  uint32_t cr = (FLASH_CR_SER | (blid << 3) | cr_reg_base);
-	regs->CR = cr; // prepare sector erase
-	regs->CR = (cr | FLASH_CR_STRT); // start page erase
+    uint32_t cr = (FLASH_CR_SER | (blid << 3) | cr_reg_base);
+    regs->CR = cr; // prepare sector erase
+    regs->CR = (cr | FLASH_CR_STRT); // start page erase
 
-#else
-	regs->CR = FLASH_CR_PER; // prepare page erase
-	regs->AR = address;
-	regs->CR = (FLASH_CR_STRT | FLASH_CR_PER); // start page erase
-#endif
+  #elif defined(MCUSF_WB)
+
+    int blid = BlockIdFromAddress(address);
+    if (blid < 0)
+    {
+      return;
+    }
+
+    uint32_t cr = (FLASH_CR_PER | (blid << 3));
+    regs->CR = cr; // prepare page erase
+    regs->CR = (cr | FLASH_CR_STRT); // start page erase
+
+  #else
+    regs->CR = FLASH_CR_PER; // prepare page erase
+    regs->AR = address;
+    regs->CR = (FLASH_CR_STRT | FLASH_CR_PER); // start page erase
+  #endif
 }
 
 void THwIntFlash_stm32::Write32(uint32_t * adst, uint32_t avalue)

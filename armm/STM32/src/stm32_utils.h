@@ -29,7 +29,7 @@
 
 #include "platform.h"
 
-#if defined(MCUSF_G4)
+#if defined(MCUSF_G4) || defined(MCUSF_WB)
   #define APB1ENR_REGISTER  RCC->APB1ENR1
 #elif defined(MCUSF_H7)
   #define APB1ENR_REGISTER  RCC->APB1LENR

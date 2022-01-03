@@ -36,6 +36,10 @@
 
 #include "traces.h"
 
+#if !defined(RCC_AHB3ENR_QSPIEN) || defined(RCC_AHB3ENR_QUADSPIEN)
+  #define RCC_AHB3ENR_QSPIEN  RCC_AHB3ENR_QUADSPIEN
+#endif
+
 bool THwQspi_stm32::InitInterface() // the pins must be configured before, because of the alternatives
 {
 /* possible pins for the F746:
@@ -69,6 +73,9 @@ bool THwQspi_stm32::InitInterface() // the pins must be configured before, becau
 #if defined(MCUSF_G4)
 	txdma.Init(dmanum, dmach, 40);  // request 40 = QUADSPI
 	rxdma.Init(dmanum, dmach, 40);  // use the same channel for tx and rx
+#elif defined(MCUSF_WB)
+  txdma.Init(0, dmach, 20);  // request 20 = QUADSPI
+  rxdma.Init(0, dmach, 20);  // use the same channel for tx and rx
 #elif defined(MCUSF_H7)
 	txdma.Init(0, dmach, 22);  // MDMA22: fifo threshold, MDMA 23: QSPI Transfer Complete
 	rxdma.Init(0, dmach, 22);  // use the same channel for tx and rx
