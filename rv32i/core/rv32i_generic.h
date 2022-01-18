@@ -67,6 +67,18 @@ inline void __attribute__((always_inline)) mcu_disable_dcache()
 {
 }
 
+inline unsigned __get_PRIMASK()
+{
+  return 0;
+}
+
+inline void __set_PRIMASK(unsigned aprimask)
+{
+
+}
+
+
+
 inline uint32_t __attribute__ ((always_inline)) riscv_cpu_csr_read(const int csr_id)
 {
   register uint32_t csr_data;

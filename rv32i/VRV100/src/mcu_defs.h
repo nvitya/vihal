@@ -29,6 +29,8 @@
 #ifndef __MCU_DEFS_H
 #define __MCU_DEFS_H
 
+#define HW_DMA_MAX_COUNT 65536
+
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
 }

@@ -99,7 +99,7 @@ bool THwCan_pre::TryGetTxMessage(TCanMsg * amsg)
 	// disabling interrupts are necessary because it might be called from idle and interrupt context
 
 	unsigned pm = __get_PRIMASK();  // save interrupt disable status
-	__disable_irq();
+	mcu_disable_interrupts();
 
 	if (txmb_idx_rd != txmb_idx_wr)
 	{
@@ -131,7 +131,7 @@ void THwCan_pre::AddTxMessage(TCanMsg * amsg)
 	// disabling interrupts are necessary because it might be called from idle and interrupt context
 
 	unsigned pm = __get_PRIMASK();  // save interrupt disable status
-	__disable_irq();
+	mcu_disable_interrupts();
 
 	txmsgbuf[txmb_idx_wr] = *amsg;
 	++txmb_idx_wr;
