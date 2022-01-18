@@ -48,26 +48,3 @@ const uint8_t cdc_desc_call_acm_func[4] =
   0x02,   /* bmCapabilities */
 };
 
-#if 0
-const uint8_t cdc_desc_call_management[5] =
-{
-	/*Call Management Functional Descriptor*/
-	0x05,   /* bFunctionLength */
-	0x24,   /* bDescriptorType: CS_INTERFACE */
-	0x01,   /* bDescriptorSubtype: Call Management Func Desc */
-	0x00,   /* bmCapabilities: 0 = no call management */
-	0x00,   /* bDataInterface: 0 */   // ???
-};
-
-
-const uint8_t cdc_desc_call_union_func[5] =
-{
-	/*Union Functional Descriptor*/
-	0x05,   /* bFunctionLength */
-	0x24,   /* bDescriptorType: CS_INTERFACE */
-	0x06,   /* bDescriptorSubtype: Union func desc */
-	0x00,   /* bMasterInterface: Communication class interface */
-	0x01,   /* bSlaveInterface0: Data Class Interface */
-};
-
-#endif

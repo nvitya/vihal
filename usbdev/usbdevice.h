@@ -36,7 +36,9 @@
 
 #define USBDEV_CTRL_BUF_SIZE   192  // every decriptor must fit into this, some are bigger than 64 byte !
 #define USBDEV_MAX_STRINGS      16
-#define USBDEV_MAX_INTERFACES    6
+#define USBDEV_MAX_INTERFACES    8
+#define USBDEV_MAX_FUNCTIONS     4
+#define USBDEV_MAX_FUNC_IFACES   4
 #define USBDEV_MAX_DESCREC       8
 #define USBDEV_MAX_ENDPOINTS     8
 #define USBINTF_MAX_DESCREC     16
@@ -133,6 +135,19 @@ typedef struct TUsbConfigDesc
 //
 } __attribute__((__packed__)) TUsbConfigDesc;
 
+typedef struct TUsbFunctionDesc
+{
+  uint8_t   length; // = 8
+  uint8_t   descriptor_type; // = 0x0B = Interface Association Descriptor
+  uint8_t   first_interface;
+  uint8_t   interface_count;
+  uint8_t   function_class;
+  uint8_t   function_sub_class;
+  uint8_t   function_protocol;
+  uint8_t   stri_function;
+//
+} __attribute__((__packed__)) TUsbIfAssocDesc;
+
 typedef struct TUsbInterfaceDesc
 {
 	uint8_t		length; // = 9
@@ -158,8 +173,6 @@ typedef struct TUsbEndpointDesc
 //
 } __attribute__((__packed__)) TUsbEndpointDesc;
 
-
-
 typedef struct TUsbDevDescRec
 {
 	uint16_t				id;
@@ -170,6 +183,7 @@ typedef struct TUsbDevDescRec
 } TUsbDevDescRec;
 
 class TUsbInterface;
+class TUsbFunction;
 class TUsbDevice;
 
 class TUsbEndpoint : public THwUsbEndpoint
@@ -197,6 +211,7 @@ class TUsbInterface
 {
 public:
 	TUsbDevice *         device = nullptr;  // will be set on device add
+	TUsbFunction *       function = nullptr;
 
 	uint8_t              index = 0xFF;
 	uint8_t              altsetting = 0;    // provided for setconfig / getconfig
@@ -246,12 +261,44 @@ public:
 	void                 SetConfigured();
 };
 
+class TUsbFunction
+{
+public:
+
+  TUsbFunctionDesc     funcdesc =
+  {
+    .length = 8,
+    .descriptor_type    = 0x0B,
+    .first_interface    = 0,       // will be set automatically
+    .interface_count    = 0,       // will be set automatically
+    .function_class     = 0,    // must be set
+    .function_sub_class = 0,    // must be set
+    .function_protocol  = 0,    // must be set
+    .stri_function      = 0        // will be set automatically
+  };
+
+  uint8_t              interface_count = 0;
+  const char *         func_name = "Undefined Function";
+
+  TUsbDevice *         device = nullptr;  // will be set on device add
+
+  TUsbInterface *      interfaces[USBDEV_MAX_FUNC_IFACES];
+
+public:
+  virtual ~TUsbFunction()  { } // to avoid varnings
+
+  virtual bool         InitFunction();
+  virtual void         Run();
+  void                 AddInterface(TUsbInterface * aintf);
+};
+
 class TUsbDevice : public THwUsbCtrl
 {
 public:  // quick variables (the first 32 variables are accessed faster on ARM, because they can be addressed with 16 bit instructions)
 	uint8_t               ctrlstage = 0;
 	uint8_t               epcount = 0;
 	uint8_t               interface_count = 0;
+	uint8_t               function_count = 0;
 	uint8_t               string_count = 0;
 
 	TUsbSetupRequest      setuprq;  // 8 bytes
@@ -269,6 +316,7 @@ public:
 	TUsbEndpoint          ep_ctrl;  // The Endpoint 0 provided here
 
 	TUsbEndpoint *        eplist[USBDEV_MAX_ENDPOINTS];
+	TUsbFunction *        functions[USBDEV_MAX_FUNCTIONS];
 	TUsbInterface *       interfaces[USBDEV_MAX_INTERFACES];
 	char *          			stringtable[USBDEV_MAX_STRINGS] = {0};
 
@@ -281,16 +329,19 @@ public: // Descriptors
 		.length = 18,
 		.descriptor_type = USB_DESC_TYPE_DEVICE,
 		.usb_version = 0x0200,
-		.device_class = 0,
-		.device_sub_class = 0,
-		.device_protocol = 0,
+
+		.device_class     = 0, // will be overriden by the functions
+		.device_sub_class = 0, // will be overriden by the functions
+		.device_protocol  = 0, // will be overriden by the functions
+
 		.max_packet_size = 64,
-		.vendor_id = 0, // must be overridden !
-		.product_id = 0,
+		.vendor_id  = 0, // must be overridden !
+		.product_id = 0, // must be overridden !
 		.device_version = 0x0100,  // 0x0100 = full speed
-		.stri_manufacturer = 0,
-		.stri_product = 0,
-		.stri_serial_number = 0,
+
+		.stri_manufacturer = 0,  // filled automatically
+		.stri_product = 0,       // filled automatically
+		.stri_serial_number = 0, // filled automatically
 		.num_configurations = 1
 	};
 
@@ -343,16 +394,18 @@ public:
 
 	void                  StartReceiveControlData(unsigned alen); // starts the htod data stage
 
-  void                  AddInterface(TUsbInterface * aintf);
+  void                  AddFunction(TUsbFunction * afunc);
+
   uint8_t               AddString(const char * astr); // returned string index + 1 as id
   void                  AddEndpoint(TUsbEndpoint * aep);
-  bool                  PrepareInterface(uint8_t ifidx, TUsbInterface * pif);
+  bool                  PrepareInterface(TUsbInterface * pif);
 
 	void                  SetConfiguration(uint8_t aconfig);
 
 public: // virtual methods
 
   virtual bool          InitDevice();
+  void                  Run();  // execute Run() of the added functions
 	virtual void          HandleReset();
 
 	virtual bool          HandleSpecialSetupRequest() { return false; }  // returns true when handled
@@ -361,6 +414,10 @@ public: // virtual methods
 protected:
 
 	void                  MakeDeviceConfig(); // prepares the device config into the ctrlbuf
+
+private:
+
+  void                  AddInterface(TUsbInterface * aintf);
 
 };
 

@@ -347,6 +347,32 @@ void TUsbInterface::OnConfigured() // can be overridden
 }
 
 // -----------------------------------------------------------------------------------------
+// TUsbFunction
+// -----------------------------------------------------------------------------------------
+
+bool TUsbFunction::InitFunction()  // should be overridden
+{
+  return false;
+}
+
+void TUsbFunction::Run()  // should be overridden
+{
+}
+
+void TUsbFunction::AddInterface(TUsbInterface * aintf)
+{
+  if (interface_count >= USBDEV_MAX_FUNC_IFACES)
+  {
+    return;
+  }
+
+  aintf->function = this;
+  interfaces[interface_count] = aintf;
+  ++interface_count;
+}
+
+
+// -----------------------------------------------------------------------------------------
 // TUsbDevice
 // -----------------------------------------------------------------------------------------
 
@@ -373,10 +399,10 @@ bool TUsbDevice::Init()
 		return false;
 	}
 
-	if (interface_count <= 0)
-	{
-		return false;
-	}
+  if (function_count <= 0)
+  {
+    return false;
+  }
 
 	if (!InitHw())
 	{
@@ -398,39 +424,88 @@ bool TUsbDevice::Init()
 	devdesc.stri_product = AddString(device_name);
 	devdesc.stri_serial_number = AddString(device_serial_number);
 
-	// configuration descriptor assembly test, required for total_length calculation
-	// actually assembled into ctrlbuf[] for debugging
-
-	confdesc.total_length = confdesc.length;
-	confdesc.num_interfaces = interface_count;
-
-	cdlen = confdesc.length;
-
-	for (i = 0; i < interface_count; ++i)
+	if (function_count > 1)
 	{
-		TUsbInterface * intf = interfaces[i];
-
-		if (!intf->InitInterface())
-		{
-			return false;
-		}
-
-		if (!PrepareInterface(i, intf)) // adds interface endpoints
-		{
-			return false;
-		}
-
-		len = intf->AppendConfigDesc(&ctrlbuf[cdlen], sizeof(ctrlbuf) - cdlen);
-		if (len <= 0)
-		{
-			return false;
-		}
-
-		cdlen += len;
-		confdesc.total_length += len;
+	  // set the device descritor to signalize composite (multi-function) device
+	  devdesc.device_class = 0xEF;
+	  devdesc.device_sub_class = 2;
+	  devdesc.device_protocol = 1;
 	}
 
-	memcpy(&ctrlbuf[0], &confdesc, confdesc.length); // copy the head, the ctrlbuf now contains the full config descriptor
+  // configuration descriptor assembly test, required for total_length calculation
+  // actually assembled into ctrlbuf[] for debugging
+
+  cdlen = sizeof(TUsbConfigDesc);
+
+	// Prepare functions, interfaces, endpoints
+  interface_count = 0;
+	for (int funcidx = 0; funcidx < function_count; ++funcidx)
+	{
+	  TUsbFunction *  func = functions[funcidx];
+
+	  // update the function descriptor (required for the composite devices)
+	  func->funcdesc.first_interface = interface_count;
+	  func->funcdesc.interface_count = func->interface_count;
+
+	  if (!func->InitFunction())
+	  {
+	    return false;
+	  }
+
+	  func->funcdesc.stri_function = AddString(func->func_name);
+
+	  if (function_count > 1)
+	  {
+	    // add interface association descriptor
+
+	    if (sizeof(ctrlbuf) - cdlen < sizeof(TUsbFunctionDesc))
+	    {
+	      return false; // does not fit into the control buffer !
+	    }
+
+	    memcpy(&ctrlbuf[cdlen], &func->funcdesc, sizeof(TUsbFunctionDesc)); // copy the head, the ctrlbuf now contains the full config descriptor
+	    cdlen += sizeof(TUsbFunctionDesc);
+	  }
+	  else
+	  {
+	    // copy the main function identification to the device descriptor
+      devdesc.device_class = func->funcdesc.function_class;
+      devdesc.device_sub_class = func->funcdesc.function_sub_class;
+      devdesc.device_protocol = func->funcdesc.function_protocol;
+	  }
+
+	  for (int funcif = 0; funcif < func->interface_count; ++funcif)
+	  {
+	    TUsbInterface * intf = func->interfaces[funcif];
+
+	    AddInterface(intf);
+
+	    if (!intf->InitInterface())
+	    {
+	      return false;
+	    }
+
+	    if (!PrepareInterface(intf)) // adds interface endpoints
+	    {
+	      return false;
+	    }
+
+	    len = intf->AppendConfigDesc(&ctrlbuf[cdlen], sizeof(ctrlbuf) - cdlen);
+	    if (len <= 0)
+	    {
+	      return false;
+	    }
+
+	    cdlen += len;
+	  }
+	}
+
+	// the configuration descriptor will be copied to the beginning later because
+	// the function intialization was delayed
+  memcpy(&ctrlbuf[0], &confdesc, sizeof(TUsbConfigDesc)); // copy the head, the ctrlbuf now contains the full config descriptor
+
+  confdesc.total_length = cdlen;
+  confdesc.num_interfaces = interface_count;
 
 	HandleReset();
 
@@ -441,6 +516,32 @@ bool TUsbDevice::Init()
 	initialized = true;
 
 	return true;
+}
+
+void TUsbDevice::Run()
+{
+  if (!initialized)
+  {
+    return;
+  }
+
+  for (int funcidx = 0; funcidx < function_count; ++funcidx)
+  {
+    functions[funcidx]->Run();
+  }
+}
+
+void TUsbDevice::AddFunction(TUsbFunction * afunc)
+{
+  if (function_count >= USBDEV_MAX_FUNCTIONS)
+  {
+    return;
+  }
+
+  afunc->device = this;
+  functions[function_count] = afunc;
+
+  ++function_count;
 }
 
 void TUsbDevice::AddInterface(TUsbInterface * aintf)
@@ -484,14 +585,14 @@ void TUsbDevice::AddEndpoint(TUsbEndpoint * aep)
 	++epcount;
 }
 
-bool TUsbDevice::PrepareInterface(uint8_t ifidx, TUsbInterface * pif)
+bool TUsbDevice::PrepareInterface(TUsbInterface * pif)
 {
 	if (pif->epcount == 0)
 	{
 		return false;
 	}
 
-	pif->intfdesc.interface_number = ifidx;
+	pif->intfdesc.interface_number = pif->index;
 	pif->intfdesc.stri_interface = AddString(pif->interface_name);
 	pif->intfdesc.num_endpoints = pif->epcount;
 
@@ -923,23 +1024,37 @@ void TUsbDevice::MakeDeviceConfig()
 	cdlen = confdesc.length;
 	memcpy(&ctrlbuf[0], &confdesc, cdlen);
 	ctrlbuf[1] = (setuprq.value >> 8); // normal or other speed config
-	uint8_t ind = cdlen;
 
-	for (int i = 0; i < interface_count; ++i)
-	{
-		TUsbInterface * intf = interfaces[i];
+  for (int funcidx = 0; funcidx < function_count; ++funcidx)
+  {
+    TUsbFunction *  func = functions[funcidx];
 
-		// calculate the config descriptor length
+    if (function_count > 1)
+    {
+      // add interface association descriptor
 
-		int len = intf->AppendConfigDesc(&ctrlbuf[ind], sizeof(ctrlbuf) - ind);
-		if (len <= 0)
-		{
-			break;
-		}
+      if (sizeof(ctrlbuf) - cdlen < sizeof(TUsbFunctionDesc))
+      {
+        return; // does not fit into the control buffer !
+      }
 
-		cdlen += len;
-		ind += len;
-	}
+      memcpy(&ctrlbuf[cdlen], &func->funcdesc, sizeof(TUsbFunctionDesc)); // copy the head, the ctrlbuf now contains the full config descriptor
+      cdlen += sizeof(TUsbFunctionDesc);
+    }
+
+    for (int funcif = 0; funcif < func->interface_count; ++funcif)
+    {
+      TUsbInterface * intf = func->interfaces[funcif];
+
+      int len = intf->AppendConfigDesc(&ctrlbuf[cdlen], sizeof(ctrlbuf) - cdlen);
+      if (len <= 0)
+      {
+        return;
+      }
+
+      cdlen += len;
+    }
+  }
 }
 
 void TUsbDevice::StartSetupData()

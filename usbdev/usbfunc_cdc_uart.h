@@ -140,6 +140,20 @@ public: // mandatory virtual functions
 	virtual bool    HandleTransferEvent(TUsbEndpoint * aep, bool htod);
 };
 
+class TUsbFuncCdcUart : public TUsbFunction
+{
+public:
+  THwUart *            uart = nullptr;
+  THwDmaChannel *      dma_tx = nullptr;
+  THwDmaChannel *      dma_rx = nullptr;
 
+  TUifCdcUartControl   uif_control;
+  TUifCdcUartData      uif_data;
+
+  void                 AssignUart(THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx);
+
+  virtual bool         InitFunction();
+  virtual void         Run();
+};
 
 #endif /* SRC_USBIF_CDC_UART_H_ */

@@ -60,9 +60,4 @@ typedef struct TUsbCdcDescCallUnionFunc
 extern const uint8_t cdc_desc_header_func[5];
 extern const uint8_t cdc_desc_call_acm_func[4];
 
-#if 0
-extern const uint8_t cdc_desc_call_management[5];
-extern const uint8_t cdc_desc_call_union_func[5];
-#endif
-
 #endif /* USBIF_CDC_H_ */

@@ -26,7 +26,7 @@
  *  authors:  nvitya
 */
 
-#include <usbif_cdc_uart.h>
+#include <usbfunc_cdc_uart.h>
 #include "platform.h"
 #include "string.h"
 #include "traces.h"
@@ -383,3 +383,37 @@ void TUifCdcUartData::TrySendUsbDataToSerial()
 
 	control->SerialSendBytes();
 }
+
+//-------------------------------------------------------------------------------------------------
+
+void TUsbFuncCdcUart::AssignUart(THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx)
+{
+  uart = auart;
+  dma_tx = adma_tx;
+  dma_rx = adma_rx;
+}
+
+bool TUsbFuncCdcUart::InitFunction()
+{
+  funcdesc.function_class = 2;
+  funcdesc.function_sub_class = 2;
+  funcdesc.function_protocol = 1;
+
+  if (!uart || !dma_tx || !dma_rx)
+  {
+    return false;
+  }
+
+  uif_control.InitCdcUart(&uif_data, uart, dma_tx, dma_rx);
+
+  AddInterface(&uif_control);
+  AddInterface(&uif_data);
+
+  return true;
+}
+
+void TUsbFuncCdcUart::Run()
+{
+  uif_control.Run();
+}
+
