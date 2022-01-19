@@ -443,15 +443,14 @@ bool TUsbDevice::Init()
 	{
 	  TUsbFunction *  func = functions[funcidx];
 
-	  // update the function descriptor (required for the composite devices)
-	  func->funcdesc.first_interface = interface_count;
-	  func->funcdesc.interface_count = func->interface_count;
-
 	  if (!func->InitFunction())
 	  {
 	    return false;
 	  }
 
+	  // update the function descriptor (required for the composite devices)
+	  func->funcdesc.first_interface = interface_count;
+	  func->funcdesc.interface_count = func->interface_count;
 	  func->funcdesc.stri_function = AddString(func->func_name);
 
 	  if (function_count > 1)
