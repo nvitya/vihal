@@ -48,8 +48,7 @@ public:
 	THwUart *         uart = nullptr;
 	TUifCdcUartData *	dataif = nullptr;
 
-	THwDmaChannel *   dma_rx = nullptr;
-	THwDmaChannel *   dma_tx = nullptr;
+	bool              initialized = false;
 
 	TCdcLineCoding    linecoding;
 
@@ -85,7 +84,7 @@ public:
   };
 
 public: // interface specific
-	bool              InitCdcUart(TUifCdcUartData * adataif, THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx);
+	bool              InitCdcUart(TUifCdcUartData * adataif, THwUart * auart);
 	void              Run(); // must be called periodically
 
 	bool              SerialAddBytes(uint8_t * adata, unsigned adatalen);
@@ -144,13 +143,11 @@ class TUsbFuncCdcUart : public TUsbFunction
 {
 public:
   THwUart *            uart = nullptr;
-  THwDmaChannel *      dma_tx = nullptr;
-  THwDmaChannel *      dma_rx = nullptr;
 
   TUifCdcUartControl   uif_control;
   TUifCdcUartData      uif_data;
 
-  void                 AssignUart(THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx);
+  void                 AssignUart(THwUart * auart);
 
   virtual bool         InitFunction();
   virtual void         Run();

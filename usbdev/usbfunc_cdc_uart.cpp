@@ -33,22 +33,19 @@
 
 //----------------------------------------------------
 
-bool TUifCdcUartControl::InitCdcUart(TUifCdcUartData * adataif, THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx)
+bool TUifCdcUartControl::InitCdcUart(TUifCdcUartData * adataif, THwUart * auart)
 {
+  initialized = false;
+
 	dataif = adataif;
 	adataif->control = this;
 
 	uart = auart;
-	dma_tx = adma_tx;
-	dma_rx = adma_rx;
 
-	if (!uart || !dma_tx || !dma_rx)
+	if (!uart || !uart->txdma || !uart->rxdma)
 	{
 		return false;
 	}
-
-	uart->DmaAssign(true,  dma_tx);
-	uart->DmaAssign(false, dma_rx);
 
 	linecoding.baudrate = uart->baudrate;
 	linecoding.databits = uart->databits;
@@ -56,6 +53,8 @@ bool TUifCdcUartControl::InitCdcUart(TUifCdcUartData * adataif, THwUart * auart,
 	linecoding.charformat = 0;
 
 	StopUart();
+
+  initialized = true;
 
 	return true;
 }
@@ -174,32 +173,32 @@ bool TUifCdcUartControl::HandleSetupData(TUsbSetupRequest * psrq, void * adata, 
 
 void TUifCdcUartControl::StopUart()
 {
-	uart_running = false;
+	if (uart_running)
+	{
+	  uart_running = false;
 
-	if (dma_tx)  dma_tx->Disable();
-	if (dma_rx)  dma_rx->Disable();
+	  uart->txdma->Disable();
+	  uart->rxdma->Disable();
+	}
 }
 
 void TUifCdcUartControl::StartUart()
 {
+  if (!initialized)
+  {
+    return;
+  }
+
 	// re-init the uart with the new parameters
 	uart->Init(uart->devnum);
 
-	if (!dma_tx || !dma_rx)  // DMA required
-	{
-		return;
-	}
+  serial_rxidx = 0;
+  dmaxfer_rx.bytewidth = 1;
+  dmaxfer_rx.count = sizeof(serial_rxbuf);
+  dmaxfer_rx.dstaddr = &serial_rxbuf[0];
+  dmaxfer_rx.flags = DMATR_CIRCULAR;
 
-	if (dma_rx)
-	{
-		serial_rxidx = 0;
-		dmaxfer_rx.bytewidth = 1;
-		dmaxfer_rx.count = sizeof(serial_rxbuf);
-		dmaxfer_rx.dstaddr = &serial_rxbuf[0];
-		dmaxfer_rx.flags = DMATR_CIRCULAR;
-
-		uart->DmaStartRecv(&dmaxfer_rx);
-	}
+  uart->DmaStartRecv(&dmaxfer_rx);
 
 	dataif->Reset();
 
@@ -225,7 +224,7 @@ bool TUifCdcUartControl::SerialAddBytes(uint8_t * adata, unsigned adatalen)
 
 void TUifCdcUartControl::SerialSendBytes()
 {
-	if (serial_txlen && !dma_tx->Active())
+	if (serial_txlen && !uart->txdma->Active())
 	{
 		// setup the TX DMA and flip the buffer
 
@@ -253,7 +252,7 @@ void TUifCdcUartControl::Run()
 
 	uint8_t c;
 
-	unsigned dma_write_idx = sizeof(serial_rxbuf) - dma_rx->Remaining();
+	unsigned dma_write_idx = sizeof(serial_rxbuf) - uart->rxdma->Remaining();
 	if (dma_write_idx >= sizeof(serial_rxbuf)) // should not happen
 	{
 		dma_write_idx = 0;
@@ -386,11 +385,9 @@ void TUifCdcUartData::TrySendUsbDataToSerial()
 
 //-------------------------------------------------------------------------------------------------
 
-void TUsbFuncCdcUart::AssignUart(THwUart * auart, THwDmaChannel * adma_tx, THwDmaChannel * adma_rx)
+void TUsbFuncCdcUart::AssignUart(THwUart * auart)
 {
   uart = auart;
-  dma_tx = adma_tx;
-  dma_rx = adma_rx;
 }
 
 bool TUsbFuncCdcUart::InitFunction()
@@ -399,12 +396,12 @@ bool TUsbFuncCdcUart::InitFunction()
   funcdesc.function_sub_class = 2;
   funcdesc.function_protocol = 1;
 
-  if (!uart || !dma_tx || !dma_rx)
+  if (!uart || !uart->txdma || !uart->rxdma)
   {
     return false;
   }
 
-  uif_control.InitCdcUart(&uif_data, uart, dma_tx, dma_rx);
+  uif_control.InitCdcUart(&uif_data, uart);
 
   AddInterface(&uif_control);
   AddInterface(&uif_data);
