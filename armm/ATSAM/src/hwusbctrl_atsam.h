@@ -49,6 +49,9 @@ public:
 	__IO uint8_t *       fiforeg;
 	__IO uint32_t *      csreg;
 
+	bool                 rx_enabled = true;  // SW controller RX accept for proper handshaking
+	                                         // this might not applicable for IRQ based USB handling
+
 	virtual ~THwUsbEndpoint_atsam() { }
 
 	bool ConfigureHwEp();

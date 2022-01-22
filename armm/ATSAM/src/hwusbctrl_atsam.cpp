@@ -24,6 +24,8 @@
  *  version:  1.00
  *  date:     2018-12-11
  *  authors:  nvitya
+ *  notes:
+ *    this implementation for polling mode only ! (lack of proper HW handshake controlling)
 */
 
 #include "platform.h"
@@ -125,15 +127,15 @@ bool THwUsbEndpoint_atsam::ConfigureHwEp()
 
 int THwUsbEndpoint_atsam::ReadRecvData(void * buf, uint32_t buflen)
 {
-	uint32_t tmp = *csreg;
+	uint32_t csr = *csreg;
 
-	if ((tmp & (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1 | UDP_CSR_RXSETUP)) == 0)
+	if ((csr & (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1 | UDP_CSR_RXSETUP)) == 0)
 	{
 		// no data to receive
 		return 0;
 	}
 
-	uint32_t cnt = ((tmp >> 16) & 0x7FF);
+	uint32_t cnt = ((csr >> 16) & 0x7FF);
 
 	if (buflen < cnt)
 	{
@@ -145,6 +147,19 @@ int THwUsbEndpoint_atsam::ReadRecvData(void * buf, uint32_t buflen)
 	{
 		*pdst++ = *fiforeg;
 	}
+
+
+#if 0
+	// controlling the block handshaking with stall does not work:
+	if (csr & (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1))
+	{
+	  udp_ep_csreg_bit_set(csreg, UDP_CSR_FORCESTALL);
+    udp_ep_csreg_bit_clear(csreg, UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1);
+  }
+#else
+	// use software flag to ignore processing this packet again until the EnableRecv() is called by the FW
+  rx_enabled = false;
+#endif
 
 	return cnt;
 }
@@ -171,32 +186,45 @@ int THwUsbEndpoint_atsam::StartSendData(void * buf, unsigned len)
 		*fiforeg = *psrc++;
 	}
 
-	udp_ep_csreg_bit_set(csreg, UDP_CSR_TXPKTRDY);
+  if (*csreg & UDP_CSR_TXCOMP)
+  {
+    udp_ep_csreg_bit_clear(csreg, UDP_CSR_TXCOMP);
+  }
 
-	if (*csreg & UDP_CSR_TXCOMP)
-	{
-		udp_ep_csreg_bit_clear(csreg, UDP_CSR_TXCOMP);
-	}
+	udp_ep_csreg_bit_set(csreg, UDP_CSR_TXPKTRDY);
 
 	return sendlen;
 }
 
 void THwUsbEndpoint_atsam::SendAck()
 {
+  uint32_t csr = *csreg;
+  uint32_t bitmask = 0;
+
 	if (iscontrol)
 	{
 		// the DIR bit must be set before the RXSETUP is cleared !
 		udp_ep_csreg_bit_set(csreg, UDP_CSR_DIR);
-		if (*csreg & UDP_CSR_RXSETUP)
+		if (csr & UDP_CSR_RXSETUP)
 		{
-			udp_ep_csreg_bit_clear(csreg, UDP_CSR_RXSETUP);
+			bitmask |= UDP_CSR_RXSETUP;
 		}
 
-    if (*csreg & UDP_CSR_RX_DATA_BK0)
+    if (csr & (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1))
     {
-      udp_ep_csreg_bit_clear(csreg, UDP_CSR_RX_DATA_BK0);
+      bitmask |= (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1);
     }
 	}
+
+  if (csr & UDP_CSR_TXCOMP)
+  {
+    bitmask |= UDP_CSR_TXCOMP;
+  }
+
+  if (bitmask)
+  {
+    udp_ep_csreg_bit_clear(csreg, bitmask);
+  }
 
 	// The ACK must be sent with DATA1 !
   // The DATA0 / DATA1 are selected on this MCU automatically, somethimes wrong
@@ -207,52 +235,51 @@ void THwUsbEndpoint_atsam::SendAck()
 	}
 
 	udp_ep_csreg_bit_set(csreg, UDP_CSR_TXPKTRDY);
-
-	if (*csreg & UDP_CSR_TXCOMP)
-	{
-		udp_ep_csreg_bit_clear(csreg, UDP_CSR_TXCOMP);
-	}
 }
 
 void THwUsbEndpoint_atsam::Nak()
 {
+  // will be automatically NAK-ed
 }
 
 void THwUsbEndpoint_atsam::EnableRecv()
 {
   uint32_t csr = *csreg;
+  uint32_t bitmask = 0;
 
 	if (iscontrol)
 	{
-#if 1
 		// the DIR bit must be set before the RXSETUP is cleared !
 		if (csr & UDP_CSR_DIR)
 		{
 			udp_ep_csreg_bit_clear(csreg, UDP_CSR_DIR);
 		}
-#endif
-
-		if (csr & UDP_CSR_RXSETUP)
-		{
-			udp_ep_csreg_bit_clear(csreg, UDP_CSR_RXSETUP);
-		}
 	}
 
-#if 0
-	if (csr & UDP_CSR_TXCOMP)
-	{
-		udp_ep_csreg_bit_clear(csreg, UDP_CSR_TXCOMP);
-	}
-#endif
+  rx_enabled = true;
+
+	if (csr & UDP_CSR_RXSETUP)
+  {
+    bitmask |= UDP_CSR_RXSETUP;
+  }
+
+  if (csr & (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1))
+  {
+    bitmask |= (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1);
+  }
 
 	if (csr & (UDP_CSR_FORCESTALL | UDP_CSR_STALLSENT))
 	{
-		udp_ep_csreg_bit_clear(csreg, UDP_CSR_FORCESTALL | UDP_CSR_STALLSENT);
+	  bitmask |= (UDP_CSR_FORCESTALL | UDP_CSR_STALLSENT);
 	}
+
+  udp_ep_csreg_bit_clear(csreg, bitmask);
 }
 
 void THwUsbEndpoint_atsam::DisableRecv()
 {
+  rx_enabled = false;
+
 	udp_ep_csreg_bit_set(csreg, UDP_CSR_FORCESTALL);
 }
 
@@ -392,6 +419,7 @@ void THwUsbCtrl_atsam::HandleIrq()
 
 			volatile uint32_t * pepreg = &regs->UDP_CSR[epid];
 			uint32_t epreg = *pepreg;
+			THwUsbEndpoint_atsam * ep = (THwUsbEndpoint_atsam *)GetEndPoint(epid);
 		  //TRACE("%u ", CLOCKCNT / (SystemCoreClock / 1000));
 			//TRACE("[EP(%i)=%08X]\r\n", epid, epreg);
 
@@ -413,39 +441,22 @@ void THwUsbCtrl_atsam::HandleIrq()
 				{
 					// todo: handle error
 				}
-
-				// warning, the RXSETUP bit must be cleared only AFTER setting the DIR bit so the RXSETUP clear
-				// is included in the handler routines !
-				if (*pepreg & UDP_CSR_RXSETUP)
-				{
-					udp_ep_csreg_bit_clear(pepreg, UDP_CSR_RXSETUP);
-				}
 			}
-			else if (epreg & UDP_CSR_RX_DATA_BK0)
+			else if (epreg & (UDP_CSR_RX_DATA_BK0 | UDP_CSR_RX_DATA_BK1))
 			{
-				if (!HandleEpTransferEvent(epid, true))
-				{
-					// todo: handle error
-				}
-
-				if (*pepreg & UDP_CSR_RX_DATA_BK0)
-				{
-					udp_ep_csreg_bit_clear(pepreg, UDP_CSR_RX_DATA_BK0);
-				}
+			  if (ep && ep->rx_enabled)
+			  {
+          if (!HandleEpTransferEvent(epid, true))
+          {
+            // todo: handle error
+          }
+			  }
+			  else
+			  {
+			    // leave it unhandled, the FW must explicit enable the recv
+			    // this might lead to continuous IRQ !!!
+			  }
 			}
-			else if (epreg & UDP_CSR_RX_DATA_BK1)
-			{
-				if (!HandleEpTransferEvent(epid, true))
-				{
-					// todo: handle error
-				}
-
-				if (*pepreg & UDP_CSR_RX_DATA_BK1)
-				{
-					udp_ep_csreg_bit_clear(pepreg, UDP_CSR_RX_DATA_BK1);
-				}
-			}
-
 
 			if (*pepreg & UDP_CSR_STALLSENT)
 			{

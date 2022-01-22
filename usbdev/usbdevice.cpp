@@ -1081,3 +1081,12 @@ void TUsbDevice::SendControlStatus(bool asuccess)
 	}
 }
 
+THwUsbEndpoint_pre * TUsbDevice::GetEndPoint(uint8_t epid)
+{
+  if (epid >= USBDEV_MAX_ENDPOINTS)
+  {
+    return nullptr;
+  }
+
+  return eplist[epid];
+}

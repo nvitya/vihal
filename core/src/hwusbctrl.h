@@ -74,6 +74,7 @@ public:
 
 	virtual ~THwUsbCtrl_pre() { }
 	virtual void HandleReset() { }
+  virtual THwUsbEndpoint_pre *  GetEndPoint(uint8_t epid) { return nullptr; }
 	virtual void SetPullUp(bool aenable) { }
 	virtual bool HandleEpTransferEvent(uint8_t epid, bool htod) { return false; }
 
@@ -146,6 +147,7 @@ class THwUsbCtrl : public HWUSBCTRL_IMPL
 {
 public:
 	virtual void HandleReset();
+
 };
 
 #endif // ndef HWUSBCTRL_H_ */

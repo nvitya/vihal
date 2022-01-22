@@ -407,6 +407,7 @@ public: // virtual methods
   virtual bool          InitDevice();
   void                  Run();  // execute Run() of the added functions
 	virtual void          HandleReset();
+  virtual THwUsbEndpoint_pre *  GetEndPoint(uint8_t epid);
 
 	virtual bool          HandleSpecialSetupRequest() { return false; }  // returns true when handled
 	virtual bool          HandleSpecialSetupData()    { return false; }  // returns true when handled
