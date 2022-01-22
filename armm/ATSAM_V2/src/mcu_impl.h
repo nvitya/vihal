@@ -54,10 +54,6 @@
   #include "hwcan_atsam_v2.h"
 #endif
 
-/* not migrated yet from NVCM:
-
 #if defined(HWUSBCTRL_H_)
   #include "hwusbctrl_atsam_v2.h"
 #endif
-
-*/
