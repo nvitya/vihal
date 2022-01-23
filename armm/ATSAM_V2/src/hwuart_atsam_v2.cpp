@@ -24,6 +24,10 @@
  *  version:  1.00
  *  date:     2018-02-10
  *  authors:  nvitya
+ *  notes:
+ *    the SERCOM pads are used as follows:
+ *      pad 0 = TX (ATSAM output)
+ *      pad 1 = RX (ATSAM input)
 */
 
 #include <stdio.h>

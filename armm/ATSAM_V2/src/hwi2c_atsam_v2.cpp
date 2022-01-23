@@ -24,6 +24,11 @@
  *  version:  1.00
  *  date:     2019-02-16
  *  authors:  nvitya
+ *  notes:
+ *    the SERCOM pads are used as follows:
+ *      pad 0 = SDA
+ *      pad 1 = SCL
+
 */
 
 #include "platform.h"

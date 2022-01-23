@@ -30,7 +30,10 @@
 
 #include "atsam_v2_utils.h"
 
-bool THwPwmChannel_atsam_v2::Init(int adevnum, int achnum) // adevnum: 0 - 4: TCC, later 0x100-0x107: using TC
+// Parameters:
+//   adevnum:  0 - 4: TCC, later 0x100-0x107: using TC
+//   achnum:   0 - 5 for TCC
+bool THwPwmChannel_atsam_v2::Init(int adevnum, int achnum)
 {
   unsigned gclkid;
   uint32_t tmp;
@@ -38,8 +41,13 @@ bool THwPwmChannel_atsam_v2::Init(int adevnum, int achnum) // adevnum: 0 - 4: TC
 	initialized = false;
 
 	devnum = adevnum;
-	chnum = (achnum & 3);
 	regs = nullptr;
+
+	if ((achnum < 0) || (achnum > 5))
+	{
+	  return false;
+	}
+	chnum = achnum;
 
   if (false)
   {
