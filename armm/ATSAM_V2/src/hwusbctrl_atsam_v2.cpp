@@ -208,9 +208,6 @@ int THwUsbEndpoint_atsam_v2::ReadRecvData(void * buf, uint32_t buflen)
 	rxdesc->PCKSIZE.bit.BYTE_COUNT = 0;
 	rxdesc->PCKSIZE.bit.MULTI_PACKET_SIZE = maxlen;
 
-	// BK0RDY = 0: ready to receive
-	//regs->EPSTATUSCLR.reg = (USB_DEVICE_EPSTATUS_BK0RDY | USB_DEVICE_EPSTATUS_STALLRQ0);
-
 	return cnt;
 }
 
@@ -218,8 +215,15 @@ int THwUsbEndpoint_atsam_v2::ReadRecvData(void * buf, uint32_t buflen)
 
 int THwUsbEndpoint_atsam_v2::StartSendData(void * buf, unsigned len)
 {
-	regs->EPSTATUSCLR.reg = USB_DEVICE_EPSTATUS_BK1RDY;
-	regs->EPINTFLAG.reg = (HWUSB_INTFLAG_TRCPT1 | HWUSB_INTFLAG_TRFAIL1);
+	if (regs->EPSTATUS.reg & USB_DEVICE_EPSTATUS_BK1RDY)
+	{
+		regs->EPSTATUSCLR.reg = USB_DEVICE_EPSTATUS_BK1RDY;
+	}
+
+	if (regs->EPINTFLAG.reg & (HWUSB_INTFLAG_TRCPT1 | HWUSB_INTFLAG_TRFAIL1))
+	{
+		regs->EPINTFLAG.reg = (HWUSB_INTFLAG_TRCPT1 | HWUSB_INTFLAG_TRFAIL1);
+	}
 
 	txdesc->STATUS_BK.reg = 0;
 
@@ -251,7 +255,10 @@ int THwUsbEndpoint_atsam_v2::StartSendData(void * buf, unsigned len)
 	txdesc->PCKSIZE.bit.BYTE_COUNT = sendlen;
 	txdesc->PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
 
-	regs->EPSTATUSCLR.reg = USB_DEVICE_EPSTATUS_STALLRQ1;
+	if (regs->EPSTATUS.reg & USB_DEVICE_EPSTATUS_STALLRQ1)
+	{
+		regs->EPSTATUSCLR.reg = USB_DEVICE_EPSTATUS_STALLRQ1;
+	}
 
 	// BK1RDY = 1: send prepared data
 	regs->EPSTATUSSET.reg = USB_DEVICE_EPSTATUS_BK1RDY;
@@ -469,19 +476,24 @@ void THwUsbCtrl_atsam_v2::HandleIrq()
 			UsbDeviceEndpoint * pep = &regs->DeviceEndpoint[epid];
 
 			uint8_t epreg = pep->EPINTFLAG.reg;
-      //TRACE("%u ", CLOCKCNT / (SystemCoreClock / 1000));
+      //TRACE("%u ", CLOCKCNT / (SystemCoreClock / 1000000));
 			//TRACE("[EP(%i) IF=%02X, ST=%02X]\r\n", epid, epreg, pep->EPSTATUS.reg);
 			//TRACE("[EP(%i)=%02X, EPS=%02X, USB=%04X]\r\n", epid, epreg, pep->EPSTATUS.reg, regs->INTFLAG.reg);
 
 			// the transfer complete must be served for the case it comes togeter with SETUP
 			if (epreg & HWUSB_INTFLAG_TRCPT1)
 			{
+				pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRCPT1;  // clear the flag early because it might come during servicing !
+
+				if (epreg & HWUSB_INTFLAG_TRFAIL1) // clear error flags
+				{
+					pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRFAIL1;
+				}
+
 				if (!HandleEpTransferEvent(epid, false))
 				{
 					// todo: handle error
 				}
-
-				if (pep->EPINTFLAG.bit.TRCPT1)		pep->EPINTFLAG.bit.TRCPT1 = 1;
 			}
 
 			if (epreg & HWUSB_INTFLAG_RXSTP)
@@ -493,17 +505,24 @@ void THwUsbCtrl_atsam_v2::HandleIrq()
 					// todo: handle error
 				}
 
-				if (pep->EPINTFLAG.bit.RXSTP)		pep->EPINTFLAG.bit.RXSTP = 1;
+				if (pep->EPINTFLAG.reg & HWUSB_INTFLAG_RXSTP)		pep->EPINTFLAG.reg = HWUSB_INTFLAG_RXSTP;
 			}
 			else if (epreg & HWUSB_INTFLAG_TRCPT0)
 			{
+				pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRCPT0;  // clear the flag early because it might come during servicing !
+
+				if (epreg & HWUSB_INTFLAG_TRFAIL0) // clear error flags
+				{
+					pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRFAIL0;
+				}
+
 				if (!HandleEpTransferEvent(epid, true))
 				{
 					// todo: handle error
 				}
-
-				if (pep->EPINTFLAG.bit.TRCPT0)		pep->EPINTFLAG.bit.TRCPT0 = 1;
 			}
+
+			//TRACE(" {IF=%02X, ST=%02X}\r\n", pep->EPINTFLAG.reg, pep->EPSTATUS.reg);
 
 			rev_epirq &= ~(1 << (31-epid));
 		}
