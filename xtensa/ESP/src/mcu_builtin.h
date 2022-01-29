@@ -23,7 +23,7 @@
   #define MCUF_ESP
   #define MCUSF_ESP32
 
-  #include "esp32.h"
+  #include "esp32_vihal.h"
 
 #else
 

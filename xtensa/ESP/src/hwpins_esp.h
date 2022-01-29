@@ -20,7 +20,7 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     hwpins_esp.h
- *  brief:    ESP Pin/Pad and GPIO configuration
+ *  brief:    ESP Pin/Pad and GPIO configuration (self made)
  *  version:  1.00
  *  date:     2022-01-29
  *  authors:  nvitya
@@ -28,21 +28,9 @@
 
 #pragma once
 
-#include "stdint.h"
 
 #define HWPINS_PRE_ONLY
 #include "hwpins.h"
-
-// the ESP official definitions are not really useable, so using own definitions
-
-typedef struct
-{
-  volatile uint32_t   OUT;
-  volatile uint32_t   W1TS;
-  volatile uint32_t   W1TC;
-  volatile uint32_t   _pad;
-//
-} esp_gpio_out_regs_t;
 
 class THwPinCtrl_esp : public THwPinCtrl_pre
 {
@@ -64,12 +52,14 @@ public:
 	void Set(unsigned value);
 
 public:
-	esp_gpio_out_regs_t *       regs = nullptr;
+	esp_gpio_out_t *  regs = nullptr;
 };
 
 class TGpioPin_esp : public TGpioPin_common
 {
 public:
+  esp_gpio_out_t *  regs = nullptr;
+
 	bool Setup(unsigned flags);
 	void Assign(int aportnum, int apinnum, bool ainvert);
 

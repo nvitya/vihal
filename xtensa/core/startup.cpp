@@ -23,12 +23,35 @@
 // created:  2022-01-29
 // authors:  nvitya
 
+#include "platform.h"
+#include "cppinit.h"
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
+
+
+extern "C" __attribute__((section(".startup"),used,noreturn))
+void xtensa_startup(unsigned self_flashing)
+{
+  mcu_preinit_code();
+
+  // the stack might not be set properly so set it
+  //asm("ldr  r0, =__stack");
+  //asm("mov  sp, r0");
+
+  memory_region_setup();  // copy code to ram, initialize .data, zero .bss sections
+
+  _start(self_flashing);
+
+  while (true)
+  {
+    //
+  }
+}
 
 extern "C" __attribute__((section(".resetentry"),used,noreturn))
 void _reset_entry()
 {
-	_start(0);
+  xtensa_startup(0);
 
 	while (true)
 	{
@@ -36,13 +59,16 @@ void _reset_entry()
 	}
 }
 
-extern "C" __attribute__((section(".resetentry"),used,noreturn))
+
+extern "C" __attribute__((section(".startup"),used,noreturn))
 void soft_entry()
 {
-	_start(1);
+  mcu_preinit_code();  // this must be here !
 
-	while (true)
-	{
-		//
-	}
+  xtensa_startup(1);
+
+  while (true)
+  {
+    //
+  }
 }

@@ -32,8 +32,9 @@ SECTIONS
   .resetentry : ALIGN(4)
   {
     KEEP(*(.resetentry))
+    KEEP(*(.resetentry.literal))
 
-	 KEEP(*(.startup.literal))
+	  KEEP(*(.startup.literal))
     KEEP(*(.startup))
 
     *(.*Vector.literal)
