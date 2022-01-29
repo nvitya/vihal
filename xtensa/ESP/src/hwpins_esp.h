@@ -33,6 +33,8 @@
 #define HWPINS_PRE_ONLY
 #include "hwpins.h"
 
+// the ESP official definitions are not really useable, so using own definitions
+
 typedef struct
 {
   volatile uint32_t   OUT;
@@ -71,7 +73,7 @@ public:
 	bool Setup(unsigned flags);
 	void Assign(int aportnum, int apinnum, bool ainvert);
 
-	inline void Toggle()  { regs->gpio_togl = setbitvalue; }
+	void Toggle();
 
 	void SwitchDirection(int adirection);
 };

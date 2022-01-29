@@ -31,6 +31,15 @@
 #define HWUART_PRE_ONLY
 #include "hwuart.h"
 
+// the ESP official definitions are not really useable, so using own definitions
+
+typedef struct
+{
+  volatile uint32_t   OUT;
+  volatile uint32_t   _pad;
+//
+} esp_uart_regs_t;
+
 class THwUart_esp : public THwUart_pre
 {
 public:
@@ -47,7 +56,7 @@ public:
 	bool DmaStartRecv(THwDmaTransfer * axfer);
 
 public:
-	uart_hw_t *     regs = nullptr;
+	esp_uart_regs_t *     regs = nullptr;
 };
 
 #define HWUART_IMPL THwUart_esp

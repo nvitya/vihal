@@ -30,20 +30,7 @@
 #include "hwpins.h"
 #include "esp_utils.h"
 
-#define MAX_GPIOPIN   NUM_BANK0_GPIOS
-
-HW_GPIO_REGS * THwPinCtrl_esp::GetGpioRegs(int apinnum)
-{
-	if ((apinnum < 0) || (apinnum >= MAX_GPIOPIN))
-	{
-		return nullptr;
-	}
-	else
-	{
-		return &iobank0_hw->io[apinnum];
-	}
-}
-
+#define MAX_GPIOPIN   39
 
 bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
@@ -51,6 +38,8 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags)
   {
     return false;
   }
+
+#if 0
 
   // remove resets
   rp_reset_control(RESETS_RESET_PADS_BANK0_BITS | RESETS_RESET_IO_BANK0_BITS, false);
@@ -139,12 +128,16 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 	iobank0_hw->io[apinnum].ctrl = ctrl;
 
+#endif
+
   return true;
 }
 
 void THwPinCtrl_esp::GpioSet(int aportnum, int apinnum, int value)
 {
   uint32_t pinmask = (1 << apinnum);
+
+#if 0
 
   if (1 == value)
   {
@@ -158,6 +151,7 @@ void THwPinCtrl_esp::GpioSet(int aportnum, int apinnum, int value)
   {
     sio_hw->gpio_clr = pinmask;
   }
+#endif
 }
 
 void THwPinCtrl_esp::GpioIrqSetup(int aportnum, int apinnum, int amode)
@@ -169,12 +163,12 @@ void THwPinCtrl_esp::GpioIrqSetup(int aportnum, int apinnum, int amode)
 
 void TGpioPort_esp::Assign(int aportnum)
 {
-	regs = sio_hw;
+	//regs = sio_hw;
 }
 
 void TGpioPort_esp::Set(unsigned value)
 {
-  regs->gpio_out = value;
+  regs->OUT = value;
 }
 
 // GPIO Pin
@@ -185,7 +179,9 @@ void TGpioPin_esp::Assign(int aportnum, int apinnum, bool ainvert)
   pinnum = apinnum;
   inverted = ainvert;
 
-	regs = sio_hw;
+	//regs = sio_hw;
+
+#if 0
 
 	setbitvalue = (1 << pinnum);
 	clrbitvalue = (1 << pinnum);
@@ -203,10 +199,17 @@ void TGpioPin_esp::Assign(int aportnum, int apinnum, bool ainvert)
     setbitptr = (unsigned *)&(regs->gpio_set);
     clrbitptr = (unsigned *)&(regs->gpio_clr);
   }
+#endif
+}
+
+void TGpioPin_esp::Toggle()
+{
+
 }
 
 void TGpioPin_esp::SwitchDirection(int adirection)
 {
+#if 0
 	if (adirection)
 	{
 		regs->gpio_oe_set = setbitvalue;
@@ -215,4 +218,5 @@ void TGpioPin_esp::SwitchDirection(int adirection)
 	{
 		regs->gpio_oe_clr = setbitvalue;
 	}
+#endif
 }

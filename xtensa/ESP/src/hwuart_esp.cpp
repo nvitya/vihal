@@ -39,19 +39,15 @@ bool THwUart_esp::Init(int adevnum)
 	devnum = adevnum;
 	initialized = false;
 
-	uint32_t reset_mask;
-
 	regs = nullptr;
 
 	if (0 == devnum)  // PUART1
 	{
-    regs = uart0_hw;
-    reset_mask = RESETS_RESET_UART0_BITS;
+    //regs = uart0_hw;
 	}
 	else if (1 == devnum)
 	{
-    regs = uart1_hw;
-    reset_mask = RESETS_RESET_UART1_BITS;
+    //regs = uart1_hw;
 	}
 
 	if (!regs)
@@ -59,8 +55,7 @@ bool THwUart_esp::Init(int adevnum)
 		return false;
 	}
 
-  rp_reset_control(reset_mask, true);  // force reset
-  rp_reset_control(reset_mask, false); // remove reset
+#if 0
 
   // main control register
 
@@ -119,6 +114,8 @@ bool THwUart_esp::Init(int adevnum)
 
   regs->icr = 0x7FF; // clear all interrupt flags
 
+#endif
+
 	initialized = true;
 
 	return true;
@@ -126,6 +123,7 @@ bool THwUart_esp::Init(int adevnum)
 
 bool THwUart_esp::TrySendChar(char ach)
 {
+#if 0
 	if (regs->fr & UART_UARTFR_TXFF_BITS) // TX FIFO Full ?
 	{
 		return false;
@@ -133,27 +131,33 @@ bool THwUart_esp::TrySendChar(char ach)
 
 	regs->dr = ach;
 
+#endif
+
 	return true;
 }
 
 bool THwUart_esp::TryRecvChar(char * ach)
 {
+#if 0
 	if (regs->fr & UART_UARTFR_RXFE_BITS) // RX FIFO Empty?
 	{
 	  return false;
 	}
 
 	*ach = regs->dr;
+#endif
 	return true;
 }
 
 bool THwUart_esp::SendFinished()
 {
+#if 0
 	if (regs->fr & UART_UARTFR_BUSY_BITS)
 	{
 		return false;
 	}
 	else
+#endif
 	{
 		return true;
 	}

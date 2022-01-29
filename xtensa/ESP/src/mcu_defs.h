@@ -12,6 +12,8 @@
 
 #define MCU_INTERNAL_RC_SPEED     6000000 // ring oscillator
 
+#define HW_DMA_MAX_COUNT            32764
+
 
 //#define HW_GPIO_REGS      iobank0_status_ctrl_hw_t
 //#define HW_UART_REGS      SercomUsart

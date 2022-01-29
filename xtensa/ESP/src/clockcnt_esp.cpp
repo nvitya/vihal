@@ -27,9 +27,5 @@
 
 #include "platform.h"
 
-void clockcnt_init()
-{
-
-}
 
 

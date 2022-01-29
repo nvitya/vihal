@@ -6,6 +6,8 @@
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
 
+#include "stdint.h"
+
 #include "generic_defs.h"
 
 // board.h must be provided by the application. It should minimum define the cpu.
