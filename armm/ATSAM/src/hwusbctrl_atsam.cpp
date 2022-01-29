@@ -425,13 +425,11 @@ void THwUsbCtrl_atsam::HandleIrq()
 
 			if (epreg & UDP_CSR_TXCOMP)
 			{
+			  udp_ep_csreg_bit_clear(pepreg, UDP_CSR_TXCOMP); // clear the event early, because might come during servicing again!
+
 				if (!HandleEpTransferEvent(epid, false))
 				{
 					// todo: handle error
-				}
-				if (*pepreg & UDP_CSR_TXCOMP)
-				{
-				  udp_ep_csreg_bit_clear(pepreg, UDP_CSR_TXCOMP);
 				}
 			}
 
