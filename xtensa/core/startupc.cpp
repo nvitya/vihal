@@ -23,6 +23,20 @@
 // created:  2022-01-29
 // authors:  nvitya
 
+/***************************************************************************
+                           !! !WARNING !!!
+
+ This MCU is very special and requires special initializations,
+ which is not known to me yet, so at the time the
+ ESP32 is not useable with  VIHAL!
+
+ Window overflow exception handling required:
+
+ https://sachin0x18.github.io/posts/demystifying-xtensa-isa/
+
+****************************************************************************/
+
+
 #include "platform.h"
 #include "cppinit.h"
 
@@ -46,17 +60,6 @@ void xtensa_startup(unsigned self_flashing)
   {
     //
   }
-}
-
-extern "C" __attribute__((section(".resetentry"),used,noreturn))
-void _reset_entry()
-{
-  xtensa_startup(0);
-
-	while (true)
-	{
-		//
-	}
 }
 
 
