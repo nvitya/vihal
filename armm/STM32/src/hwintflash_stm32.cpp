@@ -155,16 +155,11 @@ bool THwIntFlash_stm32::HwInit()
 	bytesize = *(uint16_t *)(FLASHSIZE_BASE) * 1024;
 
 	pagesize = 256; // used here as burst length
-
 	bank_count = 1;
 
 	regs->SR = 0xFFFF; // clear all error flags
 
-#ifdef MCUSF_G4
-
-	smallest_write = 8;
-
-#else
+  smallest_write = 4;  // to be more compatible
 
 	#if HWINTFLASH_BIGBLOCKS
 
@@ -172,6 +167,8 @@ bool THwIntFlash_stm32::HwInit()
 
   #else
     #if defined(MCUSF_G4)
+
+		  smallest_write = 8;
 
       uint32_t fopt = *(uint32_t *)(0x1FFF7800); // flash option bytes
       dbank = ((fopt & (1 << 22)) != 0);
@@ -186,6 +183,8 @@ bool THwIntFlash_stm32::HwInit()
       }
 
     #elif defined(MCUSF_WB)
+
+      smallest_write = 8;
 
       fixblock_size_shift = 12;
 
@@ -208,9 +207,6 @@ bool THwIntFlash_stm32::HwInit()
 
 
 	#endif
-
-	smallest_write = 4;  // to be more compatible
-#endif
 
 	start_address = FLASH_BASE;
 
@@ -385,6 +381,21 @@ void THwIntFlash_stm32::Write32(uint32_t * adst, uint32_t avalue)
 
 #endif
 
+void THwIntFlash_stm32::Finish64Fragment(uint32_t * adst)
+{
+  if (smallest_write < 8)
+  {
+    return;
+  }
+
+  bool firstword = ((((uint32_t)adst) & 4) == 0);
+
+  if (!firstword)
+  {
+    Write32(adst, 0xFFFFFFFF);
+  }
+}
+
 void THwIntFlash_stm32::Run()
 {
 	uint32_t n;
@@ -458,6 +469,7 @@ void THwIntFlash_stm32::Run()
 					++dstaddr;
 					++srcaddr;
 				}
+        Finish64Fragment(dstaddr);
 
 				++phase;
 				break;
@@ -561,6 +573,7 @@ void THwIntFlash_stm32::Run()
 					++dstaddr;
 					++srcaddr;
 				}
+        Finish64Fragment(dstaddr);
 
 				++phase;
 				break;

@@ -66,7 +66,7 @@ protected:
 	uint16_t *       dst16;
 
 	void             Write32(uint32_t * adst, uint32_t avalue);
-
+	void             Finish64Fragment(uint32_t * adst);
 
 #if HWINTFLASH_BIGBLOCKS
 
