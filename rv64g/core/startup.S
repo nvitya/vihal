@@ -81,25 +81,31 @@ cpu_csr_init:
   csrw  mtvec, x10
   csrw  mepc,  x10                       // just to init mepc
 
-  csrw  mstatus, zero                    // disable global IRQ
-  //li t0, 0x00006000U // = MSTATUS_FS
-  //csrs mstatus, t0
+  li t0, 0x00006000U // = MSTATUS_FS
+  csrs mstatus, t0
+
   csrw  mie, zero                        // absolutely no interrupts sources, thanks
 
-  li    x11, 7
-  csrw  mcounteren, x11
+  //li    x11, 7
+  //csrw  mcounteren, x11
 
-  li    x11,   0                         // stop all counters except for [m]cycle[h] and [m]instret[h]
-  csrw  0x320, x11                       // = mcountinhibit (literal address for lagacy toolchain compatibility)
+  //li    x11,   0                         // stop all counters except for [m]cycle[h] and [m]instret[h]
+  //csrw  0x320, x11                       // = mcountinhibit (literal address for lagacy toolchain compatibility)
 
   csrw  mcycle,    zero                  // reset cycle counters
-  csrw  mcycleh,   zero
   csrw  minstret,  zero                  // reset instruction counters
-  csrw  minstreth, zero
 
-  csrw  fcsr, zero                       // reset floating-point CSR
+  //csrw  fcsr, zero                       // reset floating-point CSR
 
-  fssr    x0
+  csrr a0, mhartid
+  beq a0, x0, cpu0_start
+
+cpu1_loop:
+  wfi
+  j cpu1_loop
+
+cpu0_start:
+
 
 //-------------------------------------------------
 // Copy Regions (data, code ram etc.)
@@ -184,6 +190,7 @@ exec_start_c:
   addi  x14, x0, 0  // a4: function argument
   addi  x15, x0, 0  // a5: function argument
 
+  fssr    x0
   fmv.w.x f0,  x0
   fmv.w.x f1,  x0
   fmv.w.x f2,  x0
