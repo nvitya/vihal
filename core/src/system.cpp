@@ -27,6 +27,7 @@
 */
 
 #include <errno.h>
+#include "stdint.h"
 
 extern int errno;
 
@@ -40,7 +41,7 @@ extern unsigned  _Heap_Limit; // end of the RAM available for heap (where the ma
 unsigned         system_heap_size = 0;
 char *           system_heap_end_ptr = nullptr;  // actual end of the RAM used as heap
 
-__attribute__((weak))  unsigned _sbrk(int incr)
+__attribute__((weak))  uintptr_t _sbrk(int incr)
 {
   char * sys_heap_limit = (char *)&_Heap_Limit;
 
@@ -61,7 +62,7 @@ __attribute__((weak))  unsigned _sbrk(int incr)
   system_heap_size += incr;
   system_heap_end_ptr = chunk_end;
 
-  return (unsigned)chunk_begin;
+  return (uintptr_t)chunk_begin;
 }
 
 // At some compiler settings these system functions might needed
