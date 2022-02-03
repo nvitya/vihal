@@ -42,17 +42,19 @@
 #define PORTNUM_J            9
 #define PORTNUM_K           10
 
-#define PINCFG_INPUT         0x0000
-#define PINCFG_OUTPUT        0x0001
+#define PINCFG_INPUT          0x0000
+#define PINCFG_OUTPUT         0x0001
 
-#define PINCFG_OPENDRAIN     0x0002
-#define PINCFG_PULLUP        0x0004
-#define PINCFG_PULLDOWN      0x0008
+#define PINCFG_OPENDRAIN      0x0002
+#define PINCFG_PULLUP         0x0004
+#define PINCFG_PULLDOWN       0x0008
 
-#define PINCFG_ANALOGUE      0x0010
+#define PINCFG_ANALOGUE       0x0010
 
-#define PINCFG_DRIVE_WEAK    0x0000
-#define PINCFG_DRIVE_STRONG  0x0020
+#define PINCFG_DRIVE_NORMAL   0x0000  // default
+#define PINCFG_DRIVE_MEDIUM   0x0000
+#define PINCFG_DRIVE_WEAK     0x0020
+#define PINCFG_DRIVE_STRONG   0x0040
 
 #define PINCFG_SPEED_MASK     0x0F00
 #define PINCFG_SPEED_MEDIUM   0x0000  // default
@@ -62,8 +64,8 @@
 #define PINCFG_SPEED_FAST     0x0300
 #define PINCFG_SPEED_VERYFAST 0x0400  // special ST value, wich usually does not work even for SDRAM pins
 
-#define PINCFG_GPIO_INIT_1   0x8000
-#define PINCFG_GPIO_INIT_0   0x0000
+#define PINCFG_GPIO_INIT_1    0x8000
+#define PINCFG_GPIO_INIT_0    0x0000
 
 #define PINCFG_AF_MASK     0x1F0000
 #define PINCFG_AF_SHIFT    16
