@@ -28,8 +28,10 @@
 
 #define MCU_RV32I
 
-// read mtime:
-#define CLOCKCNT  (riscv_cpu_csr_read(0xB00))
+#ifndef CLOCKCNT
+  // read mtime:
+  #define CLOCKCNT  (riscv_cpu_csr_read(0xB00))
+#endif
 
 inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {

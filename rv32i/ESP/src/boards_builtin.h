@@ -20,6 +20,12 @@
   #define MCU_ESP32C3
   #define EXTERNAL_XTAL_HZ   40000000
 
+#elif defined(BOARD_NODEMCU_ESP32C3)
+
+  #define BOARD_NAME "NodeMCU ESP32C3 Development Kit"
+  #define MCU_ESP32C3
+  #define EXTERNAL_XTAL_HZ   40000000
+
 #else
 
   #error "Unknown board."

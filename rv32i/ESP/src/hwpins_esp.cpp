@@ -84,7 +84,7 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinn
   }
   else
   {
-    padcfg |= (2 << 12);  // 2 = GPIO function
+    padcfg |= (1 << 12);  // 1 = GPIO function
   }
 
   IO_MUX->CFG[apinnum] = padcfg;
@@ -100,16 +100,19 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinn
   {
     pincfg &= ~(1 << 2); // 0 = normal
   }
-  GPIO->PIN[apinnum] = pincfg;
+  //GPIO->PIN[apinnum] = pincfg;
 
   // route the GPIO output regs to the output PAD
 
-  GPIO->FUNC_OUT_SEL_CFG[apinnum] = (0
-    | (0x80 <<  0)  // OUT_SEL(8)
-    | (0    <<  8)  // INV_SEL
-    | (0    <<  9)  // OEN_SEL
-    | (0    << 10)  // OEN_INV_SEL
-  );
+  if ((flags & PINCFG_OUTPUT) && (0 == (flags & PINCFG_AF_MASK)))
+  {
+    GPIO->FUNC_OUT_SEL_CFG[apinnum] = (0
+      | (0x80 <<  0)  // OUT_SEL(8)
+      | (0    <<  8)  // INV_SEL
+      | (1    <<  9)  // OEN_SEL
+      | (0    << 10)  // OEN_INV_SEL
+    );
+  }
 
   // 3. GPIO configuration
 

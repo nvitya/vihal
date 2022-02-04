@@ -22,7 +22,7 @@ OUTPUT_ARCH(riscv)
 
 INCLUDE vihal_stack_predef.ld
 
-ENTRY(_self_flashing_entry)
+ENTRY(_soft_entry)
 
 SECTIONS
 {
