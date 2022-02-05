@@ -28,3 +28,14 @@
 
 #include "esp_utils.h"
 
+uint32_t esp_apb_speed()
+{
+  if (SystemCoreClock >= 80000000)
+  {
+    return 80000000;
+  }
+  else
+  {
+    return SystemCoreClock;
+  }
+}
