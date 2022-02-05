@@ -80,8 +80,8 @@ bool THwUart_esp::Init(int adevnum)
   regs->CLK_CONF = (0
     | (0  <<  0)  // SCLK_DIV_A(6)
     | (0  <<  6)  // SCLK_DIV_B(6)
-    | (1  << 12)  // SCLK_DIV_NUM(8)
-    | (1  << 20)  // SCLK_SEL(2)
+    | (0  << 12)  // SCLK_DIV_NUM(8)
+    | (1  << 20)  // SCLK_SEL(2): 1 = APB(80 MHz), 3 = XTAL(40 MHz)
     | (1  << 22)  // SCLK_EN
     | (0  << 23)  // RST_CODE
     | (1  << 24)  // TX_SCLK_EN
@@ -90,8 +90,8 @@ bool THwUart_esp::Init(int adevnum)
 
   unsigned periphclock = esp_apb_speed();
 
-  // there is a fix /16 divider, which is compensated with a 4-bit fractional divider
-  uint32_t brdiv_m16 = periphclock / baudrate;  // *16/16 = 1
+  // * 16 for the fractional divider
+  uint32_t brdiv_m16 = (periphclock << 4) / baudrate;  // *16 = 1
 
   regs->CLKDIV = (0
       | ((brdiv_m16 >> 4)  <<  0)  // CLKDIV(12)
@@ -161,7 +161,7 @@ bool THwUart_esp::Init(int adevnum)
 bool THwUart_esp::TrySendChar(char ach)
 {
   uint32_t sr = regs->STATUS;
-	if (((sr >> 16) & 0x1FF) < tx_fifo_size) // TX FIFO Full ?
+	if (((sr >> 16) & 0x1FF) >= tx_fifo_size) // TX FIFO Full ?
 	{
 		return false;
 	}

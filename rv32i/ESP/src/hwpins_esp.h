@@ -34,8 +34,12 @@
 
 class THwPinCtrl_esp : public THwPinCtrl_pre
 {
+public: // ESP specific:
+
+  bool PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned flags);
+
 public:
-	// platform specific
+
 	bool PinSetup(int aportnum, int apinnum, unsigned flags);
 
 	void GpioSet(int aportnum, int apinnum, int value);
