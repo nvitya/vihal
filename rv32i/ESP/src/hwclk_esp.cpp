@@ -28,18 +28,53 @@
 #include "platform.h"
 #include "hwclk.h"
 
-void hwclk_start_ext_osc(unsigned aextspeed)
-{
-}
-
-void hwclk_prepare_hispeed(unsigned acpuspeed)
-{
-  // nothing to do, no internal flash memory or voltage scaling
-}
-
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
-  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+  uint32_t tmp;
+
+  if (target_speed_hz > 160000000)  target_speed_hz = 160000000;
+
+  SystemCoreClock = external_clock_hz / 2;  // this is the defalt speed 20 MHz
+
+  // set the CPU clock source to XTAL
+
+  tmp = SYSTEM->SYSCLK_CONF;
+  tmp &= ~(3 << 10);
+  tmp |= (1 << 10);  // 1 = FOSC
+  SYSTEM->SYSCLK_CONF = tmp;
+
+  // set the SYSTEM PLL to 480 MHz
+
+  uint32_t periodsel = (target_speed_hz <= 80000000 ? 0 : 1);
+
+  tmp = SYSTEM->CPU_PER_CONF;
+  tmp &= ~0x07;
+  tmp |= (0
+    | (periodsel << 0)  // CPUPERIOD_SEL(2):  1 = 160 MHz, 0 = 80 MHz
+    | (1 << 2)  // PLL_FREQ_SEL: 1 = 480, 0 = 320
+  );
+  SYSTEM->CPU_PER_CONF = tmp;
+
+  // select the PLL to system clock
+
+  tmp = SYSTEM->SYSCLK_CONF;
+  tmp &= ~(3 << 10); // clear the source
+  if (target_speed_hz >= 80000000)
+  {
+    tmp |= (1 << 10);  // 1 = PLL
+  }
+  else
+  {
+    // use the divided crystal
+    tmp &= ~(0x3FF); // clear the divider
+    uint32_t clkdiv = external_clock_hz / target_speed_hz;
+    if (clkdiv > 0)  --clkdiv;
+    tmp |= ((0 << 10) | (clkdiv << 0));  // 0 = XTAL with divider
+  }
+  SYSTEM->SYSCLK_CONF = tmp;
+
+  // ???
+  //((void (*)(int)) 0x40000588)(160);  // ets_update_cpu_frequency(160)
 
   SystemCoreClock = target_speed_hz;
 

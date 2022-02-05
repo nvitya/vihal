@@ -185,6 +185,7 @@ typedef struct
   volatile uint32_t      RTC_FASTMEM_CRC;    // 004C
   uint32_t               _pad_0050;
   volatile uint32_t      CLOCK_GATE;         // 0054
+  volatile uint32_t      SYSCLK_CONF;        // 0058
 //
 } esp_sysreg_t;
 
