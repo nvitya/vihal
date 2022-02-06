@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -18,22 +19,30 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     clockcnt_esp.cpp
- *  brief:    ESP Clock Counter
+ *  file:     rv64g_cpu.h
+ *  brief:    RV64G CPU related definitions
  *  version:  1.00
- *  date:     2022-01-29
+ *  date:     2022-02-06
  *  authors:  nvitya
 */
 
-#include "clockcnt.h"
+#pragma once
 
-void clockcnt_init()
+#include "stdint.h"
+
+inline uint64_t __attribute__ ((always_inline)) cpu_csr_read(const int csr_id)
 {
-  cpu_csr_write(0x7E0, 1);  // = mpcer[0] = count clock cycles
-  cpu_csr_write(0x7E1, 1);  // = mpcmer[0] = enable counting
+  register uint64_t csr_data;
 
-  //asm("li    t0, 1");
-  //asm("csrw  0x7E0, t0");
-  //asm("li    t0, 1");
-  //asm("csrw  0x7E1, t0");
+  asm volatile ("csrr %[result], %[input_i]" : [result] "=r" (csr_data) : [input_i] "i" (csr_id));
+
+  return csr_data;
 }
+
+inline void __attribute__ ((always_inline)) cpu_csr_write(const int csr_id, uint64_t data)
+{
+  register uint64_t csr_data = data;
+
+  asm volatile ("csrw %[input_i], %[input_j]" :  : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
+}
+

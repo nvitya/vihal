@@ -6,6 +6,7 @@
 #pragma once
 
 #include "generic_defs.h"
+#include "rv64g_cpu.h"
 
 // board.h must be provided by the application. It should minimum define the cpu.
 #include "board.h"
@@ -30,23 +31,12 @@
 
 #include "mcu_defs.h"
 
-// handle some required definitions
 
-#if !defined(MAX_CLOCK_SPEED)
-  #ifdef MCU_FIXED_SPEED
-    #define MAX_CLOCK_SPEED  MCU_FIXED_SPEED
-  #else
-    #error "MCU Maximal clock speed is not defined!"
-  #endif
-#endif
-
-#ifndef MCU_CLOCK_SPEED
-  #define MCU_CLOCK_SPEED  MAX_CLOCK_SPEED
-#endif
-
-#if !defined(SPI_SELF_FLASHING)
-  #define SPI_SELF_FLASHING 0
+#ifndef CLOCKCNT
+  // read mtime by default:
+  #define CLOCKCNT  (cpu_csr_read(0xB00))
 #endif
 
 #include "rv64g_generic.h"
 
+#include "platform_generic.h"

@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -17,23 +18,15 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-/*
- *  file:     clockcnt_esp.cpp
- *  brief:    ESP Clock Counter
- *  version:  1.00
- *  date:     2022-01-29
- *  authors:  nvitya
-*/
+// file:     clockcnt_gd32v.cpp
+// brief:    RV32I clockcnt initialization (mtime)
+// created:  2022-02-06
+// authors:  nvitya
 
 #include "clockcnt.h"
 
 void clockcnt_init()
 {
-  cpu_csr_write(0x7E0, 1);  // = mpcer[0] = count clock cycles
-  cpu_csr_write(0x7E1, 1);  // = mpcmer[0] = enable counting
-
-  //asm("li    t0, 1");
-  //asm("csrw  0x7E0, t0");
-  //asm("li    t0, 1");
-  //asm("csrw  0x7E1, t0");
+  cpu_csr_write(0x306, 7);  // 0x306 = mcounteren
+  cpu_csr_write(0x320, 0);  // 0x320 = mcountinhibit
 }

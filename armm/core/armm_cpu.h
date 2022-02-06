@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -18,22 +19,26 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     clockcnt_esp.cpp
- *  brief:    ESP Clock Counter
+ *  file:     armm_cpu.h
+ *  brief:    ARMM non official CPU related definitions
  *  version:  1.00
- *  date:     2022-01-29
+ *  date:     2022-02-06
  *  authors:  nvitya
 */
 
-#include "clockcnt.h"
+#pragma once
 
-void clockcnt_init()
+#include "stdint.h"
+
+#define MCU_ARMM
+#define CPU_ARMM
+
+inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {
-  cpu_csr_write(0x7E0, 1);  // = mpcer[0] = count clock cycles
-  cpu_csr_write(0x7E1, 1);  // = mpcmer[0] = enable counting
+  __asm volatile ("cpsid i");
+}
 
-  //asm("li    t0, 1");
-  //asm("csrw  0x7E0, t0");
-  //asm("li    t0, 1");
-  //asm("csrw  0x7E1, t0");
+inline void __attribute__((always_inline)) mcu_enable_interrupts()
+{
+  __asm volatile ("cpsie i");
 }

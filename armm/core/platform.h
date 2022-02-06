@@ -25,10 +25,10 @@
  *  authors:  nvitya
 */
 
-#ifndef __PLATFORM_H
-#define __PLATFORM_H
+#pragma once
 
 #include "generic_defs.h"
+#include "armm_cpu.h"
 
 #define DONT_USE_CMSIS_INIT
 
@@ -59,10 +59,6 @@
 
 // handle some required definitions
 
-#if !defined(MAX_CLOCK_SPEED)
-  #error "MCU Maximal clock speed is not defined!"
-#endif
-
 #ifndef HW_DMA_MAX_COUNT
   // usually this is the maximum amount that the DMA can transfer
   #define HW_DMA_MAX_COUNT  32768
@@ -84,14 +80,7 @@
   #define IRQVECTAB_OFFS_28_VALUE  0
 #endif
 
-#ifndef MCU_CLOCK_SPEED
-  #define MCU_CLOCK_SPEED  MAX_CLOCK_SPEED
-#endif
-
-#if !defined(SPI_SELF_FLASHING)
-  #define SPI_SELF_FLASHING 0
-#endif
-
 #include "armm_generic.h"
 
-#endif
+#include "platform_generic.h"
+

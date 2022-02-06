@@ -29,8 +29,6 @@
 #ifndef __ARMM_GENERIC_H
 #define __ARMM_GENERIC_H
 
-#define MCU_ARMM
-
 #if defined(DEBUG)
   #define __DEBUG_BKPT()  asm volatile ("bkpt 0")
 #else
@@ -77,16 +75,6 @@
 
 #endif
 
-
-inline void __attribute__((always_inline)) mcu_disable_interrupts()
-{
-  __asm volatile ("cpsid i");
-}
-
-inline void __attribute__((always_inline)) mcu_enable_interrupts()
-{
-  __asm volatile ("cpsie i");
-}
 
 extern "C" void (* __isr_vectors [])();
 

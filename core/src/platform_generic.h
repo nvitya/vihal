@@ -18,14 +18,29 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     clockcnt_rv32i.cpp
-// brief:    RV32I clockcnt initialization
-// created:  2021-09-28
-// authors:  nvitya
+/*
+ *  file:     platform_generic.h
+ *  brief:    Generic platform definitions / defaults. Included at the end of platform.h
+ *  version:  1.00
+ *  date:     2022-02-06
+ *  authors:  nvitya
+*/
 
-#include "clockcnt.h"
+#pragma once
 
-void clockcnt_init()
-{
-	// no special init required
-}
+#if !defined(MAX_CLOCK_SPEED)
+  #ifdef MCU_FIXED_SPEED
+    #define MAX_CLOCK_SPEED  MCU_FIXED_SPEED
+  #else
+    #error "MCU Maximal clock speed is not defined!"
+  #endif
+#endif
+
+#ifndef MCU_CLOCK_SPEED
+  #define MCU_CLOCK_SPEED  MAX_CLOCK_SPEED
+#endif
+
+#if !defined(SPI_SELF_FLASHING)
+  #define SPI_SELF_FLASHING 0
+#endif
+

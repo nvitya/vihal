@@ -26,12 +26,7 @@
 #ifndef __RV32I_GENERIC_H
 #define __RV32I_GENERIC_H
 
-#define MCU_RV32I
-
-#ifndef CLOCKCNT
-  // read mtime:
-  #define CLOCKCNT  (riscv_cpu_csr_read(0xB00))
-#endif
+#include "stdint.h"
 
 inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {
@@ -79,15 +74,5 @@ inline void __set_PRIMASK(unsigned aprimask)
 
 }
 
-
-
-inline uint32_t __attribute__ ((always_inline)) riscv_cpu_csr_read(const int csr_id)
-{
-  register uint32_t csr_data;
-
-  asm volatile ("csrr %[result], %[input_i]" : [result] "=r" (csr_data) : [input_i] "i" (csr_id));
-
-  return csr_data;
-}
 
 #endif

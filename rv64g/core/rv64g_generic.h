@@ -28,7 +28,7 @@
 #define MCU_RV64G
 
 // read mtime:
-#define CLOCKCNT  (riscv_cpu_csr_read(0xB00))
+#define CLOCKCNT  (cpu_csr_read(0xB00))
 
 inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {
@@ -74,16 +74,5 @@ inline unsigned __get_PRIMASK()
 inline void __set_PRIMASK(unsigned aprimask)
 {
 
-}
-
-
-
-inline uint64_t __attribute__ ((always_inline)) riscv_cpu_csr_read(const int csr_id)
-{
-  register uint64_t csr_data;
-
-  asm volatile ("csrr %[result], %[input_i]" : [result] "=r" (csr_data) : [input_i] "i" (csr_id));
-
-  return csr_data;
 }
 
