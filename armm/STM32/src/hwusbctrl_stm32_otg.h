@@ -39,7 +39,7 @@
 #define HWUSB_MAX_ENDPOINTS     6
 
 #define HWUSB_MEMORY_SIZE    1280
-#define HWUSB_RX_FIFO_SIZE    640  // for all endpoints, multiple packets
+#define HWUSB_RX_FIFO_SIZE    512  // for all endpoints, multiple packets
 
 #define HWUSB_SET_DADDR_BEFORE_ACK  // set the device address before sending the status (ACK)
 

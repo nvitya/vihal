@@ -69,6 +69,9 @@ public: // run state
 
 	bool             busy = false;
 	int              error = 0;
+
+  inline bool      ReturnError(int aerror) { error = aerror;  return false; }
+
 };
 
 #endif // ndef HWI2C_H_PRE_
@@ -91,8 +94,8 @@ class THwI2c_noimpl : public THwI2c_pre
 public: // mandatory
 	bool Init(int adevnum)      { return false; }
 
-	int  StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len)  { return HWERR_NOTIMPL; }
-	int  StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)  { return HWERR_NOTIMPL; }
+	bool StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len)  { return ReturnError(HWERR_NOTIMPL); }
+	bool StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)  { return ReturnError(HWERR_NOTIMPL); }
 
   void DmaAssign(bool istx, THwDmaChannel * admach)  { }
 

@@ -41,8 +41,8 @@ public:
 
 	void DmaAssign(bool istx, THwDmaChannel * admach);
 
-	int  StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len);
-	int  StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len);
+	bool StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len);
+	bool StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len);
 	void Run();
 
 	unsigned       runstate = 0;

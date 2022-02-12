@@ -183,7 +183,12 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 
 int THwUsbEndpoint_stm32_otg::ReadRecvData(void * buf, uint32_t buflen)
 {
+  TRACE("TSIZ=%08X\r\n", rxregs->TSIZ);
   uint32_t bcnt = ((usbctrl->rxstatus >> 4) & 0x7FF);
+  if (0 == bcnt)
+  {
+    return bcnt;
+  }
 
 	if (bcnt > buflen)
 	{
@@ -483,6 +488,7 @@ bool THwUsbCtrl_stm32_otg::InitHw()
   	//| USB_OTG_GINTMSK_IISOIXFRM
   	//| USB_OTG_GINTMSK_PXFRM_IISOOXFRM
   	//| USB_OTG_GINTMSK_WUIM
+
     | USB_OTG_GINTMSK_RXFLVLM
   );
 
@@ -553,37 +559,51 @@ void THwUsbCtrl_stm32_otg::SetDeviceAddress(uint8_t aaddr)
 
 void THwUsbCtrl_stm32_otg::HandleIrq()
 {
-	uint32_t istr = (gregs->GINTSTS & gregs->GINTMSK);
+  while (gregs->GINTSTS & USB_OTG_GINTSTS_RXFLVL)  // common receive (htod)
+  {
+    // warning: the GRXSTSP (receive status + pop) can be read only once !
+    rxstatus = gregs->GRXSTSP; // read and pop
+    uint32_t epid = (rxstatus & 0x0F);
+    uint32_t pktsts = ((rxstatus >> 17) & 0x0F);
+    TRACE("RXFLVL %08X (%i)\r\n", rxstatus, pktsts);
 
-	if (istr & USB_OTG_GINTSTS_RXFLVL)  // common receive (htod)
-	{
-		// warning: the GRXSTSP (receive status) can be read only once !
-		rxstatus = gregs->GRXSTSP;
+    if ((6 == pktsts) || (2 == pktsts))  // setup or non-setup packet received
+    {
+      //TRACE("RXFLVL %08X\r\n", rxstatus);
 
-		uint32_t epid = (rxstatus & 0x0F);
-		uint32_t pktsts = ((rxstatus >> 17) & 0x0F);
+      if (!HandleEpTransferEvent(epid, true))
+      {
+        TRACE("Unhandled RX at EP(%u)!\r\n", epid);
+      }
+    }
+    #if 0
+    else if (3 == pktsts)
+    {
+      if (!HandleEpTransferEvent(epid, true))
+      {
+        TRACE("Unhandled Out Transfer Completed EP(%u)!\r\n", epid);
+      }
+    }
+    #endif
+    else
+    {
+      // other events
+      //  1 = global OUT NAK
+      //  3 = OUT transfer completed
+      //  4 = setup transaction completed
+      if (((rxstatus >> 4) & 0x7FF) > 0)
+      {
+        //TRACE("  GRXSTSR = %08X\r\n", gregs->GRXSTSR);
+        TRACE("  RX ERROR: RX fifo was not read !\r\n");
+        for (unsigned n = 0; n < 0; ++n)
+        {
+          TRACE("  RXFIFO=%08X\r\n", *rxfifo);
+        }
+      }
+    }
+  }
 
-		//TRACE("RXFLVL %08X\r\n", rxstatus);
-
-		if ((6 == pktsts) || (2 == pktsts))  // setup or non-setup packet received
-		{
-			//TRACE("RXFLVL %08X\r\n", rxstatus);
-
-			if (!HandleEpTransferEvent(epid, true))
-			{
-				TRACE("Unhandled RX at EP(%u)!\r\n", epid);
-			}
-		}
-		else
-		{
-			// other events
-			//  1 = global OUT NAK
-			//  3 = OUT transfer completed
-			//  4 = setup transaction completed
-		}
-
-		gregs->GINTSTS = USB_OTG_GINTSTS_RXFLVL;
-	}
+  uint32_t istr = (gregs->GINTSTS & gregs->GINTMSK);
 
 	if (istr & USB_OTG_GINTSTS_OEPINT)  // output (htod, RX) endpoint interrupt
 	{
@@ -601,9 +621,9 @@ void THwUsbCtrl_stm32_otg::HandleIrq()
 
 			THwOtgEndpointRegs * pepregs = &outepregs[epid];
 
-			TRACE("RXCOMP(%i) %02X\r\n", epid, pepregs->INT);
+			//TRACE("RXCOMP(%i) %02X\r\n", epid, pepregs->INT);
 
-#if 0
+#if 1
 			if (!HandleEpTransferEvent(epid, true))
 			{
 				// todo: handle error
@@ -635,7 +655,7 @@ void THwUsbCtrl_stm32_otg::HandleIrq()
 
 			THwOtgEndpointRegs * pepregs = &inepregs[epid];
 
-			//TRACE("TXCOMP(%i) %02X\r\n", epid, pepregs->INT);
+			TRACE("TXCOMP(%i) %02X\r\n", epid, pepregs->INT);
 
 			if (!HandleEpTransferEvent(epid, false))
 			{

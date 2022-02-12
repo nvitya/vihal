@@ -60,8 +60,8 @@ public:
 
 	bool Init(int adevnum);
 
-	int  StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len);
-	int  StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len);
+	bool StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len);
+	bool StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len);
 	void Run();
 
   void DmaAssign(bool istx, THwDmaChannel * admach);

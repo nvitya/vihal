@@ -138,11 +138,11 @@ void THwI2c_stm32::DmaAssign(bool istx, THwDmaChannel * admach)
   }
 }
 
-int THwI2c_stm32::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, unsigned len)
+bool THwI2c_stm32::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, unsigned len)
 {
 	if (busy)
 	{
-		return HWERR_BUSY;
+		return ReturnError(HWERR_BUSY);
 	}
 
 	istx = false;
@@ -191,14 +191,14 @@ int THwI2c_stm32::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, 
 
 	Run();
 
-	return HWERR_OK;
+	return true;
 }
 
-int THwI2c_stm32::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)
+bool THwI2c_stm32::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)
 {
 	if (busy)
 	{
-		return HWERR_BUSY;
+		return ReturnError(HWERR_BUSY);
 	}
 
 	istx = true;
@@ -247,7 +247,7 @@ int THwI2c_stm32::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr,
 
 	Run();
 
-	return HWERR_OK;
+  return true;
 }
 
 
