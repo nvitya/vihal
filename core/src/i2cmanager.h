@@ -19,27 +19,56 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     generic_defs.h
- *  brief:    Generic definitions
+ *  file:     i2cmanager.h
+ *  brief:    Scheduleing I2C transactions for a shared I2C
  *  version:  1.00
- *  date:     2021-09-28
+ *  date:     2022-02-13
  *  authors:  nvitya
 */
 
-#ifndef __GENERIC_DEFS_H
-#define __GENERIC_DEFS_H
+#pragma once
 
-#define PROGMEM // some Arduino related stuff might require this
+#include "stdint.h"
+#include "hwi2c.h"
 
-#define WEAK  __attribute__ ((weak))
+struct TI2cTransaction
+{
+  bool               completed;
+  uint8_t            iswrite;  // 0 = read, 1 = write
+  uint8_t            address;
+  int                errorcode;
 
-#define ALWAYS_INLINE  inline __attribute__((always_inline))
+  uint32_t           extra;
+  uint8_t *          dataptr;
+  unsigned           datalen;
 
-#define SETREGPART(areg, ashift, amask, avalue) { areg &= ~(amask << ashift); areg |= (avalue << ashift); }
+  PCbClassCallback   callback = nullptr;
+  void *             callbackobj = nullptr;
+  void *             callbackarg = nullptr;
 
-class TCbClass { };
-typedef void (TCbClass::*PCbClassCallback)(void * arg);
+  TI2cTransaction *  next;
+};
 
-extern unsigned SystemCoreClock;  // standard CMSIS variable, this is used almost everywhere
 
-#endif
+class TI2cManager
+{
+public:
+  THwI2c *           pi2c = nullptr;
+  int                state = 0;
+
+  TI2cTransaction *  curtra = nullptr;
+
+  bool               Init(THwI2c * ai2c);
+  void               Run();
+
+  void AddWrite(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len);
+  void AddRead(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len);
+
+  void WaitFinish(TI2cTransaction * atra);
+
+protected:
+
+  void AddTransaction(TI2cTransaction * atra);
+
+};
+
