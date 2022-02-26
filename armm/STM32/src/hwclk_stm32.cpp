@@ -718,6 +718,21 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     //tmp |= (8 << RCC_EXTCFGR_C2HPRE_Pos);  // HCLK2: 8 = divide by 2
     RCC->EXTCFGR = tmp;
 
+    // divide clock for CPU2 (cortex M0+) and SRAM2 by 2 if the sysclk is greater than 32Mhz
+    if(target_speed_hz > 32000000)
+    {
+		tmp = RCC->EXTCFGR;
+		tmp &= ~(RCC_EXTCFGR_C2HPRE | RCC_EXTCFGR_SHDHPRE);
+		tmp |= (8 << RCC_EXTCFGR_C2HPRE_Pos) | (8 << RCC_EXTCFGR_SHDHPRE_Pos);  // HCLK2: 8 = divide by 2
+		RCC->EXTCFGR = tmp;
+    }
+
+    // select for USART sysclk as clock source
+    tmp = RCC->CCIPR;
+    tmp &= ~(RCC_CCIPR_USART1SEL_Msk);
+    tmp |= (1 << RCC_CCIPR_USART1SEL_Pos);  // Select Sysclk
+    RCC->CCIPR = tmp;
+
   #else
     #error "Unimplemented sub-family handling here"
   #endif
