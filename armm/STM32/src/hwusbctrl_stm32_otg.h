@@ -68,8 +68,10 @@ public:
 	THwOtgEndpointRegs *   txregs = nullptr;
 	THwOtgEndpointRegs *   rxregs = nullptr;
 
-	//__IO uint16_t *      preg;
-	//PUsbPmaDescriptor    pdesc;
+	// on this HW enabling receive before the setup or out transfer complete
+	// leads to errors, therefore are these control variables introduced:
+	bool                   block_enable_recv = false;
+	bool                   pending_enable_recv = false;
 
 	virtual ~THwUsbEndpoint_stm32_otg() { }
 
@@ -117,6 +119,10 @@ public:
 	virtual void SetPullUp(bool aenable);
 
 	void ResetEndpoints();
+
+private:
+  void FlushRxFifo();
+  void FlushTxFifo(unsigned aepnum);
 };
 
 #define HWUSBENDPOINT_IMPL   THwUsbEndpoint_stm32_otg

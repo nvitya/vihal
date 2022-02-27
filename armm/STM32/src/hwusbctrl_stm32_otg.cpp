@@ -50,10 +50,38 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 
 	uint16_t htod_len;
 	uint16_t dtoh_len;
+	uint16_t dtoh_alloc_len;
+  uint32_t mpsize = maxlen;
+
 	if ((attr & HWUSB_EP_TYPE_MASK) == HWUSB_EP_TYPE_CONTROL)
 	{
-		htod_len = maxlen;
-		dtoh_len = maxlen;
+		if (0 == index)
+		{
+      // the endpoint zero has special size coding:
+      if (maxlen <= 8)
+      {
+        maxlen = 8;
+        mpsize = 0x03;
+      }
+      else if (maxlen <= 16)
+      {
+        maxlen = 16;
+        mpsize = 0x02;
+      }
+      else if (maxlen <= 32)
+      {
+        maxlen = 32;
+        mpsize = 0x01;
+      }
+      else
+      {
+        maxlen = 64;
+        mpsize = 0x00;
+      }
+		}
+
+    htod_len = maxlen;
+    dtoh_len = maxlen;
 	}
 	else
 	{
@@ -69,7 +97,13 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 		}
 	}
 
-	if (htod_len + dtoh_len + usbctrl->fifomem_end > HWUSB_MEMORY_SIZE)
+	dtoh_alloc_len = dtoh_len;
+  if ((dtoh_len > 0) && (dtoh_len < 64))
+  {
+    dtoh_alloc_len = 64; // minimum 64 byte (16 words) allocated (taken from libusb_stm32)
+  }
+
+	if (dtoh_alloc_len + usbctrl->fifomem_end > HWUSB_MEMORY_SIZE)
 	{
 		// does not fit into the memory!
 		return false;
@@ -78,9 +112,9 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 	// allocate the packet memory
 
 	txbufoffs = usbctrl->fifomem_end;
-	if (dtoh_len)
+	if (dtoh_alloc_len)
 	{
-		usbctrl->fifomem_end += dtoh_len + 16; // use some gaps, the reference manual is not so clear if it is required
+		usbctrl->fifomem_end += dtoh_alloc_len;
 	}
 
 	// setup the pointers
@@ -114,22 +148,22 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 		// configure TX (IN)
 
 		// allocate the TX FIFO
-		uint32_t txfifocfg = ((dtoh_len >> 2) << 16) | (txbufoffs << 0);
+		uint32_t txfifocfg = ((dtoh_alloc_len >> 2) << 16) | (txbufoffs << 0);
 		if (0 == index)
 		{
 			usbctrl->gregs->DIEPTXF0_HNPTXFSIZ = txfifocfg;
 		}
 		else
 		{
-			usbctrl->gregs->DIEPTXF[index] = txfifocfg;
+			usbctrl->gregs->DIEPTXF[index-1] = txfifocfg;
 		}
 
 		uint32_t epcfg = 0
 			| (0         << 31)  // EPENA
 			| (0         << 30)  // EPDIS
 			| (0         << 29)  // SODDFRM
-			| (1         << 28)  // SD0PID
-			| (0         << 27)  // SNAK: Set NAK
+			| (1         << 28)  // SD0PID:  1 = set data PID to 0
+			| (1         << 27)  // SNAK: Set NAK
 			| (0         << 26)  // CNAK: Clear NAK
 			| (index     << 22)  // TXFNUM(4): TX FIFO id
 			| (0         << 21)  // STALL
@@ -137,7 +171,7 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 			| (0         << 17)  // NAKSTS: NAK status
 			| (0         << 16)  // DPID: data packet id
 			| (1         << 15)  // USBAEP: 1 = endpoint active
-			| (dtoh_len  <<  0)  // MPSIZ(11): maximum packet size (will be filled later)
+			| (mpsize    <<  0)  // MPSIZ(11): maximum packet size (will be filled later)
 		;
 
 		// for the EP0 the size (bit0..1) must be 0, but it is fulfilled because the maxsize rounded to 32 bits
@@ -153,11 +187,20 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 	{
 		// configure RX (OUT)
 
+	  if (0 == index)
+	  {
+      rxregs->TSIZ = 0
+        | (1      << 29)  // STUPCNT(2)
+        | (1      << 19)  // PKTCNT
+        | (maxlen <<  0)  // XFRSIZ(7)
+      ;
+	  }
+
 		uint32_t epcfg = 0
 			| (0         << 31)  // EPENA
 			| (0         << 30)  // EPDIS
 			| (0         << 29)  // SODDFRM
-			| (1         << 28)  // SD0PID
+			| (1         << 28)  // SD0PID: 1 = set data PID to 0
 			| (0         << 27)  // SNAK: Set NAK
 			| (0         << 26)  // CNAK: Clear NAK
 			| (0         << 20)  // STALL
@@ -166,7 +209,7 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 			| (0         << 17)  // NAKSTS: NAK status
 			| (0         << 16)  // DPID: data packet id
 			| (1         << 15)  // USBAEP: 1 = endpoint active
-			| (htod_len  <<  0)  // MPSIZ(11): maximum packet size (will be filled later)
+			| (mpsize    <<  0)  // MPSIZ(11): maximum packet size (will be filled later)
 		;
 
 		// for the EP0 the size (bit0..1) must be 0, but it is fulfilled because the maxsize rounded to 32 bits
@@ -178,12 +221,16 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 
   usbctrl->regs->DAINTMSK = usbctrl->irq_mask;
 
+  block_enable_recv = false;
+  pending_enable_recv = false;
+
 	return true;
 }
 
 int THwUsbEndpoint_stm32_otg::ReadRecvData(void * buf, uint32_t buflen)
 {
-  TRACE("TSIZ=%08X\r\n", rxregs->TSIZ);
+  //TRACE("TSIZ=%08X\r\n", rxregs->TSIZ);
+
   uint32_t bcnt = ((usbctrl->rxstatus >> 4) & 0x7FF);
   if (0 == bcnt)
   {
@@ -260,21 +307,23 @@ void THwUsbEndpoint_stm32_otg::FinishRecv(bool reenable)
 	//clear_epreg_ctr_rx(preg);
 	if (reenable)
 	{
-		EnableRecv();
+		//EnableRecv();
 	}
 }
 
 void THwUsbEndpoint_stm32_otg::EnableRecv()
 {
-	rxregs->TSIZ = 0
-		| (1      << 29)  // STUPCNT(2)
-		| (1      << 19)  // PKTCNT
-		| (maxlen <<  0)  // XFRSIZ(7)
-	;
+  if (block_enable_recv)
+  {
+    pending_enable_recv = true;
+    return;
+  }
 
 	uint32_t ctl = rxregs->CTL;
+	ctl &= ~USB_OTG_DOEPCTL_STALL;
 	ctl |= (USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA);
 	rxregs->CTL = ctl;
+	pending_enable_recv = false;
 }
 
 void THwUsbEndpoint_stm32_otg::DisableRecv()
@@ -403,8 +452,12 @@ bool THwUsbCtrl_stm32_otg::InitHw()
   // deactivate OTG / force device
 
   // Select FS device mode
-  gregs->GUSBCFG &= ~USB_OTG_GUSBCFG_FHMOD;
-  gregs->GUSBCFG |=  USB_OTG_GUSBCFG_FDMOD;
+  uint32_t tmp = gregs->GUSBCFG;
+  tmp &= ~USB_OTG_GUSBCFG_FHMOD;
+  tmp |=  USB_OTG_GUSBCFG_FDMOD;
+  tmp &= ~(15 << USB_OTG_GUSBCFG_TRDT_Pos);
+  tmp |= (6 << USB_OTG_GUSBCFG_TRDT_Pos);
+  gregs->GUSBCFG = tmp;
 
   delay_us(50000);  // delay 50 ms
 
@@ -480,19 +533,39 @@ bool THwUsbCtrl_stm32_otg::InitHw()
 
   /* Enable interrupts matching to the Device mode ONLY */
   gregs->GINTMSK |= (0
-  	//|	USB_OTG_GINTMSK_USBSUSPM
   	| USB_OTG_GINTMSK_USBRST
   	| USB_OTG_GINTMSK_ENUMDNEM
+    | USB_OTG_GINTMSK_RXFLVLM
   	| USB_OTG_GINTMSK_IEPINT
-  	| USB_OTG_GINTMSK_OEPINT
+
+    //| USB_OTG_GINTMSK_USBSUSPM
+    //| USB_OTG_GINTMSK_WUIM
+
+  	//| USB_OTG_GINTMSK_OEPINT
   	//| USB_OTG_GINTMSK_IISOIXFRM
   	//| USB_OTG_GINTMSK_PXFRM_IISOOXFRM
-  	//| USB_OTG_GINTMSK_WUIM
-
-    | USB_OTG_GINTMSK_RXFLVLM
   );
 
 	return true;
+}
+
+void THwUsbCtrl_stm32_otg::FlushRxFifo() // actually it flushes all endpoints Rx FIFO
+{
+  uint32_t tmp = gregs->GRSTCTL;
+  tmp |= USB_OTG_GRSTCTL_RXFFLSH;
+  gregs->GRSTCTL = tmp;
+  tmp &= ~USB_OTG_GRSTCTL_RXFFLSH;
+  gregs->GRSTCTL = tmp;
+}
+
+void THwUsbCtrl_stm32_otg::FlushTxFifo(unsigned aepnum)
+{
+  uint32_t tmp = gregs->GRSTCTL;
+  tmp &= ~(0x1F << 6);
+  tmp |= (aepnum << 6) | USB_OTG_GRSTCTL_TXFFLSH;
+  gregs->GRSTCTL = tmp;
+  tmp &= ~USB_OTG_GRSTCTL_TXFFLSH;
+  gregs->GRSTCTL = tmp;
 }
 
 void THwUsbCtrl_stm32_otg::ResetEndpoints()
@@ -530,7 +603,10 @@ void THwUsbCtrl_stm32_otg::ResetEndpoints()
   for (int i = 0; i < 15; ++i)
   {
   	gregs->DIEPTXF[i] = 0; // clear transmit FIFOs
+  	FlushTxFifo(i);
   }
+
+  FlushRxFifo();
 
   fifomem_end = HWUSB_RX_FIFO_SIZE;
   irq_mask = 0;
@@ -559,137 +635,128 @@ void THwUsbCtrl_stm32_otg::SetDeviceAddress(uint8_t aaddr)
 
 void THwUsbCtrl_stm32_otg::HandleIrq()
 {
-  while (gregs->GINTSTS & USB_OTG_GINTSTS_RXFLVL)  // common receive (htod)
-  {
-    // warning: the GRXSTSP (receive status + pop) can be read only once !
-    rxstatus = gregs->GRXSTSP; // read and pop
-    uint32_t epid = (rxstatus & 0x0F);
-    uint32_t pktsts = ((rxstatus >> 17) & 0x0F);
-    TRACE("RXFLVL %08X (%i)\r\n", rxstatus, pktsts);
-
-    if ((6 == pktsts) || (2 == pktsts))  // setup or non-setup packet received
-    {
-      //TRACE("RXFLVL %08X\r\n", rxstatus);
-
-      if (!HandleEpTransferEvent(epid, true))
-      {
-        TRACE("Unhandled RX at EP(%u)!\r\n", epid);
-      }
-    }
-    #if 0
-    else if (3 == pktsts)
-    {
-      if (!HandleEpTransferEvent(epid, true))
-      {
-        TRACE("Unhandled Out Transfer Completed EP(%u)!\r\n", epid);
-      }
-    }
-    #endif
-    else
-    {
-      // other events
-      //  1 = global OUT NAK
-      //  3 = OUT transfer completed
-      //  4 = setup transaction completed
-      if (((rxstatus >> 4) & 0x7FF) > 0)
-      {
-        //TRACE("  GRXSTSR = %08X\r\n", gregs->GRXSTSR);
-        TRACE("  RX ERROR: RX fifo was not read !\r\n");
-        for (unsigned n = 0; n < 0; ++n)
-        {
-          TRACE("  RXFIFO=%08X\r\n", *rxfifo);
-        }
-      }
-    }
-  }
-
   uint32_t istr = (gregs->GINTSTS & gregs->GINTMSK);
 
-	if (istr & USB_OTG_GINTSTS_OEPINT)  // output (htod, RX) endpoint interrupt
-	{
-		// this event is turned off
+  if (istr & USB_OTG_GINTSTS_USBRST)
+  {
+    gregs->GINTSTS = USB_OTG_GINTSTS_USBRST;
 
-		rxstatus = 0; // zeroing for IsSetupRequest()
+    LTRACE("USB RESET, ISTR=%04X\r\n", istr);
 
-	  uint32_t epirq = ((regs->DAINT & regs->DAINTMSK) >> 16);
-		uint32_t rev_epirq = __RBIT(epirq);  // prepare for CLZ
+    // the USB registers were already cleared by the hw
 
-		while (true)
-		{
-			uint32_t epid = __CLZ(rev_epirq); // returns leading zeros, 32 when the argument = 0
-			if (epid >= HWUSB_MAX_ENDPOINTS)  break; // -->
-
-			THwOtgEndpointRegs * pepregs = &outepregs[epid];
-
-			//TRACE("RXCOMP(%i) %02X\r\n", epid, pepregs->INT);
-
-#if 1
-			if (!HandleEpTransferEvent(epid, true))
-			{
-				// todo: handle error
-			}
-#endif
-
-			if (pepregs->INT)
-			{
-				pepregs->INT = 0xFF;  // acknowledge interrupts
-			}
-
-			rev_epirq &= ~(1 << (31-epid));
-		}
-
-		gregs->GINTSTS = USB_OTG_GINTSTS_OEPINT;
-	}
-
-	if (istr & USB_OTG_GINTSTS_IEPINT)  // input (dtoh, TX) endpoint interrupt
-	{
-		rxstatus = 0; // zeroing for IsSetupRequest()
-
-	  uint32_t epirq = ((regs->DAINT & regs->DAINTMSK) & 0xFFFF);
-		uint32_t rev_epirq = __RBIT(epirq);  // prepare for CLZ
-
-		while (true)
-		{
-			uint32_t epid = __CLZ(rev_epirq); // returns leading zeros, 32 when the argument = 0
-			if (epid >= HWUSB_MAX_ENDPOINTS)  break; // -->
-
-			THwOtgEndpointRegs * pepregs = &inepregs[epid];
-
-			TRACE("TXCOMP(%i) %02X\r\n", epid, pepregs->INT);
-
-			if (!HandleEpTransferEvent(epid, false))
-			{
-				// todo: handle error
-			}
-
-			if (pepregs->INT)
-			{
-				pepregs->INT = 0xFF;  // acknowledge interrupts
-			}
-
-			rev_epirq &= ~(1 << (31-epid));
-		}
-
-		gregs->GINTSTS = USB_OTG_GINTSTS_IEPINT;
-	}
-
-	if (istr & USB_OTG_GINTSTS_USBRST)
-	{
-		LTRACE("USB RESET, ISTR=%04X\r\n", istr);
-
-		// the USB registers were already cleared by the hw
-
-		// enable only transfer complete endpoint interrupts
+    // enable only transfer complete endpoint interrupts
     regs->DOEPMSK = 0; // RX handled at the common RX fifo
     regs->DIEPMSK = USB_OTG_DIEPMSK_XFRCM;
     regs->DIEPEMPMSK = 0; // disable FIFO empty interrupts
 
     regs->DCFG &= ~USB_OTG_DCFG_DAD;  // set device address to 0
 
-		HandleReset();  // resets, reconfigures end-points, enables EP0
+    // waiting for the ENUMDNE event to finish the reset procedure !
+  }
 
-		gregs->GINTSTS = USB_OTG_GINTSTS_USBRST;
-	}
+  if (istr & USB_OTG_GINTSTS_ENUMDNE)  // enumertation done
+  {
+    gregs->GINTSTS = USB_OTG_GINTSTS_ENUMDNE;
+
+    uint32_t dsts = regs->DSTS;  // read the enumerated speed (clears the interrupt)
+    TRACE("ENUMDNE, DSTS=%02X\r\n", dsts & 15);
+
+    /* hclk Clock Range between 32-200 MHz */
+    gregs->GUSBCFG |= (uint32_t)((0x6 << 10) & USB_OTG_GUSBCFG_TRDT);
+    regs->DCTL |= (USB_OTG_DCTL_CGINAK | USB_OTG_DCTL_CGONAK);
+
+
+    HandleReset();  // resets, reconfigures end-points, enables EP0
+  }
+  else if (istr & USB_OTG_GINTSTS_IEPINT)  // input (dtoh, TX) endpoint interrupt
+  {
+    rxstatus = 0; // zeroing for IsSetupRequest()
+
+    uint32_t epirq = ((regs->DAINT & regs->DAINTMSK) & 0xFFFF);
+    uint32_t rev_epirq = __RBIT(epirq);  // prepare for CLZ
+
+    while (true)
+    {
+      uint32_t epid = __CLZ(rev_epirq); // returns leading zeros, 32 when the argument = 0
+      if (epid >= HWUSB_MAX_ENDPOINTS)  break; // -->
+
+      THwOtgEndpointRegs * pepregs = &inepregs[epid];
+
+      if (pepregs->INT & USB_OTG_DIEPINT_XFRC)
+      {
+        //TRACE("TXCOMP(%i) %02X\r\n", epid, pepregs->INT);
+
+        if (!HandleEpTransferEvent(epid, false))
+        {
+          // todo: handle error
+        }
+      }
+      else
+      {
+        TRACE("Unhandled EP(%i) TX interrupt: %02X\r\n", epid, pepregs->INT);
+      }
+
+      pepregs->INT = 0xFF;  // acknowledge interrupts
+
+      rev_epirq &= ~(1 << (31-epid));
+    }
+
+    //gregs->GINTSTS = USB_OTG_GINTSTS_IEPINT;
+  }
+  else if (istr & USB_OTG_GINTSTS_RXFLVL)  // common receive (htod) + events
+  {
+    // The GRXSTSP (receive status + pop) can be read only once, so stored into rxstatus:
+    rxstatus = gregs->GRXSTSP;
+
+    uint32_t epid = (rxstatus & 0x0F);
+    uint32_t pktsts = ((rxstatus >> 17) & 0x0F);
+    //TRACE("RXFLVL %08X (%i)\r\n", rxstatus, pktsts);
+    //TRACE("RXFLVL st=%i bcnt=%u dp=%i frm=%u\r\n", pktsts, (rxstatus >> 4) & 0x3FF, (rxstatus >> 15) & 3, (rxstatus >> 21) & 15);
+
+    THwUsbEndpoint_stm32_otg * pep = (THwUsbEndpoint_stm32_otg *)GetEndPoint(epid);
+    if (pep)
+    {
+      if ((6 == pktsts) || (2 == pktsts))  // setup or non-setup packet received
+      {
+        // do not enable receive until 4 = setup completed or 3 = out transfer completed received !
+        pep->block_enable_recv = true;
+        pep->pending_enable_recv = false;
+
+        if (6 == pktsts) // setup
+        {
+          // flushing TX if sonething stuck in control endpoint
+          if (inepregs[epid].TSIZ & USB_OTG_DIEPTSIZ_PKTCNT)
+          {
+            FlushTxFifo(epid);
+          }
+        }
+        //TRACE("RXFLVL %08X\r\n", rxstatus);
+
+        if (!HandleEpTransferEvent(epid, true))
+        {
+          TRACE("Unhandled RX at EP(%u)!\r\n", epid);
+        }
+      }
+      else if ((4 == pktsts) || (3 == pktsts)) // 4 = setup completed, 3 = out transfer completed
+      {
+        pep->block_enable_recv = false;
+        if (pep->pending_enable_recv)
+        {
+          pep->EnableRecv();
+        }
+        //// force enable receive ?
+        //pep->rxregs->CTL |= (USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA);
+        //pep->EnableRecv();
+      }
+      else
+      {
+        // other events
+        //  1 = global OUT NAK
+      }
+    }
+  }
+
 
 	if (istr & USB_OTG_GINTSTS_WKUINT)
 	{
@@ -718,18 +785,7 @@ void THwUsbCtrl_stm32_otg::HandleIrq()
 		TRACE("USB INCORRECT\r\n");
 		gregs->GINTSTS = USB_OTG_GINTSTS_MMIS;
 	}
-
-	if (istr & USB_OTG_GINTSTS_ENUMDNE)  // enumertation done
-	{
-		uint32_t dsts = regs->DSTS;  // read the enumerated speed (clears the interrupt)
-		TRACE("ENUMDNE, DSTS=%02X\r\n", dsts & 15);
-
-    /* hclk Clock Range between 32-200 MHz */
-    gregs->GUSBCFG |= (uint32_t)((0x6 << 10) & USB_OTG_GUSBCFG_TRDT);
-    regs->DCTL |= (USB_OTG_DCTL_CGINAK | USB_OTG_DCTL_CGONAK);
-
-		gregs->GINTSTS = USB_OTG_GINTSTS_ENUMDNE;
-	}
 }
+
 
 #endif

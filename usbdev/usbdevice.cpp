@@ -620,7 +620,7 @@ void TUsbDevice::HandleReset()
 	ep_ctrl.EnableRecv(); // activate the EP0 to receive control requests
 }
 
-void TUsbDevice::StartSendControlData() // txlen + ctrlbuf must be prepared
+void TUsbDevice::StartSendControlData() // cdlen + ctrlbuf must be prepared
 {
 	int r;
 	r = ep_ctrl.StartSendData(&ctrlbuf[0], cdlen);
