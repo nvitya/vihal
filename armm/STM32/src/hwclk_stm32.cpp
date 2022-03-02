@@ -778,6 +778,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
 
+  if (target_speed_hz < 24000000) // minimum speed to use the PLL
+  {
+    return (target_speed_hz == MCU_INTERNAL_RC_SPEED);
+  }
+
   hwclk_prepare_hispeed(target_speed_hz);
 
   unsigned basespeed;
@@ -794,8 +799,23 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
 
-  unsigned vcospeed = target_speed_hz * 2;
+
   unsigned pllp = 2; // divide by 2 to get the final CPU speed
+  unsigned vcospeed = target_speed_hz * pllp;
+
+  // use the minimal VCO speed
+  while (vcospeed < 192000000)
+  {
+    pllp += 2;
+    vcospeed = target_speed_hz * pllp;
+  }
+
+  // try to find a speed for the USB
+  while (!is_divisible(vcospeed, 48000000) && (target_speed_hz * (pllp + 2) <= 432000000))
+  {
+    pllp += 2;
+    vcospeed = target_speed_hz * pllp;
+  }
 
   unsigned pll_input_freq = 2000000;
   if ((external_clock_hz / 1000000) & 1)  // is the input MHz divisible by 2 ?

@@ -98,7 +98,7 @@
 
   #define MCUF_STM32
   #define MCUSF_F4
-  #define MAX_CLOCK_SPEED  100000000
+  #define MAX_CLOCK_SPEED  96000000 // actually 100 MHz, but the USB works only with this
 
   #include "stm32f411xe.h"
 
