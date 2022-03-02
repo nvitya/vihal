@@ -36,10 +36,13 @@
 #define HWUSBCTRL_PRE_ONLY
 #include "hwusbctrl.h"
 
-#define HWUSB_MAX_ENDPOINTS     6
+#define HWUSB_MAX_ENDPOINTS     4
 
 #define HWUSB_MEMORY_SIZE    1280
-#define HWUSB_RX_FIFO_SIZE    512  // for all endpoints, multiple packets
+
+// this hw is very sensitive the size of the RX FIFO size and TX FIFO placement
+#define HWUSB_RX_FIFO_SIZE    (20 * 4 + 64*2)  // for all endpoints, multiple packets
+#define HWUSB_TX_FIFO_START   512
 
 #define HWUSB_SET_DADDR_BEFORE_ACK  // set the device address before sending the status (ACK)
 

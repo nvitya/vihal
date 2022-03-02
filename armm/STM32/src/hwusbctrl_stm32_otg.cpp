@@ -187,15 +187,6 @@ bool THwUsbEndpoint_stm32_otg::ConfigureHwEp()
 	{
 		// configure RX (OUT)
 
-	  if (0 == index)
-	  {
-      rxregs->TSIZ = 0
-        | (1      << 29)  // STUPCNT(2)
-        | (1      << 19)  // PKTCNT
-        | (maxlen <<  0)  // XFRSIZ(7)
-      ;
-	  }
-
 		uint32_t epcfg = 0
 			| (0         << 31)  // EPENA
 			| (0         << 30)  // EPDIS
@@ -318,6 +309,13 @@ void THwUsbEndpoint_stm32_otg::EnableRecv()
     pending_enable_recv = true;
     return;
   }
+
+  // allow only one packet
+  rxregs->TSIZ = (0
+    | (1       << 29)  // SETUPCNT(2): multi count
+    | (1       << 19)  // PKTCNT(10): packet count
+    | (maxlen  <<  0)  // XFRSIZ(19)
+  );
 
 	uint32_t ctl = rxregs->CTL;
 	ctl &= ~USB_OTG_DOEPCTL_STALL;
@@ -608,7 +606,7 @@ void THwUsbCtrl_stm32_otg::ResetEndpoints()
 
   FlushRxFifo();
 
-  fifomem_end = HWUSB_RX_FIFO_SIZE;
+  fifomem_end = HWUSB_TX_FIFO_START;
   irq_mask = 0;
   regs->DAINTMSK = irq_mask;
 }
@@ -712,7 +710,7 @@ void THwUsbCtrl_stm32_otg::HandleIrq()
     uint32_t epid = (rxstatus & 0x0F);
     uint32_t pktsts = ((rxstatus >> 17) & 0x0F);
     //TRACE("RXFLVL %08X (%i)\r\n", rxstatus, pktsts);
-    //TRACE("RXFLVL st=%i bcnt=%u dp=%i frm=%u\r\n", pktsts, (rxstatus >> 4) & 0x3FF, (rxstatus >> 15) & 3, (rxstatus >> 21) & 15);
+    //TRACE("RXFLVL(%u) st=%i bcnt=%u dp=%i frm=%u\r\n", epid, pktsts, (rxstatus >> 4) & 0x3FF, (rxstatus >> 15) & 3, (rxstatus >> 21) & 15);
 
     THwUsbEndpoint_stm32_otg * pep = (THwUsbEndpoint_stm32_otg *)GetEndPoint(epid);
     if (pep)
@@ -745,9 +743,6 @@ void THwUsbCtrl_stm32_otg::HandleIrq()
         {
           pep->EnableRecv();
         }
-        //// force enable receive ?
-        //pep->rxregs->CTL |= (USB_OTG_DOEPCTL_CNAK | USB_OTG_DOEPCTL_EPENA);
-        //pep->EnableRecv();
       }
       else
       {
