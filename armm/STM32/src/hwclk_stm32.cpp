@@ -56,7 +56,7 @@ static bool is_divisible(unsigned nom, unsigned div)
   #define RCC_CFGR_PLLMUL RCC_CFGR_PLLMULL
 #endif
 
-#if defined(MCUSF_F0) || defined(MCUSF_L0) || defined(MCUSF_G0)
+#if defined(MCUSF_F0) || defined(MCUSF_L0)
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
@@ -66,6 +66,42 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 #else
   FLASH->ACR = FLASH_ACR_LATENCY | FLASH_ACR_PRFTEN;
 #endif
+}
+
+#elif defined(MCUSF_G0)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+	uint32_t tmp;
+	// set the voltage scaling to Range 1 (1.2 V)
+	tmp = PWR->CR1;
+	tmp &= ~(PWR_CR1_VOS);
+	tmp |= (1 << PWR_CR1_VOS_Pos); // 1 = range1, 2 = range2
+	PWR->CR1 = tmp;
+
+	// wait until the new voltage scaling is in effect
+	while (PWR->SR2 & PWR_SR2_VOSF)
+	{
+		// wait until the VOSF is cleared
+	}
+
+  // Enable Prefetch Buffer, instruction cache and set Flash Latency to 2
+	tmp = FLASH->ACR;
+
+	tmp &= ~(FLASH_ACR_ICEN | FLASH_ACR_PRFTEN); // disable ICACHE, prefetch
+	FLASH->ACR = tmp;
+	tmp |= (FLASH_ACR_ICRST); // reset ICACHE
+	FLASH->ACR = tmp;
+	tmp &= ~(FLASH_ACR_ICRST);
+	FLASH->ACR = tmp;
+	tmp &= ~(FLASH_ACR_LATENCY);
+	tmp |= (2 << FLASH_ACR_LATENCY_Pos);
+	FLASH->ACR = tmp;
+
+	tmp |= (FLASH_ACR_ICEN | FLASH_ACR_PRFTEN); // enable I-CACHE,
+	FLASH->ACR = tmp;
+
+  //FLASH->ACR = (FLASH_ACR_ICEN | FLASH_ACR_PRFTEN | (2 << FLASH_ACR_LATENCY_Pos));  // set two wait states
 }
 
 #elif defined(MCUSF_F1) || defined(MCUSF_F3)
@@ -450,13 +486,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   uint32_t cfgr;
 
   cfgr = RCC->CFGR;
-  cfgr &= ~3;
+  cfgr &= ~RCC_CFGR_SW;
   cfgr |= RCC_CFGR_SW_HSI;
   RCC->CFGR = cfgr;
-  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  while (((RCC->CFGR >> RCC_CFGR_SWS_Pos) & RCC_CFGR_SW) != RCC_CFGR_SW_HSI)
   {
     // wait until it is set
   }
+
+  RCC->CR &= ~(RCC_CR_HSIDIV); // set the HSI16 division to 1 (16 MHz)
 
   RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
   while ((RCC->CR & RCC_CR_PLLRDY) != 0)
@@ -464,7 +502,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // Wait until the PLL is ready
   }
 
-  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the case an error happens
 
   hwclk_prepare_hispeed(target_speed_hz);
 
@@ -484,9 +522,9 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned pllp = vcospeed / 35000000;      // adc speed
 
   RCC->PLLCFGR = (0
-    | (pllsrc <<  0)  // PLLSRC(2): select PLL source
-    | (pllm   <<  4)  // PLLM(3)
-    | (plln   <<  8)  // PLLN(7)
+    | (pllsrc     <<  0)  // PLLSRC(2): select PLL source
+    | ((pllm - 1) <<  4)  // PLLM(3)
+    | (plln       <<  8)  // PLLN(7)
 		| (1          << 16)  // PLLPEN
     | ((pllp - 1) << 17)  // PLLP(5)
 		| (1          << 24)  // PLLQEN
@@ -508,10 +546,10 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   RCC->CFGR = cfgr;
 
   // Select PLL as system clock source
-  cfgr &= ~3;
+  cfgr &= ~RCC_CFGR_SW;
   cfgr |= RCC_CFGR_SW_PLL;
   RCC->CFGR = cfgr;
-  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
+  while (((RCC->CFGR >> RCC_CFGR_SWS_Pos) & RCC_CFGR_SW) != RCC_CFGR_SW_PLL)
   {
     // wait until it is set
   }
@@ -868,6 +906,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
 
+  if (target_speed_hz < 24000000) // minimum speed to use the PLL
+  {
+    return (target_speed_hz == MCU_INTERNAL_RC_SPEED);
+  }
+
   hwclk_prepare_hispeed(target_speed_hz);
 
   unsigned basespeed;
@@ -884,8 +927,22 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
 
-  unsigned vcospeed = target_speed_hz * 2;
   unsigned pllp = 2; // divide by 2 to get the final CPU speed
+  unsigned vcospeed = target_speed_hz * pllp;
+
+  // use the minimal VCO speed
+  while (vcospeed < 192000000)
+  {
+    pllp += 2;
+    vcospeed = target_speed_hz * pllp;
+  }
+
+  // try to find a speed for the USB
+  while (!is_divisible(vcospeed, 48000000) && (target_speed_hz * (pllp + 2) <= 432000000))
+  {
+    pllp += 2;
+    vcospeed = target_speed_hz * pllp;
+  }
 
   unsigned pll_input_freq = 2000000;
   if ((external_clock_hz / 1000000) & 1)  // is the input MHz divisible by 2 ?
