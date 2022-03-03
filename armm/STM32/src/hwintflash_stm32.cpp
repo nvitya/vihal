@@ -185,8 +185,12 @@ bool THwIntFlash_stm32::HwInit()
     #elif defined(MCUSF_WB)
 
       smallest_write = 8;
-
       fixblock_size_shift = 12;
+
+		#elif defined(MCUSF_G0)
+
+      smallest_write = 8;
+      fixblock_size_shift = 11; // 2k Blocks
 
     #else
 
@@ -233,6 +237,10 @@ void THwIntFlash_stm32::Unlock()
 		}
 	}
 }
+
+#if !defined(FLASH_SR_BSY)
+  #define FLASH_SR_BSY FLASH_SR_BSY1
+#endif
 
 bool THwIntFlash_stm32::CmdFinished()
 {
@@ -323,7 +331,7 @@ void THwIntFlash_stm32::CmdEraseBlock()
     regs->CR = cr; // prepare sector erase
     regs->CR = (cr | FLASH_CR_STRT); // start page erase
 
-  #elif defined(MCUSF_WB)
+  #elif defined(MCUSF_WB) | defined(MCUSF_G0)
 
     int blid = BlockIdFromAddress(address);
     if (blid < 0)

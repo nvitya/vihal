@@ -34,7 +34,11 @@
 void clockcnt_init()
 {
 #if defined(TIM14)
-	RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+	#if defined(RCC_APBENR2_TIM14EN)
+		RCC->APBENR2 |= RCC_APBENR2_TIM14EN;
+	#else
+	  RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+	#endif
   #define CCTIMER  TIM14
 
 #else

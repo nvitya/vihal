@@ -36,6 +36,14 @@
 
   #define MCU_INTERNAL_RC_SPEED    8000000
 
+#elif defined(MCUSF_G0)
+
+  #if !defined(MAX_CLOCK_SPEED)
+    #define MAX_CLOCK_SPEED         64000000
+  #endif
+
+  #define MCU_INTERNAL_RC_SPEED    16000000
+
 #elif	defined(MCUSF_L0)
 
   #define MAX_CLOCK_SPEED  32000000
@@ -104,7 +112,7 @@
 
 #if defined(MCUSF_H7)
   #define HWDMA_MXB
-#elif defined(MCUSF_F1) || defined(MCUSF_F0) || defined(MCUSF_L0) || defined(MCUSF_F3) || defined(MCUSF_G4) || defined(MCUSF_WB)
+#elif defined(MCUSF_F1) || defined(MCUSF_F0) || defined(MCUSF_G0) || defined(MCUSF_L0) || defined(MCUSF_F3) || defined(MCUSF_G4) || defined(MCUSF_WB)
   #define HW_DMA_REGS   DMA_Channel_TypeDef
 #else
   #define HW_DMA_REGS   DMA_Stream_TypeDef

@@ -256,6 +256,8 @@ bool THwPinCtrl_stm32::GpioPortEnable(int aportnum)
   RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN << aportnum);
 #elif defined(RCC_AHB4ENR_GPIOAEN)
   RCC->AHB4ENR |= (RCC_AHB4ENR_GPIOAEN << aportnum);
+#elif defined(RCC_IOPENR_GPIOAEN)
+  RCC->IOPENR |= (RCC_IOPENR_GPIOAEN << aportnum);
 #else
   RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN << aportnum);
 #endif
@@ -277,7 +279,7 @@ void THwPinCtrl_stm32::GpioSet(int aportnum, int apinnum, int value)
   }
   else
   {
-#if defined(MCUSF_F0) || defined(MCUSF_F1)
+#if defined(MCUSF_F0) || defined(MCUSF_F1) || defined(MCUSF_G0)
   	regs->BRR = (1 << apinnum);
 #else
   	regs->BSRR = (1 << apinnum) << 16;

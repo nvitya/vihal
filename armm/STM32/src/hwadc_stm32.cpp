@@ -723,7 +723,7 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	return true;
 }
 
-#elif defined(MCUSF_F0)
+#elif defined(MCUSF_F0) || defined(MCUSF_G0)
 
 // ADC_v2
 
@@ -741,7 +741,11 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	if      (1 == devnum)
 	{
 		regs = ADC1;
-		RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+		#if defined(RCC_APBENR2_ADCEN)
+			RCC->APBENR2 |= RCC_APBENR2_ADCEN;
+		#else
+		  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+		#endif
 	}
 #ifdef ADC2
 	else if (2 == devnum)
@@ -828,7 +832,9 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	// 7: 239.5 cycles
 	regs->SMPR = stcode;
 
-	regs->TR = 0; // no analogue watchdog
+	#ifdef ADC_TR_LT
+	  regs->TR = 0; // no analogue watchdog
+  #endif
 
 	// calculate the actual conversion rate
 
@@ -906,7 +912,7 @@ void THwAdc_stm32::SetupChannels(uint32_t achsel)
 		}
 	}
 
-#if defined(MCUSF_F0)
+#if defined(MCUSF_F0) || defined(MCUSF_G0)
 	regs->CHSELR = channel_map;
 
 #elif defined(STM32_FASTADC)
@@ -948,7 +954,7 @@ void THwAdc_stm32::StopFreeRun()
 	dmach.Disable();
 
 	// disable continuous mode
-#if defined(MCUSF_F0)
+#if defined(MCUSF_F0) || defined(MCUSF_G0)
 	regs->CR |= (1 << 4); // stop the ADC
 	while (regs->CR & (1 << 4))
 	{
@@ -968,7 +974,7 @@ void THwAdc_stm32::StopFreeRun()
 
 void THwAdc_stm32::StartContConv()
 {
-#if defined(MCUSF_F0)
+#if defined(MCUSF_F0) || defined(MCUSF_G0)
 	// and start the conversion
 	regs->CR |= (1 << 2); // start the ADC
 #elif defined(MCUSF_F1)

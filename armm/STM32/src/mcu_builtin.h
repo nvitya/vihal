@@ -44,6 +44,14 @@
 
   #include "stm32f070xb.h"
 
+#elif defined(MCU_STM32G030F6)
+
+  #define MCUF_STM32
+  #define MCUSF_G0
+
+  #include "stm32g030xx.h"
+
+
 // STM32F1: Cortex-M3
 
 #elif defined(MCU_STM32F103C8)

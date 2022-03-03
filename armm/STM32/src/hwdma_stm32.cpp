@@ -36,7 +36,7 @@
 
 #if HWDMA_IMPLEMENTED
 
-#if defined(MCUSF_F1) || defined(MCUSF_F0) || defined(MCUSF_L0) || defined(MCUSF_F3) || defined(MCUSF_G4) || defined(MCUSF_WB)
+#if defined(MCUSF_F1) || defined(MCUSF_F0) || defined(MCUSF_G0) || defined(MCUSF_L0) || defined(MCUSF_F3) || defined(MCUSF_G4) || defined(MCUSF_WB)
 
 #ifdef RCC_AHB1ENR_DMA1EN
   #define HWDMA_EN_REGISTER  RCC->AHB1ENR

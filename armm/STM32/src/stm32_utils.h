@@ -31,10 +31,15 @@
 
 #if defined(MCUSF_G4) || defined(MCUSF_WB)
   #define APB1ENR_REGISTER  RCC->APB1ENR1
+  #define APB2ENR_REGISTER  RCC->APB2ENR1
 #elif defined(MCUSF_H7)
   #define APB1ENR_REGISTER  RCC->APB1LENR
+#elif defined(MCUSF_G0)
+  #define APB1ENR_REGISTER  RCC->APBENR1
+  #define APB2ENR_REGISTER  RCC->APBENR2
 #else
   #define APB1ENR_REGISTER  RCC->APB1ENR
+  #define APB2ENR_REGISTER  RCC->APB2ENR
 #endif
 
 // constants helping determine peripheral bus base frequencies

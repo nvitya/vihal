@@ -44,6 +44,9 @@
   #define RCC_APB1ENR_TIM5EN   RCC_APB1LENR_TIM5EN
   #define RCC_APB1ENR_TIM6EN   RCC_APB1LENR_TIM6EN
   #define RCC_APB1ENR_TIM7EN   RCC_APB1LENR_TIM7EN
+#elif defined(RCC_APBENR1_TIM3EN)
+  #define RCC_APB1ENR_TIM3EN   RCC_APBENR1_TIM3EN
+  #define RCC_APB2ENR_TIM1EN   RCC_APBENR2_TIM1EN
 #endif
 
 bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum: 0 = A, 1 = B
@@ -67,7 +70,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	if (1 == devnum)
 	{
 		regs = TIM1;
-		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+		APB2ENR_REGISTER |= RCC_APB2ENR_TIM1EN;
 		advanced_timer = true;
 		busid = 2;
 	}

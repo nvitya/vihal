@@ -56,7 +56,7 @@ static bool is_divisible(unsigned nom, unsigned div)
   #define RCC_CFGR_PLLMUL RCC_CFGR_PLLMULL
 #endif
 
-#if defined(MCUSF_F0) || defined(MCUSF_L0)
+#if defined(MCUSF_F0) || defined(MCUSF_L0) || defined(MCUSF_G0)
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
@@ -432,6 +432,96 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 }
 
 //---------------------------------------------------------------------------------------------------------------------------
+#elif defined(MCUSF_G0)
+//---------------------------------------------------------------------------------------------------------------------------
+
+#if defined(MCUSF_G0) // add the missing defines
+  #define RCC_CFGR_SW_HSI     0
+  #define RCC_CFGR_SW_PLL     2
+
+  #define RCC_CFGR_HPRE_DIV1  1
+  #define RCC_CFGR_PPRE_DIV1  1
+#endif
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  // select the HSI as clock source (required if this is called more times)
+
+  uint32_t cfgr;
+
+  cfgr = RCC->CFGR;
+  cfgr &= ~3;
+  cfgr |= RCC_CFGR_SW_HSI;
+  RCC->CFGR = cfgr;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  {
+    // wait until it is set
+  }
+
+  RCC->CR &= ~RCC_CR_PLLON;  // disable the PLL
+  while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+  {
+    // Wait until the PLL is ready
+  }
+
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  unsigned basespeed;
+  unsigned pllsrc;
+
+  // external clock source is not implemented !
+  pllsrc = 2;
+  basespeed = MCU_INTERNAL_RC_SPEED;
+
+  unsigned vcospeed = target_speed_hz * 2;
+  unsigned pllr = 2; // divide by 2 to get the final CPU speed
+
+  unsigned pllm = 1;
+  unsigned pllq = 2;
+  unsigned plln = vcospeed  / basespeed;    // the vco multiplier
+  unsigned pllp = vcospeed / 35000000;      // adc speed
+
+  RCC->PLLCFGR = (0
+    | (pllsrc <<  0)  // PLLSRC(2): select PLL source
+    | (pllm   <<  4)  // PLLM(3)
+    | (plln   <<  8)  // PLLN(7)
+		| (1          << 16)  // PLLPEN
+    | ((pllp - 1) << 17)  // PLLP(5)
+		| (1          << 24)  // PLLQEN
+    | ((pllq - 1) << 25)  // PLLQ(3)
+		| (1          << 28)  // PLLREN
+    | ((pllr - 1) << 29)  // PLLR(3)
+  );
+
+  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
+  while((RCC->CR & RCC_CR_PLLRDY) == 0)
+  {
+    // Wait till PLL is ready
+  }
+
+  // setup bus dividers AHB=1, PERIPH=1
+  cfgr = RCC->CFGR;
+  cfgr &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE);
+  cfgr |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE_DIV1);
+  RCC->CFGR = cfgr;
+
+  // Select PLL as system clock source
+  cfgr &= ~3;
+  cfgr |= RCC_CFGR_SW_PLL;
+  RCC->CFGR = cfgr;
+  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
+  {
+    // wait until it is set
+  }
+
+  SystemCoreClock = target_speed_hz;
+  return true;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------------
 #elif defined(MCUSF_F1) || defined(MCUSF_F3)
 //---------------------------------------------------------------------------------------------------------------------------
 
@@ -778,11 +868,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
 
-  if (target_speed_hz < 24000000) // minimum speed to use the PLL
-  {
-    return (target_speed_hz == MCU_INTERNAL_RC_SPEED);
-  }
-
   hwclk_prepare_hispeed(target_speed_hz);
 
   unsigned basespeed;
@@ -799,23 +884,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
 
-
+  unsigned vcospeed = target_speed_hz * 2;
   unsigned pllp = 2; // divide by 2 to get the final CPU speed
-  unsigned vcospeed = target_speed_hz * pllp;
-
-  // use the minimal VCO speed
-  while (vcospeed < 192000000)
-  {
-    pllp += 2;
-    vcospeed = target_speed_hz * pllp;
-  }
-
-  // try to find a speed for the USB
-  while (!is_divisible(vcospeed, 48000000) && (target_speed_hz * (pllp + 2) <= 432000000))
-  {
-    pllp += 2;
-    vcospeed = target_speed_hz * pllp;
-  }
 
   unsigned pll_input_freq = 2000000;
   if ((external_clock_hz / 1000000) & 1)  // is the input MHz divisible by 2 ?

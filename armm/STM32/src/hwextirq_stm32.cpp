@@ -35,6 +35,12 @@
   #define REG_EXTI_RTSR  (EXTI->RTSR1)
   #define REG_EXTI_EMR   (EXTI->EMR1)
   #define REG_EXTI_IMR   (EXTI->IMR1)
+#elif defined(EXTI_RTSR1_RT0)
+  #define REG_EXTI_PR    (EXTI->RPR1)  // !
+  #define REG_EXTI_FTSR  (EXTI->FTSR1)
+  #define REG_EXTI_RTSR  (EXTI->RTSR1)
+  #define REG_EXTI_EMR   (EXTI->EMR1)
+  #define REG_EXTI_IMR   (EXTI->IMR1)
 #else
   #define REG_EXTI_PR    (EXTI->PR)
   #define REG_EXTI_FTSR  (EXTI->FTSR)
@@ -65,6 +71,10 @@ bool THwExtIrq_stm32::Init(int aportnum, int apinnum, unsigned flags)
 #elif defined(AFIO_EXTICR1_EXTI0)
 
 	volatile uint32_t * pcfgreg = &AFIO->EXTICR[cridx];
+
+#elif defined(EXTI_EXTICR1_EXTI0)
+
+	volatile uint32_t * pcfgreg = &EXTI->EXTICR[cridx];
 
 #endif
 
