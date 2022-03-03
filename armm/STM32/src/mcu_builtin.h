@@ -156,6 +156,13 @@
 
   #include "stm32f746xx.h"
 
+#elif defined(MCU_STM32F750N8)
+
+  #define MCUF_STM32
+  #define MCUSF_F7
+
+  #include "stm32f750xx.h"
+
 // STM32H7: Cortex-M7 (400 MHz +)
 
 #elif defined(MCU_STM32H743ZI)
