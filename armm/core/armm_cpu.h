@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef ARMM_CPU_H_
+#define ARMM_CPU_H_
 
 #include "stdint.h"
 
@@ -42,3 +43,5 @@ inline void __attribute__((always_inline)) mcu_enable_interrupts()
 {
   __asm volatile ("cpsie i");
 }
+
+#endif

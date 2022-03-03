@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _I2CMANAGER_H_
+#define _I2CMANAGER_H_
 
 #include "stdint.h"
 #include "hwi2c.h"
@@ -72,3 +73,4 @@ protected:
 
 };
 
+#endif

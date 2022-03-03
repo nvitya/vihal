@@ -25,7 +25,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef __PLATFORM_H
+#define __PLATFORM_H
 
 #include "generic_defs.h"
 #include "armm_cpu.h"
@@ -84,3 +85,4 @@
 
 #include "platform_generic.h"
 
+#endif

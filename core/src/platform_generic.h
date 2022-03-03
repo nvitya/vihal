@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef PLATFORM_GENERIC_H_
+#define PLATFORM_GENERIC_H_
 
 #if !defined(MAX_CLOCK_SPEED)
   #ifdef MCU_FIXED_SPEED
@@ -44,3 +45,4 @@
   #define SPI_SELF_FLASHING 0
 #endif
 
+#endif
