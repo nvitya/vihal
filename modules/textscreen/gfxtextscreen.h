@@ -1,5 +1,4 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -19,11 +18,50 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwlcdctrl.cpp
- *  brief:    A minimal interface to the integrated LCD controller
+ *  file:     gfxtextscreen.h
+ *  brief:    Kind of text console for graphical screens
  *  version:  1.00
- *  date:     2018-12-09
+ *  date:     2019-03-24
  *  authors:  nvitya
 */
 
-#include <hwlcdctrl.h>
+#ifndef GFXTEXTSCREEN_H_
+#define GFXTEXTSCREEN_H_
+
+#include "gfxbase.h"
+#include "textscreen.h"
+
+class TGfxTextScreen : public TTextScreen
+{
+public:
+
+	TGfxBase *	  	disp;
+	TGfxFont *      font;
+
+	uint16_t        disp_x;
+	uint16_t        disp_y;
+	uint16_t        disp_w;
+	uint16_t        disp_h;
+
+	uint8_t         charwidth;
+
+	uint8_t         lineheight;
+
+	virtual         ~TGfxTextScreen() { }
+
+	void            InitTextGfx(TGfxBase * adisp, uint16_t x, uint16_t y, uint16_t w, uint16_t h, TGfxFont * amonofont);
+
+public: // textscreen mandatory
+
+	virtual void    DrawChar(unsigned acol, unsigned arow, char ach);
+	virtual void    SetCursor();
+
+protected:
+	uint16_t        cursor_prev_x = 0;
+	uint16_t        cursor_prev_y = 0;
+	uint16_t        cursor_prev_on = 0;
+	bool            cursor_blink_on = false;
+
+};
+
+#endif /* GFXTEXTSCREEN_H_ */

@@ -19,69 +19,33 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwlcdctrl.h
- *  brief:    A minimal interface to the integrated LCD controller
+ *  file:     hwlcdctrl_stm32.h
+ *  brief:    STM32 Integrated LCD controller implementation
  *  version:  1.00
  *  date:     2018-12-09
  *  authors:  nvitya
 */
 
-#ifndef _HWLCDCTRL_H_PRE_
-#define _HWLCDCTRL_H_PRE_
+#ifndef HWLCDCTRL_STM32_H_
+#define HWLCDCTRL_STM32_H_
 
-#include "platform.h"
-#include "hwpins.h"
+#define HWLCDCTRL_PRE_ONLY
+#include "hwlcdctrl.h"
 
-class THwLcdCtrl_pre
+#if defined(LTDC_SRCR_IMR)
+
+class THwLcdCtrl_stm32 : public THwLcdCtrl_pre
 {
 public:
-	uint16_t         hsync   = 41;
-	uint16_t         hbp     = 13;
-	uint16_t         hfp     = 32;
+	bool                  Init(uint16_t awidth, uint16_t aheight, void * aframebuffer);
 
-	uint16_t         vsync   = 10;
-	uint16_t         vbp     =  2;
-	uint16_t         vfp     =  2;
-
-	uint16_t         hwwidth  = 480;
-	uint16_t         hwheight = 272;
-
-	uint8_t *        framebuffer = nullptr;
+public:
+	LTDC_TypeDef *        regs = nullptr;
+	LTDC_Layer_TypeDef *  lregs = nullptr;
 };
 
-#endif // ndef _HWLCDCTRL_H_PRE_
+#define HWLCDCTRL_IMPL THwLcdCtrl_stm32
 
-#ifndef HWLCDCTRL_PRE_ONLY
-
-//-----------------------------------------------------------------------------
-
-#ifndef HWLCDCTRL_H_
-#define HWLCDCTRL_H_
-
-#include "mcu_impl.h"
-
-#ifndef HWLCDCTRL_IMPL
-
-class THwLcdCtrl_noimpl : public THwLcdCtrl_pre
-{
-public: // mandatory
-	bool Init(uint16_t awidth, uint16_t aheight, void * aframebuffer)  { return false; }
-};
-
-#define HWLCDCTRL_IMPL   THwLcdCtrl_noimpl
-
-#endif // ndef HWLCDCTRL_IMPL
-
-//-----------------------------------------------------------------------------
-
-class THwLcdCtrl : public HWLCDCTRL_IMPL
-{
-
-};
-
-#endif // HWLCDCTRL_H_
-
-#else
-  #undef HWLCDCTRL_PRE_ONLY
 #endif
 
+#endif // def HWLCDCTRL_STM32_H_

@@ -1,5 +1,4 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -19,11 +18,38 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwlcdctrl.cpp
- *  brief:    A minimal interface to the integrated LCD controller
+ *  file:     tftlcd_mm16.h
+ *  brief:    16 bit parallel TFT LCD Display driver using external memory controller
  *  version:  1.00
- *  date:     2018-12-09
+ *  date:     2018-02-10
  *  authors:  nvitya
 */
 
-#include <hwlcdctrl.h>
+#ifndef TFT_TFTLCD_MM16_H_
+#define TFT_TFTLCD_MM16_H_
+
+#include "tftlcd.h"
+
+class TTftLcd_mm16: public TTftLcd
+{
+public:
+	typedef TTftLcd super;
+
+	volatile uint16_t *  cmdreg = nullptr;
+	volatile uint16_t *  datareg = nullptr;
+
+public:
+	// interface dependent
+
+	virtual bool InitInterface();
+
+	virtual void WriteCmd(uint8_t adata);
+	virtual void WriteData8(uint8_t adata);
+	virtual void WriteData16(uint16_t adata);
+
+	virtual void SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t w,  uint16_t h);
+	virtual void FillColor(uint16_t acolor, unsigned acount);
+
+};
+
+#endif /* TFT_TFTLCD_MM_H_ */
