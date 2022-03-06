@@ -144,7 +144,10 @@ void TMonoLcd::InitPanel()
 		WriteCmd(0x40); // Set display start line to 0
 		//WriteCmd(0xA1); //Set SEG Direction
 		//WriteCmd(0xC0); //Set COM Direction
+
 		WriteCmd(0xA2); //Set Bias = 1/9
+		//WriteCmd(0xA0); //Set Bias = 1/9
+
 		WriteCmd(0x2C);  //Boost ON
 		WriteCmd(0x2E); //Voltage Regular On
 		WriteCmd(0x2F); //Voltage Follower On
@@ -152,7 +155,10 @@ void TMonoLcd::InitPanel()
 		WriteCmd(0x00); //4x
 		WriteCmd(0x23); //Set Resistor Ratio = 3
 		WriteCmd(0x81);
+
 		WriteCmd(0x28); //Set Electronic Volume = 40
+		//WriteCmd(0x28 + 2); //Set Electronic Volume = 40
+
 		WriteCmd(0xAC);//Set Static indicator off
 		WriteCmd(0x00);
 		WriteCmd(0XA6); // Disable inverse
@@ -162,6 +168,23 @@ void TMonoLcd::InitPanel()
 		delay_us(2000);
 		WriteCmd(0xA4); //normal display
 	}
+	else if (MLCD_CTRL_UC1609 == ctrltype)
+  {
+    WriteCmd(0xE2);  //System Reset
+
+	  WriteCmd(0x27 | 0x00);  // Terperature Compensation: TC[1:0] = 00b= -0.00%/ C
+	  WriteCmd(0x88 | 0x01);  // RAM address control: Set AC [2:0] Program registers  for RAM address control.
+	  WriteCmd(0xA0 | 0x01);  // Frame Rate: Set Frame Rate LC [4:3] 01b: 95 fps
+	  WriteCmd(0xE8 | 0x03);  // Bias Ratio: BR[1:0] = 11 (set to 9 default)
+	  WriteCmd(0x2F | 0x06);  // Power Control: PC[2:0] 110 Internal V LCD (7x charge pump) + 10b: 1.4mA
+
+    delay_us(100000); // 100 ms Delay
+
+    WriteCmd(0x81 | 0x00);  // Bias Control
+    WriteCmd(0x81 | contrast);  // Bias Control
+
+    WriteCmd(0xAE | 0x01);  // Display on
+  }
 	else if (MLCD_CTRL_PCD8544 == ctrltype)
 	{
 		WriteCmd(0x21); // get into the EXTENDED mode!
@@ -254,8 +277,7 @@ void TMonoLcd::InitPanel()
 
 	  //WriteCmd(0x81);  WriteData(0x18);  WriteData(0x05);	/* Volume control */
 
-	  uint16_t vop = 0x170;
-	  WriteCmd(0x81);  WriteData(vop & 0x3F);  WriteData((vop >> 6) & 7);	/* Volume control */
+	  WriteCmd(0x81);  WriteData(contrast & 0x3F);  WriteData((contrast >> 6) & 7);	/* Volume control */
 
 	    //WriteCmd(0x30);				/* select 00 commands */
 	  WriteCmd(0x20);  WriteData(0x0b);		/* Power control: Regulator, follower & booster on */
@@ -297,6 +319,25 @@ void TMonoLcd::SetRotation(uint8_t m)
 			break;
 		}
 	}
+	else if (MLCD_CTRL_UC1609 == ctrltype)
+  {
+    rotation = m;
+
+    switch (rotation)
+    {
+    case 0:
+    default:
+      width = hwwidth;
+      height = hwheight;
+      WriteCmd(0xC0 | 0x04); // bit2 = mirror Y, bit1 = mirror X
+      break;
+    case 2:
+      width = hwwidth;
+      height = hwheight;
+      WriteCmd(0xC0 | 0x02); // bit2 = mirror Y, bit1 = mirror X
+      break;
+    }
+  }
 	else if (MLCD_CTRL_HX1230 == ctrltype)
 	{
 		// somehow flipping segments does not work, only com scan

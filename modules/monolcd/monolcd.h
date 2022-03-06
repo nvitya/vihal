@@ -33,6 +33,7 @@ typedef enum
 {
 	MLCD_CTRL_UNKNOWN = 0,
 	MLCD_CTRL_UC1701,
+	MLCD_CTRL_UC1609,
 	MLCD_CTRL_PCD8544, // = Nokia 5110
 	MLCD_CTRL_HX1230,
 	MLCD_CTRL_ST75256
@@ -55,7 +56,7 @@ public:
 	int               updatestate = 0;
 
 	uint8_t    			  rotation = 0;
-	uint8_t           contrast = 0x8F;
+	uint16_t          contrast = 0x8F;
 	bool              externalvcc = false;
 
 	uint16_t          aw_x = 0;
