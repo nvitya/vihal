@@ -196,18 +196,39 @@ void TMonoLcd::InitPanel()
 	}
 	else if (MLCD_CTRL_HX1230 == ctrltype)
 	{
-    WriteCmd(0x2f);
-    WriteCmd(0x90);
-    WriteCmd(0xa6);
-    WriteCmd(0xa4);
-    WriteCmd(0xaf);  // power on
-    WriteCmd(0x40);
+	  //  HX1230 Command/Control table:
+	  // ---------------------------------------
+	  //  D/C | D7  D6  D5  D4  D3  D2  D1  D0 |
+	  // -----|--------------------------------|
+	  //    0 |  0   0   1   0  W3  W2  W1  W0 |  W(4): internal power supply, 1111 = turn on, 1000 = turn off
+	  //    0 |  1   0   0  B4  B3  B2  B1  B0 |  B(5): contrast, not supported by HX1230
+	  //    0 |  1   0   1   0   0   1   1   R |  R: 0 = normal, 1 = inverted display
+	  //    0 |  1   0   1   0   0   1   0   O |  O: all display points ???, 0 = full display off, 1 = full display on ???
+	  //    0 |  1   0   1   0   1   1   1   S |  S: display switch ???, 0 = turn off display, 1 =
+	  //    0 |  1   0   1   1   0  Y2  Y1  Y0 |  Y(3): set write row address
+	  //    0 |  0   0   0   0  X3  X2  X1  X0 |  X(7): set write column address (low bits)
+	  //    0 |  0   0   0   1   0  X6  X5  X4 |  X(7): set write column address (high bits)
+	  //    0 |  0   1  S5  S4  S3  S2  S1  S0 |  S(6): set start scan line
+	  // ---------------------------------------
+	  //    1 | D7  D6  D5  D4  D3  D2  D1  D0 |  Pixel data
+	  // ---------------------------------------
+	  //  non documented:
+	  //    0 |  1   1   0   0   V   0   0   0 |  V: flip vertical
+	  //    0 |  1   0   1   0   0   0   0   H |  H: flip horizontal, does not work with my panel
+
+    WriteCmd(0x2f);  // turn on internal power supply
+    WriteCmd(0xa6);  // A6 = normal display, A7 = inverted display
+    WriteCmd(0xa4);  // A4 = display on, A5 = display off
+    WriteCmd(0xaf);  // AF = turn on display ???, AE = ???
+    WriteCmd(0x40);  // set start scan line to 0
+
+    // set contrast:
+	  WriteCmd(0x80 | (contrast & 31));  // set contrast
+
+	  // set address to the start
     WriteCmd(0xb0);
     WriteCmd(0x10);
     WriteCmd(0x00);
-
-    // set contrast:
-	  WriteCmd(0x80 | (contrast & 31));
 	}
 	else if (MLCD_CTRL_ST75256 == ctrltype)
 	{
@@ -360,6 +381,28 @@ void TMonoLcd::SetRotation(uint8_t m)
 			//WriteCmd(0xA0);  // set segment re-map to normal
 			break;
 		}
+	}
+	else if (MLCD_CTRL_ST75256 == ctrltype)
+	{
+	  // CMD 0xBC = Set data scan dir
+	  // Data byte follows:  bit0=MirrorX, bit1=MirrorY, bit2=Inverse
+
+	  // MirrorY did not worked with my panel.
+
+    switch (rotation)
+    {
+    case 0:
+    default:
+      width = hwwidth;
+      height = hwheight;
+      //WriteCmd(0xBC);  WriteData(0x00);
+      break;
+    case 2:
+      width = hwwidth;
+      height = hwheight;
+      //WriteCmd(0xBC);  WriteData(0x03);  // mirror x and y
+      break;
+    }
 	}
 	else
 	{
