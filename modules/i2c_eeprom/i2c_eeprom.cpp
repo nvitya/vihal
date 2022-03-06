@@ -52,8 +52,8 @@ bool TI2cEeprom::Init(THwI2c * ai2c, uint8_t aaddr, uint32_t abytesize)
 	// try to read the first 4 bytes
 
 	uint32_t data = 0;
-	errorcode = pi2c->StartReadData(devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, &data, 4);
-	if (errorcode != HWERR_OK)
+	pi2c->StartReadData(devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, &data, 4);
+	if (pi2c->error != HWERR_OK)
 	{
 		initialized = false;
 		return false;
