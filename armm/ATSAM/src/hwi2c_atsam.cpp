@@ -155,169 +155,119 @@ void THwI2c_atsam::DmaAssign(bool istx, THwDmaChannel * admach)
   }
 }
 
-
-bool THwI2c_atsam::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, unsigned len)
+void THwI2c_atsam::RunTransaction()
 {
-  if (busy)
+  if (0 == trastate)
   {
-    return ReturnError(HWERR_BUSY);
+    istx = (0 != curtra->iswrite);
+    dataptr = (uint8_t *)curtra->dataptr;
+    datalen = curtra->datalen;
+    remainingbytes = datalen;
+
+    unsigned extracnt = ((curtra->extra >> 24) & 3);
+    if (extracnt)
+    {
+      regs->IADR = (curtra->extra & 0x00FFFFFF);
+    }
+
+    if (istx)
+    {
+      regs->MMR = 0
+        | (curtra->address << 16)
+        | (0 << 12)  // MREAD: 0 = write
+        | (extracnt <<  8)  // IADRSZ: internal address bytes
+      ;
+
+      dmaused = (txdma && (datalen > 1));
+      if (dmaused)
+      {
+        txdma->Prepare(true,  (void *)&(regs->THR), 0);
+
+        xfer.srcaddr = dataptr;
+        xfer.bytewidth = 1;
+        xfer.count = remainingbytes - 1;
+        xfer.flags = 0; // peripheral transfer with defaults
+
+        dataptr += xfer.count;
+        remainingbytes = 1;
+      }
+    }
+    else
+    {
+      regs->MMR = 0
+        | (curtra->address << 16)
+        | (1 << 12)  // MREAD: 1 = read
+        | (extracnt <<  8)  // IADRSZ: internal address bytes
+      ;
+
+      dmaused = (rxdma && (datalen > 2));
+      if (dmaused)
+      {
+        rxdma->Prepare(false, (void *)&(regs->RHR), 0);
+
+        xfer.dstaddr = dataptr;
+        xfer.bytewidth = 1;
+        xfer.count = remainingbytes - 2;
+        xfer.flags = 0; // peripheral transfer with defaults
+
+        dataptr += xfer.count;
+        remainingbytes = 2;
+
+        rxdma->StartTransfer(&xfer);
+      }
+    }
+
+    if (regs->SR)  { }  // read the SR register to clear flags
+
+    // Start
+
+    unsigned tmp = (1 << 0);  // send a start condition
+    if (remainingbytes <= 1)
+    {
+      tmp |= (1 << 0); // send a stop condition too
+    }
+    regs->CR = tmp;
+
+    if (istx && dmaused)
+    {
+      txdma->StartTransfer(&xfer);
+    }
+
+    trastate = 1;
   }
-
-	istx = false;
-	dataptr = (uint8_t *)dstptr;
-	datalen = len;
-	remainingbytes = datalen;
-
-	unsigned extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		regs->IADR = (aextra & 0x00FFFFFF);
-	}
-
-	regs->MMR = 0
-		| (adaddr << 16)
-		| (1 << 12)  // MREAD: 1 = read
-		| (extracnt <<  8)  // IADRSZ: internal address bytes
-	;
-
-	dmaused = (rxdma && (len > 2));
-	if (dmaused)
-	{
-		rxdma->Prepare(false, (void *)&(regs->RHR), 0);
-
-		xfer.dstaddr = dataptr;
-		xfer.bytewidth = 1;
-		xfer.count = remainingbytes - 2;
-		xfer.flags = 0; // peripheral transfer with defaults
-
-		dataptr += xfer.count;
-		remainingbytes = 2;
-
-		rxdma->StartTransfer(&xfer);
-	}
-
-  if (regs->SR)  { }  // read the SR register to clear flags
-
-	// Start
-
-	unsigned tmp = (1 << 0);  // send a start condition
-	if (remainingbytes <= 1)
-	{
-		tmp |= (1 << 0); // send a stop condition too
-	}
-	regs->CR = tmp;
-
-	runstate = 0;
-  error = 0;
-	busy = true;
-
-	return true;
-}
-
-bool THwI2c_atsam::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)
-{
-  if (busy)
-  {
-    return ReturnError(HWERR_BUSY);
-  }
-
-	istx = true;
-	dataptr = (uint8_t *)srcptr;
-	datalen = len;
-	remainingbytes = datalen;
-
-	unsigned extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		regs->IADR = (aextra & 0x00FFFFFF);
-	}
-
-	regs->MMR = 0
-		| (adaddr << 16)
-		| (0 << 12)  // MREAD: 0 = write
-		| (extracnt <<  8)  // IADRSZ: internal address bytes
-	;
-
-	dmaused = (txdma && (len > 1));
-	if (dmaused)
-	{
-		txdma->Prepare(true,  (void *)&(regs->THR), 0);
-
-		xfer.srcaddr = dataptr;
-		xfer.bytewidth = 1;
-		xfer.count = remainingbytes - 1;
-		xfer.flags = 0; // peripheral transfer with defaults
-
-		dataptr += xfer.count;
-		remainingbytes = 1;
-	}
-
-  if (regs->SR)  { }  // read the SR register to clear flags
-
-	// Start
-
-	unsigned tmp = (1 << 0);  // send a start condition
-	if (remainingbytes <= 1)
-	{
-		tmp |= (1 << 0); // send a stop condition too
-	}
-	regs->CR = tmp;
-
-	if (dmaused)
-	{
-		txdma->StartTransfer(&xfer);
-	}
-
-  error = 0;
-	runstate = 0;
-
-	Run();
-
-	busy = true;
-
-	return true;
-}
-
-
-void THwI2c_atsam::Run()
-{
-	if (!busy)
-	{
-		return;
-	}
 
 	uint32_t sr = regs->SR; // clears flags on read !
 
   // check error flags
-  if (!error)
+  if (!curtra->error)
   {
     if (sr & (1 << 8))
     {
-      error = ERR_I2C_ACK;
+      curtra->error = ERR_I2C_ACK;
     }
     else if (sr & (1 << 9))
     {
-      error = ERR_I2C_ARBLOST;
+      curtra->error = ERR_I2C_ARBLOST;
     }
     else if (sr & (1 << 6))
     {
-      error = ERR_I2C_OVERRUN;
+      curtra->error = ERR_I2C_OVERRUN;
     }
 #if 0
     else if (sr & (1 << xxx))
     {
-      error = ERR_I2C_BUS;
+      curtra->error = ERR_I2C_BUS;
     }
 #endif
 
-    if (error)
+    if (curtra->error)
     {
       regs->CR = (1 << 1);  // send stop condition
-      runstate = 90;
+      trastate = 90;
     }
   }
 
-  if (0 == runstate)
+  if (1 == trastate)
   {
     if (istx)
     {
@@ -382,6 +332,6 @@ void THwI2c_atsam::Run()
 		return;
 	}
 
-	busy = false;
+  curtra->completed = true; // transaction finished.
 }
 

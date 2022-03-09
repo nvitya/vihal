@@ -60,16 +60,13 @@ public:
 
 	bool Init(int adevnum);
 
-	bool StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len);
-	bool StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len);
-	void Run();
+	void RunTransaction();
 
   void DmaAssign(bool istx, THwDmaChannel * admach);
+
 #ifdef HW_HAS_PDMA
   void PdmaInit(bool istx, THwDmaChannel * admach);
 #endif
-
-	unsigned       runstate = 0;
 };
 
 #define HWI2C_IMPL THwI2c_atsam

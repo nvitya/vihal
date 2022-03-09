@@ -143,173 +143,93 @@ void THwI2c_atsam_v2::DmaAssign(bool istx, THwDmaChannel * admach)
   }
 }
 
-bool THwI2c_atsam_v2::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, unsigned len)
+void THwI2c_atsam_v2::RunTransaction()
 {
-	if (busy)
-	{
-		return ReturnError(HWERR_BUSY);
-	}
+  if (0 == trastate) // init
+  {
+    istx = (0 != curtra->iswrite);
+    devaddr = curtra->address;
+    dataptr = (uint8_t *)curtra->dataptr;
+    datalen = curtra->datalen;
+    remainingbytes = datalen;
 
-	istx = false;
-	error = 0;
-	devaddr = (adaddr & 0x7F);
-	dataptr = (uint8_t *)dstptr;
-	datalen = len;
-	remainingbytes = datalen;
+    extracnt = ((curtra->extra >> 24) & 3);
+    if (extracnt)
+    {
+      // reverse byte order
+      //uint32_t edr = __REV(aextra);
+      if (1 == extracnt)
+      {
+        extradata[0] = (curtra->extra & 0xFF);
+      }
+      else if (2 == extracnt)
+      {
+        extradata[0] = ((curtra->extra >> 8) & 0xFF);
+        extradata[1] = ((curtra->extra >> 0) & 0xFF);
+      }
+      else if (3 == extracnt)
+      {
+        extradata[0] = ((curtra->extra >> 16) & 0xFF);
+        extradata[1] = ((curtra->extra >>  8) & 0xFF);
+        extradata[2] = ((curtra->extra >>  0) & 0xFF);
+      }
+    }
+    extraremaining = extracnt;
 
-	extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		// reverse byte order
-		uint32_t edr = __REV(aextra);
-		if (1 == extracnt)
-		{
-			extradata[0] = (aextra & 0xFF);
-		}
-		else if (2 == extracnt)
-		{
-			extradata[0] = ((aextra >> 8) & 0xFF);
-			extradata[1] = ((aextra >> 0) & 0xFF);
-		}
-		else if (3 == extracnt)
-		{
-			extradata[0] = ((aextra >> 16) & 0xFF);
-			extradata[1] = ((aextra >>  8) & 0xFF);
-			extradata[2] = ((aextra >>  0) & 0xFF);
-		}
-	}
-	extraremaining = extracnt;
+    if (istx)
+    {
+      dmaused = (txdma && (datalen > 0));
+      if (dmaused)
+      {
+        xfer.srcaddr = dataptr;
+        xfer.bytewidth = 1;
+        xfer.count = remainingbytes;
+        xfer.flags = 0; // peripheral transfer with defaults
 
-	//extraremaining = 0;
+        dataptr += xfer.count;
+        remainingbytes = 0;
 
-	dmaused = (rxdma && (len > 1));
-	//dmaused = false;
-	if (dmaused)
-	{
-		xfer.dstaddr = dataptr;
-		xfer.bytewidth = 1;
-		xfer.count = remainingbytes - 1;  // the last byte controlled manually because of the stop condition
-		xfer.flags = 0; // peripheral transfer with defaults
-		dataptr += xfer.count;
-		remainingbytes = 1;
+        txdma->PrepareTransfer(&xfer); // but do not start it now!
+      }
+    }
+    else
+    {
+      dmaused = (rxdma && (datalen > 1));
+      //dmaused = false;
+      if (dmaused)
+      {
+        xfer.dstaddr = dataptr;
+        xfer.bytewidth = 1;
+        xfer.count = remainingbytes - 1;  // the last byte controlled manually because of the stop condition
+        xfer.flags = 0; // peripheral transfer with defaults
+        dataptr += xfer.count;
+        remainingbytes = 1;
 
-		rxdma->StartTransfer(&xfer);
-	}
+        rxdma->StartTransfer(&xfer);
+      }
+    }
 
-	// clear all interrupt flags
-	regs->INTFLAG.reg = 0
-		| (1 << 7)  // ERROR
-		| (1 << 1)  // SB
-		| (1 << 0)  // MB
-	;
+    // clear all interrupt flags
+    regs->INTFLAG.reg = 0
+      | (1 << 7)  // ERROR
+      | (1 << 1)  // SB
+      | (1 << 0)  // MB
+    ;
 
-	// clear error flags
-	regs->STATUS.reg = 0
-		| (1 << 10)  // LENERR
-		| (1 <<  9)  // SEXTTOUT
-		| (1 <<  8)  // MEXTTOUT
-		| (1 <<  6)  // LOWTOUT
-		| (1 <<  4)  // BUSSTATE(2): 1 = try to force to idle
-		| (1 <<  2)  // RXNACK
-		| (1 <<  1)  // ARBLOST
-		| (1 <<  0)  // BUSERR
-	;
+    // clear error flags
+    regs->STATUS.reg = 0
+      | (1 << 10)  // LENERR
+      | (1 <<  9)  // SEXTTOUT
+      | (1 <<  8)  // MEXTTOUT
+      | (1 <<  6)  // LOWTOUT
+      | (1 <<  4)  // BUSSTATE(2): 1 = try to force to idle
+      | (1 <<  2)  // RXNACK
+      | (1 <<  1)  // ARBLOST
+      | (1 <<  0)  // BUSERR
+    ;
 
-	runstate = 0;
-	busy = true;  // start the state machine
-
-	Run();
-
-	return true;
-}
-
-bool THwI2c_atsam_v2::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)
-{
-	if (busy)
-	{
-    return ReturnError(HWERR_BUSY);
-	}
-
-	istx = true;
-	error = 0;
-	devaddr = (adaddr & 0x7F);
-	dataptr = (uint8_t *)srcptr;
-	datalen = len;
-	remainingbytes = datalen;
-
-	extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		// reverse byte order
-		uint32_t edr = __REV(aextra);
-		if (1 == extracnt)
-		{
-			extradata[0] = (aextra & 0xFF);
-		}
-		else if (2 == extracnt)
-		{
-			extradata[0] = ((aextra >> 8) & 0xFF);
-			extradata[1] = ((aextra >> 0) & 0xFF);
-		}
-		else if (3 == extracnt)
-		{
-			extradata[0] = ((aextra >> 16) & 0xFF);
-			extradata[1] = ((aextra >>  8) & 0xFF);
-			extradata[2] = ((aextra >>  0) & 0xFF);
-		}
-	}
-	extraremaining = extracnt;
-
-	//extraremaining = 0;
-
-	dmaused = (txdma && (len > 0));
-	if (dmaused)
-	{
-		xfer.srcaddr = dataptr;
-		xfer.bytewidth = 1;
-		xfer.count = remainingbytes;
-		xfer.flags = 0; // peripheral transfer with defaults
-
-		dataptr += xfer.count;
-		remainingbytes = 0;
-
-		txdma->PrepareTransfer(&xfer); // but do not start it now!
-	}
-
-	// clear all interrupt flags
-	regs->INTFLAG.reg = 0
-		| (1 << 7)  // ERROR
-		| (1 << 1)  // SB
-		| (1 << 0)  // MB
-	;
-
-	// clear error flags
-	regs->STATUS.reg = 0
-		| (1 << 10)  // LENERR
-		| (1 <<  9)  // SEXTTOUT
-		| (1 <<  8)  // MEXTTOUT
-		| (1 <<  6)  // LOWTOUT
-		| (1 <<  4)  // BUSSTATE(2): 1 = try to force to idle
-		| (1 <<  2)  // RXNACK
-		| (1 <<  1)  // ARBLOST
-		| (1 <<  0)  // BUSERR
-	;
-
-	runstate = 0;
-	busy = true;  // start the state machine
-
-	Run();
-
-	return true;
-}
-
-
-void THwI2c_atsam_v2::Run()
-{
-	if (!busy)
-	{
-		return;
-	}
+    trastate = 1;
+  }
 
 	unsigned isr = regs->STATUS.reg;
 	uint8_t  busstate = ((isr >> 4) & 3);
@@ -317,42 +237,42 @@ void THwI2c_atsam_v2::Run()
 	uint8_t  isread = (istx ? 0 : 1);
 
 	// check error flags
-	if (!error)
+	if (!curtra->error)
 	{
 		if ( (isr & SERCOM_I2CM_STATUS_RXNACK)  // this flag corresponds to the last receive, and can not be cleared
 				 &&
 				 (intflags & 0x01)                  // MB must be checked too
 			 )
 		{
-			error = ERR_I2C_ACK;
+		  curtra->error = ERR_I2C_ACK;
 		}
 		else if (isr & SERCOM_I2CM_STATUS_ARBLOST)
 		{
-			error = ERR_I2C_ARBLOST;
+		  curtra->error = ERR_I2C_ARBLOST;
 		}
 		else if (isr & SERCOM_I2CM_STATUS_BUSERR)
 		{
-			error = ERR_I2C_BUS;
+		  curtra->error = ERR_I2C_BUS;
 		}
 		else if (isr & SERCOM_I2CM_STATUS_LENERR)
 		{
-			error = ERR_I2C_ACK;
+		  curtra->error = ERR_I2C_ACK;
 		}
 		else if (intflags & 0x80)
 		{
-			error = ERR_I2C_BUS; // any error
+		  curtra->error = ERR_I2C_BUS; // any error
 		}
 
-		if (error)
+		if (curtra->error)
 		{
 			// jump to error handling
-			runstate = 90;
+			trastate = 90;
 		}
 	}
 
-	switch (runstate)
+	switch (trastate)
 	{
-	case 0:  // wait until ready to start
+	case 1:  // wait until ready to start
 		if (busstate == 3) 	// wait while busy
 		{
 			return;
@@ -369,7 +289,7 @@ void THwI2c_atsam_v2::Run()
 		if (extraremaining > 0)
 		{
 			// start with sending the extra data, no autoend, no reload
-			runstate = 5;
+			trastate = 5;
 			isread = 0;
 		}
 		else if (istx)
@@ -378,11 +298,11 @@ void THwI2c_atsam_v2::Run()
 			{
 				txdma->StartPreparedTransfer();
 			}
-			runstate = 10;
+			trastate = 10;
 		}
 		else // rx
 		{
-			runstate = 20;
+			trastate = 20;
 		}
 
 		// writing the address register starts the transaction
@@ -413,11 +333,11 @@ void THwI2c_atsam_v2::Run()
 						txdma->StartPreparedTransfer();
 					}
 
-					runstate = 10;  Run();  return;
+					trastate = 10;  RunTransaction();  return;
 				}
 				else
 				{
-					runstate = 6;  Run();  return;
+					trastate = 6;  RunTransaction();  return;
 				}
 			}
 		}
@@ -439,7 +359,7 @@ void THwI2c_atsam_v2::Run()
 				| (isread  << 0)  // RD_WRN
 			;
 
-			runstate = 20;
+			trastate = 20;
 		}
 		break;
 
@@ -476,7 +396,7 @@ void THwI2c_atsam_v2::Run()
 		;
 
 		// the stop condition is already initiated
-	  runstate = 30; // terminate
+	  trastate = 30; // terminate
 		break;
 
 	case 20: //	receiving bytes
@@ -513,7 +433,7 @@ void THwI2c_atsam_v2::Run()
 		{
 			// the stop condition is already initiated
 
-		  runstate = 30; // terminate
+		  trastate = 30; // terminate
 		}
 		break;
 
@@ -534,8 +454,8 @@ void THwI2c_atsam_v2::Run()
 			return;
 		}
 
-		busy = false; // finished.
-		runstate = 50;
+    curtra->completed = true; // transaction finished.
+		trastate = 50;
 	  break;
 
 	case 50: // finished
@@ -551,7 +471,7 @@ void THwI2c_atsam_v2::Run()
 			| (0 <<  9)  // QCEN: 0 = quick command is disabled
 			| (1 <<  8)  // SMEN: 1 = send ACK/NACK automatically
 		;
-		runstate = 91;
+		trastate = 91;
 		break;
 
 	case 91:
@@ -560,8 +480,8 @@ void THwI2c_atsam_v2::Run()
 		{
 			return;
 		}
-		busy = false; // finished.
-		runstate = 50;
+    curtra->completed = true; // transaction finished.
+		trastate = 50;
 		break;
 
 	} // case
