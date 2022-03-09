@@ -29,11 +29,11 @@
 #include <aht10.h>
 #include "clockcnt.h"
 
-bool TAht10::Init(TI2cManager * ai2c, uint8_t aaddr)
+bool TAht10::Init(THwI2c * ai2c, uint8_t aaddr)
 {
   initialized = false;
 
-  pi2cmgr = ai2c;
+  pi2c = ai2c;
   addr = aaddr;
 
   state = 0;
@@ -42,7 +42,7 @@ bool TAht10::Init(TI2cManager * ai2c, uint8_t aaddr)
   command_delay_clocks = 100 * (SystemCoreClock / 1000);
   last_measure = CLOCKCNT;
   tra.completed = true; // required for the first Run() cycle
-  tra.errorcode = 0;
+  tra.error = 0;
 
   initialized = false; // will be initialized in the state machine
   return true;
@@ -50,19 +50,19 @@ bool TAht10::Init(TI2cManager * ai2c, uint8_t aaddr)
 
 void TAht10::Run()
 {
-  if (!pi2cmgr)
+  if (!pi2c)
   {
     return;
   }
 
-  pi2cmgr->Run();
+  pi2c->Run();
 
   if (!tra.completed) // always wait the running transaction to finish
   {
     return;
   }
 
-  if (tra.errorcode) // primitive handling of I2C errors: re-start initialization
+  if (tra.error) // primitive handling of I2C errors: re-start initialization
   {
     state = 100;  // go back to initialization start
   }
@@ -80,7 +80,7 @@ void TAht10::Run()
     buf[1] = 0x33; // start measurement control
     buf[2] = 0x00; // nop
 
-    pi2cmgr->AddWrite(&tra, addr, 0, &buf[0], 3);
+    pi2c->StartWrite(&tra, addr, 0, &buf[0], 3);
     state = 2;
   }
   else if (2 == state) // wait for i2c transaction end
@@ -97,7 +97,7 @@ void TAht10::Run()
     }
 
     // read status and data
-    pi2cmgr->AddRead(&tra, addr, 0, &buf[0], 6);
+    pi2c->StartRead(&tra, addr, 0, &buf[0], 6);
     state = 4;
   }
   else if (4 == state)
@@ -146,7 +146,7 @@ void TAht10::Run()
     initialized = false;
 
     buf[0] = 0xBA; // soft reset register
-    pi2cmgr->AddWrite(&tra, addr, 0, &buf[0], 1);
+    pi2c->StartWrite(&tra, addr, 0, &buf[0], 1);
     state = 101;
     last_measure = CLOCKCNT;
   }
@@ -167,7 +167,7 @@ void TAht10::Run()
     buf[1] = 0x08; // normal mode, calibration on
     buf[2] = 0x00; // nop
 
-    pi2cmgr->AddWrite(&tra, addr, 0, &buf[0], 3);
+    pi2c->StartWrite(&tra, addr, 0, &buf[0], 3);
     state = 103;
   }
   else if (103 == state) // wait for mode complete

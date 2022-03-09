@@ -30,14 +30,13 @@
 
 #include "stdint.h"
 #include "hwi2c.h"
-#include "i2cmanager.h"
 
 class TAht10
 {
 public:
   bool      initialized = false;
   uint8_t   addr = 0x77;
-  TI2cManager * pi2cmgr = nullptr;
+  THwI2c *  pi2c = nullptr;
 
   int       t_deg_x100 = 0;
   uint32_t  rh_percent_x100 = 0;
@@ -50,7 +49,7 @@ public:
   uint32_t  measure_count = 0; // incremented after every successful measurement
   uint32_t  prev_measure_count = 0; // variable provided for the application
 
-  bool      Init(TI2cManager * ai2cmgr, uint8_t aaddr);
+  bool      Init(THwI2c * ai2c, uint8_t aaddr);
   void      Run();
 
 protected:

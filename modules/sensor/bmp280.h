@@ -30,7 +30,6 @@
 
 #include "stdint.h"
 #include "hwi2c.h"
-#include "i2cmanager.h"
 
 typedef struct
 {
@@ -58,7 +57,7 @@ public:
   bool      initialized = false;
   uint8_t   addr = 0x77;
 
-  TI2cManager *  pi2cmgr = nullptr;
+  THwI2c *  pi2c = nullptr;
 
   uint32_t  last_measure = 0;
   uint32_t  measure_iv_clocks = 0;
@@ -82,7 +81,7 @@ public:
   uint32_t  measure_count = 0; // incremented after every successful measurement
   uint32_t  prev_measure_count = 0; // variable provided for the application
 
-  bool      Init(TI2cManager * ai2cmgr, uint8_t aaddr);
+  bool      Init(THwI2c * ai2c, uint8_t aaddr);
   void      Run();
 
   int32_t   CalculateTemp(int32_t adc_T);

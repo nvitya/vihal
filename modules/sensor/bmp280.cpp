@@ -29,9 +29,9 @@
 #include <bmp280.h>
 #include "traces.h"
 
-bool TBmp280::Init(TI2cManager * ai2cmgr, uint8_t aaddr)
+bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
 {
-  pi2cmgr = ai2cmgr;
+  pi2c = ai2c;
   addr = aaddr;
 
   state = 0;
@@ -40,7 +40,7 @@ bool TBmp280::Init(TI2cManager * ai2cmgr, uint8_t aaddr)
   measure_iv_clocks = 3 * SystemCoreClock;  // 3s
   last_measure = CLOCKCNT;
   tra.completed = true; // required for the first Run() cycle
-  tra.errorcode = 0;
+  tra.error = 0;
 
   initialized = false;  // will be initialized in the state machine
   return true;
@@ -85,19 +85,19 @@ uint32_t TBmp280::CalculatePressure(int32_t adc_P)
 
 void TBmp280::Run()  // non-blocking I2C state machine
 {
-  if (!pi2cmgr)
+  if (!pi2c)
   {
     return;
   }
 
-  pi2cmgr->Run();
+  pi2c->Run();
 
   if (!tra.completed) // always wait the running transaction to finish
   {
     return;
   }
 
-  if (tra.errorcode) // primitive handling of I2C errors: re-start initialization
+  if (tra.error) // primitive handling of I2C errors: re-start initialization
   {
     state = 100;  // go back to initialization start
   }
@@ -113,7 +113,7 @@ void TBmp280::Run()  // non-blocking I2C state machine
   {
     // burst read results always consistent reading, no status check is necessary.
 
-    pi2cmgr->AddRead(&tra, addr, 0xF3 | I2CEX_1, &buf[3], 10);  // index corresponds to the register address
+    pi2c->StartRead(&tra, addr, 0xF3 | I2CEX_1, &buf[3], 10);  // index corresponds to the register address
     ++state;
   }
   else if (2 == state) // process measurement results
@@ -152,20 +152,20 @@ void TBmp280::Run()  // non-blocking I2C state machine
     initialized = false;
 
     // read ID code
-    pi2cmgr->AddRead(&tra, addr, 0xD0 | I2CEX_1, &ic_id, 1);
+    pi2c->StartRead(&tra, addr, 0xD0 | I2CEX_1, &ic_id, 1);
     ++state;
   }
   else if (101 == state) // read calibration data
   {
     // read calibration data / "dig" values
-    pi2cmgr->AddRead(&tra, addr, 0x88 | I2CEX_1, &dig, sizeof(dig));
+    pi2c->StartRead(&tra, addr, 0x88 | I2CEX_1, &dig, sizeof(dig));
     ++state;
   }
   else if (102 == state) // stop first to be able to set the configuration
   {
     // stop first to be able to set the configuration
     buf[0] = 0;
-    pi2cmgr->AddWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
+    pi2c->StartWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
     ++state;
   }
   else if (103 == state)  // set F5 CONFIG
@@ -175,7 +175,7 @@ void TBmp280::Run()  // non-blocking I2C state machine
       | (8  <<  2)  // filter(3): time constant for the IIR filter
       | (3  <<  5)  // t_sb(3): 2 = 125us, 3 = 250 us, 4 = 500 us, 5 = 1000 us
     );
-    pi2cmgr->AddWrite(&tra, addr, 0xF5 | I2CEX_1, &buf[0], 1);
+    pi2c->StartWrite(&tra, addr, 0xF5 | I2CEX_1, &buf[0], 1);
     ++state;
   }
   else if (104 == state)
@@ -186,7 +186,7 @@ void TBmp280::Run()  // non-blocking I2C state machine
       | (7  <<  2)  // osrs_p(3): 3 = 4x oversampling (pressure), 4 = 8x oversampling, 7 = 16x oversampling
       | (7  <<  5)  // osrs_t(3): 3 = 4x oversampling (temp), 4 = 8x oversampling, 7 = 16x oversampling
     );
-    pi2cmgr->AddWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
+    pi2c->StartWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
     ++state;
   }
   else if (105 == state) // initialization finished
