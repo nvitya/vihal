@@ -177,216 +177,126 @@ void THwI2c_stm32::DmaAssign(bool istx, THwDmaChannel * admach)
   }
 }
 
-bool THwI2c_stm32::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, unsigned len)
+void THwI2c_stm32::RunTransaction()
 {
-	unsigned cr2;
+  unsigned cr2;
 
-	if (busy)
-	{
-		return ReturnError(HWERR_BUSY);
-	}
+  if (0 == trastate)  // transaction init
+  {
+    istx = (0 != curtra->iswrite);
+    devaddr = curtra->address;
+    dataptr = (uint8_t *)curtra->dataptr;
+    datalen = curtra->datalen;
+    remainingbytes = datalen;
+    waitreload = false;
 
-	istx = false;
-	error = 0;
-	devaddr = adaddr;
-	dataptr = (uint8_t *)dstptr;
-	datalen = len;
-	remainingbytes = datalen;
-	waitreload = false;
+    extracnt = ((curtra->extra >> 24) & 3);
+    if (extracnt)
+    {
+      // reverse byte order
+      //uint32_t edr = __REV(aextra);
+      if (1 == extracnt)
+      {
+        extradata[0] = (curtra->extra & 0xFF);
+      }
+      else if (2 == extracnt)
+      {
+        extradata[0] = ((curtra->extra >> 8) & 0xFF);
+        extradata[1] = ((curtra->extra >> 0) & 0xFF);
+      }
+      else if (3 == extracnt)
+      {
+        extradata[0] = ((curtra->extra >> 16) & 0xFF);
+        extradata[1] = ((curtra->extra >>  8) & 0xFF);
+        extradata[2] = ((curtra->extra >>  0) & 0xFF);
+      }
+    }
+    extraremaining = extracnt;
 
-	extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		// reverse byte order
-		//uint32_t edr = __REV(aextra);
-		if (1 == extracnt)
-		{
-			extradata[0] = (aextra & 0xFF);
-		}
-		else if (2 == extracnt)
-		{
-			extradata[0] = ((aextra >> 8) & 0xFF);
-			extradata[1] = ((aextra >> 0) & 0xFF);
-		}
-		else if (3 == extracnt)
-		{
-			extradata[0] = ((aextra >> 16) & 0xFF);
-			extradata[1] = ((aextra >>  8) & 0xFF);
-			extradata[2] = ((aextra >>  0) & 0xFF);
-		}
-	}
-	extraremaining = extracnt;
+    // clear all interrupt flags
+    regs->ICR = 0x3F38;
 
-	//extraremaining = 0;
+    if (istx)
+    {
+      dmaused = ((txdma != nullptr) && (datalen > 1));
+      if (dmaused)
+      {
+        regs->CR1 &= ~I2C_CR1_RXDMAEN;
+        regs->CR1 |=  I2C_CR1_TXDMAEN;
+      }
+      else
+      {
+        regs->CR1 &= ~(I2C_CR1_TXDMAEN | I2C_CR1_RXDMAEN);
+      }
+    }
+    else
+    {
+      dmaused = ((rxdma != nullptr) && (datalen > 1));
+      if (dmaused)
+      {
+        regs->CR1 &= ~I2C_CR1_TXDMAEN;
+        regs->CR1 |=  I2C_CR1_RXDMAEN;
+      }
+      else
+      {
+        regs->CR1 &= ~(I2C_CR1_TXDMAEN | I2C_CR1_RXDMAEN);
+      }
+    }
 
-	dmaused = ((rxdma != nullptr) && (datalen > 1));
-	if (dmaused)
-	{
-		regs->CR1 &= ~I2C_CR1_TXDMAEN;
-		regs->CR1 |=  I2C_CR1_RXDMAEN;
-	}
-	else
-	{
-		regs->CR1 &= ~(I2C_CR1_TXDMAEN | I2C_CR1_RXDMAEN);
-	}
+    cr2 = 0
+      | (0 << 26)     // PECBYTE
+      | (0 << 25)     // AUTOEND
+      | (0 << 24)     // RELOAD
+      | (0 << 16)     // NBYTES(7)
+      | (0 << 15)     // NACK
+      | (0 << 14)     // STOP
+      | (0 << 13)     // START
+      | (0 << 12)     // HEAD10R
+      | (0 << 11)     // ADD10
+      | (0 << 10)     // RD_WRN
+      | (devaddr << 1)   // SADD(10), bits 7..1 are used for 7-bit addressing!
+    ;
+    regs->CR2 = cr2;
 
-	// clear all interrupt flags
-	regs->ICR = 0x3F38;
+    regs->ICR = 0xFFFF; // clear all sticky errors
 
-	cr2 = 0
-		| (0 << 26)     // PECBYTE
-		| (0 << 25)     // AUTOEND
-		| (0 << 24)     // RELOAD
-		| (0 << 16)     // NBYTES(7)
-		| (0 << 15)     // NACK
-		| (0 << 14)     // STOP
-		| (0 << 13)     // START
-		| (0 << 12)     // HEAD10R
-		| (0 << 11)     // ADD10
-		| (0 << 10)     // RD_WRN
-		| (devaddr << 1)   // SADD(10), bits 7..1 are used for 7-bit addressing!
-	;
-	regs->CR2 = cr2;
-
-	runstate = 0;
-	busy = true;  // start the state machine
-
-	regs->ICR = 0xFFFF; // clear all sticky errors
-
-	Run();
-
-	return true;
-}
-
-bool THwI2c_stm32::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)
-{
-	unsigned cr2;
-
-	if (busy)
-	{
-		return ReturnError(HWERR_BUSY);
-	}
-
-	istx = true;
-	error = 0;
-	devaddr = adaddr;
-	dataptr = (uint8_t *)srcptr;
-	datalen = len;
-	remainingbytes = datalen;
-	waitreload = false;
-
-	extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		// reverse byte order
-		//uint32_t edr = __REV(aextra);
-		if (1 == extracnt)
-		{
-			extradata[0] = (aextra & 0xFF);
-		}
-		else if (2 == extracnt)
-		{
-			extradata[0] = ((aextra >> 8) & 0xFF);
-			extradata[1] = ((aextra >> 0) & 0xFF);
-		}
-		else if (3 == extracnt)
-		{
-			extradata[0] = ((aextra >> 16) & 0xFF);
-			extradata[1] = ((aextra >>  8) & 0xFF);
-			extradata[2] = ((aextra >>  0) & 0xFF);
-		}
-	}
-	extraremaining = extracnt;
-
-	dmaused = ((txdma != nullptr) && (datalen > 1));
-	if (dmaused)
-	{
-		regs->CR1 &= ~I2C_CR1_RXDMAEN;
-		regs->CR1 |=  I2C_CR1_TXDMAEN;
-	}
-	else
-	{
-		regs->CR1 &= ~(I2C_CR1_TXDMAEN | I2C_CR1_RXDMAEN);
-	}
-
-	// clear all interrupt flags
-	regs->ICR = 0x3F38;
-
-	cr2 = 0
-		| (0 << 26)     // PECBYTE
-		| (0 << 25)     // AUTOEND
-		| (0 << 24)     // RELOAD
-		| (0 << 16)     // NBYTES(7)
-		| (0 << 15)     // NACK
-		| (0 << 14)     // STOP
-		| (0 << 13)     // START
-		| (0 << 12)     // HEAD10R
-		| (0 << 11)     // ADD10
-		| (0 << 10)     // RD_WRN
-		| (devaddr << 1)   // SADD(10), bits 7..1 are used for 7-bit addressing!
-	;
-	regs->CR2 = cr2;
-
-	runstate = 0;
-	busy = true;  // start the state machine
-
-	regs->ICR = 0xFFFF; // clear all sticky errors
-
-	Run();
-
-	return true;
-}
-
-
-void THwI2c_stm32::Run()
-{
-	if (!busy)
-	{
-		return;
-	}
+    trastate = 1;  // prepare to the start
+  }
 
 	//uint8_t  firstbyte;
-	unsigned cr2;
 	unsigned isr = regs->ISR;
 	unsigned nbytes;
 
-#if 0
-	if (isr & I2C_ISR_TCR)
-	{
-		TRACE("TCR FLAG detected!\r\n");
-	}
-#endif
-
 	// check error flags
-	if (!error)
+	if (!curtra->error)
 	{
 		if (isr & I2C_ISR_NACKF)
 		{
-			error = ERR_I2C_ACK;
+		  curtra->error = ERR_I2C_ACK;
 		}
 		else if (isr & I2C_ISR_ARLO)
 		{
-			error = ERR_I2C_ARBLOST;
+		  curtra->error = ERR_I2C_ARBLOST;
 		}
 		else if (isr & I2C_ISR_BERR)
 		{
-			error = ERR_I2C_BUS;
+		  curtra->error = ERR_I2C_BUS;
 		}
 		else if (isr & I2C_ISR_OVR)
 		{
-			error = ERR_I2C_OVERRUN;
+		  curtra->error = ERR_I2C_OVERRUN;
 		}
 
-		if (error)
+		if (curtra->error)
 		{
 			// jump to error handling
-			runstate = 90;
+			trastate = 90;
 		}
 	}
 
-	switch (runstate)
+	switch (trastate)
 	{
-	case 0:  // wait until busy to start
+	case 1:  // wait until busy to start
 		// wait until busy
 		if (isr & I2C_ISR_BUSY)
 		{
@@ -405,7 +315,7 @@ void THwI2c_stm32::Run()
 				cr2 |= I2C_CR2_AUTOEND;
 			}
 			waitreload = true;
-			runstate = 5;
+			trastate = 5;
 		}
 		else if (istx)
 		{
@@ -416,7 +326,7 @@ void THwI2c_stm32::Run()
 				cr2 |= I2C_CR2_RELOAD;
 			}
 			cr2 |= I2C_CR2_AUTOEND;
-			runstate = 10;
+			trastate = 10;
 		}
 		else // rx
 		{
@@ -428,7 +338,7 @@ void THwI2c_stm32::Run()
 				cr2 |= I2C_CR2_RELOAD;
 			}
 			cr2 |= I2C_CR2_AUTOEND;
-			runstate = 20;
+			trastate = 20;
 		}
 
 		cr2 |= (nbytes << 16) | I2C_CR2_START;  // start the transmission
@@ -444,11 +354,11 @@ void THwI2c_stm32::Run()
 			{
 				if (istx)
 				{
-					runstate = 10;  Run();  return;
+					trastate = 10;  RunTransaction();  return;
 				}
 				else
 				{
-					runstate = 6;  Run();  return;
+					trastate = 6;  RunTransaction();  return;
 				}
 			}
 		}
@@ -470,7 +380,7 @@ void THwI2c_stm32::Run()
 			cr2 |= (nbytes << 16) | I2C_CR2_START | I2C_CR2_RD_WRN;
 			regs->CR2 = cr2;
 			waitreload = false;
-			runstate = 20;
+			trastate = 20;
 		}
 		break;
 
@@ -526,7 +436,7 @@ void THwI2c_stm32::Run()
 			}
 			else
 			{
-				runstate = 29; // finish
+			  trastate = 29; // finish
 			}
 			return;
 		}
@@ -550,7 +460,7 @@ void THwI2c_stm32::Run()
 				return;
 			}
 		}
-		runstate = 29; // finish
+		trastate = 29; // finish
 		break;
 
 	case 20: //	receiving bytes
@@ -599,7 +509,7 @@ void THwI2c_stm32::Run()
 			}
 			else
 			{
-				runstate = 29; // finish
+			  trastate = 29; // finish
 			}
 			return;
 		}
@@ -618,13 +528,13 @@ void THwI2c_stm32::Run()
 		{
 			return;
 		}
-		runstate = 29; // terminate
+		trastate = 29; // terminate
 		break;
 
 	case 29: // wait last transfer to finish and send stop
 		if (isr & I2C_ISR_STOPF)
 		{
-			runstate = 30;
+		  trastate = 30;
 			return;
 		}
 
@@ -637,7 +547,7 @@ void THwI2c_stm32::Run()
 		{
 			regs->CR2 |= I2C_CR2_STOP;  // send stop
 		}
-		runstate = 30; // closing
+		trastate = 30; // closing
 		break;
 
 	case 30: // closing
@@ -648,8 +558,8 @@ void THwI2c_stm32::Run()
 
 		regs->ICR = I2C_ICR_STOPCF;
 
-		busy = false; // finished.
-		runstate = 50;
+		curtra->completed = true; // transaction finished.
+		trastate = 50;
 	  break;
 
 	case 50: // finished
@@ -666,7 +576,7 @@ void THwI2c_stm32::Run()
 		{
 		  regs->CR2 |= I2C_CR2_STOP;  // send stop condition
 		}
-		runstate = 91;
+		trastate = 91;
 		break;
 
 	case 91:
@@ -676,8 +586,8 @@ void THwI2c_stm32::Run()
 			return;
 		}
 		regs->ICR = (I2C_ICR_STOPCF | I2C_ICR_NACKCF); // clear the stop flag
-		busy = false; // finished.
-		runstate = 50;
+    curtra->completed = true; // transaction finished.
+		trastate = 50;
 		break;
 
 	} // case

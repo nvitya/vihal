@@ -12,19 +12,21 @@
 class TCharLcd_i2c : public TCharLcd
 {
 public:
-	bool            backlight_on = true;
+	bool             backlight_on = true;
 
 public:
 	// interface dependent
-	THwI2c *        pi2c = nullptr;
+	THwI2c *         pi2c = nullptr;
 
-	uint8_t         i2caddr = 0x3F;  // the default address of the I2C extender
+	uint8_t          i2caddr = 0x3F;  // the default address of the I2C extender
 
-	uint8_t         pinmask_rs = 0x01;
-	uint8_t         pinmask_rw = 0x02;
-	uint8_t         pinmask_en = 0x04;
-	uint8_t         pinmask_bl = 0x08;
+	uint8_t          pinmask_rs = 0x01;
+	uint8_t          pinmask_rw = 0x02;
+	uint8_t          pinmask_en = 0x04;
+	uint8_t          pinmask_bl = 0x08;
 	// the data bits are b7..4;
+
+	TI2cTransaction  tra;
 
 	virtual bool InitInterface();
 
@@ -33,8 +35,8 @@ public:
 
 protected:
 
-	uint8_t         base_bits = 0;
-	uint8_t         cmdbuf[4];
+	uint8_t          base_bits = 0;
+	uint8_t          cmdbuf[4];
 
 	void Write4Bits(uint8_t acmd);
 	void PulseEn(uint8_t abasedata);

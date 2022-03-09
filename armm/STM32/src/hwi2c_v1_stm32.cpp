@@ -138,161 +138,99 @@ void THwI2c_stm32::DmaAssign(bool istx, THwDmaChannel * admach)
   }
 }
 
-bool THwI2c_stm32::StartReadData(uint8_t adaddr, unsigned aextra, void * dstptr, unsigned len)
+void THwI2c_stm32::RunTransaction()
 {
-	if (busy)
-	{
-		return ReturnError(HWERR_BUSY);
-	}
+  unsigned cr1;
 
-	istx = false;
-	devaddr = adaddr;
-	dataptr = (uint8_t *)dstptr;
-	datalen = len;
-	remainingbytes = datalen;
-	dmaused = false;
-	error = 0;
+  if (0 == trastate)  // transaction init
+  {
+    istx = (0 != curtra->iswrite);
+    devaddr = curtra->address;
+    dataptr = (uint8_t *)curtra->dataptr;
+    datalen = curtra->datalen;
+    remainingbytes = datalen;
+    waitreload = false;
 
-	extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		// reverse byte order
-		uint32_t edr = __REV(aextra);
-		if (1 == extracnt)
-		{
-			extradata[0] = (aextra & 0xFF);
-		}
-		else if (2 == extracnt)
-		{
-			extradata[0] = ((aextra >> 8) & 0xFF);
-			extradata[1] = ((aextra >> 0) & 0xFF);
-		}
-		else if (3 == extracnt)
-		{
-			extradata[0] = ((aextra >> 16) & 0xFF);
-			extradata[1] = ((aextra >>  8) & 0xFF);
-			extradata[2] = ((aextra >>  0) & 0xFF);
-		}
-	}
-	extraremaining = extracnt;
-	runstate = 0;
-	busy = true;  // start the state machine
+    extracnt = ((curtra->extra >> 24) & 3);
+    if (extracnt)
+    {
+      // reverse byte order
+      //uint32_t edr = __REV(aextra);
+      if (1 == extracnt)
+      {
+        extradata[0] = (curtra->extra & 0xFF);
+      }
+      else if (2 == extracnt)
+      {
+        extradata[0] = ((curtra->extra >> 8) & 0xFF);
+        extradata[1] = ((curtra->extra >> 0) & 0xFF);
+      }
+      else if (3 == extracnt)
+      {
+        extradata[0] = ((curtra->extra >> 16) & 0xFF);
+        extradata[1] = ((curtra->extra >>  8) & 0xFF);
+        extradata[2] = ((curtra->extra >>  0) & 0xFF);
+      }
+    }
+    extraremaining = extracnt;
 
-	if (rxdma && rxdma->initialized)
-	{
-		regs->CR2 |= I2C_CR2_DMAEN;
-	}
-	else
-	{
-		regs->CR2 &= ~I2C_CR2_DMAEN;
-	}
+    regs->SR1 = 0x00FF; // clear all sticky errors
 
-	regs->SR1 = 0x00FF; // clear all sticky errors
+    if (istx)
+    {
+      dmaused = (txdma && txdma->initialized);
+    }
+    else
+    {
+      dmaused = (rxdma && rxdma->initialized);
+    }
 
-	Run();
+    if (dmaused)
+    {
+      regs->CR2 |= I2C_CR2_DMAEN;
+    }
+    else
+    {
+      regs->CR2 &= ~I2C_CR2_DMAEN;
+    }
 
-	return true;
-}
-
-bool THwI2c_stm32::StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)
-{
-	if (busy)
-	{
-		return ReturnError(HWERR_BUSY);
-	}
-
-	istx = true;
-	devaddr = adaddr;
-	dataptr = (uint8_t *)srcptr;
-	datalen = len;
-	remainingbytes = datalen;
-	dmaused = (txdma && txdma->initialized);
-	error = 0;
-
-	extracnt = ((aextra >> 24) & 3);
-	if (extracnt)
-	{
-		// reverse byte order
-		uint32_t edr = __REV(aextra);
-		if (1 == extracnt)
-		{
-			extradata[0] = (aextra & 0xFF);
-		}
-		else if (2 == extracnt)
-		{
-			extradata[0] = ((aextra >> 8) & 0xFF);
-			extradata[1] = ((aextra >> 0) & 0xFF);
-		}
-		else if (3 == extracnt)
-		{
-			extradata[0] = ((aextra >> 16) & 0xFF);
-			extradata[1] = ((aextra >>  8) & 0xFF);
-			extradata[2] = ((aextra >>  0) & 0xFF);
-		}
-	}
-	extraremaining = extracnt;
-	runstate = 0;
-	busy = true;  // start the state machine
-
-	if (txdma && txdma->initialized)
-	{
-		regs->CR2 |= I2C_CR2_DMAEN;
-	}
-	else
-	{
-		regs->CR2 &= ~I2C_CR2_DMAEN;
-	}
-
-	regs->SR1 = 0x00FF; // clear all sticky errors
-
-	Run();
-
-  return true;
-}
-
-
-void THwI2c_stm32::Run()
-{
-	if (!busy)
-	{
-		return;
-	}
+    trastate = 1;  // prepare to the start
+  }
 
 	uint8_t  firstbyte;
-	unsigned cr1;
 	unsigned sr1 = regs->SR1;
 	unsigned sr2 = regs->SR2;
 
 	// check error flags
-	if (!error)
+	if (!curtra->error)
 	{
 		if (sr1 & I2C_SR1_AF)
 		{
-			error = ERR_I2C_ACK;
+		  curtra->error = ERR_I2C_ACK;
 		}
 		else if (sr1 & I2C_SR1_ARLO)
 		{
-			error = ERR_I2C_ARBLOST;
+		  curtra->error = ERR_I2C_ARBLOST;
 		}
 		else if (sr1 & I2C_SR1_BERR)
 		{
-			error = ERR_I2C_BUS;
+		  curtra->error = ERR_I2C_BUS;
 		}
 		else if (sr1 & I2C_SR1_OVR)
 		{
-			error = ERR_I2C_OVERRUN;
+		  curtra->error = ERR_I2C_OVERRUN;
 		}
 
-		if (error)
+		if (curtra->error)
 		{
 			// jump to error handling
-			runstate = 90;
+			trastate = 90;
 		}
 	}
 
-	switch (runstate)
+	switch (trastate)
 	{
-	case 0:  // wait until busy to start
+	case 1:  // wait until busy to start
 		// wait until busy
 		if (sr2 & I2C_SR2_BUSY)
 		{
@@ -305,10 +243,10 @@ void THwI2c_stm32::Run()
 		cr1 |= I2C_CR1_START;  // send start condition
 		regs->CR1 = cr1;
 
-		runstate = 1;
+		trastate = 2;
 		break;
 
-	case 1:  // wait for the start condition
+	case 2:  // wait for the start condition
 		if ((sr1 & I2C_SR1_SB) == 0)
 		{
 			return;
@@ -327,25 +265,25 @@ void THwI2c_stm32::Run()
 		}
 		regs->DR = firstbyte;	// send the first byte
 
-		runstate = 2;
+		trastate = 3;
 		break;
 
-	case 2: // wait until the address sent
+	case 3: // wait until the address sent
 		if (sr1 & I2C_SR1_ADDR)
 		{
 			if (extraremaining > 0)
 			{
-				runstate = 5;  Run();  return;  // jump to phase 5
+				trastate = 5;  RunTransaction();  return;  // jump to phase 5
 			}
 			else
 			{
 				if (istx)
 				{
-					runstate = 10;  Run();	return;  // jump to phase 10
+					trastate = 10;  RunTransaction();	return;  // jump to phase 10
 				}
 				else
 				{
-					runstate = 20;  Run();  return;  // jump to phase 20
+					trastate = 20;  RunTransaction();  return;  // jump to phase 20
 				}
 			}
 		}
@@ -366,12 +304,12 @@ void THwI2c_stm32::Run()
 				if (istx)
 				{
 					// continue with sending data
-					runstate = 10;
+					trastate = 10;
 					return;
 				}
 				else
 				{
-					runstate = 6;
+					trastate = 6;
 				}
 			}
 		}
@@ -385,7 +323,7 @@ void THwI2c_stm32::Run()
 			cr1 |= I2C_CR1_ACK;
 			cr1 |= I2C_CR1_START;  // send start condition
 			regs->CR1 = cr1;
-			runstate = 7;
+			trastate = 7;
 		}
 		break;
 
@@ -400,11 +338,11 @@ void THwI2c_stm32::Run()
 		firstbyte = (devaddr << 1) | 1;  // LSB = 0: Master Transmitter, LSB = 1: Master Receiver
 		regs->DR = firstbyte;	// send the first byte
 
-		runstate = 20; // receive data bytes
+		trastate = 20; // receive data bytes
 		break;
 
 	case 10: // start sending data bytes
-		runstate = 11; // continue at sending data
+		trastate = 11; // continue at sending data
 		dmaused = (txdma && (remainingbytes > 0));
 		if (dmaused)
 		{
@@ -420,7 +358,7 @@ void THwI2c_stm32::Run()
 		}
 		else
 		{
-			Run();  return; // jump to body now
+			RunTransaction();  return; // jump to body now
 		}
 		break;
 
@@ -446,11 +384,11 @@ void THwI2c_stm32::Run()
 			}
 		}
 
-		runstate = 29; // finish
+		trastate = 29; // finish
 		break;
 
 	case 20: //	start receive
-		runstate = 21; // continue at receive data
+		trastate = 21; // continue at receive data
 		dmaused = (rxdma && (remainingbytes > 2));
 		if (dmaused)
 		{
@@ -466,7 +404,7 @@ void THwI2c_stm32::Run()
 		}
 		else
 		{
-			Run();  return; // jump to receive data now
+		  RunTransaction();  return; // jump to receive data now
 		}
 		break;
 
@@ -497,7 +435,7 @@ void THwI2c_stm32::Run()
 			}
 
 	    regs->CR1 |= I2C_CR1_STOP;  // send stop condition
-	    runstate = 30; // closing
+	    trastate = 30; // closing
 		}
 		break;
 
@@ -508,7 +446,7 @@ void THwI2c_stm32::Run()
 		}
 
 		regs->CR1 |= I2C_CR1_STOP;  // send stop condition
-		runstate = 30; // closing
+		trastate = 30; // closing
 		break;
 
 	case 30: // closing
@@ -517,8 +455,8 @@ void THwI2c_stm32::Run()
 			return;
 		}
 
-		busy = false; // finished.
-		runstate = 50;
+    curtra->completed = true; // transaction finished.
+		trastate = 50;
 	  break;
 
 	case 50: // finished
@@ -526,7 +464,7 @@ void THwI2c_stm32::Run()
 
 	case 90: // handling errors
 		regs->CR1 |= I2C_CR1_STOP;  // send stop condition
-		runstate = 91;
+		trastate = 91;
 		break;
 
 	case 91:
@@ -535,8 +473,8 @@ void THwI2c_stm32::Run()
 		{
 			return;
 		}
-		busy = false; // finished.
-		runstate = 50;
+    curtra->completed = true; // transaction finished.
+		trastate = 50;
 		break;
 
 	} // case

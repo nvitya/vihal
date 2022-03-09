@@ -46,6 +46,24 @@
 #define I2CEX_3           0x03000000  // send 3 extra bytes
 #define I2CEX_MASK        0x03000000
 
+struct TI2cTransaction
+{
+  bool               completed;
+  uint8_t            iswrite;  // 0 = read, 1 = write
+  uint8_t            address;
+  int                error;
+
+  uint32_t           extra;
+  uint8_t *          dataptr;
+  unsigned           datalen;
+
+  PCbClassCallback   callback = nullptr;
+  void *             callbackobj = nullptr;
+  void *             callbackarg = nullptr;
+
+  TI2cTransaction *  next;
+};
+
 class THwI2c_pre
 {
 public:	// settings
@@ -67,10 +85,14 @@ public: // run state
 	unsigned         datalen = 0;
 	unsigned         remainingbytes = 0;
 
-	bool             busy = false;
-	int              error = 0;
+  int              trastate = 0; // transaction state
 
-  inline bool      ReturnError(int aerror) { error = aerror;  return false; }
+  TI2cTransaction *  curtra = nullptr;
+
+  void             StartWrite(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len);
+  void             StartRead(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len);
+
+  bool             AddTransaction(TI2cTransaction * atra);  // returns false if already added
 
 };
 
@@ -94,12 +116,9 @@ class THwI2c_noimpl : public THwI2c_pre
 public: // mandatory
 	bool Init(int adevnum)      { return false; }
 
-	bool StartReadData(uint8_t  adaddr, unsigned aextra, void * dstptr, unsigned len)  { return ReturnError(HWERR_NOTIMPL); }
-	bool StartWriteData(uint8_t adaddr, unsigned aextra, void * srcptr, unsigned len)  { return ReturnError(HWERR_NOTIMPL); }
-
   void DmaAssign(bool istx, THwDmaChannel * admach)  { }
 
-	void Run()  { }
+	void RunTransaction()  { }
 };
 
 #define HWI2C_IMPL   THwI2c_noimpl
@@ -111,8 +130,8 @@ public: // mandatory
 class THwI2c : public HWI2C_IMPL
 {
 public:
-	bool Finished();
-	int WaitFinish();
+  void WaitFinish(TI2cTransaction * atra);
+  void Run();
 };
 
 #endif // HWI2C_H_

@@ -75,6 +75,6 @@ void TCharLcd_i2c::ExpanderWrite(uint8_t adata)
   if (!pi2c)  return;
 
 	cmdbuf[0] = adata;
-	pi2c->StartWriteData(i2caddr, 0, &cmdbuf[0], 1); // write byte with addressing
-	pi2c->WaitFinish();
+	pi2c->StartWrite(&tra, i2caddr, 0, &cmdbuf[0], 1); // write byte with addressing
+	pi2c->WaitFinish(&tra);
 }

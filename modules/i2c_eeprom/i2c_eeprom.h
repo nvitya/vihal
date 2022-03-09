@@ -42,38 +42,40 @@ class TI2cEeprom
 {
 public:
 
-	bool 					 initialized = false;
-	bool           completed = true;
-	int            errorcode = 0;
+	bool 					   initialized = false;
+	bool             completed = true;
+	int              error = 0;
 
-	THwI2c *       pi2c = nullptr;
-	uint8_t        devaddr = 0x50;
-	unsigned       bytesize = 0;
+	THwI2c *         pi2c = nullptr;
+	uint8_t          devaddr = 0x50;
+	unsigned         bytesize = 0;
 
-	bool           Init(THwI2c * ai2c, uint8_t aaddr, uint32_t abytesize);
+	TI2cTransaction  tra;
 
-	bool 					 StartReadMem(unsigned aaddr, void * adstptr, unsigned alen);
-	bool 					 StartWriteMem(unsigned aaddr, void * asrcptr, unsigned alen);
+	bool             Init(THwI2c * ai2c, uint8_t aaddr, uint32_t abytesize);
 
-	void           Run();
-	int            WaitComplete();
+	bool 					   StartReadMem(unsigned aaddr, void * adstptr, unsigned alen);
+	bool 					   StartWriteMem(unsigned aaddr, void * asrcptr, unsigned alen);
+
+	void             Run();
+	int              WaitComplete();
 
 protected:
 
-	unsigned char  txbuf[16];
-	unsigned char  rxbuf[16];
+	unsigned char    txbuf[16];
+	unsigned char    rxbuf[16];
 
 	// state machine
-	int            state = 0;
-	int            phase = 0;
+	int              state = 0;
+	int              phase = 0;
 
-	unsigned       chunksize = 0;
-	unsigned       maxchunksize = HW_DMA_MAX_COUNT;
+	unsigned         chunksize = 0;
+	unsigned         maxchunksize = HW_DMA_MAX_COUNT;
 
-	uint8_t *      dataptr = nullptr;
-	unsigned       datalen = 0;
-	unsigned       address = 0;
-	unsigned       remaining = 0;
+	uint8_t *        dataptr = nullptr;
+	unsigned         datalen = 0;
+	unsigned         address = 0;
+	unsigned         remaining = 0;
 };
 
 #endif /* I2C_EEPROM_H_ */

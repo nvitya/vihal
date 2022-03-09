@@ -32,7 +32,7 @@ bool TI2cEeprom::Init(THwI2c * ai2c, uint8_t aaddr, uint32_t abytesize)
 {
 	initialized = false;
 	pi2c = ai2c;
-	errorcode = HWERR_NOTINIT;
+	error = HWERR_NOTINIT;
 
 	if (!pi2c)
 	{
@@ -52,16 +52,11 @@ bool TI2cEeprom::Init(THwI2c * ai2c, uint8_t aaddr, uint32_t abytesize)
 	// try to read the first 4 bytes
 
 	uint32_t data = 0;
-	pi2c->StartReadData(devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, &data, 4);
-	if (pi2c->error != HWERR_OK)
+	pi2c->StartRead(&tra, devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, &data, 4);
+	pi2c->WaitFinish(&tra);
+	if (tra.error != HWERR_OK)
 	{
-		initialized = false;
-		return false;
-	}
-
-	if (pi2c->WaitFinish() != HWERR_OK)
-	{
-		errorcode = pi2c->error;
+		error = tra.error;
 		initialized = false;
 		return false;
 	}
@@ -73,20 +68,20 @@ bool TI2cEeprom::StartReadMem(unsigned aaddr, void * adstptr, unsigned alen)
 {
 	if (!initialized)
 	{
-		errorcode = HWERR_NOTINIT;
+		error = HWERR_NOTINIT;
 		completed = true;
 		return false;
 	}
 
 	if (!completed)
 	{
-		errorcode = HWERR_BUSY;  // this might be overwriten later
+		error = HWERR_BUSY;  // this might be overwriten later
 		return false;
 	}
 
 	if (aaddr + alen > bytesize)
 	{
-		errorcode = HWERR_READ;
+		error = HWERR_READ;
 		return false;
 	}
 
@@ -97,32 +92,32 @@ bool TI2cEeprom::StartReadMem(unsigned aaddr, void * adstptr, unsigned alen)
 	state = I2C_STATE_READMEM; // read memory
 	phase = 0;
 
-	errorcode = 0;
+	error = 0;
 	completed = false;
 
 	Run();
 
-	return (errorcode == 0);
+	return (error == 0);
 }
 
 bool TI2cEeprom::StartWriteMem(unsigned aaddr, void * asrcptr, unsigned alen)
 {
 	if (!initialized)
 	{
-		errorcode = HWERR_NOTINIT;
+		error = HWERR_NOTINIT;
 		completed = true;
 		return false;
 	}
 
 	if (!completed)
 	{
-		errorcode = HWERR_BUSY;  // this might be overwriten later
+		error = HWERR_BUSY;  // this might be overwriten later
 		return false;
 	}
 
 	if (aaddr + alen > bytesize)
 	{
-		errorcode = HWERR_WRITE;
+		error = HWERR_WRITE;
 		return false;
 	}
 
@@ -133,12 +128,12 @@ bool TI2cEeprom::StartWriteMem(unsigned aaddr, void * asrcptr, unsigned alen)
 	state = I2C_STATE_WRITEMEM; // write page
 	phase = 0;
 
-	errorcode = 0;
+	error = 0;
 	completed = false;
 
 	Run();
 
-	return (errorcode == 0);
+	return (error == 0);
 }
 
 void TI2cEeprom::Run()
@@ -149,6 +144,8 @@ void TI2cEeprom::Run()
 		return;
 	}
 
+	pi2c->Run();
+
 	if (I2C_STATE_READMEM == state)  // read memory
 	{
 		// the read can be carried out in a single transaction
@@ -156,14 +153,14 @@ void TI2cEeprom::Run()
 		switch (phase)
 		{
 			case 0: // start
-				pi2c->StartReadData(devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, dataptr, datalen);
+				pi2c->StartRead(&tra, devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, dataptr, datalen);
 				phase = 1;
 				break;
 
 			case 1:
-				if (pi2c->Finished())
+				if (tra.completed)
 				{
-					errorcode = pi2c->error;
+					error = tra.error;
 					completed = true;
 					state = 0; // back to idle
 				}
@@ -192,16 +189,16 @@ void TI2cEeprom::Run()
 				chunksize = 16 - (address & 0xF);
 				if (chunksize > remaining)  chunksize = remaining;
 
-				pi2c->StartWriteData(devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, dataptr, chunksize);
+				pi2c->StartWrite(&tra, devaddr + ((address >> 8) & 7), (address & 0xFF) | I2CEX_1, dataptr, chunksize);
 
 				++phase;
 				break;
 
 			case 2: // wait i2c send complete
-				if (pi2c->Finished())
+				if (tra.completed)
 				{
-					errorcode = pi2c->error;
-					if (errorcode)
+					error = tra.error;
+					if (error)
 					{
 						completed = true;
 						state = 0;
@@ -215,14 +212,14 @@ void TI2cEeprom::Run()
 				break;
 
 			case 3: // try reading until it answers ...
-				pi2c->StartReadData(devaddr, 0, &rxbuf[0], 1);
+				pi2c->StartRead(&tra, devaddr, 0, &rxbuf[0], 1);
 				++phase;
 				break;
 
 			case 4: // wait completition
-				if (pi2c->Finished())
+				if (tra.completed)
 				{
-					if (pi2c->error == 0) // read successful, that means that the write is completed
+					if (tra.error == 0) // read successful, that means that the write is completed
 					{
 						dataptr += chunksize;
 						address += chunksize;
@@ -247,5 +244,5 @@ int TI2cEeprom::WaitComplete()
 		Run();
 	}
 
-	return errorcode;
+	return error;
 }
