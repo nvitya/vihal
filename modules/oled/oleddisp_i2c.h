@@ -10,13 +10,14 @@ class TOledDisp_i2c : public TOledDisp
 {
 public:
 	// interface dependent
-	uint8_t   i2caddress = 0x3C;  // alternatively 0x3D
+	uint8_t          i2caddress = 0x3C;  // alternatively 0x3D
 
-	THwI2c    * pi2c = nullptr;
+	THwI2c *         pi2c = nullptr;
+	TI2cTransaction  tra;
 
-	uint32_t  commerrcnt = 0;
+	uint32_t         commerrcnt = 0;
 
-	uint8_t   cmdbuf[16];
+	uint8_t          cmdbuf[16];
 
 	virtual bool InitInterface();
 

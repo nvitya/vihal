@@ -13,23 +13,29 @@ bool TOledDisp_i2c::InitInterface()
 
 	uint8_t testcmd[2] = {0x00, 0x00};
 
-	pi2c->StartWriteData(i2caddress, 0, &testcmd[0], 2);
-	pi2c->WaitFinish();
-	return (pi2c->error == 0);
+	pi2c->StartWrite(&tra, i2caddress, 0, &testcmd[0], 2);
+	pi2c->WaitFinish(&tra);
+	return (tra.error == 0);
 }
 
 void TOledDisp_i2c::WriteCmd(uint8_t adata)
 {
 	cmdbuf[0] = 0x00;
 	cmdbuf[1] = adata;
-	pi2c->WaitFinish();
-	pi2c->StartWriteData(i2caddress, 0, &cmdbuf[0], 2);
-	pi2c->WaitFinish();
+	pi2c->StartWrite(&tra, i2caddress, 0, &cmdbuf[0], 2);
+	pi2c->WaitFinish(&tra);
 }
 
 void TOledDisp_i2c::Run()
 {
 	uint32_t n;
+
+	if (!pi2c)
+	{
+	  return;
+	}
+
+	pi2c->Run();
 
 	switch (updatestate)
 	{
@@ -41,7 +47,7 @@ void TOledDisp_i2c::Run()
 		break;
 
 	case 1: // start update
-		if (!pi2c->Finished())
+		if (!tra.completed)
 		{
 			return;
 		}
@@ -53,17 +59,17 @@ void TOledDisp_i2c::Run()
 		cmdbuf[n++] = 0x80; cmdbuf[n++] = 0;    // start page
 		cmdbuf[n++] = 0x80; cmdbuf[n++] = (hwheight >> 3) - 1;   // end page
 		cmdbuf[n-2] = 0x00; // replace 0x80 with 0x00 for command chain termination
-		pi2c->StartWriteData(i2caddress, 0, &cmdbuf[0], n);
+		pi2c->StartWrite(&tra, i2caddress, 0, &cmdbuf[0], n);
 		updatestate = 2;
 		break;
 
 	case 2: // wait preparation finish
-		if (!pi2c->Finished())
+		if (!tra.completed)
 		{
 			return;
 		}
 
-		if (pi2c->error)
+		if (tra.error)
 		{
 			++commerrcnt;
 			updatestate = 0; // repeat command phase
@@ -76,17 +82,17 @@ void TOledDisp_i2c::Run()
 
 	case 5: // start sending data
 		lastupdate = updatecnt;
-		pi2c->StartWriteData(i2caddress, 0x40 | I2CEX_1, pdispbuf, hwwidth * (hwheight >> 3));
+		pi2c->StartWrite(&tra, i2caddress, 0x40 | I2CEX_1, pdispbuf, hwwidth * (hwheight >> 3));
 		updatestate = 6;
 		break;
 
 	case 6: // wait until the buffer write finished
-		if (!pi2c->Finished())
+		if (!tra.completed)
 		{
 			return;
 		}
 
-		if (pi2c->error)
+		if (tra.error)
 		{
 			++commerrcnt;
 		}
