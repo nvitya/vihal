@@ -1218,7 +1218,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
         }
       }
 
-      RCC->BDCR |= RCC_BDCR_LSEON;
+      // enable LSE and set drive strange to low
+      uint32_t tmp = RCC->BDCR;
+      tmp &= ~RCC_BDCR_LSEDRV;
+      tmp |= RCC_BDCR_LSEON;
+      RCC->BDCR = tmp;
 
       // wait until LSE is ready
       while(!(RCC->BDCR & RCC_BDCR_LSERDY))
@@ -1227,16 +1231,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
       }
 
       // switch RTC to LSE
-      uint32_t tmp = RCC->BDCR;
-      tmp = tmp & ~RCC_BDCR_RTCSEL;
-      tmp = tmp | (1 << RCC_BDCR_RTCSEL_Pos);
+      tmp = RCC->BDCR;
+      tmp &= ~RCC_BDCR_RTCSEL;
+      tmp |= (1 << RCC_BDCR_RTCSEL_Pos);
       RCC->BDCR = tmp;
-
     } else {
       // switch RTC to LSI
       uint32_t tmp = RCC->BDCR;
-      tmp = tmp & ~RCC_BDCR_RTCSEL;
-      tmp = tmp | (2 << RCC_BDCR_RTCSEL_Pos);
+      tmp &= ~RCC_BDCR_RTCSEL;
+      tmp |= (2 << RCC_BDCR_RTCSEL_Pos);
       RCC->BDCR = tmp;
     }
 

@@ -162,11 +162,6 @@ bool THwUart_stm32::Init(int adevnum)
 	// Enable RX, TX:
 	regs->CR1 |= USART_CR1_TE | USART_CR1_RE;
 
-	#ifdef USART_CR1_OVER8
-	  // set oversampling to 16
-	  regs->CR1 &= ~USART_CR1_OVER8;
-	#endif
-
 	// disable LIN and CLK out
 #if defined(USART_CR2_LINEN)
 	regs->CR2 &= ~(USART_CR2_LINEN | USART_CR2_CLKEN);
@@ -182,21 +177,8 @@ bool THwUart_stm32::Init(int adevnum)
 	regs->PRESC = 0; // do not divide the input clock
 #endif
 
-	unsigned periphclock = stm32_bus_speed(busid);
-	unsigned baseclock = periphclock / 16;
-	unsigned divider = ((baseclock << 4) + 8) / baudrate;
-
-#ifdef USART_CR1_OVER8
-	if (divider < 16)
-	{
-		baseclock = periphclock / 8;
-		divider = ((baseclock << 4) + 8) / baudrate;
-	  regs->CR1 |= USART_CR1_OVER8;
-	  divider = ((divider & 0xFFF0) | ((divider & 0xE) >> 1));
-	}
-#endif
-
-	regs->BRR = divider;
+	periphclock = stm32_bus_speed(busid);
+	setBaudRate();
 
 	// Enable:
 	regs->CR1 |= USART_CR1_UE;
@@ -204,6 +186,47 @@ bool THwUart_stm32::Init(int adevnum)
 	initialized = true;
 
 	return true;
+}
+
+bool THwUart_stm32::setPeriphClock(unsigned aclk)
+{
+  periphclock = aclk;
+  return setBaudRate();
+}
+
+bool THwUart_stm32::setBaudRate(int abaudrate)
+{
+  if(abaudrate > 0)
+  {
+    baudrate = abaudrate;
+  }
+
+  unsigned baseclock = periphclock / 16;
+  unsigned divider = ((baseclock << 4) + 8) / baudrate;
+
+  uint32_t tmp = regs->CR1;
+  regs->CR1 = tmp & ~USART_CR1_UE;
+
+  #ifdef USART_CR1_OVER8
+    if (divider < 16)
+    {
+      baseclock = periphclock / 8;
+      divider = ((baseclock << 4) + 8) / baudrate;
+      tmp |= USART_CR1_OVER8;
+      divider = ((divider & 0xFFF0) | ((divider & 0xE) >> 1));
+    }
+    else
+    {
+      tmp &= ~USART_CR1_OVER8;
+    }
+    regs->CR1 = tmp & ~USART_CR1_UE;
+  #endif
+
+  regs->BRR = divider;
+
+  regs->CR1 = tmp;
+
+  return true;
 }
 
 bool THwUart_stm32::TrySendChar(char ach)

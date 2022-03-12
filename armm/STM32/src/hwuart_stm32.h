@@ -37,6 +37,9 @@ class THwUart_stm32 : public THwUart_pre
 public:
 	bool Init(int adevnum);  // 0x101 = LPUART1
 
+	bool setPeriphClock(unsigned aclk);
+	bool setBaudRate(int abaudrate = 0);
+
 	bool TrySendChar(char ach);
 	bool TryRecvChar(char * ach);
 
