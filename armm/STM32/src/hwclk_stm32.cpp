@@ -744,7 +744,21 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   SystemCoreClock = MCU_INTERNAL_RC_SPEED; // set the global variable for the fall error happens
 
-  hwclk_prepare_hispeed(target_speed_hz);
+  #if defined(MCUSF_WB)
+    // in STM32WB MCU's the flash is clocked with the same speed as SRAM2 and CPU2
+    // CPU2 support only frequencies up to 32Mhz
+    if(target_speed_hz > 32000000)
+    {
+      hwclk_prepare_hispeed(target_speed_hz/2);
+    }
+    else
+    {
+      hwclk_prepare_hispeed(target_speed_hz);
+    }
+  #else
+    hwclk_prepare_hispeed(target_speed_hz);
+  #endif
+
 
   unsigned basespeed;
   unsigned pllsrc;
