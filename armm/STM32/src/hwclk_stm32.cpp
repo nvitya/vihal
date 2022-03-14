@@ -1181,70 +1181,77 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 #if defined(MCUSF_WB)
 
-  bool hwlsclk_init(bool external_clock)
+bool hwlsclk_init(bool external_clock)
+{
+  // LSI clock must always enabled for correct watch dog operation
+  // by default LSI2 is enabled but LSI1 is more accurate and need less power
+  // to select LSI1 as LSI clock source LSI2 must disabled
+
+  // enable LSI1
+  RCC->CSR |= RCC_CSR_LSI1ON;
+
+  // wait until LSI1 is ready
+  while (!(RCC->CSR & RCC_CSR_LSI1RDY))
   {
-    // LSI clock must always enabled for correct watch dog operation
-    // by default LSI2 is enabled but LSI1 is more accurate and need less power
-    // to select LSI1 as LSI clock source LSI2 must disabled
 
-    // enable LSI1
-    RCC->CSR |= RCC_CSR_LSI1ON;
-
-    // wait until LSI1 is ready
-    while(!(RCC->CSR & RCC_CSR_LSI1RDY))
-    {
-
-    }
-
-    // disable LSI2
-    RCC->CSR &= ~RCC_CSR_LSI2ON;
-
-    // wait until LSI2 is disabled
-    while((RCC->CSR & RCC_CSR_LSI2RDY))
-    {
-
-    }
-
-    if(external_clock)
-    {
-      if(!(PWR->CR1 & PWR_CR1_DBP))
-      {
-        // enable backup domain access
-        PWR->CR1 |= PWR_CR1_DBP;
-        // wait for backup domain access
-        while(!(PWR->CR1 & PWR_CR1_DBP))
-        {
-
-        }
-      }
-
-      // enable LSE and set drive strange to low
-      uint32_t tmp = RCC->BDCR;
-      tmp &= ~RCC_BDCR_LSEDRV;
-      tmp |= RCC_BDCR_LSEON;
-      RCC->BDCR = tmp;
-
-      // wait until LSE is ready
-      while(!(RCC->BDCR & RCC_BDCR_LSERDY))
-      {
-
-      }
-
-      // switch RTC to LSE
-      tmp = RCC->BDCR;
-      tmp &= ~RCC_BDCR_RTCSEL;
-      tmp |= (1 << RCC_BDCR_RTCSEL_Pos);
-      RCC->BDCR = tmp;
-    } else {
-      // switch RTC to LSI
-      uint32_t tmp = RCC->BDCR;
-      tmp &= ~RCC_BDCR_RTCSEL;
-      tmp |= (2 << RCC_BDCR_RTCSEL_Pos);
-      RCC->BDCR = tmp;
-    }
-
-    return true;
   }
+
+  // disable LSI2
+  RCC->CSR &= ~RCC_CSR_LSI2ON;
+
+  // wait until LSI2 is disabled
+  while((RCC->CSR & RCC_CSR_LSI2RDY))
+  {
+
+  }
+
+  if (external_clock)
+  {
+    if (!(PWR->CR1 & PWR_CR1_DBP))
+    {
+      // enable backup domain access
+      PWR->CR1 |= PWR_CR1_DBP;
+      // wait for backup domain access
+      while(!(PWR->CR1 & PWR_CR1_DBP))
+      {
+
+      }
+    }
+
+    // enable LSE and set drive strange to low
+    uint32_t tmp = RCC->BDCR;
+    tmp &= ~RCC_BDCR_LSEDRV;
+    tmp |= RCC_BDCR_LSEON;
+    RCC->BDCR = tmp;
+
+    // wait until LSE is ready
+    while (!(RCC->BDCR & RCC_BDCR_LSERDY))
+    {
+
+    }
+
+    // switch RTC to LSE
+    tmp = RCC->BDCR;
+    tmp &= ~RCC_BDCR_RTCSEL;
+    tmp |= (1 << RCC_BDCR_RTCSEL_Pos);
+    RCC->BDCR = tmp;
+  }
+  else
+  {
+    // switch RTC to LSI
+    uint32_t tmp = RCC->BDCR;
+    tmp &= ~RCC_BDCR_RTCSEL;
+    tmp |= (2 << RCC_BDCR_RTCSEL_Pos);
+    RCC->BDCR = tmp;
+  }
+
+  return true;
+}
+
 #else
-  #error "STM32 MCU low speed Clock Setup not implemented for this sub-family"
+
+//#error "STM32 MCU low speed Clock Setup not implemented for this sub-family"
+
+// not implemented, linker error on call
+
 #endif
