@@ -178,7 +178,7 @@ bool THwUart_stm32::Init(int adevnum)
 #endif
 
 	periphclock = stm32_bus_speed(busid);
-	setBaudRate();
+	SetBaudRate();
 
 	// Enable:
 	regs->CR1 |= USART_CR1_UE;
@@ -188,13 +188,13 @@ bool THwUart_stm32::Init(int adevnum)
 	return true;
 }
 
-bool THwUart_stm32::setPeriphClock(unsigned aclk)
+bool THwUart_stm32::SetPeriphClock(unsigned aclk)
 {
   periphclock = aclk;
-  return setBaudRate();
+  return SetBaudRate();
 }
 
-bool THwUart_stm32::setBaudRate(int abaudrate)
+bool THwUart_stm32::SetBaudRate(int abaudrate)
 {
   if(abaudrate > 0)
   {
