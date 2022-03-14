@@ -46,6 +46,8 @@ public:
 	bool    oddparity = false;
 	bool    singlewire = false;  // single wire mode (half duplex)
 
+	unsigned periphclock;
+
 public:  // DMA
 	THwDmaChannel *      txdma = nullptr;
 	THwDmaChannel *      rxdma = nullptr;
