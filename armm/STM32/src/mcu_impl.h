@@ -71,6 +71,10 @@
   #include "hwlcdctrl_stm32.h"
 #endif
 
+#ifdef HWRTC_H_
+  #include "hwrtc_stm32.h"
+#endif
+
 /* not yet migrated from NVCM
 
 #if defined(HWSDCARD_H_) && (defined(SDIO) || defined(SDMMC) || defined(SDMMC1))

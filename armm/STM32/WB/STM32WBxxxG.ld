@@ -1,6 +1,6 @@
 MEMORY
 {
-  /* for more details see v, Kap 4.2 Memory Mapping */
+  /* for more details see AN5289, Kap 4.2 Memory Mapping */
   /* STM32WBxxxG has 1MB Flash, but the upper 512KB are reserved for the RF Stacks*/
   FLASH (rx) :    ORIGIN = 0x08000000, LENGTH = 512K
   
