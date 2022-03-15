@@ -10,6 +10,8 @@
 
 #include "hwrtc.h"
 
+#if defined(MCUSF_WB)
+
 bool THwRtc_stm32::init()
 {
   regs = RTC;
@@ -295,5 +297,7 @@ void THwRtc_stm32::convDr2Int(uint32_t &aDr, uint8_t &aDay, uint8_t &aMon, uint8
   aMon = ((aDr & RTC_DR_MU) >> RTC_DR_MU_Pos) + 10*((aDr & RTC_DR_MT) >> RTC_DR_MT_Pos);
   aYear = ((aDr & RTC_DR_YU) >> RTC_DR_YU_Pos) + 10*((aDr & RTC_DR_YT) >> RTC_DR_YT_Pos);
 }
+
+#endif // defined(MCUSF_WB)
 
 #endif /* HWRTC_STM32_CPP_ */
