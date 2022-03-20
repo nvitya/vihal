@@ -147,19 +147,21 @@ void THwEth_atsam::InitDescList(bool istx, int bufnum, HW_ETH_DMA_DESC * pdesc_l
 	}
 }
 
-void THwEth_atsam::AssignRxBuf(uint32_t idx, void * pdata, uint32_t datalen)
+void THwEth_atsam::AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen)
 {
 	if (idx >= rx_desc_count)  return;
 
 	int i;
 	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[idx];
 
+  pmem->idx = idx;
+
 	pdesc->STATUS = datalen;
 	uint32_t wrapbit = (pdesc->ADDR & 2);
-	pdesc->ADDR = (uint32_t)pdata | wrapbit; // do not set the own bit (0) = ready to receive
+	pdesc->ADDR = (uint32_t)(&pmem->data[0]) | wrapbit; // do not set the own bit (0) = ready to receive
 }
 
-bool THwEth_atsam::TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen)
+bool THwEth_atsam::TryRecv(TPacketMem * * ppmem)
 {
 	__DSB();
 
@@ -171,9 +173,11 @@ bool THwEth_atsam::TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen
 		if (pdesc->ADDR & 1)
 		{
 			// use this descriptor
-			*pidx = i;
-			*ppdata = (void *)(pdesc->ADDR & ~0x3);
-			*pdatalen = (pdesc->STATUS & 0x1FFF);
+
+      TPacketMem * pmem = (TPacketMem *)((pdesc->ADDR & ~0x3) - HWETH_PMEM_HEAD_SIZE);
+
+			pmem->idx = i;
+			pmem->datalen = (pdesc->STATUS & 0x1FFF);
 			return true;
 		}
 
@@ -184,9 +188,9 @@ bool THwEth_atsam::TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen
 	return false;
 }
 
-void THwEth_atsam::ReleaseRxBuf(uint32_t idx)
+void THwEth_atsam::ReleaseRxBuf(TPacketMem * pmem)
 {
-	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[idx];
+	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[pmem->idx];
 	pdesc->ADDR &= ~1;
 }
 
@@ -240,6 +244,11 @@ void THwEth_atsam::SetMacAddress(uint8_t * amacaddr)
 	{
 		memcpy(&mac_address, amacaddr, 6);
 	}
+
+  if (!regs)
+  {
+    return;
+  }
 
 	regs->GMAC_SA[0].GMAC_SAB = ((uint32_t) amacaddr[3] << 24) | ((uint32_t) amacaddr[2] << 16)
 					                  | ((uint32_t) amacaddr[1] <<  8) | ((uint32_t) amacaddr[0]);

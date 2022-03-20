@@ -254,19 +254,21 @@ void THwEth_stm32::InitDescList(bool istx, int bufnum, HW_ETH_DMA_DESC * pdesc_l
 	}
 }
 
-void THwEth_stm32::AssignRxBuf(uint32_t idx, void * pdata, uint32_t datalen)
+void THwEth_stm32::AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen)
 {
 	if (idx >= rx_desc_count)  return;
 
 	int i;
 	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[idx];
 
-	pdesc->B1ADD = (uint32_t)pdata;
+	pmem->idx = idx;
+
+	pdesc->B1ADD = (uint32_t)(&pmem->data[0]);
 	pdesc->DES1 |= datalen;
 	pdesc->DES0 = HWETH_DMADES_OWN;  // enable receive on this decriptor
 }
 
-bool THwEth_stm32::TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen)
+bool THwEth_stm32::TryRecv(TPacketMem * * ppmem)
 {
 	if (!(regs->MAC_CONFIG & HWETH_MAC_CFG_RE))
 	{
@@ -303,10 +305,14 @@ bool THwEth_stm32::TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen
 			++recv_count;
 			HW_ETH_DMA_DESC * result = actual_rx_desc;
 			actual_rx_desc = (HW_ETH_DMA_DESC *)actual_rx_desc->B2ADD;
+
 			// resulting
-			*pidx = (result - rx_desc_list); // / sizeof(HW_ETH_DMA_DESC);
-			*ppdata = (void *)(result->B1ADD);
-			*pdatalen = ((result->DES0 >> 16) & 0x1FFF);
+
+			TPacketMem * pmem = (TPacketMem *)(result->B1ADD - HWETH_PMEM_HEAD_SIZE);
+
+			pmem->idx = (result - rx_desc_list); // / sizeof(HW_ETH_DMA_DESC);
+      pmem->datalen = ((result->DES0 >> 16) & 0x1FFF);
+			*ppmem = pmem;
 			return true;
 		}
 
@@ -319,12 +325,11 @@ bool THwEth_stm32::TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen
 		__DSB();
 		regs->DMA_REC_POLL_DEMAND = 1;
 	}
-
 }
 
-void THwEth_stm32::ReleaseRxBuf(uint32_t idx)
+void THwEth_stm32::ReleaseRxBuf(TPacketMem * pmem)
 {
-	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[idx];
+	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[pmem->idx];
 	pdesc->DES0 = HWETH_DMADES_OWN;
 	__DSB();
 	regs->DMA_REC_POLL_DEMAND = 1;  // for the case when we were out of descriptors
@@ -410,7 +415,15 @@ uint32_t THwEth_stm32::CalcMdcClock(void)
 
 void THwEth_stm32::SetMacAddress(uint8_t * amacaddr)
 {
-	memcpy(&mac_address, amacaddr, 6);
+  if (amacaddr != &mac_address[0])
+  {
+    memcpy(&mac_address, amacaddr, 6);
+  }
+
+	if (!regs) // might be called before Init();
+	{
+	  return;
+	}
 
 	regs->MAC_ADDR0_LOW = ((uint32_t) amacaddr[3] << 24) | ((uint32_t) amacaddr[2] << 16)
 			                  | ((uint32_t) amacaddr[1] << 8) | ((uint32_t) amacaddr[0]);

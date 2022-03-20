@@ -31,7 +31,9 @@
 #include "clockcnt.h"
 #include "platform.h"
 
-bool THwEth::Init(void* prxdesclist, uint32_t rxcnt, void* ptxdesclist, uint32_t txcnt)
+//----------------------------------------------------------------------
+
+bool THwEth::Init(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32_t txcnt)
 {
 	initialized = false;
 

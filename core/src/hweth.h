@@ -63,6 +63,22 @@
 
 #define HWETH_PHY_SPEEDINFO_MASK    (HWETH_PHY_SPEEDINFO_100M | HWETH_PHY_SPEEDINFO_FULLDX)
 
+#define HWETH_PMEM_HEAD_SIZE        32
+
+typedef struct TPacketMem
+{
+  uint8_t       idx;
+  uint8_t       flags;
+  uint16_t      datalen;
+  uint8_t       extra[12];
+  uint8_t       _reserved[4];
+  TPacketMem *  next;    // this is reserved for the applications
+  uint64_t      timestamp_ns;
+
+  uint8_t       data[HWETH_MAX_PACKET_SIZE];
+//
+} TPacketMem, * PPacketMem;
+
 class THwEth_pre
 {
 public: // settings
@@ -100,6 +116,7 @@ public:
 	uint32_t      descmemsize = 0;
 
 	virtual ~THwEth_pre() { }
+
 };
 
 #endif // ndef HWETH_H_PRE_
@@ -127,8 +144,10 @@ public: // mandatory
 	void               SetSpeed(bool speed100)   { }
 	void               SetDuplex(bool full)      { }
 
-	bool               TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen) { return false; }
-	void               ReleaseRxBuf(uint32_t idx) { }
+	bool               TryRecv(TPacketMem * * pmem) { return false; }
+	void               ReleaseRxBuf(TPacketMem * pmem) { }
+	void               AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen) { }
+
 	bool               TrySend(uint32_t * pidx, void * pdata, uint32_t datalen) { return false; }
 	uint64_t           GetTimeStamp(uint32_t idx) { return 0; }
 

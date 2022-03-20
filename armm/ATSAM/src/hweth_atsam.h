@@ -48,10 +48,10 @@ class THwEth_atsam : public THwEth_pre
 public:
 	bool               InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32_t txcnt);
 
-	void               AssignRxBuf(uint32_t idx, void * pdata, uint32_t datalen);
+  void               AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen);
 
-	bool               TryRecv(uint32_t * pidx, void * * ppdata, uint32_t * pdatalen);
-	void               ReleaseRxBuf(uint32_t idx);
+  bool               TryRecv(TPacketMem * * pmem);
+  void               ReleaseRxBuf(TPacketMem * pmem);
 	bool               TrySend(uint32_t * pidx, void * pdata, uint32_t datalen);
 
 	void               Start();
