@@ -253,14 +253,28 @@ void TUifCdcUartControl::Run()
 	uint8_t c;
 
 	unsigned dma_write_idx = sizeof(serial_rxbuf) - uart->rxdma->Remaining();
-	if (dma_write_idx >= sizeof(serial_rxbuf)) // should not happen
+	if (dma_write_idx >= sizeof(serial_rxbuf)) // might happen on DMA linked list transition
 	{
 		dma_write_idx = 0;
 	}
 
+#define TRACE_UART_RX 0
+
+#if TRACE_UART_RX
+	bool newdata = (dma_write_idx != serial_rxidx);
+  if (newdata)
+  {
+    TRACE("UART RX:");
+  }
+#endif
+
 	while (dma_write_idx != serial_rxidx)
 	{
 		c = serial_rxbuf[serial_rxidx];
+#if TRACE_UART_RX
+    TRACE(" %02X", c);
+#endif
+
 		if (!dataif->AddTxByte(c))
 		{
 			break;
@@ -269,6 +283,13 @@ void TUifCdcUartControl::Run()
 		++serial_rxidx;
 		if (serial_rxidx >= sizeof(serial_rxbuf))  serial_rxidx = 0;
 	}
+
+#if TRACE_UART_RX
+  if (newdata)
+  {
+    TRACE("\r\n");
+  }
+#endif
 
 	dataif->SendTxBytes(); // send if there are any and it is possible
 
@@ -321,8 +342,9 @@ bool TUifCdcUartData::HandleTransferEvent(TUsbEndpoint * aep, bool htod)
 	if (htod)
 	{
 		usb_rxlen = ep_input.ReadRecvData(&usb_rxbuf[0], sizeof(usb_rxbuf));
-		//TRACE("%i byte VCP data arrived\r\n", usb_rxlen);
+
 #if 0
+    TRACE("%i byte VCP data arrived\r\n", usb_rxlen);
 		usb_rxbuf[usb_rxlen] = 0; // terminate the string (array length + 4 required!)
 		TRACE("%s\r\n", &usb_rxbuf[0]);
 #endif
@@ -359,7 +381,18 @@ bool TUifCdcUartData::SendTxBytes()
 		// there is something to send, try to send it
 		if (ready_to_send)
 		{
-			ep_output.StartSendData(&usb_txbuf[usb_txbufidx], usb_txlen);
+      #if 0
+		    TRACE("<");
+		    for (unsigned n = 0; n < usb_txlen; ++n)
+		    {
+		      char c = usb_txbuf[usb_txbufidx][n];
+		      if (c < 32) c = '?';
+		      TRACE("%c", c);
+		    }
+        TRACE(">");
+      #endif
+
+			ep_output.StartSendData(&usb_txbuf[usb_txbufidx][0], usb_txlen);
 			ready_to_send = false;
 
 			// change the buffer

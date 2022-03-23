@@ -150,11 +150,21 @@ bool THwUsbEndpoint_stm32::ConfigureHwEp()
 
 	// allocate the packet memory
 
+	// 4 byte gaps added between the buffer allocations.
+	// Without this gaps the sending was sometimes faulty, Maybe because of the extra
+	// CRC data written by the hardware ?
+
 	txbufoffs = usbctrl->pma_mem_end;
-	usbctrl->pma_mem_end += dtoh_len;
+	if (dtoh_len)
+	{
+	  usbctrl->pma_mem_end += dtoh_len + 4;
+	}
 
 	rxbufoffs = usbctrl->pma_mem_end;
-	usbctrl->pma_mem_end += htod_len;
+  if (htod_len)
+  {
+    usbctrl->pma_mem_end += htod_len + 4;
+  }
 
 	// setup the pointers
 
@@ -266,7 +276,14 @@ int THwUsbEndpoint_stm32::StartSendData(void * buf, unsigned len)
 	uint16_t  sendlen = len;
 	if (sendlen > maxlen)  sendlen = maxlen;
 
-	uint16_t remaining = sendlen;
+	uint16_t copylen = ((sendlen + 1) & 0xFFFE);  // copy 2 byte units only
+
+#if 0
+	if (((*preg >> 4) & 3) == 3)
+	{
+	  TRACE("WARNING: EP(%i) is still sending!\r\n", index);
+	}
+#endif
 
 	//strace("  sending %i bytes...\r\n", remaining);
 
@@ -275,36 +292,39 @@ int THwUsbEndpoint_stm32::StartSendData(void * buf, unsigned len)
 #if HWUSB_16_32
 
 	pdst += pdesc->ADDR_TX;  // ADDR_TX in bytes but this will increment words !
+  uint16_t pdstend = pdst + copylen; // double steps here so the shift by 1 is missing
 	uint16_t * psrc = (uint16_t *)(buf);
 	// do the copiing:
-	while (remaining >= 2)
+	while (pdst < pdstend)
 	{
-		*pdst++ = *psrc++;
-		++pdst;
-		remaining -= 2;
+		*pdst = *psrc++;
+		pdst += 2;
   }
 
 #else
 
 	pdst += (pdesc->ADDR_TX / 2);
-	uint8_t * psrc = (uint8_t *)(buf);
+  uint16_t * pdstend = pdst + (copylen >> 1);
 
-	while (remaining >= 2)
-	{
-		uint16_t tmp16;
-		tmp16 = *psrc++;  // do the copiing bytewise (to handle unaligned buffers on Cortex-M0 processors):
-		tmp16 |= ((*psrc++) << 8);
-		*pdst++ = tmp16;
-		remaining -= 2;
-  }
+  #if __CORTEX_M == 0
+    uint8_t * psrc = (uint8_t *)(buf);
+
+    while (pdst < pdstend)
+    {
+      register uint16_t tmp16;
+      tmp16 = *psrc++;  // do the copiing bytewise (to handle unaligned buffers on Cortex-M0 processors):
+      tmp16 |= ((*psrc++) << 8);
+      *pdst++ = tmp16;
+    }
+  #else
+    uint16_t * psrc = (uint16_t *)(buf);
+    while (pdst < pdstend)
+    {
+      *pdst++ = *psrc++;
+    }
+  #endif
 
 #endif
-
-	if (remaining == 1)
-	{
-		// the last byte
-		*pdst = *psrc;
-	}
 
 	// signalize count
 	pdesc->COUNT_TX = sendlen;
