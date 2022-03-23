@@ -83,6 +83,9 @@ public:
 	HW_CAN_REGS *      regs = nullptr;
 	uint8_t            filtercnt = 0;
 
+  void                      UpdateErrorCounters();
+  ALWAYS_INLINE uint32_t    ReadPsr(); // special function to handle the reset on read fields
+
 public:
 	// CAN Message Memory
 

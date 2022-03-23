@@ -248,20 +248,23 @@ void THwCan_atsam_v2::Disable()
 
 void THwCan_atsam_v2::HandleTx()
 {
+  unsigned pm = __get_PRIMASK();  // save interrupt disable status
+  __disable_irq();
+
 	while (HasTxMessage())
 	{
 		uint32_t txfs = regs->TXFQS.reg;  // store Tx FIFO status register
 
 		if (txfs & CAN_TXFQS_TFQF) // is the FIFO full?
 		{
-			return;
+			break;
 		}
 
 		// ok, we can send the message
 		TCanMsg msg;
 		if (!TryGetTxMessage(&msg))
 		{
-			return; // should not happen.
+			break; // should not happen.
 		}
 
 		uint8_t tpi = ((txfs >> 16) & 0x1F); // get the put index
@@ -281,6 +284,8 @@ void THwCan_atsam_v2::HandleTx()
 	}
 
 	bus_error_count += regs->ECR.bit.CEL;  // reading this clears the CEL (bits16..23) !
+
+  __set_PRIMASK(pm); // restore interrupt disable status
 }
 
 void THwCan_atsam_v2::HandleRx()
@@ -307,7 +312,27 @@ void THwCan_atsam_v2::HandleRx()
 		*((uint32_t *)&(msg.data[4])) = rxmb->DATAH;
 		uint32_t dt = rxmb->DLCTS;
 		msg.len = ((dt >> 16) & 15);
-		msg.timestamp = CLOCKCNT; // TODO: use the CAN timestamp
+
+    if (raw_timestamp)
+    {
+      msg.timestamp = (dt & 0xFFFF);
+    }
+    else
+    {
+      // get the time reference
+
+      unsigned t0, t1;
+      uint16_t cantimer;
+      do
+      {
+        t0 = CLOCKCNT;
+        cantimer = regs->TSCV.reg;
+        t1 = CLOCKCNT;
+      }
+      while (t1-t0 > 100);  // repeat if it was interrupted
+
+      msg.timestamp = t1 - canbitcpuclocks * uint16_t(cantimer - uint16_t(dt & 0xFFFF));
+    }
 
 		++rx_msg_counter;
 
@@ -319,8 +344,19 @@ void THwCan_atsam_v2::HandleRx()
 
 void THwCan_atsam_v2::AcceptListClear()
 {
+  bool wasenabled = Enabled();
+  if (wasenabled)
+  {
+    Disable();
+  }
+
 	filtercnt = 0;
 	memset((void *)&stdfilters[0], 0, sizeof(stdfilters));
+
+  if (wasenabled)
+  {
+    Enable();
+  }
 }
 
 void THwCan_atsam_v2::AcceptAdd(uint16_t cobid, uint16_t amask)
@@ -341,6 +377,46 @@ void THwCan_atsam_v2::AcceptAdd(uint16_t cobid, uint16_t amask)
 	stdfilters[filtercnt] = fw;
 
 	++filtercnt;
+}
+
+uint32_t THwCan_atsam_v2::ReadPsr()  // updates the CAN error counters
+{
+  uint32_t  psr = regs->PSR.reg;  // resets the LEC to 7 when read
+  unsigned  lec = (psr & 7);
+
+  if ((0 == lec) || (7 == lec)) // the fast path, most probable case
+  {
+    //
+  }
+  else if (3 == lec)
+  {
+    ++errcnt_ack;
+  }
+  else if (1 == lec)
+  {
+    ++errcnt_stuff;
+  }
+  else if (2 == lec)
+  {
+    ++errcnt_form;
+  }
+  else if (6 == lec)
+  {
+    ++errcnt_crc;
+  }
+
+  return psr;
+}
+
+void THwCan_atsam_v2::UpdateErrorCounters()
+{
+  uint32_t ecr = regs->ECR.reg;
+  acterr_rx = ((ecr >>  8) & 0xFF);
+  acterr_tx = ((ecr >>  0) & 0xFF);
+
+  if (ReadPsr()) // updates the error counters inside
+  {
+  }
 }
 
 bool THwCan_atsam_v2::Enabled()

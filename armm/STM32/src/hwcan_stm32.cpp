@@ -90,7 +90,7 @@ bool THwCan_stm32::HwInit(int adevnum)
 	regs->MCR = 0
 		| (0 << 16)   // DBF: Debug freeze, 0 = can is working during debug, 1 = stopped during debug
 		| (0 << 15)   // RESET: 1 = force reset
-		| (0 <<  7)   // TTCM: time triggered mode, 0 = disabled
+		| (1 <<  7)   // TTCM: time triggered mode, 0 = disabled, 1 = enabled (required for timestamping)
 		| (1 <<  6)   // ABOM: Automatic bus-off management, 1 = busoff state is left automatically
 		| (0 <<  5)   // AWUM: Automatic wakeup mode, 0 = off
 		| (0 <<  4)   // NART: No automatic retransmission, 0 = automatic retransmission
@@ -158,6 +158,9 @@ void THwCan_stm32::Enable()
 
 void THwCan_stm32::HandleTx()
 {
+  unsigned pm = __get_PRIMASK();  // save interrupt disable status
+  __disable_irq();
+
 	while (HasTxMessage())
 	{
 		uint32_t tsr = regs->TSR;
@@ -168,7 +171,7 @@ void THwCan_stm32::HandleTx()
 			TCanMsg msg;
 			if (!TryGetTxMessage(&msg))
 			{
-				return; // should not happen.
+				break; // should not happen.
 			}
 
 			CAN_TxMailBox_TypeDef * txmb = &regs->sTxMailBox[tmi];
@@ -186,7 +189,13 @@ void THwCan_stm32::HandleTx()
 
 		  ++tx_msg_counter;
 		}
+		else
+		{
+		  break;
+		}
 	}
+
+  __set_PRIMASK(pm); // restore interrupt disable status
 }
 
 void THwCan_stm32::HandleRx()
@@ -207,7 +216,14 @@ void THwCan_stm32::HandleRx()
 		*((uint32_t *)&(msg.data[4])) = rxmb->RDHR;
 		uint32_t rdt = rxmb->RDTR;
 		msg.len = (rdt & 15);
-		msg.timestamp = CLOCKCNT; // TODO: use the CAN timestamp
+    if (raw_timestamp)
+    {
+      msg.timestamp = (rdt >> 16);
+    }
+    else
+    {
+      msg.timestamp = CLOCKCNT;  // no reference timer on this CAN HW ...
+    }
 
 		++rx_msg_counter;
 

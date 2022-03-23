@@ -292,7 +292,7 @@ int THwUsbEndpoint_stm32::StartSendData(void * buf, unsigned len)
 #if HWUSB_16_32
 
 	pdst += pdesc->ADDR_TX;  // ADDR_TX in bytes but this will increment words !
-  uint16_t pdstend = pdst + copylen; // double steps here so the shift by 1 is missing
+  uint16_t * pdstend = pdst + copylen; // double steps here so the shift by 1 is missing
 	uint16_t * psrc = (uint16_t *)(buf);
 	// do the copiing:
 	while (pdst < pdstend)
