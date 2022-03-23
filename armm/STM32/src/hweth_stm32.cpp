@@ -371,6 +371,19 @@ bool THwEth_stm32::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 	return false;
 }
 
+bool THwEth_stm32::SendFinished(uint32_t idx)
+{
+  if (idx >= tx_desc_count)
+  {
+    return false;
+  }
+
+  HW_ETH_DMA_DESC * pdesc = (HW_ETH_DMA_DESC *)regs->DMA_CURHOST_TRANS_DES;
+  pdesc += idx;
+
+  return ((pdesc->DES0 & HWETH_DMADES_OWN) == 0);
+}
+
 void THwEth_stm32::Start(void)
 {
 	// Clear all MAC interrupts

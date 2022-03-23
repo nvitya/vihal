@@ -264,6 +264,7 @@ public:
 	bool               TryRecv(TPacketMem * * pmem);
 	void               ReleaseRxBuf(TPacketMem * pmem);
 	bool               TrySend(uint32_t * pidx, void * pdata, uint32_t datalen);
+	bool               SendFinished(uint32_t idx);
 
 	void               StartMiiWrite(uint8_t reg, uint16_t data);
 	void               StartMiiRead(uint8_t reg);

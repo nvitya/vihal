@@ -65,6 +65,8 @@
 
 #define HWETH_PMEM_HEAD_SIZE        32
 
+#define PMEMFLAG_KEEP             0x01  // do not release the Rx Packet
+
 typedef struct TPacketMem
 {
   uint8_t       idx;
@@ -149,6 +151,7 @@ public: // mandatory
 	void               AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen) { }
 
 	bool               TrySend(uint32_t * pidx, void * pdata, uint32_t datalen) { return false; }
+  bool               SendFinished(uint32_t idx) { return false; }
 	uint64_t           GetTimeStamp(uint32_t idx) { return 0; }
 
 	void               StartMiiWrite(uint8_t reg, uint16_t data) { }
