@@ -190,6 +190,23 @@ int THwQspi_atsam_v2::StartReadData(unsigned acmd, unsigned address, void * dstp
 	unsigned trftyp;
 	unsigned dcnt;
 
+  trftyp = 0;
+  dcnt = ((acmd >> 20) & 0xF);
+  if (8 == dcnt)  dcnt = dummysize;
+  if (4 == multi_line_count)
+  {
+    dcnt <<= 1;
+  }
+  else if (2 == multi_line_count)
+  {
+    dcnt <<= 2;
+  }
+  else
+  {
+    dcnt <<= 3;
+  }
+
+#if 1
 	if (0xEB == cmd)
 	{
 		// special quad read command with 1 byte opcode
@@ -197,27 +214,20 @@ int THwQspi_atsam_v2::StartReadData(unsigned acmd, unsigned address, void * dstp
 			| (1 <<  6)  // enable option
 			| (3 <<  8)  // 8 bit option data (2 cycles)
 		;
-
-		dcnt = 4;
+		dcnt -= 2;
 		trftyp = 1;
 	}
 	else if (0xBB == cmd)
 	{
-		dcnt = 4;
-		trftyp = 1;
+		//dcnt = 4;
+		//trftyp = 1;
 	}
 	else if (0x0B == cmd)
 	{
-		dcnt = 8;
-		trftyp = 1;
+		//dcnt = 8;
+		//trftyp = 1;
 	}
-	else
-	{
-		dcnt = ((acmd >> 20) & 0xF);
-		if (8 == dcnt)  dcnt = dummysize;
-		dcnt <<= 3;
-		trftyp = 0;
-	}
+#endif
 
 	ifr |= ((trftyp << 12) | (dcnt << 16));
 

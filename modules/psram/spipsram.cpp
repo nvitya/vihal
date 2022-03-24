@@ -23,6 +23,7 @@
 // created:  2022-03-23
 // authors:  nvitya
 
+#include "clockcnt.h"
 #include "spipsram.h"
 //#include "traces.h"
 
@@ -33,15 +34,26 @@ bool TSpiPsram::Init()
   if (qspi && qspi->initialized)
   {
     // using qspi
+    if (2 == qspi->multi_line_count)  qspi->multi_line_count = 1;  // dual is not supported.
+    effective_speed = qspi->speed * qspi->multi_line_count;
   }
   else if (spi && spi->initialized)
   {
     // using spi
+    effective_speed = spi->speed;
   }
   else
   {
     return false;
   }
+
+#if 1
+  delay_us(150);
+
+  ResetChip();
+
+  delay_us(5);
+#endif
 
   // read ID value
   ReadIdCode(); // might be invalid.
@@ -56,245 +68,241 @@ bool TSpiPsram::Init()
     }
   }
 
+  pagemask = pagesize - 1;
+
   // process ID code
 
-  if ((idcode == 0) || (idcode == 0x00FFFFFF))
+  bytesize = ((2048*1024) << ((idcode >> 21) & 7));
+
+  // calculate max chunk size from the maximum CE low time
+  unsigned bits_pro_cs_low = ((effective_speed / 1000) * t_cem_ns) / 1000000;
+  int max_bytes_pro_cs = (bits_pro_cs_low >> 3) - 4;
+  if (max_bytes_pro_cs < 4)  max_bytes_pro_cs = 4;
+
+  maxchunksize = pagesize;
+  while (maxchunksize > max_bytes_pro_cs)
   {
-    // SPI communication error
-    return false;
+    maxchunksize >>= 1;
   }
 
-  bytesize = (1 << (idcode >> 16));
-
   initialized = true;
+  phase = 0;
 
   return true;
 }
 
-bool TSpiPsram::StartReadMem(unsigned aaddr, void * adstptr, unsigned alen)
+bool TSpiPsram::AddTransaction(TPsramTra * atra)
 {
-  if (!initialized)
+  if (curtra)
   {
-    errorcode = HWERR_NOTINIT;
-    completed = true;
-    return false;
+    // search the last tra
+    TPsramTra * tra = curtra;
+    while (tra->next)
+    {
+      if (tra == atra)
+      {
+        break;
+      }
+      tra = tra->next;
+    }
+
+    if (tra == atra) // already added
+    {
+      return false; // already added
+    }
+
+    tra->next = atra;
+  }
+  else
+  {
+    // set as first
+    curtra = atra;
   }
 
-  if (!completed)
-  {
-    errorcode = HWERR_BUSY;  // this might be overwriten later
-    return false;
-  }
+  atra->completed = false;
+  atra->error = 0;
+  atra->next = nullptr;
 
-  dataptr = (uint8_t *)adstptr;
-  datalen = alen;
-  address = aaddr;
-
-  state = PSRAM_STATE_READMEM; // read memory
-  phase = 0;
-
-  errorcode = 0;
-  completed = false;
-
-  Run();
-
-  return (errorcode == 0);
+  return true;
 }
 
-bool TSpiPsram::StartWriteMem(unsigned aaddr, void* asrcptr, unsigned alen)
+void TSpiPsram::StartReadMem(TPsramTra * atra, unsigned aaddr, void * adstptr, unsigned alen)
 {
-  if (!initialized)
+  if (!AddTransaction(atra))
   {
-    errorcode = HWERR_NOTINIT;
-    completed = true;
-    return false;
+    // application error: already added
+    return;
   }
 
-  if (!completed)
-  {
-    errorcode = HWERR_BUSY;  // this might be overwriten later
-    return false;
-  }
-
-  dataptr = (uint8_t *)asrcptr;
-  datalen = alen;
-  address = aaddr;
-
-  state = PSRAM_STATE_WRITEMEM; // write page
-  phase = 0;
-
-  errorcode = 0;
-  completed = false;
+  atra->iswrite = 0;
+  atra->address = aaddr;
+  atra->dataptr = (uint8_t *)adstptr;
+  atra->datalen = alen;
 
   Run();
-
-  return (errorcode == 0);
 }
 
-void TSpiPsram::WaitForComplete()
+void TSpiPsram::StartWriteMem(TPsramTra * atra, unsigned aaddr, void * asrcptr, unsigned alen)
 {
-  while (!completed)
+  if (!AddTransaction(atra))
+  {
+    // application error: already added
+    return;
+  }
+
+  atra->iswrite = 1;
+  atra->address = aaddr;
+  atra->dataptr = (uint8_t *)asrcptr;
+  atra->datalen = alen;
+
+  Run();
+}
+
+void TSpiPsram::WaitFinish(TPsramTra * atra)
+{
+  while (!atra->completed)
   {
     Run();
   }
 }
 
-bool TSpiPsram::ReadIdCode()
+void TSpiPsram::RunTransaction()
 {
-  if (qspi)
+  if (!curtra->completed && phase)
   {
-    qspi->StartReadData(0x9F, 0, &rxbuf[0], 4);
-    qspi->WaitFinish();
-  }
-  else
-  {
-    spi->StartTransfer(0x9F, 0, SPITR_CMD1, 4, nullptr, &rxbuf[0]);
-    spi->WaitFinish();
+    if (qspi)
+    {
+      qspi->Run();
+    }
+    else if (spi)
+    {
+      spi->Run();
+    }
+    else
+    {
+      curtra->error = HWERR_NOTINIT;
+      curtra->completed = true; // transaction finished.
+      return;
+    }
   }
 
-	idcode = (*(unsigned *)&(rxbuf[0]) & 0xFFFFFF);
-	if ((idcode == 0) || (idcode == 0x00FFFFFF))
-	{
-		// SPI communication error
-		return false;
-	}
+  if (0 == phase)  // transaction start
+  {
+    istx = (0 != curtra->iswrite);
+    address = curtra->address;
+    dataptr = (uint8_t *)curtra->dataptr;
+    datalen = curtra->datalen;
+    remaining = datalen;
+    phase = 10;
+  }
 
-	return true;
+  switch (phase)
+  {
+  case 10: // read next chunk
+    if (remaining == 0)
+    {
+      // finished.
+      curtra->completed = true;
+      return;
+    }
+
+    // start data phase
+
+    chunksize = pagesize - (address & pagemask); // page size
+    if (chunksize > maxchunksize)  chunksize = maxchunksize;
+    if (chunksize > remaining)     chunksize = remaining;
+
+    if (istx)
+    {
+      CmdWrite();
+    }
+    else
+    {
+      CmdRead();
+    }
+    phase = 11;
+    break;
+
+  case 11:  // wait for completion
+    if (!CmdFinished())
+    {
+      // TODO: timeout handling
+      return;
+    }
+
+    // read next chunk
+    address   += chunksize;
+    dataptr   += chunksize;
+    remaining -= chunksize;
+    phase = 10; RunTransaction();  // phase jump
+    return;
+  }
 }
 
 void TSpiPsram::Run()
 {
-  if (qspi)
-  {
-    qspi->Run();
-  }
-  else if (spi)
-  {
-    spi->Run();
-  }
-  else
+  if (!curtra)
   {
     return;
   }
 
-	if (0 == state)
-	{
-		// idle
-		return;
-	}
+  RunTransaction();
 
-	if (PSRAM_STATE_READMEM == state)  // read memory
-	{
-    switch (phase)
-    {
-      case 0: // start
-        remaining = datalen;
-        phase = 2;
-        // no break !
-
-      case 2: // start read next data chunk
-        if (remaining == 0)
-        {
-          // finished.
-          phase = 10; Run();  // phase jump
-          return;
-        }
-
-        // start data phase
-
-        chunksize = pagesize - (address & pagemask); // page size
-        if (chunksize > remaining)  chunksize = remaining;
-
-        CmdRead();
-        phase = 3;
-        break;
-
-      case 3:  // wait for completion
-        if (CmdFinished())
-        {
-          // read next chunk
-          address   += chunksize;
-          dataptr   += chunksize;
-          remaining -= chunksize;
-          phase = 2; Run();  // phase jump
-          return;
-        }
-
-        // TODO: timeout handling
-
-        break;
-
-      case 10: // finished
-        completed = true;
-        state = 0; // go to idle
-        break;
-    }
-	}
-	else if (PSRAM_STATE_WRITEMEM == state)  // write memory
-	{
-		switch (phase)
-		{
-			case 0: // initialization
-				remaining = datalen;
-				++phase;
-				break;
-
-			// write next chunk
-			case 1: // start wirte next data chunk
-				if (remaining == 0)
-				{
-					// finished.
-					phase = 20;  Run();  // phase jump
-					return;
-				}
-
-        chunksize = pagesize - (address & pagemask); // page size
-        if (chunksize > remaining)  chunksize = remaining;
-
-        CmdWrite();
-				++phase;
-				break;
-
-			case 2:
-        if (!CmdFinished())
-				{
-          // TODO: timeout
-					return;
-				}
-
-				// Write finished.
-				address += chunksize;
-				dataptr += chunksize;
-				remaining -= chunksize;
-				phase = 1; Run();  // phase jump
-
-				break;
-
-			case 20: // finished
-				completed = true;
-				state = 0; // go to idle
-				break;
-		}
-	}
-}
-
-
-bool TSpiPsram::CmdReadStatus()
-{
-  rxbuf[0] = 0xFF;
-  rxbuf[1] = 0xFF;
-  rxbuf[2] = 0xFF;
-  rxbuf[3] = 0xFF;
-
-  if (qspi)
+  if (curtra->completed)
   {
-    qspi->StartReadData(0x05, 0, &rxbuf[0], 4);  // some QSPI drivers support only 32 bit access
+    // the callback function might add the same transaction object as new
+    // therefore we have to remove the transaction from the chain before we call the callback
+    TPsramTra * ptra = curtra; // save the transaction pointer for the callback
+
+    curtra->completed = true;
+    curtra = curtra->next; // advance to the next transaction
+    phase = 0;
+
+    // call the callback
+    PCbClassCallback pcallback = PCbClassCallback(ptra->callback);
+    if (pcallback)
+    {
+      TCbClass * obj = (TCbClass *)(ptra->callbackobj);
+      (obj->*pcallback)(ptra->callbackarg);
+    }
   }
   else
   {
-    spi->StartTransfer(0x05, 0, SPITR_CMD1, 1, nullptr, &rxbuf[0]);
+    // operate the SPI as soon as possible:
+    if (qspi)
+    {
+      qspi->Run();
+    }
+    else if (spi)
+    {
+      spi->Run();
+    }
   }
-	return true;
+}
+
+bool TSpiPsram::ReadIdCode()
+{
+  // the read ID code command is different from the SPI FLASH: requires address, and the result is longer
+  if (qspi)
+  {
+    qspi->StartReadData(0x9F | QSPICM_ADDR3, 0, &rxbuf[0], 8);
+    qspi->WaitFinish();
+  }
+  else
+  {
+    spi->StartTransfer(0x9F, 0, SPITR_CMD1 | SPITR_ADDR3, 8, nullptr, &rxbuf[0]);
+    spi->WaitFinish();
+  }
+
+  idcode = *(unsigned *)&(rxbuf[0]);
+  idcode2 = *(unsigned *)&(rxbuf[4]);
+  if ((idcode == 0) || (idcode == 0xFFFFFFFF))
+  {
+    // SPI communication error
+    return false;
+  }
+
+  return true;
 }
 
 void TSpiPsram::ResetChip()
@@ -335,8 +343,7 @@ void TSpiPsram::CmdRead()
   {
     if (qspi->multi_line_count == 4)
     {
-      // the 0xEB does not work sometime, requires mode implementation
-      qspi->StartReadData(0xEB | QSPICM_SMM | QSPICM_ADDR3 | QSPICM_DUMMY3, address, dataptr, chunksize);
+      qspi->StartReadData(0xEB | QSPICM_SMM | QSPICM_ADDR | QSPICM_DUMMY3, address, dataptr, chunksize);
     }
     else
     {
@@ -345,8 +352,7 @@ void TSpiPsram::CmdRead()
   }
   else
   {
-    // normal read command up to 30 MHz, no dummy
-    spi->StartTransfer(0x03, address, SPITR_CMD1 | SPITR_ADDR3, datalen, nullptr, dataptr);
+    spi->StartTransfer(0x0B, address, SPITR_CMD1 | SPITR_ADDR3 | SPITR_EXTRA1, datalen, nullptr, dataptr);
   }
 }
 
@@ -354,7 +360,7 @@ void TSpiPsram::CmdWrite()
 {
   if (qspi)
   {
-    if ((qspi->multi_line_count == 4) && ((idcode & 0xFF) != 0xC2))
+    if (qspi->multi_line_count == 4)
     {
       qspi->StartWriteData(0x38 | QSPICM_SMM | QSPICM_ADDR, address, dataptr, chunksize);
     }

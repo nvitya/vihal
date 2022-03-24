@@ -18,10 +18,14 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     spipsram.h
-// brief:    PSRAM Memory Handling with SPI/QSPI
-// created:  2022-03-23
-// authors:  nvitya
+/* file:     spipsram.h
+ * brief:    PSRAM Memory Handling with SPI/QSPI
+ * created:  2022-03-23
+ * authors:  nvitya
+ * notes:
+ *   The PSRAM devices allow only 8 microsecond long transmission (tCEM = Maximum CE low time)
+ *   so best driven with QSPI HW, otherwise hard to guarantee this tight timing
+*/
 
 #ifndef SPIPSRAM_H_
 #define SPIPSRAM_H_
@@ -34,9 +38,24 @@
 
 #define PSRAM_STATE_READMEM   1
 #define PSRAM_STATE_WRITEMEM  2
-#define PSRAM_STATE_ERASE     3
 
-//#define PSRAM_MAX_CHUNK  (16*1024*1024)
+struct TPsramTra
+{
+  bool               completed;
+  uint8_t            iswrite;  // 0 = read, 1 = write
+  uint8_t            _pad[2];
+  int                error;
+  uint32_t           address;
+
+  uint8_t *          dataptr;
+  unsigned           datalen;
+
+  PCbClassCallback   callback = nullptr;
+  void *             callbackobj = nullptr;
+  void *             callbackarg = nullptr;
+
+  TPsramTra *  next;
+};
 
 class TSpiPsram
 {
@@ -44,39 +63,45 @@ public: // settings
 	// Required HW resources
 	THwSpi *       spi = nullptr;
 	THwQspi *      qspi = nullptr;
+  unsigned       pagesize = 1024;
+	unsigned       t_cem_ns = 8000;  // maximum allowed CE low time [ns]
 
 public:
   unsigned       idcode = 0;
+  unsigned       idcode2 = 0;
   unsigned       bytesize = 0; // auto-detected from JEDEC ID
 
-  unsigned       pagesize = 1024;
   unsigned       pagemask = 0x3FF;
 
   bool           initialized = false;
-  bool           completed = true;
-  int            errorcode = 0;
+
+  TPsramTra *    curtra = nullptr;
 
 	bool           Init();
-	void           Run();
-  void           WaitForComplete();
+  void           Run();
+  void           RunTransaction();
+  void           WaitFinish(TPsramTra * atra);
+  void           StartReadMem(TPsramTra * atra, unsigned aaddr, void * adstptr, unsigned alen);
+  void           StartWriteMem(TPsramTra * atra, unsigned aaddr, void * asrcptr, unsigned alen); // must be erased before
 
-  bool           StartReadMem(unsigned aaddr, void * adstptr, unsigned alen);
-  bool           StartWriteMem(unsigned aaddr, void * asrcptr, unsigned alen); // must be erased before
+  bool           AddTransaction(TPsramTra * atra);  // returns false if already added
 
 public:
+
+  unsigned       maxchunksize = 1024;
 
   bool           ReadIdCode(); // done automatically in init
 	void           ResetChip();
 
 protected:
   // state machine
-  int            state = 0;
   int            phase = 0;
 
-  unsigned       curcmdlen = 0;
+  unsigned       effective_speed = 0;
   unsigned       chunksize = 0;
-  unsigned       maxchunksize = 1024;
+  unsigned       curcmdlen = 0;
 
+  bool           istx = false;
   uint8_t *      dataptr = nullptr;
   unsigned       datalen = 0;
   unsigned       address = 0;
@@ -90,7 +115,6 @@ protected:
 
 	void CmdRead();
 	void CmdWrite();
-	bool CmdReadStatus();
 
 	bool CmdFinished();
 
