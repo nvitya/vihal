@@ -310,6 +310,11 @@ bool TSpiPsram::ReadIdCode()
     return false;
   }
 
+  if (rxbuf[1] != 0x5D)  // it must be a "known good die"
+  {
+    return false;
+  }
+
   return true;
 }
 
@@ -388,7 +393,7 @@ void TSpiPsram::CmdRead()
   {
     if (qpimode)
     {
-      qspi->StartReadData(0xEB | QSPICM_MMM | QSPICM_ADDR | QSPICM_DUMMY2, address, dataptr, chunksize);
+      qspi->StartReadData(0xEB | QSPICM_MMM | QSPICM_ADDR | QSPICM_DUMMY3, address, dataptr, chunksize);
     }
     else if (qspi->multi_line_count == 4)
     {
@@ -401,7 +406,7 @@ void TSpiPsram::CmdRead()
   }
   else
   {
-    spi->StartTransfer(0x0B, address, SPITR_CMD1 | SPITR_ADDR3 | SPITR_EXTRA1, datalen, nullptr, dataptr);
+    spi->StartTransfer(0x0B, address, SPITR_CMD1 | SPITR_ADDR3 | SPITR_EXTRA1, chunksize, nullptr, dataptr);
   }
 }
 
@@ -411,7 +416,7 @@ void TSpiPsram::CmdWrite()
   {
     if (qpimode)
     {
-      qspi->StartReadData(0x02 | QSPICM_MMM | QSPICM_ADDR, address, dataptr, chunksize);
+      qspi->StartWriteData(0x02 | QSPICM_MMM | QSPICM_ADDR, address, dataptr, chunksize);
     }
     else if (qspi->multi_line_count == 4)
     {
