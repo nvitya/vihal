@@ -206,7 +206,7 @@ int THwQspi_atsam_v2::StartReadData(unsigned acmd, unsigned address, void * dstp
     dcnt <<= 3;
   }
 
-#if 1
+#if 0
 	if (0xEB == cmd)
 	{
 		// special quad read command with 1 byte opcode
@@ -220,12 +220,12 @@ int THwQspi_atsam_v2::StartReadData(unsigned acmd, unsigned address, void * dstp
 	else if (0xBB == cmd)
 	{
 		//dcnt = 4;
-		//trftyp = 1;
+		trftyp = 1;
 	}
 	else if (0x0B == cmd)
 	{
 		//dcnt = 8;
-		//trftyp = 1;
+		trftyp = 1;
 	}
 #endif
 

@@ -113,7 +113,7 @@ bool THwQspi_stm32::Init()
 	uint32_t tmp;
 
 	// CR
-	regs->CR = 0
+	tmp = 0
 	  | ((speeddiv - 1) << 24) // PRESCALER(8): clock prescaler
 	  | (0 << 23) // PMM: polling match mode
 	  | (0 << 22) // APMS: automatic poll mode stop
@@ -131,10 +131,12 @@ bool THwQspi_stm32::Init()
 	  | (0 <<  1) // ABORT: abort request
 	  | (0 <<  0) // EN: enable, enable later
 	;
+	if (datasample_late)  tmp |= (1 << 4);
+	regs->CR = tmp;
 
 	tmp = 0
 		| (23 << 16) // FSIZE(5): Flash memory size (in 2^(FSIZE+1) bytes)
-		| (0  <<  8) // CSHT(3): chip select high time, 0 = 1 cycles, 1 = 2 cycles ...
+		| (3  <<  8) // CSHT(3): chip select high time, 0 = 1 cycles, 1 = 2 cycles ...
 		| (0  <<  0) // CKMODE: 0 = idle clock low, 1 = idle clock high
 	;
 	if (idleclk_high)  tmp |= (1 << 0);
@@ -341,9 +343,17 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 
 	if (dmaused)
 	{
+	  if (0 == (remainingbytes & 3))
+	  {
+      xfer.bytewidth = 4;
+      xfer.count = (remainingbytes >> 2);
+	  }
+	  else
+	  {
+	    xfer.bytewidth = 1;
+	    xfer.count = remainingbytes;
+	  }
 		xfer.dstaddr = dstptr;
-		xfer.bytewidth = 1;
-		xfer.count = remainingbytes;
 		xfer.flags = 0;
 		rxdma.StartTransfer(&xfer);
 
@@ -495,9 +505,18 @@ int THwQspi_stm32::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 
 	if (dmaused)
 	{
+    if (0 == (remainingbytes & 3))
+    {
+      xfer.bytewidth = 4;
+      xfer.count = (remainingbytes >> 2);
+    }
+    else
+    {
+      xfer.bytewidth = 1;
+      xfer.count = remainingbytes;
+    }
+
 		xfer.srcaddr = srcptr;
-		xfer.bytewidth = 1;
-		xfer.count = remainingbytes;
 		xfer.flags = 0;
 		txdma.StartTransfer(&xfer);
 

@@ -75,6 +75,7 @@ public:	// settings
 
 	unsigned       speed = 8000000;  // default speed = 8MHz
 	bool           idleclk_high = true;
+	bool           datasample_late = false;
 
 	unsigned       addrlen = 3;
 	unsigned       modelen = 1;

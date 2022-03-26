@@ -50,6 +50,12 @@ bool TSpiPsram::Init()
 #if 1
   delay_us(150);
 
+  if (qspi && (qspi->multi_line_count == 4))
+  {
+    qpimode = true;
+    ResetChip();
+    qpimode = false;
+  }
   ResetChip();
 
   delay_us(5);
@@ -84,6 +90,8 @@ bool TSpiPsram::Init()
   {
     maxchunksize >>= 1;
   }
+
+  //EnterQpiMode();  // only when possible
 
   initialized = true;
   phase = 0;
@@ -309,11 +317,22 @@ void TSpiPsram::ResetChip()
 {
   if (qspi)
   {
-    qspi->StartWriteData(0x66, 0, nullptr, 0);
-    qspi->WaitFinish();
+    if (qpimode)
+    {
+      qspi->StartWriteData(0x66 | QSPICM_MMM, 0, nullptr, 0);
+      qspi->WaitFinish();
 
-    qspi->StartWriteData(0x99, 0, nullptr, 0);
-    qspi->WaitFinish();
+      qspi->StartWriteData(0x99 | QSPICM_MMM, 0, nullptr, 0);
+      qspi->WaitFinish();
+    }
+    else
+    {
+      qspi->StartWriteData(0x66, 0, nullptr, 0);
+      qspi->WaitFinish();
+
+      qspi->StartWriteData(0x99, 0, nullptr, 0);
+      qspi->WaitFinish();
+    }
   }
   else
   {
@@ -323,6 +342,32 @@ void TSpiPsram::ResetChip()
     spi->StartTransfer(0x99, 0, SPITR_CMD1, 0, nullptr, nullptr);
     spi->WaitFinish();
   }
+}
+
+void TSpiPsram::EnterQpiMode()
+{
+  if (!qspi || (qspi->multi_line_count != 4))
+  {
+    qpimode = false;
+    return;
+  }
+
+  qspi->StartWriteData(0x35, 0, nullptr, 0);
+  qspi->WaitFinish();
+  qpimode = true;
+}
+
+void TSpiPsram::ExitQpiMode()
+{
+  if (!qspi || (qspi->multi_line_count != 4))
+  {
+    qpimode = false;
+    return;
+  }
+
+  qspi->StartWriteData(0xF5 | QSPICM_MMM, 0, nullptr, 0);
+  qspi->WaitFinish();
+  qpimode = false;
 }
 
 bool TSpiPsram::CmdFinished()
@@ -341,7 +386,11 @@ void TSpiPsram::CmdRead()
 {
   if (qspi)
   {
-    if (qspi->multi_line_count == 4)
+    if (qpimode)
+    {
+      qspi->StartReadData(0xEB | QSPICM_MMM | QSPICM_ADDR | QSPICM_DUMMY2, address, dataptr, chunksize);
+    }
+    else if (qspi->multi_line_count == 4)
     {
       qspi->StartReadData(0xEB | QSPICM_SMM | QSPICM_ADDR | QSPICM_DUMMY3, address, dataptr, chunksize);
     }
@@ -360,7 +409,11 @@ void TSpiPsram::CmdWrite()
 {
   if (qspi)
   {
-    if (qspi->multi_line_count == 4)
+    if (qpimode)
+    {
+      qspi->StartReadData(0x02 | QSPICM_MMM | QSPICM_ADDR, address, dataptr, chunksize);
+    }
+    else if (qspi->multi_line_count == 4)
     {
       qspi->StartWriteData(0x38 | QSPICM_SMM | QSPICM_ADDR, address, dataptr, chunksize);
     }

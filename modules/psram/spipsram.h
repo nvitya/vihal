@@ -74,6 +74,7 @@ public:
   unsigned       pagemask = 0x3FF;
 
   bool           initialized = false;
+  bool           qpimode = false;
 
   TPsramTra *    curtra = nullptr;
 
@@ -92,6 +93,8 @@ public:
 
   bool           ReadIdCode(); // done automatically in init
 	void           ResetChip();
+	void           EnterQpiMode();
+	void           ExitQpiMode();
 
 protected:
   // state machine
