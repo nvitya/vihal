@@ -92,7 +92,7 @@ public:
 
 public: // transaction handling
 
-	bool             finished = false;
+	bool             finished = true;
 	uint8_t          blockcnt = 0;
 
 	uint8_t          default_cmd_len = 1;
