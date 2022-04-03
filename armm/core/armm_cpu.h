@@ -46,6 +46,7 @@ inline void __attribute__((always_inline)) mcu_enable_interrupts()
 
 class TCriticalSection
 {
+public:
   uint32_t priMask;
   bool init;
 
