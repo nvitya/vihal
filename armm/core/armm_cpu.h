@@ -36,12 +36,62 @@
 
 inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {
-  __asm volatile ("cpsid i");
+  __asm volatile ("cpsid i" : : : "memory");
 }
 
 inline void __attribute__((always_inline)) mcu_enable_interrupts()
 {
-  __asm volatile ("cpsie i");
+  __asm volatile ("cpsie i" : : : "memory");
 }
+
+class TCriticalSection
+{
+  uint32_t priMask;
+  bool init;
+
+  inline void enter()
+  {
+    init = true;
+
+    // get priMask
+    __asm volatile ("MRS %0, primask" : "=r" (priMask) :: "memory");
+
+    // disable interrupt
+    __asm volatile ("cpsid i" : : : "memory");
+  }
+
+  inline void leave()
+  {
+    if(init)
+    {
+      init = false;
+
+      // set priMask
+      __asm volatile ("MSR primask, %0" : : "r" (priMask) : "memory");
+    }
+  }
+
+  TCriticalSection(bool enter = false)
+  {
+    init = enter;
+    if(enter)
+    {
+      // get priMask
+      __asm volatile ("MRS %0, primask" : "=r" (priMask) :: "memory");
+
+      // disable interrupt
+      __asm volatile ("cpsid i" : : : "memory");
+    }
+  }
+
+  ~TCriticalSection()
+  {
+    if(init)
+    {
+      // set priMask
+      __asm volatile ("MSR primask, %0" : : "r" (priMask) : "memory");
+    }
+  }
+};
 
 #endif
