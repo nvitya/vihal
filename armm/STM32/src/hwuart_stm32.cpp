@@ -242,7 +242,6 @@ bool THwUart_stm32::TrySendChar(char ach)
 	}
 
 	regs->TDR = ach;
-	regs->ICR |= USART_ICR_CTSCF; // clear transfer complete flag
 #elif defined(USART_ISR_TXE_TXFNF)
 	if ((regs->ISR & USART_ISR_TXE_TXFNF) == 0)
 	{
@@ -300,6 +299,7 @@ bool THwUart_stm32::TryRecvChar(char * ach)
 bool THwUart_stm32::SendFinished()
 {
 #if defined(USART_ISR_TC)
+  regs->ICR = USART_ICR_CTSCF; // clear transfer complete flag
 	if (regs->ISR & USART_ISR_TC)
 #else
 	if (regs->SR & USART_SR_IDLE)
