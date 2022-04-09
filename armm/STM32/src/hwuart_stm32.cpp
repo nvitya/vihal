@@ -299,7 +299,13 @@ bool THwUart_stm32::TryRecvChar(char * ach)
 bool THwUart_stm32::SendFinished()
 {
 #if defined(USART_ISR_TC)
-  regs->ICR = USART_ICR_CTSCF; // clear transfer complete flag
+  // clear transfer complete flag, the flag is immediately set again if uart is idle
+  regs->ICR = USART_ICR_CTSCF;
+
+  // __DSB grants that all explicit memory accesses before this instruction are completed
+  __DSB();
+
+
 	if (regs->ISR & USART_ISR_TC)
 #else
 	if (regs->SR & USART_SR_IDLE)
