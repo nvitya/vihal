@@ -159,6 +159,10 @@ bool THwUart_stm32::Init(int adevnum)
 	regs->CR1 &= ~(3 << 9);
 	regs->CR1 |= (code << 9);
 
+#if defined(USART_CR1_FIFOEN)
+	regs->CR1 |= USART_CR1_FIFOEN;
+#endif
+
 	// Enable RX, TX:
 	regs->CR1 |= USART_CR1_TE | USART_CR1_RE;
 
@@ -232,12 +236,13 @@ bool THwUart_stm32::SetBaudRate(int abaudrate)
 bool THwUart_stm32::TrySendChar(char ach)
 {
 #if defined(USART_ISR_TXE)
-	if (((regs->ISR & USART_ISR_TC) == 0) && ((regs->ISR & USART_ISR_TXE) == 0))
+	if ((regs->ISR & USART_ISR_TXE) == 0)
 	{
 		return false;
 	}
 
 	regs->TDR = ach;
+	regs->ICR |= USART_ICR_CTSCF; // clear transfer complete flag
 #elif defined(USART_ISR_TXE_TXFNF)
 	if ((regs->ISR & USART_ISR_TXE_TXFNF) == 0)
 	{
@@ -295,7 +300,7 @@ bool THwUart_stm32::TryRecvChar(char * ach)
 bool THwUart_stm32::SendFinished()
 {
 #if defined(USART_ISR_IDLE)
-	if (regs->ISR & USART_ISR_IDLE)
+	if (regs->ISR & USART_ISR_TC)
 #else
 	if (regs->SR & USART_SR_IDLE)
 #endif
