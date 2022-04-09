@@ -299,7 +299,7 @@ bool THwUart_stm32::TryRecvChar(char * ach)
 
 bool THwUart_stm32::SendFinished()
 {
-#if defined(USART_ISR_IDLE)
+#if defined(USART_ISR_TC)
 	if (regs->ISR & USART_ISR_TC)
 #else
 	if (regs->SR & USART_SR_IDLE)
