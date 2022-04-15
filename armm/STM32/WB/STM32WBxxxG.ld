@@ -17,3 +17,11 @@ REGION_ALIAS("DTCRAM", RAM);
 REGION_ALIAS("RAM2", RAM);
 
 INCLUDE armm_default_flash.ld
+
+/* sections needed for RF stack */
+SECTIONS
+{
+   MAPPING_TABLE (NOLOAD) : { *(MAPPING_TABLE) } >RAM_SHARED
+   MB_MEM1 (NOLOAD)       : { *(MB_MEM1) } >RAM_SHARED
+   MB_MEM2 (NOLOAD)       : { _sMB_MEM2 = . ; *(MB_MEM2) ; _eMB_MEM2 = . ; } >RAM_SHARED
+}
