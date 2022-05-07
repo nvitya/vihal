@@ -14,7 +14,6 @@
   #include "hwuart_rp.h"
 #endif
 
-/* not migrated yet from NVCM:
-
-
-*/
+#ifdef HWDMA_H_
+  #include "hwdma_rp.h"
+#endif
