@@ -32,6 +32,8 @@
 #include "hwdma.h"
 #include "rp_utils.h"
 
+uint32_t                   rp_dma_used_channels = 0;
+
 bool THwDmaChannel_rp::Init(int achnum, int aperid)  // perid = peripheral request id
 {
 	initialized = false;
@@ -56,6 +58,8 @@ bool THwDmaChannel_rp::Init(int achnum, int aperid)  // perid = peripheral reque
 
 	chbit = (1 << chnum);
 
+	rp_dma_used_channels |= chbit;
+
 	// no register preparation is required
 
 	initialized = true;
@@ -78,7 +82,7 @@ void THwDmaChannel_rp::Disable()
 {
   uint32_t crreg = regs->ctrl_trig;
   crreg &= ~DMA_CTRL_EN;  // this pauses only the channel
-  regs->ctrl_trig = crreg;
+  regs->al1_ctrl = crreg;
   if (crreg & DMA_CTRL_BUSY)
   {
     gregs->abort = chbit;
@@ -87,12 +91,25 @@ void THwDmaChannel_rp::Disable()
       // wait until the abort completes
     }
   }
+
+  if (helper_regs)
+  {
+    helper_regs->al1_ctrl &= ~DMA_CTRL_EN;  // this pauses only the channel
+    gregs->abort = (1 << helper_chnum);
+  }
 }
 
 unsigned THwDmaChannel_rp::Remaining()
 {
-  // TODO: for the circular buffer support a helping channel required
-  //       and on overflow it must be re-activated
+  if (helper_regs)
+  {
+    if (helper_regs->read_addr != uint32_t(&circ_data.data[0]))
+    {
+      // the helper channel has been run trough
+      // reset to the beginning
+      UpdateHelperChannel();
+    }
+  }
 
 	return regs->transfer_count;
 }
@@ -106,7 +123,7 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
     | (0     << 23)  // SNIFF_EN:
     | (0     << 22)  // BSWAP: 1 = byte swap
     | (perid << 15)  // TREQ_SEL(6): Transfer Request Signal
-    | (chnum << 11)  // CHAIN_TO(4): Disable the chaining by setting self-number here
+    | (0     << 11)  // CHAIN_TO(4): Disable the chaining by setting self-number here
     | (0     << 10)  // RING_SEL: not used because of the strict alignment requirement
     | (0     <<  9)  // RING_SIZE(4):
     | (0     <<  5)  // INCR_WRITE:
@@ -160,20 +177,44 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 		}
 	}
 
-  // TODO: implement circular buffer support
-#if 0
+  regs->transfer_count = axfer->count;
 
+  // Circular buffer support using helper channel
   if (axfer->flags & DMATR_CIRCULAR)
   {
-    regs->DESCADDR = (uint32_t)llregs;
-    *llregs = *regs;  // copy to the LL
+    // allocate (or re-use the already allocated) helper DMA channel
+    if (AllocateHelper())
+    {
+      // helper channel allocate was successful, go on with circuar setup
+      if (istx)
+      {
+        // update TRANSFER COUNT and READ ADDR (alias 3)
+        circ_data.data[0] = axfer->count;
+        circ_data.data[1] = ((uint32_t)axfer->srcaddr);
+        circ_data.target_addr = (uint32_t *)&(regs->al3_transfer_count);
+      }
+      else
+      {
+        // update WRIE ADDR and TRANSFER COUNT (alias 1)
+        circ_data.data[0] = ((uint32_t)axfer->dstaddr);
+        circ_data.data[1] = axfer->count;
+        circ_data.target_addr = (uint32_t *)&(regs->al1_write_addr);
+      }
+
+      UpdateHelperChannel();
+
+      crreg |= (helper_chnum << 11);  // CHAIN_TO(4): trigger the helper channel on completition
+    }
+    else
+    {
+      crreg |= (chnum << 11);  // CHAIN_TO(4): Disable the chaining by setting self-number here
+    }
   }
   else
   {
-    regs->DESCADDR = 0;
+    crreg |= (chnum << 11);  // CHAIN_TO(4): Disable the chaining by setting self-number here
   }
 
-#endif
 
   gregs->ints0 = chbit; // clear current interrupt bit (both lines)
   gregs->ints1 = chbit;
@@ -196,6 +237,58 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
     irq_regs->inte &= ~chbit;
   }
 
-	regs->transfer_count = axfer->count;
-	regs->ctrl_trig = crreg;  // the EN bit is not set so the transfer does not starts yet
+	regs->al1_ctrl = crreg;  // the EN bit is not set so the transfer does not start yet
+}
+
+bool THwDmaChannel_rp::AllocateHelper()
+{
+  int hch;
+  if ((helper_chnum >= 0) && (helper_chnum < MAX_DMA_CHANNELS))
+  {
+    hch = helper_chnum;
+  }
+  else
+  {
+    // search
+    hch = MAX_DMA_CHANNELS - 1;
+    while ((hch >= 0) && (rp_dma_used_channels & (1 << hch)))
+    {
+      --hch;
+    }
+  }
+
+  helper_chnum = hch;
+
+  if (hch >= 0)
+  {
+    rp_dma_used_channels |= (1 << hch);
+    helper_regs = &gregs->ch[hch];
+    return true;
+  }
+  else
+  {
+    helper_regs = nullptr;
+    return false;
+  }
+}
+
+void THwDmaChannel_rp::UpdateHelperChannel()
+{
+  helper_regs->read_addr      = uint32_t(&circ_data.data[0]);
+  helper_regs->write_addr     = uint32_t(circ_data.target_addr);
+  helper_regs->transfer_count = 2;
+  helper_regs->al1_ctrl = (0
+    | (0     << 24)  // BUSY: (read only)
+    | (0     << 23)  // SNIFF_EN:
+    | (0     << 22)  // BSWAP: 1 = byte swap
+    | (0x3F  << 15)  // TREQ_SEL(6): Transfer Request Signal, 0x3F = permanent request
+    | (helper_chnum << 11)  // CHAIN_TO(4): Disable the chaining by setting self-number here
+    | (0     << 10)  // RING_SEL: not used because of the strict alignment requirement
+    | (0     <<  9)  // RING_SIZE(4):
+    | (1     <<  5)  // INCR_WRITE:
+    | (1     <<  4)  // INCR_READ:
+    | (2     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
+    | (0     <<  1)  // HIGH_PRIORIY
+    | (1     <<  0)  // EN
+  );
 }

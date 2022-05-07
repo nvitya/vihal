@@ -45,6 +45,13 @@ typedef struct
 //
 } dma_irq_regs_t;
 
+typedef struct
+{
+  uint32_t    data[4];  // additional two words with zero values to deactivate the channel if something wrong happens
+  uint32_t *  target_addr;
+//
+} rp_dma_circ_helper_data_t;
+
 class THwDmaChannel_rp : public THwDmaChannel_pre
 {
 public:
@@ -58,7 +65,7 @@ public:
 
 	//uint32_t            ctrl_base = 0;
 
-	bool Init(int achnum, int aperid);
+	bool Init(int achnum, int aperid);  // use only channels 0-7 if possible to leave some free for the helpers
 
 	void Prepare(bool aistx, void * aperiphaddr, unsigned aflags);
 	void Enable();
@@ -73,6 +80,14 @@ public:
 
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer()              { Enable(); }
+
+public:
+	int                   helper_chnum = -1;  // helper channel for the circular buffers
+	dma_channel_hw_t *    helper_regs = nullptr;
+	rp_dma_circ_helper_data_t  circ_data;
+
+  bool                  AllocateHelper();
+  void                  UpdateHelperChannel();
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_rp
