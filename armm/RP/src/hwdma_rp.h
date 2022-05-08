@@ -22,7 +22,7 @@
  *  file:     hwdma_rp.h
  *  brief:    RP2040  DMA
  *  version:  1.00
- *  date:     2022-05-06
+ *  date:     2022-05-07
  *  authors:  nvitya
 */
 

@@ -48,6 +48,7 @@ typedef enum
 
 #include "hardware/platform_defs.h"
 #include "hardware/regs/addressmap.h"
+#include "hardware/regs/dreq.h"
 
 #include "hardware/structs/iobank0.h"
 #include "hardware/structs/padsbank0.h"
@@ -58,8 +59,18 @@ typedef enum
 #include "hardware/structs/clocks.h"
 #include "hardware/structs/xosc.h"
 #include "hardware/structs/pll.h"
-#include "hardware/structs/uart.h"
+
 #include "hardware/structs/dma.h"
+#include "hardware/structs/uart.h"
+#include "hardware/structs/spi.h"
+#include "hardware/structs/i2c.h"
+#include "hardware/structs/adc.h"
+#include "hardware/structs/pwm.h"
+
+#include "hardware/structs/ssi.h"
+#include "hardware/structs/ioqspi.h"
+#include "hardware/structs/pads_qspi.h"
+#include "hardware/structs/xip_ctrl.h"
 
 #endif /* _RP2040_H_ */
 

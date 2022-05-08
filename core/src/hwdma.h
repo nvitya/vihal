@@ -36,6 +36,7 @@
 #define DMATR_MEM_TO_MEM    0x0008
 #define DMATR_IRQ           0x0010
 #define DMATR_CIRCULAR      0x0100  // not all HW supports it !
+#define DMATR_BYTESWAP      0x0200  // not all HW supports it !
 
 class THwDmaTransfer
 {

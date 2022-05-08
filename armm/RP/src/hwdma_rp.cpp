@@ -215,6 +215,10 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
     crreg |= (chnum << 11);  // CHAIN_TO(4): Disable the chaining by setting self-number here
   }
 
+  if (axfer->flags & DMATR_BYTESWAP)
+  {
+    crreg |= (1 << 22); // the QSPI unit uses this
+  }
 
   gregs->ints0 = chbit; // clear current interrupt bit (both lines)
   gregs->ints1 = chbit;

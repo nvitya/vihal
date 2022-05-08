@@ -17,3 +17,7 @@
 #ifdef HWDMA_H_
   #include "hwdma_rp.h"
 #endif
+
+#ifdef HWQSPI_H_
+  #include "hwqspi_rp.h"
+#endif
