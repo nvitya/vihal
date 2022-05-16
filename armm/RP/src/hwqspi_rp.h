@@ -57,7 +57,8 @@ public:
 protected:
   uint32_t       addrdata = 0;
   uint32_t       addr_mode_len = 0;
-  uint32_t       remaining_words = 0;
+  uint32_t       remaining_transfers = 0;
+  uint8_t        byte_width = 1;
 
 };
 

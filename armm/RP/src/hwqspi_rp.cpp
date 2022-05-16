@@ -33,6 +33,21 @@
  *    Only 32-bit transfers are supported.
 */
 
+
+/* nvitya Personal comments:
+
+The RP2040 QSPI (=SSI) unit is poorly and badly documented.
+There are big differences in behaviour between single and multi-line modes and 8-bit and 32-bit data transfer.
+
+The wait cycles seems not properly working in SSS 8-bit mode.
+
+The SSI unit sends the command part in 32 bits when SSS mode selected in 32 bit mode.
+So using SSS mode with 32-bit mode not recommended.
+ (Theoretically the cmd and address could be put into the first word, but where to put the wait states?)
+
+*/
+
+
 #include "platform.h"
 
 #include "hwpins.h"
@@ -404,6 +419,7 @@ bool THwQspi_rp::Init()
 		return false;
 	}
 
+#if 0
   TRACE("QSPI init...\r\n");
 
   uint32_t jid;
@@ -418,7 +434,7 @@ bool THwQspi_rp::Init()
   jid = flash_read_jedec_id_32();
 
   TRACE("my jedec ID=%08X\r\n", jid);
-
+#endif
 
 	if (!txdma.initialized || !rxdma.initialized)
 	{
@@ -481,16 +497,18 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
   }
 
   istx = false;
+  byte_width = 1;
   dataptr = (uint8_t *)dstptr;
   datalen = len;
   remainingbytes = datalen;
-  remaining_words = ((remainingbytes + 3) >> 2);
+
+  regs->ssienr = 0; // disable for re-configuration, also flushes the fifo-s
 
   uint32_t cr0 = (0
     | (0  << 24)  // SSTE: slave select toggle
     | (0  << 21)  // SPI_FRF(2): 0 = single, 1 = dual, 2 = quad
-    | (31 << 16)  // DFS_32(5): 31 = 32 bit frames
-    | (0  << 12)  // CFS(4): control frame size
+    | (7  << 16)  // DFS_32(5): 31 = 32-bit frames, 7 = 8-bit frames (will be set later)
+    | (0  << 12)  // CFS(4): control frame size - ??? not documented
     | (0  << 11)  // SRL: shift register loop
     | (0  << 10)  // SLV_OE: slave output enable (???, not well documented)
     | (3  <<  8)  // TMOD(2): 3 = eeprom mode: RX starts after control data
@@ -514,24 +532,34 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
 
   unsigned fields = ((acmd >> 8) & 0xF);
 
-  // data transfer width
+  // check data transfer width
   if (fields & 8)
   {
-    cr0 |= (mlcode << 21); // multi line data
-  }
+    // use 32 bit mode !
+    byte_width = 4;
+    cr0 |= (0
+      | (mlcode << 21)  // SPI_FRF(2): multi line data
+      | (31     << 16)  // DFS_32(5): 31 = 32 bit mode
+    );
 
-  // control (cmd + address) transfer width
-  if (fields & 1) // multiline command ?
-  {
-    spi_cr0 |= (2 << 8); // multi line command and address
-  }
-  else if (fields & 2) // multiline address ?
-  {
-    spi_cr0 |= (1 << 8); // single line command, multi-line address
+    // control (cmd + address) transfer width
+    if (fields & 1) // multiline command ?
+    {
+      spi_cr0 |= (2 << 0); // TRANS_TYPE(2): 2 = multi line command and address (and data)
+    }
+    else if (fields & 2) // multiline address ?
+    {
+      spi_cr0 |= (1 << 0); // TRANS_TYPE(2): 1 = single line command, multi-line address
+    }
+    else
+    {
+      // leave it all single line
+    }
   }
   else
   {
-    // leave it all single line
+    // single line, 8 bit mode, normal spi
+    // dummy bytes must be pushed too
   }
 
   // dummy cycles
@@ -581,11 +609,20 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
 
   // push addr and command into the fifo
 
-  dmaused = (remaining_words > 0);
+  if (byte_width > 1)
+  {
+    remaining_transfers = ((remainingbytes + 3) >> 2);
+  }
+  else
+  {
+    remaining_transfers = remainingbytes;
+  }
+
+  dmaused = (remaining_transfers > 0);
 
   regs->ctrlr0 = cr0;
   regs->spi_ctrlr0 = spi_cr0;
-  regs->ctrlr1 = (remaining_words); // data length in words
+  regs->ctrlr1 = remaining_transfers-1;  // one less !
 
   if (dmaused)
   {
@@ -600,17 +637,43 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
 
   if (dmaused)
   {
-    xfer.bytewidth = 4;
-    xfer.count = remaining_words;
+    xfer.bytewidth = byte_width;
+    xfer.count = remaining_transfers;
     xfer.dstaddr = dstptr;
     xfer.flags = DMATR_BYTESWAP;
     rxdma.StartTransfer(&xfer);
 
-    remaining_words = 0;
+    remaining_transfers = 0;
   }
 
+  // start the transfer writing the control registers
   regs->dr0 = (acmd & 0xFF);
-  regs->dr0 = addrdata; // writing this starts the transfer
+  if (addr_mode_len > 0)
+  {
+    if (byte_width > 1)
+    {
+      regs->dr0 = addrdata; // writing this starts the transfer
+    }
+    else
+    {
+      // put the data byte-wise into the fifo
+      // beware of the reversed byte order!
+      unsigned am_remaining = addr_mode_len;
+      unsigned am_d = addrdata;
+      while (am_remaining)
+      {
+        regs->dr0 = am_d >> (8 * (am_remaining - 1));
+        --am_remaining;
+      }
+    }
+  }
+
+  if (dummybytes && (1 == byte_width))
+  {
+    // in 8-bit single line mode specifying only the wait cycles in the SPI_CR0 does not seem to be enough
+    // correct results were observed, if the wait cycles are pushed into the TX fifo too:
+    regs->dr0 = dummydata;
+  }
 
   while (0 == (regs->sr & SSI_SR_BUSY_BITS))
   {
@@ -642,9 +705,34 @@ void THwQspi_rp::Run()
   {
     if (istx)
     {
-      if (dmaused && txdma.Active())
+      if (dmaused)
       {
-        return;
+        if (txdma.Active())
+        {
+          return;
+        }
+      }
+      else
+      {
+        while (remaining_transfers)
+        {
+          if (0 == (regs->sr & SSI_SR_RFNE_BITS))
+          {
+            return;
+          }
+
+          if (byte_width > 1)
+          {
+            regs->dr0 = *((uint32_t *)dataptr);
+            dataptr += 4;
+          }
+          else
+          {
+            regs->dr0 = *((uint8_t *)dataptr);
+            dataptr += 1;
+          }
+          remaining_transfers -= 1;
+        }
       }
 
       if ((sr & SSI_SR_BUSY_BITS) == 0) // transfer complete ?
@@ -654,15 +742,44 @@ void THwQspi_rp::Run()
     }
     else
     {
-
-      if ((sr & SSI_SR_BUSY_BITS) == 0) // transfer complete ?
+      if (dmaused)
       {
-        return;
+        if ((sr & SSI_SR_BUSY_BITS) == 0) // transfer complete ?
+        {
+          return;
+        }
+
+        if (rxdma.Active())
+        {
+          return;
+        }
       }
-
-      if (dmaused && rxdma.Active())
+      else
       {
-        return;
+        while (remaining_transfers)
+        {
+          if (0 == (regs->sr & SSI_SR_RFNE_BITS))
+          {
+            return;
+          }
+
+          if (byte_width > 1)
+          {
+            *((uint32_t *)dataptr) = regs->dr0;
+            dataptr += 4;
+          }
+          else
+          {
+            *((uint8_t *)dataptr) = regs->dr0;
+            dataptr += 1;
+          }
+          remaining_transfers -= 1;
+        }
+
+        if ((sr & SSI_SR_BUSY_BITS) == 0) // transfer complete ?
+        {
+          return;
+        }
       }
     }
 
