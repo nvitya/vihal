@@ -619,6 +619,7 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
   }
 
   dmaused = (remaining_transfers > 0);
+  //dmaused = false; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   regs->ctrlr0 = cr0;
   regs->spi_ctrlr0 = spi_cr0;
@@ -723,7 +724,7 @@ void THwQspi_rp::Run()
 
           if (byte_width > 1)
           {
-            regs->dr0 = *((uint32_t *)dataptr);
+            regs->dr0 = __builtin_bswap32(*((uint32_t *)dataptr));
             dataptr += 4;
           }
           else
@@ -744,11 +745,6 @@ void THwQspi_rp::Run()
     {
       if (dmaused)
       {
-        if ((sr & SSI_SR_BUSY_BITS) == 0) // transfer complete ?
-        {
-          return;
-        }
-
         if (rxdma.Active())
         {
           return;
@@ -765,7 +761,7 @@ void THwQspi_rp::Run()
 
           if (byte_width > 1)
           {
-            *((uint32_t *)dataptr) = regs->dr0;
+            *((uint32_t *)dataptr) = __builtin_bswap32(regs->dr0);
             dataptr += 4;
           }
           else
@@ -774,11 +770,6 @@ void THwQspi_rp::Run()
             dataptr += 1;
           }
           remaining_transfers -= 1;
-        }
-
-        if ((sr & SSI_SR_BUSY_BITS) == 0) // transfer complete ?
-        {
-          return;
         }
       }
     }
