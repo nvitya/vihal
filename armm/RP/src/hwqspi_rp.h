@@ -37,7 +37,7 @@
 class THwQspi_rp : public THwQspi_pre
 {
 public:
-	unsigned char  txdmachannel = 6;
+	unsigned char  txdmachannel = 7;  // same channel can be used because of the single direction transfers
 	unsigned char  rxdmachannel = 7;
 
 	ssi_hw_t *     regs = nullptr;
