@@ -18,6 +18,10 @@
   #include "hwdma_rp.h"
 #endif
 
+#ifdef HWSPI_H_
+  #include "hwspi_rp.h"
+#endif
+
 #ifdef HWQSPI_H_
   #include "hwqspi_rp.h"
 #endif
