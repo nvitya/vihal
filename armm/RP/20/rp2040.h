@@ -46,6 +46,9 @@ typedef enum
 
 #define __force_inline   inline __attribute__((always_inline))
 
+// cstddef required for offsetof in the usb.h
+#include <cstddef>
+
 #include "hardware/platform_defs.h"
 #include "hardware/regs/addressmap.h"
 #include "hardware/regs/dreq.h"
@@ -71,6 +74,8 @@ typedef enum
 #include "hardware/structs/ioqspi.h"
 #include "hardware/structs/pads_qspi.h"
 #include "hardware/structs/xip_ctrl.h"
+#include "hardware/structs/usb.h"
+
 
 #endif /* _RP2040_H_ */
 

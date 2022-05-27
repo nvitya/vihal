@@ -27,6 +27,7 @@
 
 #include "platform.h"
 #include "hwclk.h"
+#include "rp_utils.h"
 
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
@@ -41,6 +42,83 @@ void hwclk_start_ext_osc(unsigned aextspeed)
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
   // nothing to do, no internal flash memory or voltage scaling
+}
+
+void hwclk_setup_pll(pll_hw_t * pll_hw, unsigned basespeed, unsigned target_speed_hz)
+{
+  uint32_t tmp;
+
+  // PLL CONSTRAINTS:
+  //   Reference clock frequency min=5MHz, max=800MHz
+  //   Feedback divider min=16, max=320
+  //   VCO frequency min=400MHz, max=1600MHz
+
+  // VCO freq      = (input_freq / input_div) * input_mul
+  // pll_out_freq  = (input_freq / input_div1) * input_mul / (pll_postdiv1 * pll_postdiv2)
+
+  uint32_t vco_div  = 12;
+  uint32_t vco_freq = target_speed_hz * vco_div; // target speed * 12 is almost universal
+
+  if (vco_freq < 400000000) // speeds smaller than 400 MHz
+  {
+    vco_div = 24;
+    vco_freq = target_speed_hz * vco_div;
+  }
+
+  uint32_t pll_postdiv1 = vco_freq / target_speed_hz;
+  uint32_t pll_postdiv2 = 1;
+  while ((pll_postdiv1 > 7) && (pll_postdiv2 < 4))
+  {
+    ++pll_postdiv2;
+    pll_postdiv1 = (vco_freq / (target_speed_hz * pll_postdiv2));
+  }
+
+  // handle input
+
+  uint32_t input_div = 1;
+  uint32_t input_mul = vco_freq / basespeed;
+  while (input_mul < 16)
+  {
+    ++input_div;
+    input_mul = input_div * (vco_freq / basespeed);
+  }
+
+  pll_hw->prim = ((pll_postdiv1 << 16) | (pll_postdiv2 << 12));
+  pll_hw->fbdiv_int = input_mul;
+
+  tmp = pll_hw->cs;
+  tmp &= ~(0x3F | (1 << 8)); // clear refdiv and bypass
+  tmp |= input_div;
+  pll_hw->cs = tmp;
+
+  // tur on the power...
+  tmp = pll_hw->pwr;
+
+  // first turn all off
+  tmp |= (0
+    | (1 << 5) // VCOPD
+    | (1 << 3) // POSTDIVPD
+    | (1 << 2) // DSMPD
+    | (1 << 0) // PD
+  );
+
+  pll_hw->pwr = tmp;
+
+  for (unsigned n = 0; n < 100; ++n)
+  {
+    __NOP();
+  }
+
+  tmp &= ~((1 << 5) | (1 << 0));  // enable PLL and VCO
+  pll_hw->pwr = tmp;
+
+  while (!(pll_hw->cs & PLL_CS_LOCK_BITS))
+  {
+    __NOP();
+  }
+
+  tmp &= ~(1 << 3);  // enable post divider
+  pll_hw->pwr = tmp;
 }
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
@@ -82,77 +160,10 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   hwclk_prepare_hispeed(target_speed_hz);
 
-  // PLL CONSTRAINTS:
-  //   Reference clock frequency min=5MHz, max=800MHz
-  //   Feedback divider min=16, max=320
-  //   VCO frequency min=400MHz, max=1600MHz
+  rp_reset_control(RESETS_RESET_PLL_SYS_BITS, true);
+  rp_reset_control(RESETS_RESET_PLL_SYS_BITS, false);
 
-  // VCO freq      = (input_freq / input_div) * input_mul
-  // pll_out_freq  = (input_freq / input_div1) * input_mul / (pll_postdiv1 * pll_postdiv2)
-
-  uint32_t vco_div  = 12;
-  uint32_t vco_freq = target_speed_hz * vco_div; // target speed * 12 is almost universal
-
-  if (vco_freq < 400000000) // speeds smaller than 33 MHz
-  {
-    vco_div = 24;
-    vco_freq = target_speed_hz * vco_div;
-  }
-
-  uint32_t pll_postdiv1 = vco_freq / target_speed_hz;
-  uint32_t pll_postdiv2 = 1;
-  while ((pll_postdiv1 > 7) && (pll_postdiv2 < 4))
-  {
-    ++pll_postdiv2;
-    pll_postdiv1 = (vco_freq / (target_speed_hz * pll_postdiv2));
-  }
-
-  // handle input
-
-  uint32_t input_div = 1;
-  uint32_t input_mul = vco_freq / basespeed;
-  while (input_mul < 16)
-  {
-    ++input_div;
-    input_mul = input_div * (vco_freq / basespeed);
-  }
-
-  pll_sys_hw->prim = ((pll_postdiv1 << 16) | (pll_postdiv2 << 12));
-  pll_sys_hw->fbdiv_int = input_mul;
-
-  tmp = pll_sys_hw->cs;
-  tmp &= ~(0x3F | (1 << 8)); // clear refdiv and bypass
-  tmp |= input_div;
-  pll_sys_hw->cs = tmp;
-
-  // tur on the power...
-  tmp = pll_sys_hw->pwr;
-
-  // first turn all off
-  tmp |= (0
-    | (1 << 5) // VCOPD
-    | (1 << 3) // POSTDIVPD
-    | (1 << 2) // DSMPD
-    | (1 << 0) // PD
-  );
-
-  pll_sys_hw->pwr = tmp;
-
-  for (unsigned n = 0; n < 100; ++n)
-  {
-    __NOP();
-  }
-
-  tmp &= ~((1 << 5) | (1 << 0));  // enable PLL and VCO
-  pll_sys_hw->pwr = tmp;
-
-  while (!(pll_sys_hw->cs & PLL_CS_LOCK_BITS))
-  {
-    __NOP();
-  }
-
-  tmp &= ~(1 << 3);  // enable post divider
-  pll_sys_hw->pwr = tmp;
+  hwclk_setup_pll(pll_sys_hw, basespeed, target_speed_hz);
 
   // select the pll for the system clock
   tmp = pclk_sys->ctrl;
@@ -172,6 +183,32 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   tmp &= ~(3 << 5);  // 0 = clk_sys
   tmp |= (1 << 11);  // enable
   clocks_hw->clk[clk_peri].ctrl = tmp;
+
+  // setup the USB PLL and set to the USB clock source
+  clock_hw_t * pclk_usb = &clocks_hw->clk[clk_usb];
+
+  pclk_usb->ctrl &= ~(1u); // select the clk_ref
+  while (0 == (pclk_usb->selected & 1))
+  {
+    __NOP();
+  }
+
+  rp_reset_control(RESETS_RESET_PLL_USB_BITS, true);
+  rp_reset_control(RESETS_RESET_PLL_USB_BITS, false);
+  hwclk_setup_pll(pll_usb_hw, basespeed, 48000000);
+
+#if 1
+  tmp = pclk_usb->ctrl;
+  tmp &= ~((7 << 5) | (1 << 0)); // clear the bitfields
+  tmp |= (1 << 5);               // select the USB PLL
+  pclk_usb->ctrl = tmp;
+  for (unsigned n = 0; n < 10; ++n)
+  {
+    __NOP();
+  }
+  tmp |= 1; // swith to PLL
+  pclk_usb->ctrl = tmp;
+#endif
 
   // inform the system of the clock speeds
 

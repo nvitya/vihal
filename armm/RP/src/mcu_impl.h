@@ -25,3 +25,7 @@
 #ifdef HWQSPI_H_
   #include "hwqspi_rp.h"
 #endif
+
+#if defined(HWUSBCTRL_H_)
+  #include "hwusbctrl_rp.h"
+#endif
