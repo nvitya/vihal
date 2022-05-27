@@ -157,10 +157,7 @@ int THwUsbEndpoint_rp::ReadRecvData(void * buf, uint32_t buflen)
     // different buffer location
     memcpy(buf, (void *)&usbctrl->dpram->setup_packet[0], 8);
     next_data_pid = USB_BUF_CTRL_DATA1_PID; // set data pid to 1
-  }
-  else
-  {
-    next_data_pid ^= USB_BUF_CTRL_DATA1_PID; // flip next data pid
+    return 8;
   }
 
   uint32_t bufcr = *bufctrl_out;
@@ -184,6 +181,8 @@ int THwUsbEndpoint_rp::ReadRecvData(void * buf, uint32_t buflen)
 			*pdst32++ = *psrc32++;
 		}
 	}
+
+  next_data_pid ^= USB_BUF_CTRL_DATA1_PID; // flip next data pid
 
 	return cnt;
 }
@@ -445,102 +444,5 @@ void THwUsbCtrl_rp::HandleIrq()
 
     HandleReset();
 	}
-
-#if 0
-
-		uint32_t rev_epirq = __RBIT(epintsum);
-		while (true)
-		{
-			uint32_t epid = __CLZ(rev_epirq); // returns leading zeros, 32 when the argument = 0
-			if (epid >= USB_MAX_ENDPOINTS)  break; // -->
-
-			UsbDeviceEndpoint * pep = &regs->DeviceEndpoint[epid];
-
-			uint8_t epreg = pep->EPINTFLAG.reg;
-      //TRACE("%u ", CLOCKCNT / (SystemCoreClock / 1000000));
-			//TRACE("[EP(%i) IF=%02X, ST=%02X]\r\n", epid, epreg, pep->EPSTATUS.reg);
-			//TRACE("[EP(%i)=%02X, EPS=%02X, USB=%04X]\r\n", epid, epreg, pep->EPSTATUS.reg, regs->INTFLAG.reg);
-
-			// the transfer complete must be served for the case it comes togeter with SETUP
-			if (epreg & HWUSB_INTFLAG_TRCPT1)
-			{
-				pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRCPT1;  // clear the flag early because it might come during servicing !
-
-				if (epreg & HWUSB_INTFLAG_TRFAIL1) // clear error flags
-				{
-					pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRFAIL1;
-				}
-
-				if (!HandleEpTransferEvent(epid, false))
-				{
-					// todo: handle error
-				}
-			}
-
-			if (epreg & HWUSB_INTFLAG_RXSTP)
-			{
-				//test_send_desc();
-
-				if (!HandleEpTransferEvent(epid, true))
-				{
-					// todo: handle error
-				}
-
-				if (pep->EPINTFLAG.reg & HWUSB_INTFLAG_RXSTP)		pep->EPINTFLAG.reg = HWUSB_INTFLAG_RXSTP;
-			}
-			else if (epreg & HWUSB_INTFLAG_TRCPT0)
-			{
-				pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRCPT0;  // clear the flag early because it might come during servicing !
-
-				if (epreg & HWUSB_INTFLAG_TRFAIL0) // clear error flags
-				{
-					pep->EPINTFLAG.reg = HWUSB_INTFLAG_TRFAIL0;
-				}
-
-				if (!HandleEpTransferEvent(epid, true))
-				{
-					// todo: handle error
-				}
-			}
-
-			//TRACE(" {IF=%02X, ST=%02X}\r\n", pep->EPINTFLAG.reg, pep->EPSTATUS.reg);
-
-			rev_epirq &= ~(1 << (31-epid));
-		}
-	}
-
-	uint32_t intflag = (regs->INTFLAG.reg & regs->INTENSET.reg);
-	if (intflag & USB_DEVICE_INTFLAG_EORST)
-	{
-		TRACE("USB RESET %04X\r\n", regs->INTFLAG.reg);
-
-		regs->DeviceEndpoint[0].EPCFG.reg = 0; // disable endpoint 0
-
-		regs->INTFLAG.reg = USB_DEVICE_INTFLAG_EORST; // ack reset
-		regs->INTENCLR.reg = USB_WAKEUP_INT_FLAGS;
-		regs->INTENSET.reg = USB_SUSPEND_INT_FLAGS;
-
-		// disable address, configured state
-	  SetDeviceAddress(0);
-
-		HandleReset();
-	}
-	else if (intflag & USB_WAKEUP_INT_FLAGS)
-	{
-		TRACE("USB wakeup\r\n");
-		// wakeup
-		regs->INTFLAG.reg = USB_WAKEUP_INT_FLAGS;
-		regs->INTENCLR.reg = USB_WAKEUP_INT_FLAGS;
-		regs->INTENSET.reg = USB_SUSPEND_INT_FLAGS;
-	}
-	else if (intflag & USB_SUSPEND_INT_FLAGS)
-	{
-		TRACE("USB suspend\r\n");
-		// suspend
-		regs->INTFLAG.reg = USB_SUSPEND_INT_FLAGS;
-		regs->INTENCLR.reg = USB_SUSPEND_INT_FLAGS;
-		regs->INTENSET.reg = USB_WAKEUP_INT_FLAGS;
-	}
-#endif
 }
 

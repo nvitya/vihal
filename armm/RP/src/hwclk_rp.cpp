@@ -187,7 +187,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   // setup the USB PLL and set to the USB clock source
   clock_hw_t * pclk_usb = &clocks_hw->clk[clk_usb];
 
-  pclk_usb->ctrl &= ~(1u); // select the clk_ref
+  pclk_usb->ctrl &= ~(1 << 11); // disable the generator
   while (0 == (pclk_usb->selected & 1))
   {
     __NOP();
@@ -197,18 +197,18 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   rp_reset_control(RESETS_RESET_PLL_USB_BITS, false);
   hwclk_setup_pll(pll_usb_hw, basespeed, 48000000);
 
-#if 1
+  pclk_usb->div = (1 << 8);  // set the divisor to 1
+
   tmp = pclk_usb->ctrl;
-  tmp &= ~((7 << 5) | (1 << 0)); // clear the bitfields
-  tmp |= (1 << 5);               // select the USB PLL
+  tmp &= ~((1 << 20) | (3 << 16) | (7 << 5)); // clear the bitfields (NUDGE, PHASE, AUXSRC)
+  tmp |= (0 << 5);               // AUXSRC(3): 0 = USB PLL
   pclk_usb->ctrl = tmp;
   for (unsigned n = 0; n < 10; ++n)
   {
     __NOP();
   }
-  tmp |= 1; // swith to PLL
+  tmp |= (1 << 11); // turn on the generator
   pclk_usb->ctrl = tmp;
-#endif
 
   // inform the system of the clock speeds
 
