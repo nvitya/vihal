@@ -78,8 +78,8 @@ bool THwUsbEndpoint_rp::ConfigureHwEp()
     }
 	}
 
-  bufctrl_in  = &dpram->ep_ctrl[index].in;
-  bufctrl_out = &dpram->ep_ctrl[index].out;
+  bufctrl_dtoh = &dpram->ep_buf_ctrl[index].in;
+  bufctrl_htod = &dpram->ep_buf_ctrl[index].out;
 
   epc = (0
     | (1  << 31)  // ENABLE
@@ -143,8 +143,8 @@ bool THwUsbEndpoint_rp::ConfigureHwEp()
     *epctrl = epc;
   }
 
-  *bufctrl_in  = 0;
-  *bufctrl_out = 0;
+  *bufctrl_dtoh  = 0;
+  *bufctrl_htod = 0;
   next_data_pid = 0;
 
 	return true;
@@ -160,7 +160,7 @@ int THwUsbEndpoint_rp::ReadRecvData(void * buf, uint32_t buflen)
     return 8;
   }
 
-  uint32_t bufcr = *bufctrl_out;
+  uint32_t bufcr = *bufctrl_htod;
   uint32_t cnt = (bufcr & USB_BUF_CTRL_LEN_MASK);
 
 	if (cnt)
@@ -217,7 +217,7 @@ int THwUsbEndpoint_rp::StartSendData(void * buf, unsigned len)
 
   bufcr |= next_data_pid;
 
-  *bufctrl_out = bufcr;
+  *bufctrl_dtoh = bufcr;
 
   next_data_pid ^= USB_BUF_CTRL_DATA1_PID; // flip next data pid
 
@@ -238,7 +238,7 @@ void THwUsbEndpoint_rp::SendAck()
 
   bufcr |= next_data_pid;
 
-  *bufctrl_out = bufcr;
+  *bufctrl_dtoh = bufcr;
 
   next_data_pid ^= USB_BUF_CTRL_DATA1_PID; // flip next data pid
 }
@@ -266,16 +266,16 @@ void THwUsbEndpoint_rp::EnableRecv()
 
   bufcr |= next_data_pid;
 
-  *bufctrl_out = bufcr;
+  *bufctrl_htod = bufcr;
 }
 
 void THwUsbEndpoint_rp::DisableRecv()
 {
-  uint32_t bufcr = *bufctrl_out;
+  uint32_t bufcr = *bufctrl_htod;
   if (bufcr & USB_BUF_CTRL_AVAIL)
   {
     bufcr &= ~USB_BUF_CTRL_AVAIL;
-    *bufctrl_out = bufcr;
+    *bufctrl_htod = bufcr;
   }
 }
 
@@ -291,13 +291,13 @@ void THwUsbEndpoint_rp::FinishSend()
 
 void THwUsbEndpoint_rp::Stall()
 {
-	if (iscontrol || !dir_htod)
+	if (iscontrol || dir_htod)
 	{
-	  *bufctrl_out |= USB_BUF_CTRL_STALL;
+	  *bufctrl_htod |= USB_BUF_CTRL_STALL;
 	}
 	else
 	{
-    *bufctrl_in |= USB_BUF_CTRL_STALL;
+    *bufctrl_dtoh |= USB_BUF_CTRL_STALL;
 	}
 }
 

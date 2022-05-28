@@ -43,8 +43,8 @@ class THwUsbEndpoint_rp : public THwUsbEndpoint_pre
 {
 public:
 	volatile uint32_t *  epctrl  = nullptr;
-	volatile uint32_t *  bufctrl_in  = nullptr;
-	volatile uint32_t *  bufctrl_out = nullptr;
+	volatile uint32_t *  bufctrl_dtoh  = nullptr;
+	volatile uint32_t *  bufctrl_htod = nullptr;
 
 	uint8_t *            rxmem = nullptr;
 	uint8_t *            txmem = nullptr;
