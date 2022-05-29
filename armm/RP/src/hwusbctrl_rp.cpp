@@ -236,11 +236,10 @@ void THwUsbEndpoint_rp::SendAck()
     | (0  <<  0)  // BUF0_LEN(10)
   );
 
-  bufcr |= next_data_pid;
+  // The ACK must be sent with DATA1 !
+  bufcr |= USB_BUF_CTRL_DATA1_PID;
 
   *bufctrl_dtoh = bufcr;
-
-  next_data_pid ^= USB_BUF_CTRL_DATA1_PID; // flip next data pid
 }
 
 bool THwUsbEndpoint_rp::IsSetupRequest()
