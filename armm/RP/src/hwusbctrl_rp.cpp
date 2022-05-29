@@ -136,14 +136,14 @@ bool THwUsbEndpoint_rp::ConfigureHwEp()
     }
 	}
 
-  epc |= baddr;
+  epc |= baddr + offsetof(usb_device_dpram_t, epx_data);
 
   if (epctrl)
   {
     *epctrl = epc;
   }
 
-  *bufctrl_dtoh  = 0;
+  *bufctrl_dtoh = 0;
   *bufctrl_htod = 0;
   next_data_pid = 0;
 
@@ -386,14 +386,14 @@ void THwUsbCtrl_rp::SetDeviceAddress(uint8_t aaddr)
   usb_hw->dev_addr_ctrl = aaddr;
 }
 
-uint32_t usb_dbg_time_ref = 0;
+//uint32_t usb_dbg_time_ref = 0;
 
 void THwUsbCtrl_rp::HandleIrq()
 {
 	uint32_t ints = regs->ints;
 	if (ints & USB_INTS_SETUP_REQ_BITS)
 	{
-	  TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
+	  //TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
     TRACE("USB SETUP IRQ\r\n");
     regs_clear->sie_status = USB_SIE_STATUS_SETUP_REC_BITS;
     setup_request = true;
@@ -407,8 +407,8 @@ void THwUsbCtrl_rp::HandleIrq()
 	if (ints & USB_INTS_BUFF_STATUS_BITS)
 	{
 	  uint buffm = regs->buf_status;
-    TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
-	  TRACE("USB BUFF IRQ: %08X\r\n", buffm);
+    //TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
+	  //TRACE("USB BUFF IRQ: %08X\r\n", buffm);
 	  // no __CLZ() is available here, so bit looping
     uint bit = 1;
     for (uint i = 0; buffm && i < USB_NUM_ENDPOINTS * 2; i++)
@@ -446,8 +446,8 @@ void THwUsbCtrl_rp::HandleIrq()
 
 	if (ints & USB_INTS_BUS_RESET_BITS)
 	{
-	  if (0 == usb_dbg_time_ref)  usb_dbg_time_ref = timer_hw->timelr;
-    TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
+	  //if (0 == usb_dbg_time_ref)  usb_dbg_time_ref = timer_hw->timelr;
+    //TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
     TRACE("USB RESET\r\n");
 
     regs_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
