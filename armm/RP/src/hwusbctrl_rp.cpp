@@ -201,7 +201,7 @@ int THwUsbEndpoint_rp::StartSendData(void * buf, unsigned len)
     | (0  << 12)  // BUF_SEL
     | (0  << 11)  // STALL
     | (1  << 10)  // BUF0_AVAILABLE
-    | (len <<  0)  // BUF0_LEN(10)
+    | (sendlen <<  0)  // BUF0_LEN(10)
   );
 
 	// optimized copy
@@ -291,13 +291,20 @@ void THwUsbEndpoint_rp::FinishSend()
 
 void THwUsbEndpoint_rp::Stall()
 {
-	if (iscontrol || dir_htod)
+  if (iscontrol)
+  {
+    *bufctrl_dtoh |= USB_BUF_CTRL_STALL;
+    *bufctrl_htod |= USB_BUF_CTRL_STALL;
+    // the stall is double gated for the EP0 with a special register:
+    usbctrl->regs->ep_stall_arm = 3; // set the stall bits here too, they are cleared on the next SETUP request
+  }
+  else if (!dir_htod)
 	{
-	  *bufctrl_htod |= USB_BUF_CTRL_STALL;
+	  *bufctrl_dtoh |= USB_BUF_CTRL_STALL;
 	}
 	else
 	{
-    *bufctrl_dtoh |= USB_BUF_CTRL_STALL;
+    *bufctrl_htod |= USB_BUF_CTRL_STALL;
 	}
 }
 
@@ -379,11 +386,14 @@ void THwUsbCtrl_rp::SetDeviceAddress(uint8_t aaddr)
   usb_hw->dev_addr_ctrl = aaddr;
 }
 
+uint32_t usb_dbg_time_ref = 0;
+
 void THwUsbCtrl_rp::HandleIrq()
 {
 	uint32_t ints = regs->ints;
 	if (ints & USB_INTS_SETUP_REQ_BITS)
 	{
+	  TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
     TRACE("USB SETUP IRQ\r\n");
     regs_clear->sie_status = USB_SIE_STATUS_SETUP_REC_BITS;
     setup_request = true;
@@ -397,6 +407,7 @@ void THwUsbCtrl_rp::HandleIrq()
 	if (ints & USB_INTS_BUFF_STATUS_BITS)
 	{
 	  uint buffm = regs->buf_status;
+    TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
 	  TRACE("USB BUFF IRQ: %08X\r\n", buffm);
 	  // no __CLZ() is available here, so bit looping
     uint bit = 1;
@@ -435,6 +446,8 @@ void THwUsbCtrl_rp::HandleIrq()
 
 	if (ints & USB_INTS_BUS_RESET_BITS)
 	{
+	  if (0 == usb_dbg_time_ref)  usb_dbg_time_ref = timer_hw->timelr;
+    TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
     TRACE("USB RESET\r\n");
 
     regs_clear->sie_status = USB_SIE_STATUS_BUS_RESET_BITS;
