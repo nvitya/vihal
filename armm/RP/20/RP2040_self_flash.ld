@@ -5,7 +5,7 @@ MEMORY
   RAM (xrw)      :  ORIGIN = 0x21030000, LENGTH = 64K   /* non-striped SRAM3 */
   STACK1 (xrw)   :  ORIGIN = 0x20040000, LENGTH = 4K    /* SRAM4 */
 
-  BLSTAGE2 (xrw) :  ORIGIN = 0x20041000, LENGTH = 252   /* SRAM5 */
+  BLSTAGE2 (xrw) :  ORIGIN = 0x20041000, LENGTH = 256   /* SRAM5 */
 }
 
 REGION_ALIAS("TEXT",    ITCRAM);
@@ -37,13 +37,16 @@ SECTIONS
     KEEP(*(.startup))
   } > TEXT
 
-  
+
   .bl_second_stage : ALIGN(16)
   {
+    FILL(0xFF)
     KEEP(*(.bl_second_stage_start))
     KEEP(*(.bl_second_stage))
+    FILL(0xFF)
+	. = ALIGN(256);
   } > BLSTAGE2 AT > TEXT
-  
+
   PROVIDE( __bl_stage2_src = LOADADDR(.bl_second_stage) );
   PROVIDE( __bl_stage2_len = SIZEOF(.bl_second_stage) );
 
