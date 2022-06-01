@@ -22,6 +22,11 @@ ENTRY(soft_entry)
 
 SECTIONS
 {
+  .app_header : ALIGN(4)  /* application header (32 byte) for the bootloader, might not exist */
+  {
+    KEEP(*(.application_header))
+  } > TEXT
+
   .isr_vector : ALIGN(4)  /* internally 1024 aligned, so better be the first */
   {
     FILL(0xFF)
