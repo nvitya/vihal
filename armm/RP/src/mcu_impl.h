@@ -1,7 +1,6 @@
 /*
  *  file:     mcu_impl.h (RP)
  *  brief:    RP list of implemented VIHAL core peripherals
- *  version:  1.00
  *  date:     2021-12-18
  *  authors:  nvitya
 */
@@ -28,6 +27,10 @@
 
 #ifdef HWADC_H_
   #include "hwadc_rp.h"
+#endif
+
+#ifdef HWPWM_H_
+  #include "hwpwm_rp.h"
 #endif
 
 #if defined(HWUSBCTRL_H_)
