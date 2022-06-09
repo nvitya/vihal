@@ -26,6 +26,10 @@
   #include "hwqspi_rp.h"
 #endif
 
+#ifdef HWADC_H_
+  #include "hwadc_rp.h"
+#endif
+
 #if defined(HWUSBCTRL_H_)
   #include "hwusbctrl_rp.h"
 #endif

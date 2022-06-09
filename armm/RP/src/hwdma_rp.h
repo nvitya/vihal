@@ -47,8 +47,19 @@ typedef struct
 
 typedef struct
 {
-  uint32_t    data[4];  // additional two words with zero values to deactivate the channel if something wrong happens
-  uint32_t *  target_addr;
+  uint32_t   ctrl;
+  uint32_t   read_addr;
+  uint32_t   write_addr;
+  uint32_t   trans_count; // triggers the channel
+//
+} rp_dma_al1_block_t;
+
+typedef struct
+{
+  rp_dma_al1_block_t   hreset2;  // resets the HELPER channel, which will then execute the wreset block
+  rp_dma_al1_block_t   wreset;   // resets the work channel to point to the buffer beginning
+  rp_dma_al1_block_t   workend;  // this must follow the wreset, reconfigures the work channel to do the hreset
+  rp_dma_al1_block_t   hreset;   // resets the HELPER channel, which will then execute the wreset block
 //
 } rp_dma_circ_helper_data_t;
 
@@ -62,8 +73,6 @@ public:
 
 	uint8_t              irq_line = 0;
 	dma_irq_regs_t *     irq_regs = nullptr;
-
-	//uint32_t            ctrl_base = 0;
 
 	bool Init(int achnum, int aperid);  // use only channels 0-7 if possible to leave some free for the helpers
 
@@ -84,7 +93,11 @@ public:
 public:
 	int                   helper_chnum = -1;  // helper channel for the circular buffers
 	dma_channel_hw_t *    helper_regs = nullptr;
-	rp_dma_circ_helper_data_t  circ_data;
+
+	__attribute__((aligned(16)))
+	rp_dma_circ_helper_data_t  circ_data;  // alignment is important because of the masking
+
+	bool                  ConfigureCircular(THwDmaTransfer * axfer, uint32_t crreg);
 
   bool                  AllocateHelper();
   void                  UpdateHelperChannel();
