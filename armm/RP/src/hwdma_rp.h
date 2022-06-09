@@ -100,7 +100,6 @@ public:
 	bool                  ConfigureCircular(THwDmaTransfer * axfer, uint32_t crreg);
 
   bool                  AllocateHelper();
-  void                  UpdateHelperChannel();
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_rp

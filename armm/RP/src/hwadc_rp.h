@@ -53,7 +53,7 @@ public:
 
 	bool            Init(int adevnum, uint32_t achannel_map);
 
-  uint16_t        ChValue(uint8_t ach);
+  uint16_t        ChValue(uint8_t ach)  { return ( *(databyid[ach]) << HWADC_DATA_LSHIFT ); }  // always left aligned
 
 	void            StartFreeRun(uint32_t achannel_map);
 	void            StopFreeRun();

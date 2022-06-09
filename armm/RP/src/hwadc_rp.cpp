@@ -123,7 +123,7 @@ void THwAdc_rp::StartFreeRun(uint32_t achannel_map)
   dmaxfer.bytewidth = sizeof(dmadata[0]);
   dmaxfer.count = dmadatacnt;
   dmaxfer.dstaddr = &dmadata[0];
-  dmaxfer.flags = DMATR_CIRCULAR;  // requires continuous checking on RP2040 !
+  dmaxfer.flags = DMATR_CIRCULAR;
   dmach.StartTransfer(&dmaxfer);
 
   // search the first channel
@@ -144,15 +144,6 @@ void THwAdc_rp::StartFreeRun(uint32_t achannel_map)
     | ((enable_temp_sensor ? 1 : 0) <<  1)  // TS_EN
     | (1  <<  0)  // EN: 1 = enable the ADC clocks
   );
-}
-
-uint16_t THwAdc_rp::ChValue(uint8_t ach)
-{
-  if (dmach.Remaining())  // calling the Remaining() keeps the circular DMA running here on RP2040
-  {
-  }
-
-  return ( *(databyid[ach]) << HWADC_DATA_LSHIFT );  // always left aligned
 }
 
 void THwAdc_rp::StopFreeRun()
