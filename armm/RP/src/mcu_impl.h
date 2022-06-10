@@ -21,6 +21,10 @@
   #include "hwspi_rp.h"
 #endif
 
+#ifdef HWI2C_H_
+  #include "hwi2c_rp.h"
+#endif
+
 #ifdef HWQSPI_H_
   #include "hwqspi_rp.h"
 #endif
