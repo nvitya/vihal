@@ -34,7 +34,7 @@ depending on the peripheral complexity.
 ## Included CPU Architectures
 
 __Architecture ID__ | Description
---------------------+------------
+--------------------|------------
 ARMM  | ARM Cortex-M (M0, M3, M7)
 RV32I | 32-bit RISC-V
 RV64G | 64-bit RISC-V (experimental)
@@ -45,7 +45,7 @@ RV64G | 64-bit RISC-V (experimental)
 Those microcontrollers that share the same drivers belong to the same VIHAL microcontroller family. The families are named usually after the part ordering numbers.
 
 Family ID | Arch. | Sub-Families | Examples
-----------+-------+--------------+---------
+----------|-------|--------------|---------
 STM32 | ARMM | F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB
 ATSAM | ARMM | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20
 ATSAM_V2 | ARMM | D51/E5x, C2x, D10 | ATSAME51J20
