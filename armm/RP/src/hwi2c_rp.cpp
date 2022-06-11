@@ -161,6 +161,8 @@ void THwI2c_rp::RunTransaction()
       dmaused = (txdma && (datalen > 1));
       if (dmaused)
       {
+        regs->dma_cr = I2C_IC_DMA_CR_TDMAE_BITS; // enable only TX DMA
+
         xfer.srcaddr = dataptr;
         xfer.bytewidth = 1;
         xfer.count = remainingbytes - 1;
@@ -196,12 +198,15 @@ void THwI2c_rp::RunTransaction()
       rxcmd_dmaused = (txdma && rxdma && (rxcmd_remaining > 1));
       if (rxcmd_dmaused)
       {
+        regs->dma_cr = I2C_IC_DMA_CR_TDMAE_BITS; // enable only TX DMA
+
+        rxcmd_data = HWI2C_CMD_RXDATA;
         cmdxfer.srcaddr = &rxcmd_data;
         cmdxfer.bytewidth = 2;
         cmdxfer.count = rxcmd_remaining - 1;
         cmdxfer.flags = DMATR_NO_SRC_INC;  // keep sending the RXDATA CMD
 
-        rxcmd_remaining = 1; // keep the last one for stop
+        rxcmd_remaining = 1; // the last one will be sent manually with STOP request
 
         txdma->StartTransfer(&cmdxfer);
       }
@@ -209,6 +214,8 @@ void THwI2c_rp::RunTransaction()
       dmaused = (rxcmd_dmaused && (remainingbytes > 1));
       if (dmaused)
       {
+        regs->dma_cr |= I2C_IC_DMA_CR_RDMAE_BITS; // enable only RX DMA too
+
         xfer.dstaddr = dataptr;
         xfer.bytewidth = 1;
         xfer.count = remainingbytes - 1;
