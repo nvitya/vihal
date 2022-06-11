@@ -13,15 +13,20 @@ for data storage.
 __CPU Clock__         | OK      |
 __Pin Cfg. + GPIO__   | OK      |
 __UART__              | OK      |
-__DMA__               | OK, with circular support |
+__DMA__               | OK (1)  |
 __SPI Master__        | OK      |
-__QSPI__              | OK, ext. flash only |
+__QSPI__              | OK (2) |
 __SPI Self Flashing__ | OK      |
-__I2C Master__        | planned |
+__I2C Master__        | OK      |
 __I2C Slave__         | planned |
 __Ext. IRQ.__         | planned |
 __ADC__               | OK      |
 __Simple PWM__        | OK      |
 __USB Device__        | OK      |
-__PIO__               | -       |
+__PIO__               | - (3)   |
 
+
+Notes:
+  1.: Circular DMA buffer support uses additional helper channels, wich are allocated automatically
+  2.: The QSPI hardware is very much restricted to handle the external Flash memory only
+  3.: The PIO unit is a very Raspberry PI specific one, no vendor independent driver is possible here
