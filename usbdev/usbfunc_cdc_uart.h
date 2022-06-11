@@ -53,15 +53,15 @@ public:
 	TCdcLineCoding    linecoding;
 
 	TUsbEndpoint      ep_manage;
-	uint8_t           databuf[64];
+	uint8_t           databuf[64] __attribute__((aligned(4)));
 
 	// Serial (UART) --> USB
-	uint8_t           serial_rxbuf[128];  // use as circular buffer
+	uint8_t           serial_rxbuf[128] __attribute__((aligned(4)));  // use as circular buffer
 	uint8_t           serial_rxidx = 0;
 
 
 	// USB --> Serial (UART)
-	uint8_t           serial_txbuf[2][64];
+	uint8_t           serial_txbuf[2][64] __attribute__((aligned(4)));
 	uint8_t           serial_txbufidx = 0;
 	uint8_t           serial_txlen = 0;
 
@@ -120,11 +120,11 @@ public:
 	TUsbEndpoint          ep_input;
 	TUsbEndpoint          ep_output;
 
-	uint8_t               usb_txbuf[2][128];
+	uint8_t               usb_txbuf[2][128] __attribute__((aligned(4)));
 	uint8_t               usb_txbufidx = 0;
 	uint8_t               usb_txlen = 0;  // non null value signalizes pending USB RX data to be sent to the serial
 
-	uint8_t           		usb_rxbuf[64+4];  // the data from the usb (+4 for debugging)
+	uint8_t           		usb_rxbuf[64+4] __attribute__((aligned(4)));  // the data from the usb (+4 for debugging)
 	uint8_t               usb_rxlen = 0;
 
 public:

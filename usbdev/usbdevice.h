@@ -320,7 +320,7 @@ public:
 	TUsbInterface *       interfaces[USBDEV_MAX_INTERFACES];
 	char *          			stringtable[USBDEV_MAX_STRINGS] = {0};
 
-	uint8_t               ctrlbuf[USBDEV_CTRL_BUF_SIZE];
+	uint8_t               ctrlbuf[USBDEV_CTRL_BUF_SIZE] __attribute__((aligned(4)));
 
 public: // Descriptors
 
