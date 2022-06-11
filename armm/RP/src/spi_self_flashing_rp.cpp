@@ -24,11 +24,11 @@
  *  authors:  nvitya
 */
 
+#include "platform.h"
+
 #if defined(SPI_SELF_FLASHING) && SPI_SELF_FLASHING
 
 #include "string.h"
-
-#include "platform.h"
 
 #include "hwspi.h"
 #include "spiflash.h"
