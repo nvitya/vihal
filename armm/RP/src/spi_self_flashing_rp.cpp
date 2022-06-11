@@ -24,7 +24,7 @@
  *  authors:  nvitya
 */
 
-#ifdef SPI_SELF_FLASHING
+#if defined(SPI_SELF_FLASHING) && SPI_SELF_FLASHING
 
 #include "string.h"
 

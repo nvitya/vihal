@@ -27,7 +27,7 @@
 #ifndef SPI_SELF_FLASHING_RP_H_
 #define SPI_SELF_FLASHING_RP_H_
 
-#ifdef SPI_SELF_FLASHING
+#if defined(SPI_SELF_FLASHING) && SPI_SELF_FLASHING
 
 #include "platform.h"
 #include "spiflash.h"
