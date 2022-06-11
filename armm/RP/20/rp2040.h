@@ -11,7 +11,7 @@
 #define __MPU_PRESENT             0 /*!< STM32F0xx do not provide MPU                  */
 #define __NVIC_PRIO_BITS          2 /*!< STM32F0xx uses 2 Bits for the Priority Levels */
 #define __Vendor_SysTickConfig    0     /*!< Set to 1 if different SysTick Config is used */
-
+#define __VTOR_PRESENT            1
 // Mandatory IRQn definition
 
 typedef enum
@@ -42,7 +42,7 @@ typedef enum
 } IRQn_Type;
 
 
-#include "core_cm0.h"            /* Cortex-M0 processor and core peripherals */
+#include "core_cm0plus.h"            /* Cortex-M0 processor and core peripherals */
 
 #define __force_inline   inline __attribute__((always_inline))
 
