@@ -26,7 +26,8 @@ __USB Device__        | OK      |
 __PIO__               | - (3)   |
 
 
-Notes:
-  1.: Circular DMA buffer support uses additional helper channels, wich are allocated automatically
-  2.: The QSPI hardware is very much restricted to handle the external Flash memory only
-  3.: The PIO unit is a very Raspberry PI specific one, no vendor independent driver is possible here
+__Notes__:
+
+1. Circular DMA buffer support uses additional helper channels, wich are allocated automatically
+2. The QSPI hardware is very much restricted to handle the external Flash memory only
+3. The PIO unit is a very Raspberry PI specific one, no vendor independent driver is possible here
