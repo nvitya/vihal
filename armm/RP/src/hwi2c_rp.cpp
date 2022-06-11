@@ -133,6 +133,8 @@ void THwI2c_rp::RunTransaction()
     datalen = curtra->datalen;
     remainingbytes = datalen;
 
+    if (regs->clr_tx_abrt) { } // clear abort flags
+
     // set the slave target address
     regs->tar = curtra->address;
 
@@ -142,15 +144,16 @@ void THwI2c_rp::RunTransaction()
     unsigned extracnt = ((curtra->extra >> 24) & 3);
     if (extracnt)
     {
-      regs->data_cmd = (curtra->extra & 0xFF);
-      if (extracnt > 1)
+      if (extracnt > 2)
+      {
+        regs->data_cmd = ((curtra->extra >> 16) & 0xFF);
+        regs->data_cmd = ((curtra->extra >>  8) & 0xFF);
+      }
+      else if (extracnt > 1)
       {
         regs->data_cmd = ((curtra->extra >> 8) & 0xFF);
-        if (extracnt > 2)
-        {
-          regs->data_cmd = ((curtra->extra >> 16) & 0xFF);
-        }
       }
+      regs->data_cmd = (curtra->extra & 0xFF);
     }
 
     if (istx)
@@ -224,40 +227,52 @@ void THwI2c_rp::RunTransaction()
     trastate = 1;
   }
 
-// TODO: error handling
-#if 0
-
-  // check error flags
-  if (!curtra->error)
+  if (trastate <= 2)  // error handling
   {
-    if (sr & (1 << 8))
+    uint32_t abrt = regs->tx_abrt_source;
+    if (abrt &
+          (
+                I2C_IC_TX_ABRT_SOURCE_ABRT_USER_ABRT_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ARB_LOST_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_MASTER_DIS_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_10B_RD_NORSTRT_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_TXDATA_NOACK_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_10B_RD_NORSTRT_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_HS_NORSTRT_BITS | I2C_IC_TX_ABRT_SOURCE_ABRT_SBYTE_NORSTRT_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_SBYTE_ACKDET_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_HS_ACKDET_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_GCALL_READ_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_GCALL_NOACK_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_10ADDR2_NOACK_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_10ADDR1_NOACK_BITS
+              | I2C_IC_TX_ABRT_SOURCE_ABRT_7B_ADDR_NOACK_BITS
+          )
+        ) // any error ?
     {
-      curtra->error = ERR_I2C_ACK;
-    }
-    else if (sr & (1 << 9))
-    {
-      curtra->error = ERR_I2C_ARBLOST;
-    }
-    else if (sr & (1 << 6))
-    {
-      curtra->error = ERR_I2C_OVERRUN;
-    }
-#if 0
-    else if (sr & (1 << xxx))
-    {
-      curtra->error = ERR_I2C_BUS;
-    }
-#endif
+      if (abrt & I2C_IC_TX_ABRT_SOURCE_ABRT_SLV_ARBLOST_BITS)
+      {
+        curtra->error = ERR_I2C_ARBLOST;
+      }
+      else if (abrt & (I2C_IC_TX_ABRT_SOURCE_ABRT_TXDATA_NOACK_BITS | I2C_IC_TX_ABRT_SOURCE_ABRT_7B_ADDR_NOACK_BITS))
+      {
+        curtra->error = ERR_I2C_ACK;
+      }
+      else
+      {
+        curtra->error = ERR_I2C_BUS;
+      }
 
-    if (curtra->error)
-    {
-      regs->CR = (1 << 1);  // send stop condition
-      trastate = 90;
+      if (curtra->error)
+      {
+        trastate = 90;
+        regs->enable = 0;
+        curtra->completed = true;
+        return;
+      }
     }
   }
-#endif
 
-  if (1 == trastate)
+  if (1 == trastate) // send and receive main data
   {
     if (istx)
     {
@@ -273,7 +288,7 @@ void THwI2c_rp::RunTransaction()
           return; // TX fifo is full
         }
 
-        uint8_t data = *dataptr++;
+        uint32_t data = *dataptr++;
         if (1 == remainingbytes)
         {
            data |= HWI2C_CMD_STOP;
@@ -315,7 +330,7 @@ void THwI2c_rp::RunTransaction()
         }
 
         *dataptr++ = regs->data_cmd;
-        --rxcmd_remaining;
+        --remainingbytes;
       }
 
       if (remainingbytes > 0)
@@ -327,8 +342,13 @@ void THwI2c_rp::RunTransaction()
     trastate = 2; // closing
   }
 
-  if (2 == trastate)
+  if (2 == trastate)  // wait until the last byte is sent and the master goes to idle
   {
+    if (0 == (regs->status & I2C_IC_STATUS_TFE_BITS))
+    {
+      return; // TX is not finished yet
+    }
+
     // wait until stop detected
     if (regs->status & I2C_IC_STATUS_ACTIVITY_BITS)
     {
