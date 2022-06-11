@@ -18,6 +18,9 @@ OUTPUT_ARCH(arm)
 __stack = ORIGIN(STACK1) + LENGTH(STACK1);
 __Main_Stack_Size = 4096;
 
+PROVIDE ( _Heap_Begin = _end_noinit ) ;
+PROVIDE ( _Heap_Limit = ORIGIN(RAM)+LENGTH(RAM) ) ;
+
 ENTRY(soft_entry)
 
 SECTIONS
