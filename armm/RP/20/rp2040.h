@@ -22,22 +22,32 @@ typedef enum
   PendSV_IRQn                 = -2,     /*!< 14 Cortex-M0 Pend SV Interrupt                                  */
   SysTick_IRQn                = -1,     /*!< 15 Cortex-M0 System Tick Interrupt                              */
 
-  Device_Irq_00               = 0,
-  Device_Irq_01               = 1,
-  Device_Irq_02               = 2,
-  Device_Irq_03               = 3,
-  Device_Irq_04               = 4,
-  Device_Irq_05               = 5,
-  Device_Irq_06               = 6,
-  Device_Irq_07               = 7,
-  Device_Irq_08               = 8,
-  Device_Irq_09               = 9,
-  Device_Irq_10               = 10,
-  Device_Irq_11               = 11,
-  Device_Irq_12               = 12,
-  Device_Irq_13               = 13,
-  Device_Irq_14               = 14,
-  Device_Irq_15               = 15
+  TIMER_0_IRQn                 =  0,
+  TIMER_1_IRQn                 =  1,
+  TIMER_2_IRQn                 =  2,
+  TIMER_3_IRQn                 =  3,
+  PWM_WRAP_IRQn                =  4,
+  USBCTRL_IRQn                 =  5,
+  XIP_IRQn                     =  6,
+  PIO0_0_IRQn                  =  7,
+  PIO0_1_IRQn                  =  8,
+  PIO1_0_IRQn                  =  9,
+  PIO1_1_IRQn                  = 10,
+  DMA_0_IRQn                   = 11,
+  DMA_1_IRQn                   = 12,
+  IO_BANK0_IRQn                = 13,
+  IO_QSPI_IRQn                 = 14,
+  SIO_PROC0_IRQn               = 15,
+  SIO_PROC1_IRQn               = 16,
+  CLOCKS_IRQn                  = 17,
+  SPI0_IRQn                    = 18,
+  SPI1_IRQn                    = 19,
+  UART0_IRQn                   = 20,
+  UART1_IRQn                   = 21,
+  ADC_FIFO_IRQn                = 22,
+  I2C0_IRQn                    = 23,
+  I2C1_IRQn                    = 24,
+  RTC_IRQn                     = 25
 //
 } IRQn_Type;
 

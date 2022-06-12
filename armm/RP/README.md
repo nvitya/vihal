@@ -6,6 +6,8 @@ Code execution from RAM is much simpler and faster, therefore I provided example
 RAM (sometimes with self-flashing). This has a big advantage, that the external Flash also can be used freely
 for data storage.
 
+The most of the VIHAL tests/examples for the RP2040 use self-flasing.
+
 ## VIHAL Driver Status for the RP2040 Integrated Peripherals
 
   Driver              | Status  |
@@ -19,7 +21,7 @@ __QSPI__              | OK (2) |
 __SPI Self Flashing__ | OK      |
 __I2C Master__        | OK      |
 __I2C Slave__         | planned |
-__Ext. IRQ.__         | planned |
+__Ext. IRQ.__         | OK      |
 __ADC__               | OK      |
 __Simple PWM__        | OK      |
 __USB Device__        | OK      |
@@ -31,3 +33,7 @@ __Notes__:
 1. Circular DMA buffer support uses additional helper channels, wich are allocated automatically from channel 11 backwards. Therefore it is recommended using only channels 0-7.
 2. The QSPI hardware is very much restricted to handle the external Flash memory only
 3. The PIO unit is a very Raspberry PI specific one, no vendor independent driver is possible here
+
+# Known Issues
+
+* I'v noticed at the USB-Uart test that it jams sometimes. It can be an USB problem or a DMA problem. I plan to fix it soon

@@ -37,6 +37,10 @@
   #include "hwpwm_rp.h"
 #endif
 
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_rp.h"
+#endif
+
 #if defined(HWUSBCTRL_H_)
   #include "hwusbctrl_rp.h"
 #endif
