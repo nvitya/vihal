@@ -11,6 +11,10 @@
   #include "hwuart_gd32v.h"
 #endif
 
+#ifdef HWDMA_H_
+  #include "hwdma_gd32v.h"
+#endif
+
 #ifdef HWSPI_H_
   //#include "hwspi_gd32v.h"
 #endif

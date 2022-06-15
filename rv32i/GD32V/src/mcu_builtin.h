@@ -34,6 +34,7 @@
 #elif defined(MCU_GD32VF103CB)
 
   #define MCUF_GD32V
+  #define MCUSF_F1
   #define MAX_CLOCK_SPEED  108000000
 
   #include "gd32vf103.h"

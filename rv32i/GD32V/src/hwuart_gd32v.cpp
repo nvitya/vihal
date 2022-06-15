@@ -191,20 +191,12 @@ void THwUart_gd32v::DmaAssign(bool istx, THwDmaChannel * admach)
 	if (istx)
 	{
 		txdma = admach;
-		#ifdef USART_TDR_TDR
-			admach->Prepare(istx, (void *)&regs->TDR, 0);
-		#else
-			admach->Prepare(istx, (void *)&regs->DR, 0);
-		#endif
+		admach->Prepare(istx, (void *)&regs->DATA, 0);
 	}
 	else
 	{
 		rxdma = admach;
-		#ifdef USART_RDR_RDR
-			admach->Prepare(istx, (void *)&regs->RDR, 0);
-		#else
-			admach->Prepare(istx, (void *)&regs->DR, 0);
-		#endif
+  	admach->Prepare(istx, (void *)&regs->DATA, 0);
 	}
 }
 
@@ -215,7 +207,7 @@ bool THwUart_gd32v::DmaStartSend(THwDmaTransfer * axfer)
 		return false;
 	}
 
-	regs->CR3 |= (1 << 7); // enable the TX DMA
+	regs->CTL2 |= (1 << 7); // enable the TX DMA
 
 	txdma->StartTransfer(axfer);
 
@@ -229,7 +221,7 @@ bool THwUart_gd32v::DmaStartRecv(THwDmaTransfer * axfer)
 		return false;
 	}
 
-	regs->CR3 |= (1 << 6); // enable the RX DMA
+	regs->CTL2 |= (1 << 6); // enable the RX DMA
 
 	rxdma->StartTransfer(axfer);
 

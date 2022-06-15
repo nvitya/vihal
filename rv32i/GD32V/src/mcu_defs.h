@@ -33,6 +33,8 @@
 
 #define MCU_INTERNAL_RC_SPEED   8000000
 
+#define HW_DMA_MAX_COUNT          32768
+
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
 }

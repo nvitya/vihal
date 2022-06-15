@@ -39,10 +39,10 @@ public:
 
 	bool SendFinished();
 
-	//void DmaAssign(bool istx, THwDmaChannel * admach);
+	void DmaAssign(bool istx, THwDmaChannel * admach);
 
-	//bool DmaStartSend(THwDmaTransfer * axfer);
-	//bool DmaStartRecv(THwDmaTransfer * axfer);
+	bool DmaStartSend(THwDmaTransfer * axfer);
+	bool DmaStartRecv(THwDmaTransfer * axfer);
 
 public:
 	gd32v_usart_t *    regs = nullptr;
