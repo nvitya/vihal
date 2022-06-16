@@ -33,6 +33,15 @@
 #define MCU_RV32I
 #define CPU_RV32I
 
+#define MSTATUS_MIE         0x00000008
+
+#define CSR_MSTATUS         0x300
+#define CSR_MIE             0x304
+#define CSR_MTVEC           0x305
+#define CSR_MTVT            0x307
+#define CSR_MEPC            0x341
+#define CSR_MCAUSE          0x342
+
 inline uint32_t __attribute__ ((always_inline)) cpu_csr_read(const int csr_id)
 {
   register uint32_t csr_data;
@@ -48,3 +57,18 @@ inline void __attribute__ ((always_inline)) cpu_csr_write(const int csr_id, uint
 
   asm volatile ("csrw %[input_i], %[input_j]" :  : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
 }
+
+inline void __attribute__ ((always_inline)) cpu_csr_setbits(const int csr_id, uint32_t abits)
+{
+  register unsigned long __tmp;
+  register uint32_t csr_data = abits;
+  asm volatile ("csrrs %[result], %[input_i], %[input_j]" : [result] "=r" (__tmp) : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
+}
+
+inline void __attribute__ ((always_inline)) cpu_csr_clrbits(const int csr_id, uint32_t abits)
+{
+  register unsigned long __tmp;
+  register uint32_t csr_data = abits;
+  asm volatile ("csrrc %[result], %[input_i], %[input_j]" : [result] "=r" (__tmp) : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
+}
+

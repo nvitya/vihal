@@ -25,6 +25,7 @@
  *  authors:  nvitya
  *  description:
  *    Interrupt vector definitions for the ECLIC Interrupt Controller
+ *    Some solutions were taken from GD32VF103 Firmware library.
 */
 
 #define MSTATUS_MIE         0x00000008
@@ -41,7 +42,9 @@
 #define CSR_PUSHMEPC        0x7EF
 #define CSR_PUSHMSUBM       0x7EB
 
-  .section .startup
+  .section  .startup
+  .balign   4
+
 
 //-----------------------------------------------------------------------------------
 // INTERRUPT HANDLERS
@@ -118,11 +121,13 @@
 // IRQ Setup function, called from startup.S
 //-----------------------------------------------------------------------------------
 
+
+
   .global riscv_setup_irq
   .type   riscv_setup_irq, @function
   .weak   riscv_setup_irq
 riscv_setup_irq:
-
+  .cfi_startproc
   li    t0, 0x200           // Set the the NMI base to share with mtvec by setting CSR_MMISC_CTL
   csrs  CSR_MMISC_CTL, t0
 
@@ -135,17 +140,22 @@ riscv_setup_irq:
 
   la    t0, riscv_trap_entry
   csrw  mtvec, t0
+  csrw  mepc, t0
+
   ret
+  .cfi_endproc
+
 
 //-----------------------------------------------------------------------------------
 // Trap entry point
 //-----------------------------------------------------------------------------------
 
-  .align  6           // In CLIC mode, the trap entry must be 64bytes aligned
+  .align  6           // The trap entry (address) must be aligned to 64 bytes !
   .global riscv_trap_entry
   .type   riscv_trap_entry, @function
   .weak   riscv_trap_entry
 riscv_trap_entry:
+  .cfi_startproc
 
   SAVE_CONTEXT        // allocate stack space for 20 registers, save 17 registers, 3 locations are additionally available
   SAVE_EPC_STATUS     // use locations 17, 18, 19 to save Save the MEPC/Mstatus/Msubm regs
@@ -157,6 +167,7 @@ riscv_trap_entry:
   RESTORE_EPC_STATUS  // Restore the MEPC/Mstatus/Msubm reg
   RESTORE_CONTEXT     // Restore the registers, and stack pointer
   mret                // Return to regular code
+  .cfi_endproc
 
 //-----------------------------------------------------------------------------------
 // IRQ entry point
@@ -167,6 +178,7 @@ riscv_trap_entry:
   .type   riscv_irq_entry, @function
   .weak   riscv_irq_entry
 riscv_irq_entry: // -------------> This label will be set to MTVT2 register
+  .cfi_startproc
 
   SAVE_CONTEXT        // allocate stack space for 20 registers, save 17 registers, 3 locations are additionally available
 
@@ -194,6 +206,10 @@ riscv_irq_entry: // -------------> This label will be set to MTVT2 register
 
   RESTORE_CONTEXT     // Restore the registers, and stack pointer
   mret                // Return to regular code
+  .cfi_endproc
+
+  .end
+
 
 //-----------------------------------------------------------------------------------
 // END OF FILE

@@ -103,7 +103,7 @@ typedef enum IRQn
 
 	CLIC_INT_RESERVED        	 = 0,      			/*!< RISC-V reserved		*/
 	CLIC_INT_SFT         		 = 3,				/*!< Software interrupt		*/
-	CLIC_INT_TMR         		 = 7,				/*!< CPU Timer interrupt	*/
+	SYSTIMER_IRQn       		 = 7,				/*!< CPU Timer interrupt	*/
 	CLIC_INT_BWEI        		 = 17,				/*!< Bus Error interrupt	*/
 	CLIC_INT_PMOVI       		 = 18,				/*!< Performance Monitor	*/
 
@@ -198,6 +198,10 @@ typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrStatus;
 #define DBG_BASE              ((uint32_t)0xE0042000U)        /*!< DBG base address                 */
 #define EXMC_BASE             ((uint32_t)0xA0000000U)        /*!< EXMC register base address       */
 
+// Core internal peripherals
+#define SYSTIMER_BASE         ((uint32_t)0xD1000000U)
+#define ECLIC_BASE            ((uint32_t)0xD2000000U)
+
 /* peripheral memory map */
 #define APB1_BUS_BASE         ((uint32_t)0x40000000U)        /*!< apb1 base address                */
 #define APB2_BUS_BASE         ((uint32_t)0x40010000U)        /*!< apb2 base address                */
@@ -229,6 +233,75 @@ typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrStatus;
 #define FMC_BASE              (AHB1_BUS_BASE + 0x0000A000U)  /*!< FMC base address                 */
 #define CRC_BASE              (AHB1_BUS_BASE + 0x0000B000U)  /*!< CRC base address                 */
 #define USBFS_BASE            (AHB1_BUS_BASE + 0x0FFE8000U)  /*!< USBFS base address               */
+
+//---------------------------------------------------------------------------------------
+// ECLIC
+//---------------------------------------------------------------------------------------
+
+#define ECLIC_INT_CTL_BITCOUNT  4
+#define ECLIC_INT_CTL_MASK   0xF0
+#define ECLIC_INT_CTL_SHIFT     4
+
+#define ECLIC_NLBITS_LEVEL0_PRIO4    0
+#define ECLIC_NLBITS_LEVEL1_PRIO3    1
+#define ECLIC_NLBITS_LEVEL2_PRIO2    2
+#define ECLIC_NLBITS_LEVEL3_PRIO1    3
+#define ECLIC_NLBITS_LEVEL4_PRIO0    4
+
+#define ECLIC_CFG_NLBITS_LSB              1
+#define ECLIC_CFG_NLBITS_MASK    0x0000001E
+
+typedef struct
+{
+  volatile uint8_t    IP;
+  volatile uint8_t    IE;
+  volatile uint8_t    ATTR;
+  volatile uint8_t    CTL;
+//
+} eclic_irq_regs_t;
+
+typedef struct
+{
+  volatile uint8_t    CFG;        // 00
+  uint8_t             _pad1[3];   // 01
+  volatile uint32_t   INFO;       // 04
+  uint8_t             _pad8[3];   // 08
+  volatile uint8_t    MTH;        // 0B
+  uint8_t             pad10[0x1000 - 12];  // 0C
+
+  eclic_irq_regs_t    INT[128];   // 0x1000
+//
+} eclic_regs_t;
+
+#define ECLIC  ((eclic_regs_t *)(ECLIC_BASE))
+
+//---------------------------------------------------------------------------------------
+// SYSTIMER
+//---------------------------------------------------------------------------------------
+
+typedef struct
+{
+  union  // 00
+  {
+    volatile uint32_t   MTIME32[2];
+    volatile uint64_t   MTIME64;
+  };
+
+  union  // 08
+  {
+    volatile uint32_t   MTIMECMP32[2];
+    volatile uint64_t   MTIMECMP64;
+  };
+
+  uint8_t             _pad10[0xFF0 - 0x10];
+  volatile uint32_t   MSFTRST;       // FF0
+  uint32_t            _padFF4;
+  volatile uint32_t   MTIMECTL;      // FF8
+  volatile uint32_t   MSIP;          // FFC
+//
+} sys_systimer_regs_t;
+
+#define SYSTIMER  ((sys_systimer_regs_t *)(SYSTIMER_BASE))
 
 //---------------------------------------------------------------------------------------
 // RCU

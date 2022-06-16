@@ -118,10 +118,13 @@ void IRQ_Handler_97       ( void ) __attribute__ ((weak, alias("Default_Handler"
 void IRQ_Handler_98       ( void ) __attribute__ ((weak, alias("Default_Handler")));
 void IRQ_Handler_99       ( void ) __attribute__ ((weak, alias("Default_Handler")));
 
+
 typedef void (* pHandler)(void);
 
-__attribute__ ((section(".isr_vector"),aligned(4),used))
-pHandler __isr_vectors[] =
+extern const pHandler __isr_vectors[];
+
+__attribute__((aligned(64),used))
+const pHandler __isr_vectors[] =
 {
   (pHandler) IRQ_Handler_00,  // 0
   (pHandler) IRQ_Handler_01,  // 0
@@ -130,7 +133,7 @@ pHandler __isr_vectors[] =
   (pHandler) IRQ_Handler_04,  // 0
   (pHandler) IRQ_Handler_05,  // 0
   (pHandler) IRQ_Handler_06,  // 0
-  (pHandler) IRQ_Handler_07,  // eclic_mtip_handler
+  (pHandler) IRQ_Handler_07,  // eclic_mtip_handler  (MTIMER)
   (pHandler) IRQ_Handler_08,  // 0
   (pHandler) IRQ_Handler_09,  // 0
   (pHandler) IRQ_Handler_10,  // 0

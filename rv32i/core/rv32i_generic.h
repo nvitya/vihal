@@ -27,21 +27,21 @@
 #define __RV32I_GENERIC_H
 
 #include "stdint.h"
+#include "rv32i_cpu.h"
 
 inline void __attribute__((always_inline)) mcu_disable_interrupts()
 {
-  //__asm volatile ("cpsid i");
+  cpu_csr_clrbits(CSR_MSTATUS, MSTATUS_MIE);  // clear machine interrupt enable bit
 }
 
 inline void __attribute__((always_inline)) mcu_enable_interrupts()
 {
-  //__asm volatile ("cpsie i");
+  cpu_csr_setbits(CSR_MSTATUS, MSTATUS_MIE);  // set machine interrupt enable bit
 }
-
-//extern "C" void (* __isr_vectors [])();
 
 inline void __attribute__((always_inline)) mcu_init_vector_table()
 {
+  // this is more complex and cpu specific on the RISC-V
 }
 
 inline void __attribute__((always_inline)) mcu_enable_fpu()
@@ -66,12 +66,12 @@ inline void __attribute__((always_inline)) mcu_disable_dcache()
 
 inline unsigned __get_PRIMASK()
 {
-  return 0;
+  return cpu_csr_read(CSR_MSTATUS);
 }
 
 inline void __set_PRIMASK(unsigned aprimask)
 {
-
+  cpu_csr_write(CSR_MSTATUS, aprimask);
 }
 
 

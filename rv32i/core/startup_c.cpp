@@ -28,17 +28,15 @@
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
-extern "C" void __isr_vectors(void);
-
 extern "C" __attribute__((section(".startup"), used, noreturn))
 void startup_c_entry(unsigned self_flashing)
 {
   // early entry, stack is working, GP is working, IRQs disabled
 
   // setup interrupt vectors (trap)
-  asm("la     t0, __isr_vectors");
-  asm("csrw   mtvec, t0");
-  asm("csrw   mepc, t0");
+  //asm("la     t0, __isr_vectors");
+  //asm("csrw   mtvec, t0");
+  //asm("csrw   mepc, t0");
 
   // CSR init
 #if 0
