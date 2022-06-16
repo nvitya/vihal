@@ -59,10 +59,10 @@ init_start:
   // This leads false immediates for instructions that use the PC partially (like luipc)
 
   // This jump ensures that the execution continues there where the original code was targeted:
-  lui    x5, %hi(_start0800)
-  li     x6, %lo(_start0800)
-  or     x5, x5, x6
-  jr     x5
+  lui    t0, %hi(_start0800)
+  li     t1, %lo(_start0800)
+  or     t0, t0, t1
+  jr     t0
 
 _start0800:
 
@@ -73,7 +73,10 @@ _start0800:
 
   la    gp, __global_pointer$   // global pointer, must be set under "norelax" option
 
-  j startup_c_entry  // continue with C++ code
+  la    t0, riscv_setup_irq     // setup interrupts, this is interrupt controlled dependent
+  jalr  x1, t0                  // call the function
+
+  j     startup_c_entry  // continue with C++ code
 
 .cfi_endproc
 .end

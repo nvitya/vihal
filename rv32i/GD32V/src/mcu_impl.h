@@ -20,9 +20,10 @@
 #endif
 
 #ifdef HWI2C_H_
+  #define SKIP_UNIMPLEMENTED_WARNING
   // #include "hwi2c_gd32v.h"
 #endif
 
-#ifdef HWDMA_H_
-  #define SKIP_UNIMPLEMENTED_WARNING
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_gd32v.h"
 #endif
