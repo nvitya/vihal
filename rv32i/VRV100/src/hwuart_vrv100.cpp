@@ -104,7 +104,7 @@ bool THwUart_vrv100::Init(int adevnum)
 
 bool THwUart_vrv100::TrySendChar(char ach)
 {
-	if (0 == (regs->STATUS & 0xFFFF0000)) // no more free space in the fifo?
+	if (0 == ((regs->STATUS >> 16) & 0xFF)) // no more free space in the Tx fifo?
 	{
 		return false;
 	}
@@ -116,22 +116,22 @@ bool THwUart_vrv100::TrySendChar(char ach)
 
 bool THwUart_vrv100::TryRecvChar(char * ach)
 {
-	if (0 == (regs->STATUS & 0x0000FFFF)) // is the rx fifo empty?
+	if ((regs->STATUS >> 24) & 0xFF) // is something in the rx fifo ?
 	{
-		return false;
-	}
-
-	*ach = regs->DATA;
-	return true;
-}
-
-bool THwUart_vrv100::SendFinished() // not 100% perfect !
-{
-	if (0 == (regs->STATUS & 0x0000FFFF)) // is the rx fifo empty?
-	{
+	  *ach = regs->DATA;
 		return true;
 	}
 
 	return false;
+}
+
+bool THwUart_vrv100::SendFinished() // not 100% perfect !
+{
+  if ((regs->STATUS >> 16) & 0xFF) // is something in the tx fifo ?
+  {
+    return false;
+  }
+
+	return true;
 }
 
