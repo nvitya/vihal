@@ -296,7 +296,8 @@ typedef struct
   uint8_t             _pad10[0xFF0 - 0x10];
   volatile uint32_t   MSFTRST;       // FF0
   uint32_t            _padFF4;
-  volatile uint32_t   MTIMECTL;      // FF8
+  volatile uint8_t    MTIMECTL;      // FF8
+  uint8_t             _padFF9[3];
   volatile uint32_t   MSIP;          // FFC
 //
 } sys_systimer_regs_t;

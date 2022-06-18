@@ -25,7 +25,7 @@
  *  authors:  nvitya
  *  description:
  *    Interrupt vector definitions for the ECLIC Interrupt Controller
- *    Some solutions were taken from GD32VF103 Firmware library.
+ *    Big part of the interrrupt handing were taken from GD32VF103 Firmware library (nuclei-sdk)
 */
 
 #define MSTATUS_MIE         0x00000008
@@ -132,7 +132,7 @@ riscv_setup_irq:
   csrs  CSR_MMISC_CTL, t0
 
   la    t0, __isr_vectors
-  csrw  mtvt, t0
+  csrw  CSR_MTVT, t0
 
   la    t0, riscv_irq_entry
   csrw  CSR_MTVT2, t0
@@ -173,7 +173,7 @@ riscv_trap_entry:
 // IRQ entry point
 //-----------------------------------------------------------------------------------
 
-  .align  2
+  .align  6           // maybe a good idea to align this too
   .global riscv_irq_entry
   .type   riscv_irq_entry, @function
   .weak   riscv_irq_entry

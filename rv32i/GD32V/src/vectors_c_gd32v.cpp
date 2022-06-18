@@ -123,7 +123,8 @@ typedef void (* pHandler)(void);
 
 extern const pHandler __isr_vectors[];
 
-__attribute__((aligned(64),used))
+// must be 512 aligned otherwise does not work !
+__attribute__((aligned(512),used))
 const pHandler __isr_vectors[] =
 {
   (pHandler) IRQ_Handler_00,  // 0
