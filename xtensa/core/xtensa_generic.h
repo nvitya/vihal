@@ -30,15 +30,26 @@
 // read mtime:
 #define CLOCKCNT  (0)  // todo: implement !!!
 
-inline void __attribute__((always_inline)) mcu_disable_interrupts()
+inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
-  //__asm volatile ("cpsid i");
 }
 
-inline void __attribute__((always_inline)) mcu_enable_interrupts()
+inline unsigned __attribute__((always_inline)) mcu_interrupts_save_and_disable()
 {
-  //__asm volatile ("cpsie i");
+  unsigned prevstate = 0;
+  return prevstate;
 }
+
+inline void __attribute__((always_inline)) mcu_interrupts_enable()
+{
+  //
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_restore(unsigned prevstate)
+{
+  //
+}
+
 
 //extern "C" void (* __isr_vectors [])();
 

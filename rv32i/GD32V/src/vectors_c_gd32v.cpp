@@ -216,6 +216,13 @@ const pHandler __isr_vectors[] =
   (pHandler) IRQ_Handler_86   // USBFS_IRQHandler
 };
 
+
+__attribute__ ((section(".after_vectors"),weak))
+void mcu_interrupt_controller_init()
+{
+  eclic_set_nlbits(ECLIC_NLBITS_LEVEL4_PRIO0); // this more similar to ARM Priority
+}
+
 // Processor ends up here if an unexpected interrupt occurs or a
 // specific handler is not present in the application code.
 // When in DEBUG, trigger a debug exception to clearly notify

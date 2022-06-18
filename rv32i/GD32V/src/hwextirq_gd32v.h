@@ -33,6 +33,7 @@
 class THwExtIrq_gd32v : public THwExtIrq_pre
 {
 public:
+  gd32v_exti_t *        regs = nullptr;
 	volatile uint32_t *   irqpend_reg = nullptr;
 	volatile uint32_t *   irqack_reg = nullptr;
 	uint32_t              pin_mask = 0;

@@ -563,7 +563,7 @@ Default_Handler(void)
 void __attribute__ ((section(".after_vectors"),weak))
 NMI_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -580,7 +580,7 @@ NMI_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak,naked))
 HardFault_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -597,7 +597,7 @@ HardFault_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak,naked))
 BusFault_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -614,7 +614,7 @@ BusFault_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak,naked))
 UsageFault_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -631,7 +631,7 @@ UsageFault_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak))
 SVC_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -648,7 +648,7 @@ SVC_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak))
 PendSV_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -665,7 +665,7 @@ PendSV_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak))
 MemManage_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif
@@ -682,7 +682,7 @@ MemManage_Handler (void)
 void __attribute__ ((section(".after_vectors"),weak))
 DebugMon_Handler (void)
 {
-	mcu_disable_interrupts();
+	mcu_interrupts_disable();
 #ifdef CoreDebug
 	if (CoreDebug->DHCSR & 1)
 #endif

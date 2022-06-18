@@ -75,6 +75,35 @@
 
 #endif
 
+inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
+{
+  NVIC_SetPriority(IRQn_Type(intnum), priority);
+}
+
+inline void mcu_irq_pending_clear(unsigned intnum)
+{
+  NVIC_ClearPendingIRQ(IRQn_Type(intnum));
+}
+
+inline void mcu_irq_pending_set(unsigned intnum)
+{
+  NVIC_SetPendingIRQ(IRQn_Type(intnum));
+}
+
+inline void mcu_irq_enable(unsigned intnum)
+{
+  NVIC_EnableIRQ(IRQn_Type(intnum));
+}
+
+inline void mcu_irq_disable(unsigned intnum)
+{
+  NVIC_DisableIRQ(IRQn_Type(intnum));
+}
+
+inline bool mcu_irq_enabled(unsigned intnum)
+{
+  return (NVIC_GetEnableIRQ(IRQn_Type(intnum)) != 0);
+}
 
 extern "C" void (* __isr_vectors [])();
 

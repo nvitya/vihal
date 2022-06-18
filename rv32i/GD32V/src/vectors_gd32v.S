@@ -139,8 +139,11 @@ riscv_setup_irq:
   csrs  CSR_MTVT2, 0x1
 
   la    t0, riscv_trap_entry
-  csrw  mtvec, t0
   csrw  mepc, t0
+
+  ori   t0, t0, 3           // sets common entry point for all interrupt handlers
+                            // harder service with context saving and nested interrupts
+  csrw  mtvec, t0
 
   ret
   .cfi_endproc

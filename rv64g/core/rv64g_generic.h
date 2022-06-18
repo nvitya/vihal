@@ -30,14 +30,27 @@
 // read mtime:
 #define CLOCKCNT  (cpu_csr_read(0xB00))
 
-inline void __attribute__((always_inline)) mcu_disable_interrupts()
+
+inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
-  //__asm volatile ("cpsid i");
+  cpu_csr_clrbits(CSR_MSTATUS, MSTATUS_MIE);  // clear machine interrupt enable bit
 }
 
-inline void __attribute__((always_inline)) mcu_enable_interrupts()
+inline unsigned __attribute__((always_inline)) mcu_interrupts_save_and_disable()
 {
-  //__asm volatile ("cpsie i");
+  unsigned prevstate = cpu_csr_read(CSR_MSTATUS);
+  cpu_csr_clrbits(CSR_MSTATUS, MSTATUS_MIE);  // clear machine interrupt enable bit
+  return prevstate;
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_enable()
+{
+  cpu_csr_setbits(CSR_MSTATUS, MSTATUS_MIE);  // set machine interrupt enable bit
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_restore(unsigned prevstate)
+{
+  cpu_csr_write(CSR_MSTATUS, prevstate);
 }
 
 //extern "C" void (* __isr_vectors [])();

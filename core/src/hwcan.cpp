@@ -98,20 +98,19 @@ bool THwCan_pre::TryGetTxMessage(TCanMsg * amsg)
 {
 	// disabling interrupts are necessary because it might be called from idle and interrupt context
 
-	unsigned pm = __get_PRIMASK();  // save interrupt disable status
-	mcu_disable_interrupts();
+	unsigned pm = mcu_interrupts_save_and_disable();
 
 	if (txmb_idx_rd != txmb_idx_wr)
 	{
 		*amsg = txmsgbuf[txmb_idx_rd];
 		++txmb_idx_rd;
 		if (txmb_idx_rd >= txmb_count)  txmb_idx_rd = 0;
-	 	__set_PRIMASK(pm); // restore interrupt disable status
+	 	mcu_interrupts_restore(pm); // restore interrupt disable status
 		return true;
 	}
 	else
 	{
-	 	__set_PRIMASK(pm); // restore interrupt disable status
+    mcu_interrupts_restore(pm); // restore interrupt disable status
 		return false;
 	}
 }
@@ -130,8 +129,7 @@ void THwCan_pre::AddTxMessage(TCanMsg * amsg)
 
 	// disabling interrupts are necessary because it might be called from idle and interrupt context
 
-	unsigned pm = __get_PRIMASK();  // save interrupt disable status
-	mcu_disable_interrupts();
+	unsigned pm = mcu_interrupts_save_and_disable();
 
 	txmsgbuf[txmb_idx_wr] = *amsg;
 	++txmb_idx_wr;
@@ -147,7 +145,7 @@ void THwCan_pre::AddTxMessage(TCanMsg * amsg)
 		if (txmb_idx_rd >= txmb_count)  txmb_idx_rd = 0;
 	}
 
- 	__set_PRIMASK(pm); // restore interrupt disable status
+	mcu_interrupts_restore(pm); // restore interrupt disable status
 }
 
 void THwCan_pre::OnRxMessage(TCanMsg * amsg) // should be called from HandleRx()

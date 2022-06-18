@@ -18,7 +18,7 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     startup.S (rv32i)
+// file:     rv32i_startup.S
 // brief:    VIHAL RV32I startup code, heavily tied to the linker script
 // created:  2021-10-03
 // authors:  nvitya

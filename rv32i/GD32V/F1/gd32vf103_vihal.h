@@ -19,14 +19,14 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     gd32vf103.h
+ *  file:     gd32vf103_vihal.h
  *  brief:    Monolitic defininiton for the GD32VF103 MCU with structures
- *  version:  1.00
  *  date:     2021-10-02
  *  authors:  nvitya
- *  notes:    the original manufacturer definition are strongly modified, extended
- *            for easier usage
+ *  notes:    The register structures are made for VIHAL for better performance and nicer code.
+ *            (In the original definitions there were no register structures.)
 */
+// Original copyright header:
 /*!
     \file    gd32vf103.h
     \brief   general definitions for GD32VF103
@@ -242,6 +242,13 @@ typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrStatus;
 #define ECLIC_INT_CTL_MASK   0xF0
 #define ECLIC_INT_CTL_SHIFT     4
 
+#define ECLIC_INT_ATTR_SHV              0x01
+#define ECLIC_INT_ATTR_TRIG_LEVEL       0x00
+#define ECLIC_INT_ATTR_TRIG_EDGE        0x02
+#define ECLIC_INT_ATTR_TRIG_RISING      0x00
+#define ECLIC_INT_ATTR_TRIG_FALLING     0x04
+#define ECLIC_INT_ATTR_TRIG_MASK        0x06
+
 #define ECLIC_NLBITS_LEVEL0_PRIO4    0
 #define ECLIC_NLBITS_LEVEL1_PRIO3    1
 #define ECLIC_NLBITS_LEVEL2_PRIO2    2
@@ -274,6 +281,73 @@ typedef struct
 } eclic_regs_t;
 
 #define ECLIC  ((eclic_regs_t *)(ECLIC_BASE))
+
+inline void eclic_set_nlbits(uint8_t nlbits)
+{
+  uint8_t cfgr = ECLIC->CFG;
+  cfgr &= ~ECLIC_CFG_NLBITS_MASK;
+  cfgr |= (nlbits << ECLIC_CFG_NLBITS_LSB);
+  ECLIC->CFG = cfgr;
+}
+
+inline void eclic_int_set_level_prio(uint32_t intnum, uint8_t level_prio)
+{
+  uint8_t ctlr = ECLIC->INT[intnum].CTL;
+  ctlr &= ~ECLIC_INT_CTL_MASK;
+  ctlr |= (level_prio << ECLIC_INT_CTL_SHIFT);
+  ECLIC->INT[intnum].CTL = ctlr;
+}
+
+inline void eclic_int_set_attr(uint32_t intnum, uint8_t attr)
+{
+  ECLIC->INT[intnum].ATTR = attr;
+}
+
+inline void eclic_int_set_mode_level(uint32_t intnum)
+{
+  uint8_t tmp = ECLIC->INT[intnum].ATTR;
+  tmp &= ~ECLIC_INT_ATTR_TRIG_MASK;
+  ECLIC->INT[intnum].ATTR = tmp;
+}
+
+inline void eclic_int_set_mode_rising_edge(uint32_t intnum)
+{
+  uint8_t tmp = ECLIC->INT[intnum].ATTR;
+  tmp &= ~ECLIC_INT_ATTR_TRIG_MASK;
+  tmp |= (ECLIC_INT_ATTR_TRIG_EDGE | ECLIC_INT_ATTR_TRIG_RISING);
+  ECLIC->INT[intnum].ATTR = tmp;
+}
+
+inline void eclic_int_set_mode_falling_edge(uint32_t intnum)
+{
+  uint8_t tmp = ECLIC->INT[intnum].ATTR;
+  tmp &= ~ECLIC_INT_ATTR_TRIG_MASK;
+  tmp |= (ECLIC_INT_ATTR_TRIG_EDGE | ECLIC_INT_ATTR_TRIG_FALLING);
+  ECLIC->INT[intnum].ATTR = tmp;
+}
+
+inline void eclic_int_set_shv(uint32_t intnum, uint8_t shv)
+{
+  uint8_t tmp = ECLIC->INT[intnum].ATTR;
+  tmp &= ~ECLIC_INT_ATTR_SHV;
+  tmp |= shv;
+  ECLIC->INT[intnum].ATTR = tmp;
+}
+
+inline void eclic_int_enable(uint32_t intnum)
+{
+  ECLIC->INT[intnum].IE = 1;
+}
+
+inline void eclic_int_disable(uint32_t intnum)
+{
+  ECLIC->INT[intnum].IE = 0;
+}
+
+inline bool eclic_int_enabled(uint32_t intnum)
+{
+  return (ECLIC->INT[intnum].IE != 0);
+}
 
 //---------------------------------------------------------------------------------------
 // SYSTIMER
@@ -1085,6 +1159,23 @@ typedef FlagStatus bit_status;
 #define GPIO_SPI2_REMAP                  ((uint32_t)0x00201100U)   /*!< SPI2 remapping */
 #define GPIO_TIMER1ITI1_REMAP            ((uint32_t)0x00202000U)   /*!< TIMER1 internal trigger 1 remapping */
 #define GPIO_EXMC_NADV_REMAP             ((uint32_t)0x80000400U)   /*!< EXMC_NADV connect/disconnect */
+
+//---------------------------------------------------------------------------------------
+// EXTI
+//---------------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t    INTEN;  // 0x00  interrupt enable register
+  volatile uint32_t    EVEN;   // 0x04  event enable register
+  volatile uint32_t    RTEN;   // 0x08  rising edge trigger enable register
+  volatile uint32_t    FTEN;   // 0x0C  falling trigger enable register
+  volatile uint32_t    SWIEV;  // 0x10  software interrupt event register
+  volatile uint32_t    PD;     // 0x14  pending register
+  //
+} gd32v_exti_t;
+
+#define EXTI  ((gd32v_exti_t *)EXTI_BASE)
 
 //---------------------------------------------------------------------------------------
 // USART

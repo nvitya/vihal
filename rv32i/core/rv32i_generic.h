@@ -29,15 +29,109 @@
 #include "stdint.h"
 #include "rv32i_cpu.h"
 
-inline void __attribute__((always_inline)) mcu_disable_interrupts()
+extern "C" void mcu_interrupt_controller_init();
+
+inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
   cpu_csr_clrbits(CSR_MSTATUS, MSTATUS_MIE);  // clear machine interrupt enable bit
 }
 
-inline void __attribute__((always_inline)) mcu_enable_interrupts()
+inline unsigned __attribute__((always_inline)) mcu_interrupts_save_and_disable()
+{
+  unsigned prevstate = cpu_csr_read(CSR_MSTATUS);
+  cpu_csr_clrbits(CSR_MSTATUS, MSTATUS_MIE);  // clear machine interrupt enable bit
+  return prevstate;
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_enable()
 {
   cpu_csr_setbits(CSR_MSTATUS, MSTATUS_MIE);  // set machine interrupt enable bit
 }
+
+inline void __attribute__((always_inline)) mcu_interrupts_restore(unsigned prevstate)
+{
+  cpu_csr_write(CSR_MSTATUS, prevstate);
+}
+
+// for cortex-m compatibility
+inline unsigned __get_PRIMASK()
+{
+  return cpu_csr_read(CSR_MSTATUS);
+}
+
+inline void __set_PRIMASK(unsigned aprimask)
+{
+  cpu_csr_write(CSR_MSTATUS, aprimask);
+}
+
+#ifdef ECLIC
+
+inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
+{
+  eclic_int_set_level_prio(intnum, priority);
+}
+
+inline void mcu_irq_pending_clear(unsigned intnum)
+{
+  ECLIC->INT[intnum].IP = 0;
+}
+
+inline void mcu_irq_pending_set(unsigned intnum)
+{
+  ECLIC->INT[intnum].IP = 1;
+}
+
+inline void mcu_irq_enable(unsigned intnum)
+{
+  eclic_int_enable(intnum);
+}
+
+inline void mcu_irq_disable(unsigned intnum)
+{
+  eclic_int_disable(intnum);
+}
+
+inline bool mcu_irq_enabled(unsigned intnum)
+{
+  return eclic_int_enabled(intnum);
+}
+
+#else
+
+#warning "implement IRQ handling here!"
+
+inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
+{
+
+}
+
+inline void mcu_irq_pending_clear(unsigned intnum)
+{
+
+}
+
+inline void mcu_irq_pending_set(unsigned intnum)
+{
+
+}
+
+inline void mcu_irq_enable(unsigned intnum)
+{
+
+}
+
+inline void mcu_irq_disable(unsigned intnum)
+{
+
+}
+
+inline bool mcu_irq_enabled(unsigned intnum)
+{
+  return false;
+}
+
+#endif
+
 
 inline void __attribute__((always_inline)) mcu_init_vector_table()
 {
@@ -62,16 +156,6 @@ inline void __attribute__((always_inline)) mcu_disable_icache()
 
 inline void __attribute__((always_inline)) mcu_disable_dcache()
 {
-}
-
-inline unsigned __get_PRIMASK()
-{
-  return cpu_csr_read(CSR_MSTATUS);
-}
-
-inline void __set_PRIMASK(unsigned aprimask)
-{
-  cpu_csr_write(CSR_MSTATUS, aprimask);
 }
 
 

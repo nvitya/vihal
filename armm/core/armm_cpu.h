@@ -21,9 +21,8 @@
 /*
  *  file:     armm_cpu.h
  *  brief:    ARMM non official CPU related definitions
- *  version:  1.00
- *  date:     2022-02-06
- *  authors:  nvitya
+ *  created:  2022-02-06
+ *  authors:  nvitya, Bergi84
 */
 
 #ifndef ARMM_CPU_H_
@@ -34,12 +33,36 @@
 #define MCU_ARMM
 #define CPU_ARMM
 
-inline void __attribute__((always_inline)) mcu_disable_interrupts()
+inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
   __asm volatile ("cpsid i" : : : "memory");
 }
 
-inline void __attribute__((always_inline)) mcu_enable_interrupts()
+inline unsigned __attribute__((always_inline)) mcu_interrupts_save_and_disable()
+{
+  unsigned priMask;
+  __asm volatile ("MRS %0, primask" : "=r" (priMask) :: "memory");
+  __asm volatile ("cpsid i" : : : "memory");
+  return priMask;
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_restore(unsigned prevstate)
+{
+  __asm volatile ("MSR primask, %0" : : "r" (prevstate) : "memory");
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_enable()
+{
+  __asm volatile ("cpsie i" : : : "memory");
+}
+
+
+inline void __attribute__((always_inline)) mcu_disable_interrupts() // deprecated
+{
+  __asm volatile ("cpsid i" : : : "memory");
+}
+
+inline void __attribute__((always_inline)) mcu_enable_interrupts() // deprecated
 {
   __asm volatile ("cpsie i" : : : "memory");
 }
@@ -51,7 +74,7 @@ public:
   bool init;
 
   inline void enter()
-  {
+   {
     init = true;
 
     // get priMask

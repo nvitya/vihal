@@ -29,58 +29,41 @@
 
 bool THwExtIrq_gd32v::Init(int aportnum, int apinnum, unsigned flags)
 {
-#if 0
-	apinnum = (apinnum & 0x0F);
+	apinnum = (apinnum & 0x1F);
 
-	irqpend_reg = &REG_EXTI_PR;
-	irqack_reg  = &REG_EXTI_PR;
+	regs = EXTI;
+
+	irqpend_reg = &regs->PD;
+	irqack_reg  = &regs->PD;
 	pin_mask = (1 << apinnum);
 
-	int cridx  = (apinnum >> 2);
-	int rshift = ((apinnum & 3) << 2);
-
-#if defined(SYSCFG_EXTICR1_EXTI0)
-
-	#ifdef RCC_APB2ENR_SYSCFGEN
-		RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-	#endif
-
-	volatile uint32_t * pcfgreg = &SYSCFG->EXTICR[cridx];
-
-#elif defined(AFIO_EXTICR1_EXTI0)
-
-	volatile uint32_t * pcfgreg = &AFIO->EXTICR[cridx];
-
-#elif defined(EXTI_EXTICR1_EXTI0)
-
-	volatile uint32_t * pcfgreg = &EXTI->EXTICR[cridx];
-
-#endif
-
-	uint32_t tmp = *pcfgreg;
-	tmp &= ~(15 << rshift);
-	tmp |= ((aportnum & 15) << rshift);
-	*pcfgreg = tmp;
+	// select the EXTI line for this port
+	RCU->APB2EN |= RCU_APB2EN_AFEN;
+  int cridx  = (apinnum >> 2);
+  int rshift = ((apinnum & 3) << 2);
+  volatile uint32_t * pcfgreg = &AFIO->EXTISS[cridx];
+  uint32_t tmp = *pcfgreg;
+  tmp &= ~(15 << rshift);
+  tmp |= ((aportnum & 15) << rshift);
+  *pcfgreg = tmp;
 
 	if (flags & HWEXTIRQ_FALLING)
 	{
-		REG_EXTI_FTSR |=  pin_mask;
+		regs->FTEN |= pin_mask;
 	}
 	else
 	{
-		REG_EXTI_FTSR &= ~pin_mask;
+    regs->FTEN &= ~pin_mask;
 	}
 
 	if (flags & HWEXTIRQ_RISING)
-	{
-		REG_EXTI_RTSR |=  pin_mask;
-	}
-	else
-	{
-		REG_EXTI_RTSR &= ~pin_mask;
-	}
-
-#endif
+  {
+    regs->RTEN |= pin_mask;
+  }
+  else
+  {
+    regs->RTEN &= ~pin_mask;
+  }
 
 	IrqAck();
 	Enable();
@@ -90,16 +73,12 @@ bool THwExtIrq_gd32v::Init(int aportnum, int apinnum, unsigned flags)
 
 void THwExtIrq_gd32v::Enable()
 {
-#if 0
-	REG_EXTI_EMR |= pin_mask;
-	REG_EXTI_IMR |= pin_mask;
-#endif
+  regs->EVEN  |= pin_mask;
+  regs->INTEN |= pin_mask;
 }
 
 void THwExtIrq_gd32v::Disable()
 {
-#if 0
-	REG_EXTI_EMR &= ~pin_mask;
-	REG_EXTI_IMR &= ~pin_mask;
-#endif
+  regs->EVEN  &= ~pin_mask;
+  regs->INTEN &= ~pin_mask;
 }

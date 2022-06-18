@@ -18,7 +18,7 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     startup_c.cpp (rv32i)
+// file:     rv32i_startup_c.cpp
 // brief:    VIHAL RV32I C startup code, heavily tied to the linker script
 // created:  2022-02-04
 // authors:  nvitya
@@ -32,6 +32,9 @@ extern "C" __attribute__((section(".startup"), used, noreturn))
 void startup_c_entry(unsigned self_flashing)
 {
   // early entry, stack is working, GP is working, IRQs disabled
+
+  // setup interrupt controller, device specific
+  mcu_interrupt_controller_init();
 
   // setup interrupt vectors (trap)
   //asm("la     t0, __isr_vectors");

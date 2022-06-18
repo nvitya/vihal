@@ -37,7 +37,7 @@
   #define MCUSF_F1
   #define MAX_CLOCK_SPEED  108000000
 
-  #include "gd32vf103.h"
+  #include "gd32vf103_vihal.h"
 
 #else
 
