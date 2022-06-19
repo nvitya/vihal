@@ -137,12 +137,12 @@ riscv_setup_irq:
   csrw  mie, t0
 
   //li    t0, 0x1808    // 0x1808: MPP = 3 + enable interrupts
-  //li    t0, 0x1800    // 0x1800: MPP = 3
-  //csrw  mstatus, at
+  li    t0, 0x1800    // 0x1800: MPP = 3
+  csrw  mstatus, t0
 
   la    t0, riscv_trap_entry
-  csrw  mepc, t0
   csrw  mtvec, t0
+  csrw  mepc, t0
 
   ret
   .cfi_endproc

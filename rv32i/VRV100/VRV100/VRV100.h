@@ -1,4 +1,30 @@
-// VRV100: VexRiscV based, standardized FPGA Softcore + SoC
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+ * Copyright (c) 2021 Viktor Nagy, nvitya
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * In no event will the authors be held liable for any damages arising from
+ * the use of this software. Permission is granted to anyone to use this
+ * software for any purpose, including commercial applications, and to alter
+ * it and redistribute it freely, subject to the following restrictions:
+ *
+ * 1. The origin of this software must not be misrepresented; you must not
+ *    claim that you wrote the original software. If you use this software in
+ *    a product, an acknowledgment in the product documentation would be
+ *    appreciated but is not required.
+ *
+ * 2. Altered source versions must be plainly marked as such, and must not be
+ *    misrepresented as being the original software.
+ *
+ * 3. This notice may not be removed or altered from any source distribution.
+ * --------------------------------------------------------------------------- */
+/*
+ *  file:     VRV100.h
+ *  brief:    VIHAL definitions for the VRV100 VexRiscV based, standardized FPGA Softcore + SoC
+ *  created:  2021-10-02
+ *  authors:  nvitya
+ *
+*/
 
 #ifndef __VRV100_H
 #define __VRV100_H
@@ -20,6 +46,27 @@ typedef struct
   volatile uint32_t  DIRCLR;
 //
 } vexriscv_gpio_t;
+
+typedef struct
+{
+  volatile uint32_t  CTRL;   // bit0:  count on clock, bit1: count on prescaler, bit2: count on external
+                             // bit16: clear on overflow, bit17: clear on external
+  volatile uint32_t  LIMIT;  // read/write limit (+ auto clear)
+  volatile uint32_t  VALUE;  // read: timer value, write: clear timer value
+  uint32_t _padC;
+//
+} pinsec_timerch_t;
+
+typedef struct
+{
+  volatile uint32_t  PRESCALER;       // 0x00  16-bit prescaler
+  uint32_t           _pad4[4-1];
+  volatile uint32_t  INTFLAG;         // 0x10  read: pending interrupts, write: clear
+  volatile uint32_t  INTMASK;         // 0x14  interrupt masks
+  uint32_t           _pad18[16-6];
+  pinsec_timerch_t   CH[4];           // 0x40  timer channels, the first is 32-bit, the next three only 16-bit !
+//
+} pinsec_timer_t;
 
 typedef struct
 {
@@ -87,6 +134,8 @@ typedef struct
 #define GPIOA_BASE   0xF0000000
 #define GPIOB_BASE   0xF0001000
 
+#define TIMER_BASE   0xF0020000
+
 #define UART1_BASE   0xF0010000
 #define UART2_BASE   0xF0011000
 
@@ -97,6 +146,8 @@ typedef struct
 #define SPIM_TXFIFO_DEPTH   512
 
 #define SPIM_DATA_VALID    (1u << 31)
+
+#define TIMER  ((pinsec_timer_t *)TIMER_BASE)
 
 #ifdef __cplusplus
 }

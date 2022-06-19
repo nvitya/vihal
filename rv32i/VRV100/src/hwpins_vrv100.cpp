@@ -19,10 +19,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwpins_vrv100.coo
+ *  file:     hwpins_vrv100.cpp
  *  brief:    VRV100 Pin/Pad and GPIO configuration
- *  version:  1.00
- *  date:     2021-10-02
+ *  created:  2021-10-02
  *  authors:  nvitya
 */
 

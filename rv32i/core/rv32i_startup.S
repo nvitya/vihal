@@ -53,8 +53,8 @@ _soft_entry:
 
 init_start:
 
-  //csrc   mstatus, 8     // disable global IRQ
-  csrw   mstatus, zero    // disable IRQ, set MPP (privilege level) to 0
+  li     t0, (3 << 11)    // set mpp=11 => machine-mode, clear all remaining bits,
+  csrw   mstatus, t0      // also disables IRQs globally (MIE)
 
   // The GD32V MCU starts at address 0x00000000 while the code was targeted to 0x08000000.
   // This leads false immediates for instructions that use the PC partially (like luipc)
