@@ -26,3 +26,34 @@ inline void __attribute__((always_inline)) mcu_postinit_code()
 {
 }
 
+//#warning "implement IRQ handling here!"
+
+inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
+{
+
+}
+
+inline void mcu_irq_pending_clear(unsigned intnum)
+{
+
+}
+
+inline void mcu_irq_pending_set(unsigned intnum)
+{
+
+}
+
+inline void mcu_irq_enable(unsigned intnum)
+{
+
+}
+
+inline void mcu_irq_disable(unsigned intnum)
+{
+
+}
+
+inline bool mcu_irq_enabled(unsigned intnum)
+{
+  return false;
+}

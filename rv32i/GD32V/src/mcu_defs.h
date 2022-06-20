@@ -29,6 +29,9 @@
 #ifndef __MCU_DEFS_H
 #define __MCU_DEFS_H
 
+#include "stdint.h"
+#include "rv32i_cpu.h"
+
 #define MCUF_GD32V
 
 #define MCU_INTERNAL_RC_SPEED   8000000
@@ -38,5 +41,36 @@
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
 }
+
+inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
+{
+  eclic_int_set_level_prio(intnum, priority);
+}
+
+inline void mcu_irq_pending_clear(unsigned intnum)
+{
+  ECLIC->INT[intnum].IP = 0;
+}
+
+inline void mcu_irq_pending_set(unsigned intnum)
+{
+  ECLIC->INT[intnum].IP = 1;
+}
+
+inline void mcu_irq_enable(unsigned intnum)
+{
+  eclic_int_enable(intnum);
+}
+
+inline void mcu_irq_disable(unsigned intnum)
+{
+  eclic_int_disable(intnum);
+}
+
+inline bool mcu_irq_enabled(unsigned intnum)
+{
+  return eclic_int_enabled(intnum);
+}
+
 
 #endif // __MCU_DEFS_H

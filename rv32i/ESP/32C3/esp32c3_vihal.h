@@ -212,8 +212,43 @@ typedef struct
 //
 } esp_apb_ctrl_t;
 
+
 #define SYSTEM     ((esp_sysreg_t *)(0x600C0000))
 #define APB_CTRL ((esp_apb_ctrl_t *)(0x60026000))
+
+//-----------------------------------------------------------------------------
+// SYSTIMER
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  HI;
+  volatile uint32_t  LO;
+//
+} esp_systimer_reg64_t;
+
+typedef struct
+{
+  volatile uint32_t     CONF;           // 000
+  volatile uint32_t     OP[2];          // 004 - 008
+  esp_systimer_reg64_t  LOAD_VAL[2];    // 00C - 018
+  esp_systimer_reg64_t  TARGET_VAL[3];  //
+  volatile uint32_t     TARGET_CONF[3]; //
+  esp_systimer_reg64_t  UNIT_VALUE[2];  //
+
+  volatile uint32_t     COMP_LOAD[3];
+  volatile uint32_t     UNIT_LOAD[2];
+  volatile uint32_t     INT_ENA;
+  volatile uint32_t     INT_RAW;
+  volatile uint32_t     INT_CLR;
+  volatile uint32_t     INT_ST;         // 070
+
+  uint32_t              _pad_074[34];
+  volatile uint32_t     DATE;           // 0FC
+//
+} esp_systimer_t;
+
+#define SYS_TIMER ((esp_systimer_t *)(0x60023000))
 
 //-----------------------------------------------------------------------------
 // UART

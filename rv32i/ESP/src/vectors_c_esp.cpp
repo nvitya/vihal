@@ -46,6 +46,9 @@ void IRQ_Handler_31       ( void ) __attribute__ ((weak, alias("Default_Handler"
 
 typedef void (* pHandler)(void);
 
+// the RISC-V has 1MByte jump range for the "j" (= "jal x0, addr") instruction,
+// so as the VIHAL prefers to run from RAM this is totally fine here.
+
 __attribute__ ((naked, section(".startup"),aligned(256)))
 void __isr_vectors(void)
 {
@@ -91,13 +94,6 @@ void __isr_vectors(void)
 void __attribute__ ((section(".after_vectors"),weak,interrupt))
 Default_Handler(void)
 {
-#if 0 // todo: detect if the debugger is connected
-  if (CoreDebug->DHCSR & 1)
-#endif
-  {
-    asm("ebreak");
-  }
-
   while (1)
   {
     asm("nop");
@@ -109,17 +105,19 @@ Default_Handler(void)
 __attribute__ ((section(".after_vectors"),weak,interrupt))
 void Exception_Handler (void)
 {
-#if 0 // todo: detect if the debugger is connected
-  if (CoreDebug->DHCSR & 1)
-#endif
-  {
-    asm("ebreak");
-  }
-
   while (1)
   {
     asm("nop");
   }
 }
+
+// special interrupt controller initialization
+
+__attribute__ ((section(".after_vectors"),weak))
+void mcu_interrupt_controller_init()
+{
+  //
+}
+
 
 } // extern "C"

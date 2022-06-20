@@ -64,39 +64,7 @@ inline void __set_PRIMASK(unsigned aprimask)
   cpu_csr_write(CSR_MSTATUS, aprimask);
 }
 
-#ifdef ECLIC
-
-inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
-{
-  eclic_int_set_level_prio(intnum, priority);
-}
-
-inline void mcu_irq_pending_clear(unsigned intnum)
-{
-  ECLIC->INT[intnum].IP = 0;
-}
-
-inline void mcu_irq_pending_set(unsigned intnum)
-{
-  ECLIC->INT[intnum].IP = 1;
-}
-
-inline void mcu_irq_enable(unsigned intnum)
-{
-  eclic_int_enable(intnum);
-}
-
-inline void mcu_irq_disable(unsigned intnum)
-{
-  eclic_int_disable(intnum);
-}
-
-inline bool mcu_irq_enabled(unsigned intnum)
-{
-  return eclic_int_enabled(intnum);
-}
-
-#else
+#if 0 // these unified IRQ handling functions are in platform specific mcu_defs.h
 
 #warning "implement IRQ handling here!"
 
