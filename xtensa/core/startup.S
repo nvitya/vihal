@@ -36,30 +36,89 @@
 
 ****************************************************************************/
 
-.section .startup
+  .section .text.startup, "ax"
 
-//.option  norelax   // ???
+  .extern __stack
+  .extern startup_c
+  .extern _vector_table
 
-.balign 4
+
+  // register usage: a0 = return address, a1 = stack pointer, a2..a7 = function arguments
+
+#define PS_WOE_SHIFT    18
+#define PS_WOE_MASK   0x00040000
+#define PS_WOE      PS_WOE_MASK
+#define PS_CALLINC_SHIFT  16
+#define PS_CALLINC_MASK   0x00030000
+#define PS_CALLINC(n)   (((n)&3)<<PS_CALLINC_SHIFT) /* n = 0..3 */
+#define PS_OWB_SHIFT    8
+#define PS_OWB_MASK   0x00000F00
+#define PS_OWB(n)   (((n)&15)<<PS_OWB_SHIFT)  /* n = 0..15 (or 0..7) */
+#define PS_RING_SHIFT   6
+#define PS_RING_MASK    0x000000C0
+#define PS_RING(n)    (((n)&3)<<PS_RING_SHIFT)  /* n = 0..3 */
+#define PS_UM_SHIFT   5
+#define PS_UM_MASK    0x00000020
+#define PS_UM     PS_UM_MASK
+#define PS_EXCM_SHIFT   4
+#define PS_EXCM_MASK    0x00000010
+#define PS_EXCM     PS_EXCM_MASK
+#define PS_INTLEVEL_SHIFT 0
+#define PS_INTLEVEL_MASK  0x0000000F
+#define PS_INTLEVEL(n)    ((n)&PS_INTLEVEL_MASK)    /* n = 0..15 */
 
 //-------------------------------------------------
 // Reset entry point
 //-------------------------------------------------
-.global asoft_entry
-asoft_entry:
 
-  movi    a0, (3 | 0x00040000 | 0x00000020)  //  = PS_INTLEVEL(3) | PS_UM | PS_WOE
-  wsr     a0, PS
+.global _cold_entry
+_cold_entry:
+  movi   a2, 0  // keep the contents of a2 here !
+  j xtensa_cpu_init
 
-  nop
+//-------------------------------------------------
+// Development entry point for self-flashing
+//-------------------------------------------------
+.global _soft_entry
+_soft_entry:
+  movi   a2, 1  // keep the contents of a2 here !
+  j xtensa_cpu_init
 
-endlessloop:
+xtensa_cpu_init:
 
-  nop
+  // preserve the contents of the a2 !
 
-  j endlessloop
+  // initialize the PS with INTLEVEL=3, without WOE!
+  movi             a0, (PS_INTLEVEL(3) | PS_UM)  //  = PS_INTLEVEL(3) | PS_UM | PS_WOE
+  wsr              a0, PS
+  rsync
 
-  .literal_position
+  // reset the window base
+  rsr.windowbase   a0
+  ssl              a0
+  movi             a0, 1
+  sll              a0, a0
+  wsr.windowstart  a0
+  rsync
+
+  // setup the stack
+  l32r             a0, __stack
+  mov              sp, a0        // sp = a1 !
+
+  // enable the window overflow interrupt
+  rsr.ps           a0
+  movi             a3, (PS_WOE)
+  or               a0, a0, a3
+  wsr.ps           a0
+  rsync
+
+  // setup the vector table
+  l32r             a0, _vector_table
+  wsr              a0, vecbase
+
+  // jump to startup_c in C
+  l32r             a0, startup_c
+  jx               a0
 
 
-//.end
+

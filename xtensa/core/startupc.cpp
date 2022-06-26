@@ -18,10 +18,16 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     startup.cpp (xtensa)
-// brief:    VIHAL xtensa startup code
-// created:  2022-01-29
-// authors:  nvitya
+/* file:     startup.cpp (xtensa)
+ * brief:    VIHAL xtensa startup code
+ * created:  2022-06-25
+ * authors:  nvitya
+ * notes:
+ *   Xtensta initialization steps
+ *     - setup some mandatory CPU special registers (like intlevel)
+ *     - setup some usable stack
+ *     - setup the vector table
+*/
 
 /***************************************************************************
                            !! !WARNING !!!
@@ -39,39 +45,22 @@
 
 #include "platform.h"
 #include "cppinit.h"
+#include "xtensa/xt_instr_macros.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
 
 extern "C" __attribute__((section(".startup"),used,noreturn))
-void xtensa_startup(unsigned self_flashing)
+void startup_c(unsigned self_flashing)
 {
-  mcu_preinit_code();
-
-  // the stack might not be set properly so set it
-  //asm("ldr  r0, =__stack");
-  //asm("mov  sp, r0");
-
   memory_region_setup();  // copy code to ram, initialize .data, zero .bss sections
 
-  _start(self_flashing);
+  // _start(self_flashing);
 
+  // here is a test only to check if the processor actually does something:
+  volatile unsigned counter = 0;
   while (true)
   {
-    //
-  }
-}
-
-
-extern "C" __attribute__((section(".startup"),used,noreturn))
-void soft_entry()
-{
-  mcu_preinit_code();  // this must be here !
-
-  xtensa_startup(1);
-
-  while (true)
-  {
-    //
+    ++counter;
   }
 }

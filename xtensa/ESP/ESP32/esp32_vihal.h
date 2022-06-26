@@ -23,8 +23,7 @@
  *  brief:    VIHAL ESP32 include and own definitions
  *            the original Espressif peripheral definitions are not so usable
  *            so I made my own peripheral structs like the most ARM vendors provide
- *  version:  1.00
- *  date:     2022-01-29
+ *  created:  2022-01-29
  *  authors:  nvitya
 */
 

@@ -17,12 +17,12 @@ if some regions missing they must be presented as alias like:
 */
 
 
-__stack = ORIGIN(RAM) + LENGTH(RAM);
+PROVIDE( __stack = ORIGIN(RAM) + LENGTH(RAM) ) ;
 __Main_Stack_Size = 4096;
 PROVIDE ( _Heap_Begin = _end_noinit ) ;
 PROVIDE ( _Heap_Limit = ORIGIN(RAM)+LENGTH(RAM)-__Main_Stack_Size ) ;
 
-ENTRY(soft_entry)
+ENTRY(_soft_entry)
 
 SECTIONS
 {
@@ -196,6 +196,10 @@ SECTIONS
     _lit4_start = ABSOLUTE(.);
     *(*.lit4)
     *(.lit4.*)
+    *(*.literal)
+    *(.literal.*)
+    *(.text.startup.literal)
+    
     *(.gnu.linkonce.lit4.*)
     _lit4_end = ABSOLUTE(.);
 
