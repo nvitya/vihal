@@ -266,11 +266,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     rsil    a3, \level - 1                  /* lower interrupt level by 1 */
     #endif
 
-    movi    a3, XT_TIMER_INTEN              /* a3 = timer interrupt bit */
-    wsr     a4, INTCLEAR                    /* clear sw or edge-triggered interrupt */
-    beq     a3, a4, 7f                      /* if timer interrupt then skip table */
+    //movi    a3, XT_TIMER_INTEN              /* a3 = timer interrupt bit */
+    //wsr     a4, INTCLEAR                    /* clear sw or edge-triggered interrupt */
+    //beq     a3, a4, 7f                      /* if timer interrupt then skip table */
 
-    find_ms_setbit a3, a4, a3, 0            /* a3 = interrupt number */
+    //find_ms_setbit a3, a4, a3, 0            /* a3 = interrupt number */
 
     get_percpu_entry_for a3, a12
     movi    a4, _xt_interrupt_table
@@ -915,7 +915,7 @@ _xt_coproc_exc:
     s32i    a15, sp, XT_STK_A15
 
     /* Get co-processor state save area of new owner thread. */
-    call0   XT_RTOS_CP_STATE                /* a15 = new owner's save area */
+    //call0   XT_RTOS_CP_STATE                /* a15 = new owner's save area */
 
     #ifndef CONFIG_FREERTOS_FPU_IN_ISR
     beqz    a15, .L_goto_invalid
@@ -932,12 +932,12 @@ _xt_coproc_exc:
     /* FPU operations are incompatible with non-pinned tasks. If we have a FPU operation
        here, to keep the entire thing from crashing, it's better to pin the task to whatever
        core we're running on now. */
-    movi    a2, pxCurrentTCB
-    getcoreid a3
-    addx4     a2,  a3, a2
-    l32i    a2, a2, 0                       /* a2 = start of pxCurrentTCB[cpuid] */
-    addi    a2, a2, TASKTCB_XCOREID_OFFSET  /* offset to xCoreID in tcb struct */
-    s32i    a3, a2, 0                       /* store current cpuid */
+    //movi    a2, pxCurrentTCB
+    //getcoreid a3
+    //addx4     a2,  a3, a2
+    //l32i    a2, a2, 0                       /* a2 = start of pxCurrentTCB[cpuid] */
+    //addi    a2, a2, TASKTCB_XCOREID_OFFSET  /* offset to xCoreID in tcb struct */
+    //s32i    a3, a2, 0                       /* store current cpuid */
 
     /* Grab correct xt_coproc_owner_sa for this core */
     movi    a2, XCHAL_CP_MAX << 2
@@ -1056,7 +1056,7 @@ locking.
     s32i    a7,  sp, XT_STK_A7
     s32i    a13, sp, XT_STK_A13
     s32i    a14, sp, XT_STK_A14
-    call0   _xt_coproc_restorecs            /* restore CP registers      */
+    //call0   _xt_coproc_restorecs            /* restore CP registers      */
     l32i    a6,  sp, XT_STK_A6              /* restore saved registers   */
     l32i    a7,  sp, XT_STK_A7
     l32i    a13, sp, XT_STK_A13
@@ -1107,7 +1107,7 @@ _xt_lowint1:
     #endif
 
     /* Save rest of interrupt context and enter RTOS. */
-    call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
+    //call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
 
     /* !! We are now on the RTOS system stack !! */
 
@@ -1125,7 +1125,7 @@ _xt_lowint1:
     dispatch_c_isr 1 XCHAL_INTLEVEL1_MASK
 
     /* Done handling interrupts, transfer control to OS */
-    call0   XT_RTOS_INT_EXIT                /* does not return directly here */
+    //call0   XT_RTOS_INT_EXIT                /* does not return directly here */
 
 
 /*
@@ -1196,7 +1196,7 @@ _xt_medint2:
     #endif
 
     /* Save rest of interrupt context and enter RTOS. */
-    call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
+    //call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
 
     /* !! We are now on the RTOS system stack !! */
 
@@ -1214,7 +1214,7 @@ _xt_medint2:
     dispatch_c_isr 2 XCHAL_INTLEVEL2_MASK
 
     /* Done handling interrupts, transfer control to OS */
-    call0   XT_RTOS_INT_EXIT                /* does not return directly here */
+    //call0   XT_RTOS_INT_EXIT                /* does not return directly here */
 
     /*
     Exit point for dispatch. Saved in interrupt stack frame at XT_STK_EXIT
@@ -1276,7 +1276,7 @@ _xt_medint3:
     #endif
 
     /* Save rest of interrupt context and enter RTOS. */
-    call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
+    //call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
 
     /* !! We are now on the RTOS system stack !! */
 
@@ -1294,7 +1294,7 @@ _xt_medint3:
     dispatch_c_isr 3 XCHAL_INTLEVEL3_MASK
 
     /* Done handling interrupts, transfer control to OS */
-    call0   XT_RTOS_INT_EXIT                /* does not return directly here */
+    //call0   XT_RTOS_INT_EXIT                /* does not return directly here */
 
     /*
     Exit point for dispatch. Saved in interrupt stack frame at XT_STK_EXIT
@@ -1355,7 +1355,7 @@ _xt_medint4:
     #endif
 
     /* Save rest of interrupt context and enter RTOS. */
-    call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
+    //call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
 
     /* !! We are now on the RTOS system stack !! */
 
@@ -1373,7 +1373,7 @@ _xt_medint4:
     dispatch_c_isr 4 XCHAL_INTLEVEL4_MASK
 
     /* Done handling interrupts, transfer control to OS */
-    call0   XT_RTOS_INT_EXIT                /* does not return directly here */
+    //call0   XT_RTOS_INT_EXIT                /* does not return directly here */
 
     /*
     Exit point for dispatch. Saved in interrupt stack frame at XT_STK_EXIT
@@ -1434,7 +1434,7 @@ _xt_medint5:
     #endif
 
     /* Save rest of interrupt context and enter RTOS. */
-    call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
+    //call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
 
     /* !! We are now on the RTOS system stack !! */
 
@@ -1452,7 +1452,7 @@ _xt_medint5:
     dispatch_c_isr 5 XCHAL_INTLEVEL5_MASK
 
     /* Done handling interrupts, transfer control to OS */
-    call0   XT_RTOS_INT_EXIT                /* does not return directly here */
+    //call0   XT_RTOS_INT_EXIT                /* does not return directly here */
 
     /*
     Exit point for dispatch. Saved in interrupt stack frame at XT_STK_EXIT
@@ -1513,7 +1513,7 @@ _xt_medint6:
     #endif
 
     /* Save rest of interrupt context and enter RTOS. */
-    call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
+    //call0   XT_RTOS_INT_ENTER               /* common RTOS interrupt entry */
 
     /* !! We are now on the RTOS system stack !! */
 
@@ -1531,7 +1531,7 @@ _xt_medint6:
     dispatch_c_isr 6 XCHAL_INTLEVEL6_MASK
 
     /* Done handling interrupts, transfer control to OS */
-    call0   XT_RTOS_INT_EXIT                /* does not return directly here */
+    //call0   XT_RTOS_INT_EXIT                /* does not return directly here */
 
     /*
     Exit point for dispatch. Saved in interrupt stack frame at XT_STK_EXIT

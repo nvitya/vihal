@@ -49,18 +49,23 @@
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
+volatile uint32_t g_counter = 0;
 
 extern "C" __attribute__((section(".startup"),used,noreturn))
 void startup_c(unsigned self_flashing)
 {
+  volatile unsigned lcounter = 0;  // unhandled exception comes when this is here
+
   memory_region_setup();  // copy code to ram, initialize .data, zero .bss sections
 
   // _start(self_flashing);
 
+  g_counter = 0;
+
   // here is a test only to check if the processor actually does something:
-  volatile unsigned counter = 0;
   while (true)
   {
-    ++counter;
+    ++lcounter;
+    ++g_counter;
   }
 }

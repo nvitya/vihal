@@ -32,6 +32,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <xtensa/hal.h>
 #include "xtensa_context.h"
 
+extern "C"
+{
 
 /* Typedef for C-callable interrupt handler function */
 typedef void (*xt_handler)(void *);
@@ -176,5 +178,7 @@ static inline void xt_int_enable_mask(uint32_t newmask)
         "rsync\n"
         ::"r"(newmask):"a3");
 }
+
+} // extern "C"
 
 #endif /* __XTENSA_API_H__ */

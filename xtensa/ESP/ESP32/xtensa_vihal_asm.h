@@ -16,5 +16,7 @@
 #include <xtensa/config/core-isa.h>
 //#include <xtensa/config/system.h>
 
-#define portNUM_PROCESSORS 2
+#include "esp32_rtos_defs.h"
+
+
 

@@ -17,7 +17,7 @@ if some regions missing they must be presented as alias like:
 */
 
 
-PROVIDE( __stack = ORIGIN(RAM) + LENGTH(RAM) ) ;
+__stack = ORIGIN(RAM) + LENGTH(RAM) ;
 __Main_Stack_Size = 4096;
 PROVIDE ( _Heap_Begin = _end_noinit ) ;
 PROVIDE ( _Heap_Limit = ORIGIN(RAM)+LENGTH(RAM)-__Main_Stack_Size ) ;
@@ -63,12 +63,19 @@ SECTIONS
     *(.entry.text)
     *(.init.literal)
     *(.init)
-
+    
     _init_end = ABSOLUTE(.);
   } > TEXT
+  
+  PROVIDE (__stack_asm = ORIGIN(RAM) + LENGTH(RAM) ) ;  
 
   .inits : ALIGN(4)
   {
+  
+    KEEP( *(.startup.literal) );
+    KEEP( *(.startup) );
+    KEEP( *(.startup.text) );
+      
     /* DATA COPY REGIONS */
 
     __data_regions_array_start = .;
@@ -198,7 +205,6 @@ SECTIONS
     *(.lit4.*)
     *(*.literal)
     *(.literal.*)
-    *(.text.startup.literal)
     
     *(.gnu.linkonce.lit4.*)
     _lit4_end = ABSOLUTE(.);
@@ -328,5 +334,5 @@ SECTIONS
   PROVIDE ( _end = _end_noinit );
   PROVIDE ( __end = _end_noinit );
   PROVIDE ( __end__ = _end_noinit );
-
+  
 }
