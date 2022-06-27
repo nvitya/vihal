@@ -30,15 +30,9 @@
 */
 
 /***************************************************************************
-                           !! !WARNING !!!
-
- This MCU is very special and requires special initializations,
- which is not known to me yet, so at the time the
- ESP32 is not useable with  VIHAL!
-
  Window overflow exception handling required:
 
- https://sachin0x18.github.io/posts/demystifying-xtensa-isa/
+   https://sachin0x18.github.io/posts/demystifying-xtensa-isa/
 
 ****************************************************************************/
 
@@ -49,23 +43,10 @@
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
-volatile uint32_t g_counter = 0;
-
 extern "C" __attribute__((section(".startup"),used,noreturn))
 void startup_c(unsigned self_flashing)
 {
-  volatile unsigned lcounter = 0;  // unhandled exception comes when this is here
-
   memory_region_setup();  // copy code to ram, initialize .data, zero .bss sections
 
-  // _start(self_flashing);
-
-  g_counter = 0;
-
-  // here is a test only to check if the processor actually does something:
-  while (true)
-  {
-    ++lcounter;
-    ++g_counter;
-  }
+  _start(self_flashing);
 }

@@ -46,6 +46,21 @@
   .literal_position
   .align      4
 
+  .macro cpu_init_basic
+    // initialize the PS with INTLEVEL=3, without WOE!
+    movi             a0, (PS_INTLEVEL(3) | PS_UM)  //  = PS_INTLEVEL(3) | PS_UM | PS_WOE
+    wsr              a0, PS
+    rsync
+
+    // reset the windowbase, windowstart
+    movi             a0, 0
+    wsr.windowbase   a0
+    movi             a0, 1
+    wsr.windowstart  a0
+    rsync
+  .endm
+
+
 //-------------------------------------------------
 // Reset entry point
 //-------------------------------------------------
@@ -53,8 +68,12 @@
   .global _cold_entry
   .type   _cold_entry,@function
 _cold_entry:
+
+  cpu_init_basic
+
   movi   a2, 0  // keep the contents of a2 here !
-  j xtensa_cpu_init
+
+  j xtensa_cpu_init2
 
 //-------------------------------------------------
 // Development entry point for self-flashing
@@ -62,25 +81,16 @@ _cold_entry:
   .global _soft_entry
   .type   _soft_entry,@function
 _soft_entry:
-  movi   a2, 1  // keep the contents of a2 here !
-  j xtensa_cpu_init
 
-xtensa_cpu_init:
+  cpu_init_basic
+
+  movi   a2, 1  // keep the contents of a2 here !
+
+  j xtensa_cpu_init2
+
+xtensa_cpu_init2:
 
   // preserve the contents of the a2 !
-
-  // initialize the PS with INTLEVEL=3, without WOE!
-  movi             a0, (PS_INTLEVEL(3) | PS_UM)  //  = PS_INTLEVEL(3) | PS_UM | PS_WOE
-  wsr              a0, PS
-  rsync
-
-  // reset the window base
-  rsr.windowbase   a0
-  ssl              a0
-  movi             a0, 1
-  sll              a0, a0
-  wsr.windowstart  a0
-  rsync
 
   // setup the stack
   movi             a0, __stack   // will be split up to two instructions and using the literal pool

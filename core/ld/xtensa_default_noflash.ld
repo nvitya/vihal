@@ -63,19 +63,17 @@ SECTIONS
     *(.entry.text)
     *(.init.literal)
     *(.init)
-    
-    _init_end = ABSOLUTE(.);
-  } > TEXT
-  
-  PROVIDE (__stack_asm = ORIGIN(RAM) + LENGTH(RAM) ) ;  
 
-  .inits : ALIGN(4)
-  {
-  
     KEEP( *(.startup.literal) );
     KEEP( *(.startup) );
     KEEP( *(.startup.text) );
-      
+
+    _init_end = ABSOLUTE(.);
+  } > TEXT
+
+  .inits : ALIGN(4)
+  {
+
     /* DATA COPY REGIONS */
 
     __data_regions_array_start = .;
@@ -92,7 +90,7 @@ SECTIONS
 
     __bss_regions_array_end = .;
 
-  } > TEXT
+  } > RAM
 
 
   .iram0.text :
@@ -102,7 +100,7 @@ SECTIONS
 
 
     KEEP(*(.init))
-	 KEEP(*(.fini))
+    KEEP(*(.fini))
 
     . = ALIGN(4);
 
@@ -144,7 +142,7 @@ SECTIONS
      * section will match .flah.rodata's begin address. Thus, both sections
      * will be merged when creating the final bin image. */
     . = ALIGN(ALIGNOF(.flash.rodata));
-  } > TEXT
+  } > RAM
 
   .flash.rodata : ALIGN(0x10)
   {
@@ -156,7 +154,9 @@ SECTIONS
 
     *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata .srodata.*)
 
-
+    *(.rodata.*)
+    *(*.rodata)
+    
     *(.irom1.text) /* catch stray ICACHE_RODATA_ATTR */
     *(.gnu.linkonce.r.*)
     *(.rodata1)
@@ -205,11 +205,11 @@ SECTIONS
     *(.lit4.*)
     *(*.literal)
     *(.literal.*)
-    
+
     *(.gnu.linkonce.lit4.*)
     _lit4_end = ABSOLUTE(.);
 
-  } > TEXT
+  } > RAM
 
   _flash_rodata_align = ALIGNOF(.flash.rodata);
 
@@ -218,7 +218,7 @@ SECTIONS
     . = ALIGN (4);
     *(.rodata_wlog_debug .rodata_wlog_debug.*)
     *(.rodata_wlog_verbose .rodata_wlog_verbose.*)
-  } > TEXT
+  } > RAM
 
   .flash.text :
   {
@@ -334,5 +334,5 @@ SECTIONS
   PROVIDE ( _end = _end_noinit );
   PROVIDE ( __end = _end_noinit );
   PROVIDE ( __end__ = _end_noinit );
-  
+
 }
