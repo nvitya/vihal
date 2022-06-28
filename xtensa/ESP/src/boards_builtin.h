@@ -1,8 +1,7 @@
 /*
  *  file:     boards_builtin.h (ESP)
  *  brief:    Built-in ESP(32) board definitions
- *  version:  1.00
- *  date:     2022-01-29
+ *  created:  2022-01-29
  *  authors:  nvitya
 */
 
@@ -18,7 +17,7 @@
 
   #define BOARD_NAME "ESP32 Development Kit"
   #define MCU_ESP32
-  #define EXTERNAL_XTAL_HZ   24000000
+  #define EXTERNAL_XTAL_HZ   40000000
 
 #else
 

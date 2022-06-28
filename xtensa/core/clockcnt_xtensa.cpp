@@ -27,5 +27,5 @@
 
 void clockcnt_init()
 {
-	// TODO: implement
+  cpu_ll_set_cycle_count(0);
 }

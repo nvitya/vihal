@@ -259,7 +259,6 @@ SECTIONS
 
   } > TEXT
 
-
   .data : ALIGN(4)
   {
     _data_start = ABSOLUTE(.);
@@ -292,8 +291,6 @@ SECTIONS
     . = ALIGN(4);
     _thread_local_start = ABSOLUTE(.);
     *(.tdata .tdata.* .gnu.linkonce.td.*)
-    *(.tbss)
-    *(.tbss.*)
     _thread_local_end = ABSOLUTE(.);
     . = ALIGN(4);
 
@@ -301,7 +298,8 @@ SECTIONS
 
     _data_end = ABSOLUTE(.);
     . = ALIGN(4);
-  } > RAM
+    
+  } > RAM AT > TEXT
 
   .bss (NOLOAD) : ALIGN(4)
   {
@@ -310,6 +308,8 @@ SECTIONS
 
     *(.bss_begin .bss_begin.*)
     *(.bss .bss.*)
+    *(.tbss)
+    *(.tbss.*)    
     *(.dynbss .dynsbss .gnu.linkonce.b .gnu.linkonce.b.* .gnu.linkonce.sb .gnu.linkonce.sb.* .gnu.linkonce.sb2 .gnu.linkonce.sb2.* .sbss .sbss.* .sbss2 .sbss2.* .scommon .share.mem)
     *(.ext_ram.bss .ext_ram.bss.*)
     *(COMMON)
@@ -334,5 +334,10 @@ SECTIONS
   PROVIDE ( _end = _end_noinit );
   PROVIDE ( __end = _end_noinit );
   PROVIDE ( __end__ = _end_noinit );
-
+  
+  PROVIDE ( rom_i2c_readReg = 0x40004148 );
+  PROVIDE ( rom_i2c_readReg_Mask = 0x400041c0 );
+  PROVIDE ( rom_i2c_writeReg = 0x400041a4 );
+  PROVIDE ( rom_i2c_writeReg_Mask = 0x400041fc );
+  
 }

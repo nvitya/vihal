@@ -28,7 +28,7 @@
 #define MCU_XTENSA
 
 // read mtime:
-#define CLOCKCNT  (0)  // todo: implement !!!
+#define CLOCKCNT  cpu_ll_get_cycle_count()
 
 inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {

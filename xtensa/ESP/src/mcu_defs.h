@@ -10,7 +10,7 @@
 
 #define MAX_CLOCK_SPEED         240000000
 
-#define MCU_INTERNAL_RC_SPEED     6000000 // ring oscillator
+#define MCU_INTERNAL_RC_SPEED     8000000 // ring oscillator
 
 #define HW_DMA_MAX_COUNT            32764
 

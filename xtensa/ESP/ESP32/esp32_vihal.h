@@ -32,11 +32,20 @@
 #include <cstddef>
 #include "stdint.h"
 
+#define BOOTLOADER_BUILD 1
+
+#define SOC_CAPS_ECO_VER    SOC_CAPS_ECO_VER_MAX
+
 // add some basic xtensa includes
 
 //#include <xtensa/coreasm.h>
 #include <xtensa/corebits.h>
 //#include <xtensa/config/system.h>
+#include <cpu_ll.h>
+#include <mpu_ll.h>
+
+#include "soc/rtc_cntl_reg.h"
+#include "soc/rtc_cntl_struct.h"
 
 //-----------------------------------------------------------------------------
 // GPIO

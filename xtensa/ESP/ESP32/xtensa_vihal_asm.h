@@ -9,6 +9,8 @@
 
 // add some basic xtensa includes
 
+#define BOOTLOADER_BUILD 1
+
 #include <xtensa/coreasm.h>
 #include <xtensa/corebits.h>
 #include <xtensa/panic_reason.h>
