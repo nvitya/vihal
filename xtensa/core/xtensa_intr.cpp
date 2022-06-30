@@ -111,3 +111,10 @@ extern "C" xt_handler xt_set_interrupt_handler(int n, xt_handler f, void * arg)
   return f;
 }
 
+// this is used by xtensa GCC
+extern "C" struct _reent * __getreent()
+{
+  return nullptr;
+}
+
+
