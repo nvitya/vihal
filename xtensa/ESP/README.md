@@ -40,8 +40,8 @@ __Bluetooth__         | not planned ! |
 Unfortunately there is no Xtrensa support by the Eclipse Embedded-CDT plugin, so the the (ESP32) setup takes slightly more
 steps.
 - Add a new build configuration like BOARD_ESP32_DEVKIT
-- At the Tool Chain Editor select "Cross GCC"
-- In C/C++ General
+- At C/C++ Buid / Tool Chain Editor: select "Cross GCC"
+- At C/C++ General
   - Paths and Symbols / Symbols: define the board for the "GNU C++" like BOARD_ESP32_DEVKIT (no value required)
   - Paths and Symbols / Includes / GNU C++: 
     - src
@@ -55,6 +55,23 @@ steps.
   - vihal/core/src (this must be always there)
   - vihal/xtensa/core
   - vihal/xtensa/ESP/src
-
-
+- At C/C++ Buid / Settings
+  - Cross Settings:
+    - Prefix: xtensa-esp32-elf-
+    - Path: ${XTENSA_ESP32_GCC_PATH}
+  - Cross GCC Compiler:
+    - Dialect: ISO C99
+    - Miscellaneous / Other Flags: -c -fmessage-length=0 -mtext-section-literals
+  - Cross G++ Compiler:
+    - Dialect: ISO C++11
+    - Optimization / Other optimization flags: -fno-exceptions -fno-rtti -fno-use-cxa-atexit -fno-threadsafe-statics -fdata-sections -ffunction-sections
+    - Miscellaneous / Other Flags: -c -fmessage-length=0 -mtext-section-literals
+  - Cross G++ Linker:
+    - General: check "Do not use standard start files (-nostartfiles)"
+    - Libraries / Library search path (-L): add "${workspace_loc:/${ProjName}/vihal/core/ld}"
+    - Miscellaneous / Linker flags: -T "${workspace_loc:/${ProjName}/vihal/xtensa/ESP/ESP32/ESP32_ram_128k.ld}" -mtext-section-literals
+    - Miscellaneous / Other options(-Xlinker [option]): add "--gc-sections"
+  - Cross GCC Assembler:
+    - (root element) / Command: "gcc"
+    - General / Assembler flags: -c -x assembler-with-cpp -mtext-section-literals
 
