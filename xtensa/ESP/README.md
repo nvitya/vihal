@@ -8,6 +8,25 @@ Only exececution from RAM is supported so far. XIP is not planned by me (but is 
 
 __WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__
 
+## VIHAL Driver Status for the ESP32 Integrated Peripherals
+
+  Driver              | Status  |
+----------------------|---------|
+__CPU Clock__         | OK      |
+__Pin Cfg. + GPIO__   | OK      |
+__UART__              | OK      |
+__DMA__               | OK      |
+__SPI Master__        | planned |
+__I2C Master__        | planned |
+__I2C Slave__         | planned |
+__Ext. IRQ.__         | planned |
+__ADC__               | planned |
+__DAC__               | planned |
+__CAN__               | planned |
+__Simple PWM__        | planned |
+__Ethernet__          | not planned ! |
+__WIFI__              | not planned ! |
+__Bluetooth__         | not planned ! |
 
 ## Eclipse CDT Project Setup for the ESP32 Vihal Development
 
