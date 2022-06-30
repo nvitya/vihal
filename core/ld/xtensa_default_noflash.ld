@@ -156,7 +156,7 @@ SECTIONS
 
     *(.rodata.*)
     *(*.rodata)
-    
+
     *(.irom1.text) /* catch stray ICACHE_RODATA_ATTR */
     *(.gnu.linkonce.r.*)
     *(.rodata1)
@@ -199,13 +199,7 @@ SECTIONS
     KEEP (*(.reserved_memory_address))
     soc_reserved_memory_region_end = ABSOLUTE(.);
     _rodata_end = ABSOLUTE(.);
-    /* Literals are also RO data. */
-    _lit4_start = ABSOLUTE(.);
-    *(*.lit4)
-    *(.lit4.*)
-    *(*.literal)
-    *(.literal.*)
-
+    
     *(.gnu.linkonce.lit4.*)
     _lit4_end = ABSOLUTE(.);
 
@@ -225,10 +219,12 @@ SECTIONS
     _stext = .;
     _text_start = ABSOLUTE(.);
 
+    *libgcc.a:(.literal .text .literal.* .text.*)
+
     *(.stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
     *(.irom0.text) /* catch stray ICACHE_RODATA_ATTR */
 
-    *(.text .text.* )
+    *(.literal .text .literal.* .text.*)
     *(.text.unlikely .text.*_unlikely .text.unlikely.*)
     *(.text.exit .text.exit.*)
     *(.text.startup .text.startup.*)
@@ -298,7 +294,7 @@ SECTIONS
 
     _data_end = ABSOLUTE(.);
     . = ALIGN(4);
-    
+
   } > RAM AT > TEXT
 
   .bss (NOLOAD) : ALIGN(4)
@@ -309,7 +305,7 @@ SECTIONS
     *(.bss_begin .bss_begin.*)
     *(.bss .bss.*)
     *(.tbss)
-    *(.tbss.*)    
+    *(.tbss.*)
     *(.dynbss .dynsbss .gnu.linkonce.b .gnu.linkonce.b.* .gnu.linkonce.sb .gnu.linkonce.sb.* .gnu.linkonce.sb2 .gnu.linkonce.sb2.* .sbss .sbss.* .sbss2 .sbss2.* .scommon .share.mem)
     *(.ext_ram.bss .ext_ram.bss.*)
     *(COMMON)
@@ -334,10 +330,10 @@ SECTIONS
   PROVIDE ( _end = _end_noinit );
   PROVIDE ( __end = _end_noinit );
   PROVIDE ( __end__ = _end_noinit );
-  
+
   PROVIDE ( rom_i2c_readReg = 0x40004148 );
   PROVIDE ( rom_i2c_readReg_Mask = 0x400041c0 );
   PROVIDE ( rom_i2c_writeReg = 0x400041a4 );
   PROVIDE ( rom_i2c_writeReg_Mask = 0x400041fc );
-  
+
 }
