@@ -49,12 +49,12 @@ steps.
   - Paths and Symbols / Symbols: define the board for the "GNU C++" like BOARD_ESP32_DEVKIT (no value required)
   - Paths and Symbols / Includes / GNU C++: 
     - ```src```
-    - ```/${ProjName}/vihal/core/src```
-    - ```/${ProjName}/vihal/xtensa/core```
-    - ```/${ProjName}/vihal/xtensa/ESP/src```
-    - ```/${ProjName}/vihal/xtensa/ESP/ESP32```
+    - ```/${ProjName}/vihal/core/src``` (as workspace path)
+    - ```/${ProjName}/vihal/xtensa/core``` (as workspace path)
+    - ```/${ProjName}/vihal/xtensa/ESP/src``` (as workspace path)
+    - ```/${ProjName}/vihal/xtensa/ESP/ESP32``` (as workspace path)
   - Paths and Symbols / Includes / Assembly: 
-    - ```/${ProjName}/vihal/xtensa/ESP/ESP32```
+    - ```/${ProjName}/vihal/xtensa/ESP/ESP32``` (as workspace path)
 - At C/C++ Buid / Settings
   - Cross Settings:
     - Prefix: ```xtensa-esp32-elf-```
