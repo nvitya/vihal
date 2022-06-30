@@ -1,14 +1,41 @@
 # VIHAL Support for ESP32 (Xtensa)
 
-The ESP32 is a very strong and affordable microcontroller. I wanted to support it by the VIHAL, but unfortunately
-because of the CPU complexity and lack of information I abandoned it for now.
+The ESP32 is a very strong and affordable microcontroller, with a quite special Xtensa LX16 CPU using Windowed ABI.
+I've invested a lot of time to find the necessary low-level Xtensa CPU initialization codes and linker requirements.
+Fortunately it seems to work now. 
 
-The Xtensa LX16 is a very special CPU with 16 from 64 Windowed Registers. Compared to Risc-V or ARM Cortex-M
-it requires a special initialization and interrupt handlers and I could not find proper examples or documentation.
+Only exececution from RAM is supported so far. XIP is not planned by me (but is not so hard to implement).
 
-Here is a site about the windowed api: https://sachin0x18.github.io/posts/demystifying-xtensa-isa/
+__WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__
 
-You can help me out with a complete bare metal (without esp-idf) CPU initialzation and window overflow interrupt handler
-(and with the other required stuff i don't know yet anything about).
 
-If this is ready then I can do the VIHAL driver development, as usual...
+## Eclipse CDT Project Setup for the ESP32 Vihal Development
+
+### One-Time Eclipse CDT Preparation
+- Acquire the Xtensa ESP32 GCC tools (actually the esp-idf is not required, but it is easier to have a complete
+  esp-idf setup wicht at some point installs the necessary tools as well)
+- Open Eclipse Preferences / C/C++ / Build / Build Variables: Add the following variable:
+  XTENSA_ESP32_GCC_PATH to point to the Xtensa ESP32 GCC (with the .../bin directory at the end)
+  
+### Project Setup
+Unfortunately there is no Xtrensa support by the Eclipse Embedded-CDT plugin, so the the (ESP32) setup takes slightly more
+steps.
+- Add a new build configuration like BOARD_ESP32_DEVKIT
+- At the Tool Chain Editor select "Cross GCC"
+- In C/C++ General
+  - Paths and Symbols / Symbols: define the board for the "GNU C++" like BOARD_ESP32_DEVKIT (no value required)
+  - Paths and Symbols / Includes / GNU C++: 
+    - src
+    - /${ProjName}/vihal/core/src
+    - /${ProjName}/vihal/xtensa/core
+    - /${ProjName}/vihal/xtensa/ESP/src
+    - /${ProjName}/vihal/xtensa/ESP/ESP32
+  - Paths and Symbols / Includes / Assembly: 
+    - /${ProjName}/vihal/xtensa/ESP/ESP32
+- Activate (include into the build) the following directories from the vihal:
+  - vihal/core/src (this must be always there)
+  - vihal/xtensa/core
+  - vihal/xtensa/ESP/src
+
+
+
