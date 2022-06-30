@@ -30,6 +30,7 @@
 
 #include "platform.h"
 
+uint32_t esp_apb_speed();
 
 
 

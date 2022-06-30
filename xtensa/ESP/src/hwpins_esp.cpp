@@ -21,8 +21,7 @@
 /*
  *  file:     hwpins_esp.cpp
  *  brief:    ESP Pin/Pad and GPIO configuration
- *  version:  1.00
- *  date:     2022-01-29
+ *  created:  2022-01-29
  *  authors:  nvitya
 */
 
@@ -39,46 +38,47 @@ const uint8_t esp_io_mux_pad_map[40] =
   99, 99,  6,  7,  4,  5,  0,  1,  2,  3   // 30-39
 };
 
-
-bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinnum = pad number, portnum is ignored
+bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned flags)
 {
-  if ((apinnum < 0) || (apinnum >= ESP_GPIO_COUNT))
+  if ((apadnum < 0) || (apadnum >= ESP_GPIO_COUNT))
   {
     return false;
   }
-
-	// port power control is not necessary ?
 
   // 1. prepare pad configuration
 
-  uint8_t padcfgidx = esp_io_mux_pad_map[apinnum];
-  if (padcfgidx >= IO_MUX_PAD_CFG_COUNT)
+  uint8_t padcfgidx = esp_io_mux_pad_map[apadnum];
+  if (padcfgidx >= sizeof(esp_io_mux_pad_map))
   {
     return false;
   }
 
-	uint32_t padcfg = (0
-	  | (0  << 12)  // MCU_SEL(3): function select
-	  | (0  << 10)  // FUN_DRV(2): drive strength
-	  | (1  <<  9)  // FUN_IE: 1 = input enable
-	  | (0  <<  8)  // FUN_WPU: 1 = internal pull-up
-	  | (0  <<  7)  // FUN_WPD: 1 = internal pull-down
-	  | (0  <<  5)  // MCU_DRV(2): drive strength in sleep mode
-	  | (0  <<  4)  // MCU_IE: 1 = input enable in sleep mode
-	  | (0  <<  3)  // MCU_WPU: 1 = pull-up in sleep mode
-	  | (0  <<  2)  // MCU_WPD: 1 = pull-down in sleep mode
-	  | (0  <<  1)  // SLP_SEL: 1 = put the pad in sleep mode
-	  | (0  <<  0)  // MCU_OE: 1 = enable output in sleep mode
-	);
+  uint32_t padcfg = (0
+    | (0  << 12)  // MCU_SEL(3): function select
+    | (0  << 10)  // FUN_DRV(2): drive strength
+    | (1  <<  9)  // FUN_IE: 1 = input enable
+    | (0  <<  8)  // FUN_WPU: 1 = internal pull-up
+    | (0  <<  7)  // FUN_WPD: 1 = internal pull-down
+    | (0  <<  5)  // MCU_DRV(2): drive strength in sleep mode
+    | (0  <<  4)  // MCU_IE: 1 = input enable in sleep mode
+    | (0  <<  3)  // MCU_WPU: 1 = pull-up in sleep mode
+    | (0  <<  2)  // MCU_WPD: 1 = pull-down in sleep mode
+    | (0  <<  1)  // SLP_SEL: 1 = put the pad in sleep mode
+    | (0  <<  0)  // MCU_OE: 1 = enable output in sleep mode
+  );
 
-	if (flags & (PINCFG_DRIVE_STRONG | PINCFG_SPEED_FAST))
-	{
-		padcfg |= (3 << 10);
-	}
-	else
-	{
+  if (flags & (PINCFG_DRIVE_STRONG | PINCFG_SPEED_FAST))
+  {
+    padcfg |= (3 << 10);
+  }
+  else if (flags & PINCFG_DRIVE_WEAK)
+  {
+    padcfg |= (0 << 10);
+  }
+  else
+  {
     padcfg |= (2 << 10);
-	}
+  }
 
   if (flags & PINCFG_PULLUP)
   {
@@ -98,7 +98,7 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinn
 
   // 2. GPIO PIN configuration (open-drain)
 
-  uint32_t pincfg = GPIO->PIN[apinnum];
+  uint32_t pincfg = GPIO->PIN[apadnum];
   if (flags & PINCFG_OPENDRAIN)
   {
     pincfg |= (1 << 2); // PAD_DRIVER = 1: open drain
@@ -107,21 +107,21 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinn
   {
     pincfg &= ~(1 << 2); // 0 = normal
   }
-  GPIO->PIN[apinnum] = pincfg;
+  GPIO->PIN[apadnum] = pincfg;
 
   // route the GPIO output regs to the output PAD
 
-  GPIO->FUNC_OUT_SEL_CFG[apinnum] = (0
-    | (0x100  <<  0)  // OUT_SEL(9)
+  GPIO->FUNC_OUT_SEL_CFG[apadnum] = (0
+    | (aiomuxidx  <<  0)  // OUT_SEL(9)
     | (0  <<  9)  // INV_SEL
-    | (0  << 10)  // OEN_SEL
+    | (1  << 10)  // OEN_SEL
     | (0  << 10)  // OEN_INV_SEL
   );
 
   // 3. GPIO configuration
 
-  unsigned gpio_idx = (apinnum > 31 ? 1 : 0);
-  unsigned gpio_bit = (apinnum & 0x1F);
+  unsigned gpio_idx = (apadnum > 31 ? 1 : 0);
+  unsigned gpio_bit = (apadnum & 0x1F);
   unsigned gpio_mask = (1 << gpio_bit);
 
   if (flags & PINCFG_OUTPUT)
@@ -144,6 +144,11 @@ bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinn
   }
 
   return true;
+}
+
+bool THwPinCtrl_esp::PinSetup(int aportnum, int apinnum, unsigned flags) // pinnum = pad number, portnum is ignored
+{
+  return PadSetup(apinnum, 0x100, flags);
 }
 
 void THwPinCtrl_esp::GpioSet(int aportnum, int apinnum, int value)

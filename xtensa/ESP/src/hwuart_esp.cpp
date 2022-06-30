@@ -20,9 +20,8 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     hwuart_esp.cpp
- *  brief:    ESP UART
- *  version:  1.00
- *  date:     2022-01-29
+ *  brief:    ESP32 UART
+ *  date:     2022-06-29
  *  authors:  nvitya
 */
 
@@ -34,87 +33,107 @@
 
 bool THwUart_esp::Init(int adevnum)
 {
+  uint32_t tmp;
 	unsigned code;
 
 	devnum = adevnum;
 	initialized = false;
 
+	//uhci = UHCI0;
 	regs = nullptr;
 
-	if (0 == devnum)  // PUART1
+	uint32_t sys_rst_mask;
+
+  DPORT->PERIP_CLK_EN |= DPORT_UART_MEM_CLK_EN;
+
+	if (0 == devnum)
 	{
-    //regs = uart0_hw;
+    regs = UART0;
+    DPORT->PERIP_CLK_EN |= DPORT_UART_CLK_EN;
+    sys_rst_mask = DPORT_UART_RST;
 	}
 	else if (1 == devnum)
 	{
-    //regs = uart1_hw;
+    regs = UART1;
+    DPORT->PERIP_CLK_EN |= DPORT_UART1_CLK_EN;
+    sys_rst_mask = DPORT_UART1_RST;
 	}
+  else if (2 == devnum)
+  {
+    regs = UART2;
+    DPORT->PERIP_CLK_EN |= DPORT_UART2_CLK_EN;
+    sys_rst_mask = DPORT_UART2_RST;
+  }
 
 	if (!regs)
 	{
 		return false;
 	}
 
-#if 0
+  // following the Espressif recommended reset sequence:
 
-  // main control register
+  DPORT->PERIP_RST_EN &= ~sys_rst_mask;  // clear system UART reset
+  DPORT->PERIP_RST_EN |= sys_rst_mask;   // set system UART reset
+  if (DPORT->PERIP_RST_EN) {} // some sync
+  DPORT->PERIP_RST_EN &= ~sys_rst_mask;  // remove system UART reset
 
-  regs->cr = (0
-    | (0  << 15)  // CTSEN
-    | (0  << 14)  // RTSEN
-    | (0  << 13)  // OUT2
-    | (0  << 12)  // OUT1
-    | (0  << 11)  // RTS
-    | (0  << 10)  // DTR
-    | (1  <<  9)  // RXE: 1 = enable rx
-    | (1  <<  8)  // TXE: 1 = enable tx
-    | (0  <<  7)  // LBE: 1 = loopback enable
-    | (0  <<  2)  // SIRLP
-    | (0  <<  1)  // SIREN
-    | (1  <<  0)  // UARTEN: 1 = enable uart
+  unsigned periphclock = esp_apb_speed();
+
+  // * 16 for the fractional divider
+  uint32_t brdiv_m16 = (periphclock << 4) / baudrate;  // *16 = 1
+
+  regs->CLKDIV = (0
+      | ((brdiv_m16 >> 4)  <<  0)  // CLKDIV(12)
+      | ((brdiv_m16 & 15)  << 20)  // CLKDIV_FRAG(4)
   );
 
-  regs->imsc = 0; // clear all interrupt masks
-
-  // set baudrate
-  //   fix /16 divisor for oversampling + 6-bit fractional divider
-
-  unsigned periphclock = SystemCoreClock;
-
-  uint32_t brdiv_m64 = (periphclock << 2) / baudrate;  // /16 *64 = *4 = << 2
-  regs->ibrd = (brdiv_m64 >> 6);    // the integer part
-  regs->fbrd = (brdiv_m64 & 0x3F);  // the fractional part
-
-  // set line format
-
-  uint32_t lcrh = (0
-    | (0  <<  7)  // SPS
-    | (0  <<  5)  // WLEN(2): 0 = 5 bits, 1 = 6 bits, 2 = 7 bits, 3 = 8 bits
-    | (1  <<  4)  // FEN: 1 = enable fifos
-    | (0  <<  3)  // STP2
-    | (0  <<  2)  // EPS
-    | (0  <<  1)  // PEN
-    | (0  <<  0)  // BRK
+  uint32_t conf0 = (0
+    | (0  <<  0)  // PARITY
+    | (0  <<  1)  // PARITY_EN
+    | (0  <<  2)  // BIT_NUM(2): 0 = 5 bit, 3 = 8 bit
+    | (0  <<  4)  // STOP_BIT_NUM(2): 0 = 1 stop bit, 1 = 1.5, 2 = 2, 3 = 3
+    | (0  <<  6)  // SW_RTS
+    | (0  <<  7)  // SW_DTR
+    | (0  <<  8)  // TXD_BRK
+    | (0  <<  9)  // IRDA_DPLX
+    | (0  << 10)  // IRDA_TX_EN
+    | (0  << 11)  // IRDA_WCTL
+    | (0  << 12)  // IRDA_TX_INV
+    | (0  << 13)  // IRDA_RX_INV
+    | (0  << 14)  // LOOPBACK
+    | (0  << 15)  // TX_FLOW_EN:
+    | (0  << 16)  // IRDA_EN
+    | (0  << 17)  // RXFIFO_RST
+    | (0  << 18)  // TXFIFO_RST
+    | (0  << 19)  // RXD_INV
+    | (0  << 20)  // CTS_INV
+    | (0  << 21)  // DSR_INV
+    | (0  << 22)  // TXD_INV
+    | (0  << 23)  // RTS_INV
+    | (0  << 24)  // DTR_INV
+    | (1  << 27)  // TICK_DEF_ALWAYS_ON
   );
-
-  // data length
-  lcrh |= ((databits - 5) << 5);
-
-	// stop bits
-	if (4 == halfstopbits)  lcrh |= (1 << 3);  // set two stop bits
-
+  // data bits
+  conf0 |= ((databits - 5) << 2);
+  // stop bits
+  if (4 == halfstopbits)  conf0 |= (2 << 4);  // set two stop bits
   // parity
-	if (parity)
-	{
-	  lcrh |= (1 << 1); // enable parity
-	  if (!oddparity)  lcrh |= (1 << 2);
-	}
+  if (parity)
+  {
+    conf0 |= (1 << 1); // enable parity
+    if (!oddparity)  conf0 |= (1 << 0);
+  }
+  regs->CONF0 = conf0;
 
-	regs->lcr_h = lcrh;
-
-  regs->icr = 0x7FF; // clear all interrupt flags
-
-#endif
+  uint32_t conf1 = (0
+    | (0x60 <<  0)  // RXFIFO_FULL_THRHD(7)
+    | (0x60 <<  8)  // TXFIFO_EMPTY_THRHD(7)
+    | (0    << 16)  // RX_FLOW_THRD(7)
+    | (0    << 23)  // RX_FLOW_EN
+    | (0    << 24)  // RX_TOUT_THRD(7)
+    | (0    << 31)  // RX_TOUT_EN
+  );
+  regs->CONF1 = conf1;
 
 	initialized = true;
 
@@ -123,43 +142,38 @@ bool THwUart_esp::Init(int adevnum)
 
 bool THwUart_esp::TrySendChar(char ach)
 {
-#if 0
-	if (regs->fr & UART_UARTFR_TXFF_BITS) // TX FIFO Full ?
+  uint32_t sr = regs->STATUS;
+	if (((sr >> 16) & 0xFF) >= tx_fifo_size) // TX FIFO Full ?
 	{
 		return false;
 	}
 
-	regs->dr = ach;
-
-#endif
-
+	regs->FIFO = ach;
 	return true;
 }
 
 bool THwUart_esp::TryRecvChar(char * ach)
 {
-#if 0
-	if (regs->fr & UART_UARTFR_RXFE_BITS) // RX FIFO Empty?
+  uint32_t sr = regs->STATUS;
+	if (0 == (sr & 0xFF)) // RX FIFO Empty?
 	{
 	  return false;
 	}
 
-	*ach = regs->dr;
-#endif
+	*ach = regs->FIFO;
 	return true;
 }
 
 bool THwUart_esp::SendFinished()
 {
-#if 0
-	if (regs->fr & UART_UARTFR_BUSY_BITS)
+  uint32_t sr = regs->STATUS;
+  if (0 == (sr & 0xFF)) // RX FIFO Empty?
+  {
+    return true;
+  }
+	else
 	{
 		return false;
-	}
-	else
-#endif
-	{
-		return true;
 	}
 }
 

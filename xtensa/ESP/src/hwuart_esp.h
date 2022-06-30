@@ -20,9 +20,8 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     hwuart_esp.h
- *  brief:    ESP UART
- *  version:  1.00
- *  date:     2022-01-29
+ *  brief:    ESP32 UART
+ *  created:  2022-06-29
  *  authors:  nvitya
 */
 
@@ -30,15 +29,6 @@
 
 #define HWUART_PRE_ONLY
 #include "hwuart.h"
-
-// the ESP official definitions are not really useable, so using own definitions
-
-typedef struct
-{
-  volatile uint32_t   OUT;
-  volatile uint32_t   _pad;
-//
-} esp_uart_regs_t;
 
 class THwUart_esp : public THwUart_pre
 {
@@ -56,7 +46,11 @@ public:
 	bool DmaStartRecv(THwDmaTransfer * axfer);
 
 public:
-	esp_uart_regs_t *     regs = nullptr;
+	esp32_uart_t *   regs = nullptr;
+	//esp_uhci_t *     uhci = nullptr;
+
+	uint32_t         tx_fifo_size = 128;
+	uint32_t         rx_fifo_size = 128;
 };
 
 #define HWUART_IMPL THwUart_esp
