@@ -40,6 +40,9 @@ __Bluetooth__         | not planned ! |
 Unfortunately there is no Xtrensa support by the Eclipse Embedded-CDT plugin, so the the (ESP32) setup takes slightly more
 steps.
 - Add a new build configuration like BOARD_ESP32_DEVKIT
+- At C/C++ Buid / (root element) / Builder Settings:
+  - Builder Type: select "Internal Builder", otherwise the project clean won't work
+  - Behaviour: Enable Parallel Build for build speedup
 - At C/C++ Buid / Tool Chain Editor: select "Cross GCC"
 - At C/C++ General
   - Paths and Symbols / Symbols: define the board for the "GNU C++" like BOARD_ESP32_DEVKIT (no value required)
