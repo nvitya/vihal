@@ -44,34 +44,34 @@ steps.
 - At C/C++ General
   - Paths and Symbols / Symbols: define the board for the "GNU C++" like BOARD_ESP32_DEVKIT (no value required)
   - Paths and Symbols / Includes / GNU C++: 
-    - src
-    - /${ProjName}/vihal/core/src
-    - /${ProjName}/vihal/xtensa/core
-    - /${ProjName}/vihal/xtensa/ESP/src
-    - /${ProjName}/vihal/xtensa/ESP/ESP32
+    - ```src```
+    - ```/${ProjName}/vihal/core/src```
+    - ```/${ProjName}/vihal/xtensa/core```
+    - ```/${ProjName}/vihal/xtensa/ESP/src```
+    - ```/${ProjName}/vihal/xtensa/ESP/ESP32```
   - Paths and Symbols / Includes / Assembly: 
-    - /${ProjName}/vihal/xtensa/ESP/ESP32
+    - ```/${ProjName}/vihal/xtensa/ESP/ESP32```
 - Activate (include into the build) the following directories from the vihal:
-  - vihal/core/src (this must be always there)
-  - vihal/xtensa/core
-  - vihal/xtensa/ESP/src
+  - ```vihal/core/src``` (this must be always there)
+  - ```vihal/xtensa/core```
+  - ```vihal/xtensa/ESP/src```
 - At C/C++ Buid / Settings
   - Cross Settings:
-    - Prefix: xtensa-esp32-elf-
-    - Path: ${XTENSA_ESP32_GCC_PATH}
+    - Prefix: ```xtensa-esp32-elf-```
+    - Path: ```${XTENSA_ESP32_GCC_PATH}```
   - Cross GCC Compiler:
     - Dialect: ISO C99
-    - Miscellaneous / Other Flags: -c -fmessage-length=0 -mtext-section-literals
+    - Miscellaneous / Other Flags: ```-c -fmessage-length=0 -mtext-section-literals```
   - Cross G++ Compiler:
     - Dialect: ISO C++11
-    - Optimization / Other optimization flags: -fno-exceptions -fno-rtti -fno-use-cxa-atexit -fno-threadsafe-statics -fdata-sections -ffunction-sections
-    - Miscellaneous / Other Flags: -c -fmessage-length=0 -mtext-section-literals
+    - Optimization / Other optimization flags: ```-fno-exceptions -fno-rtti -fno-use-cxa-atexit -fno-threadsafe-statics -fdata-sections -ffunction-sections```
+    - Miscellaneous / Other Flags: ```-c -fmessage-length=0 -mtext-section-literals```
   - Cross G++ Linker:
     - General: check "Do not use standard start files (-nostartfiles)"
-    - Libraries / Library search path (-L): add "${workspace_loc:/${ProjName}/vihal/core/ld}"
-    - Miscellaneous / Linker flags: -T "${workspace_loc:/${ProjName}/vihal/xtensa/ESP/ESP32/ESP32_ram_128k.ld}" -mtext-section-literals
-    - Miscellaneous / Other options(-Xlinker [option]): add "--gc-sections"
+    - Libraries / Library search path (-L): add ``` "${workspace_loc:/${ProjName}/vihal/core/ld}" ```
+    - Miscellaneous / Linker flags: ``` -T "${workspace_loc:/${ProjName}/vihal/xtensa/ESP/ESP32/ESP32_ram_128k.ld}" -mtext-section-literals ```
+    - Miscellaneous / Other options(-Xlinker [option]): add ```--gc-sections```
   - Cross GCC Assembler:
-    - (root element) / Command: "gcc"
-    - General / Assembler flags: -c -x assembler-with-cpp -mtext-section-literals
+    - (root element) / Command: ```gcc```
+    - General / Assembler flags: ```-c -x assembler-with-cpp -mtext-section-literals```
 
