@@ -15,7 +15,7 @@ __WARNING: Wifi/Bluetooth support is not included and probably they won't ever w
 __CPU Clock__         | OK      |
 __Pin Cfg. + GPIO__   | OK      |
 __UART__              | OK      |
-__DMA__               | OK      |
+__DMA__               | planned |
 __SPI Master__        | planned |
 __I2C Master__        | planned |
 __I2C Slave__         | planned |
