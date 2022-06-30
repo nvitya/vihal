@@ -30,15 +30,16 @@ __Bluetooth__         | not planned ! |
 
 ## Eclipse CDT Project Setup for the ESP32 Vihal Development
 
+Unfortunately there is no Xtrensa support by the Eclipse Embedded-CDT plugin, so the the (ESP32) setup takes slightly more
+steps.
+
 ### One-Time Eclipse CDT Preparation
 - Acquire the Xtensa ESP32 GCC tools (actually the esp-idf is not required, but it is easier to have a complete
   esp-idf setup wicht at some point installs the necessary tools as well)
 - Open Eclipse Preferences / C/C++ / Build / Build Variables: Add the following variable:
   XTENSA_ESP32_GCC_PATH to point to the Xtensa ESP32 GCC (with the .../bin directory at the end)
   
-### Project Setup
-Unfortunately there is no Xtrensa support by the Eclipse Embedded-CDT plugin, so the the (ESP32) setup takes slightly more
-steps.
+### Project Properties
 - Add a new build configuration like BOARD_ESP32_DEVKIT
 - At C/C++ Buid / (root element) / Builder Settings:
   - Builder Type: select "Internal Builder", otherwise the project clean won't work
@@ -54,10 +55,6 @@ steps.
     - ```/${ProjName}/vihal/xtensa/ESP/ESP32```
   - Paths and Symbols / Includes / Assembly: 
     - ```/${ProjName}/vihal/xtensa/ESP/ESP32```
-- Activate (include into the build) the following directories from the vihal:
-  - ```vihal/core/src``` (this must be always there)
-  - ```vihal/xtensa/core```
-  - ```vihal/xtensa/ESP/src```
 - At C/C++ Buid / Settings
   - Cross Settings:
     - Prefix: ```xtensa-esp32-elf-```
@@ -77,4 +74,8 @@ steps.
   - Cross GCC Assembler:
     - (root element) / Command: ```gcc```
     - General / Assembler flags: ```-c -x assembler-with-cpp -mtext-section-literals```
-
+### Project Tree Setup in the Project Explorer
+- Activate (include into the build) the following directories from the vihal:
+  - ```vihal/core/src``` (this must be always there)
+  - ```vihal/xtensa/core```
+  - ```vihal/xtensa/ESP/src```
