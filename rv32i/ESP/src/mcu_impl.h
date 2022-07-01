@@ -13,3 +13,10 @@
   #include "hwuart_esp.h"
 #endif
 
+#ifdef HWSPI_H_
+  #include "hwspi_esp.h"
+#endif
+
+#ifdef HWDMA_H_
+  #define SKIP_UNIMPLEMENTED_WARNING
+#endif

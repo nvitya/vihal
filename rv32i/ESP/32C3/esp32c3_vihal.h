@@ -326,6 +326,45 @@ typedef struct
 #define UHCI0     ((esp_uhci_t *)(0x60014000))
 
 //-----------------------------------------------------------------------------
+// SPI
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t CMD;          // 0x00
+  volatile uint32_t ADDR;         // 0x04
+  volatile uint32_t CTRL;         // 0x08
+  volatile uint32_t CLOCK;        // 0x0C
+  volatile uint32_t USER;         // 0x10
+  volatile uint32_t USER1;        // 0x14
+  volatile uint32_t USER2;        // 0x18
+  volatile uint32_t MS_DLEN;      // 0x1C
+  volatile uint32_t MISC;         // 0x20
+  volatile uint32_t DIN_MODE;     // 0x24
+  volatile uint32_t DIN_NUM;      // 0x28
+  volatile uint32_t DOUT_MODE;    // 0x2C
+  volatile uint32_t DMA_CONF;     // 0x30
+  volatile uint32_t DMA_INT_ENA;  // 0x34
+  volatile uint32_t DMA_INT_CLR;  // 0x38
+  volatile uint32_t DMA_INT_RAW;  // 0x3C
+  volatile uint32_t DMA_INT_ST;   // 0x40
+           uint32_t _pad_44[(0x98-0x44) / 4];
+  volatile uint32_t W[16];        // 0x98 .. 0xD4
+           uint32_t _pad_D8;
+           uint32_t _pad_DC;
+  volatile uint32_t SLAVE;        // 0xE0
+  volatile uint32_t SLAVE1;       // 0xE4
+  volatile uint32_t CLK_GATE;     // 0xE8
+           uint32_t _pad_EC;
+  volatile uint32_t DATE;         // 0xF0
+//
+} esp_spi_t;
+
+#define SPI0     ((esp_spi_t *)(0x60003000))
+#define SPI1     ((esp_spi_t *)(0x60002000))
+#define SPI2     ((esp_spi_t *)(0x60024000))
+
+//-----------------------------------------------------------------------------
 // Espressif definitions
 //-----------------------------------------------------------------------------
 
