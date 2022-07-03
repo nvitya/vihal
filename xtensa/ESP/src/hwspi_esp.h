@@ -20,7 +20,7 @@
  * --------------------------------------------------------------------------- */
 /*
  * file:     hwspi_esp.h
- * brief:    SPI Master for ESP32-C3
+ * brief:    SPI Master for ESP32
  * created:  2022-06-30
  * authors:  nvitya
 */
@@ -46,12 +46,9 @@ public:
 
 public:
 	unsigned  					basespeed;
-	esp_spi_t *	      	gregs = nullptr;
-	esp_spi_mem_t *	   	mregs = nullptr;
+	esp32_spi_t *	      regs = nullptr;
 
-	volatile uint32_t * pcmdreg = nullptr;
 	volatile uint32_t * pwregs = nullptr;  // pointer to the 16 data registers
-	uint32_t            cmd_usr_bit = 0;
 
 	uint32_t            remaining = 0;
 	uint32_t            chunksize = 0;
@@ -60,10 +57,6 @@ public:
 	TSpiXferBlock *     lastblock = nullptr;
 
 	void SetCs(unsigned value);
-
-private:
-	inline void CmdStart() { *pcmdreg |= cmd_usr_bit; }
-	inline bool CmdRunning() { return (*pcmdreg & cmd_usr_bit); }
 };
 
 

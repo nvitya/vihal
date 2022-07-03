@@ -326,7 +326,7 @@ typedef struct
 #define UHCI0     ((esp_uhci_t *)(0x60014000))
 
 //-----------------------------------------------------------------------------
-// SPI
+// SPI, applies only to SPI2
 //-----------------------------------------------------------------------------
 
 typedef struct
@@ -360,9 +360,63 @@ typedef struct
 //
 } esp_spi_t;
 
-#define SPI0     ((esp_spi_t *)(0x60003000))
-#define SPI1     ((esp_spi_t *)(0x60002000))
 #define SPI2     ((esp_spi_t *)(0x60024000))
+
+//-----------------------------------------------------------------------------
+// SPI MEM = SPI1, non-documented, extracted from the register definitions
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t CMD;               // 0x000
+  volatile uint32_t ADDR;              // 0x004
+  volatile uint32_t CTRL;              // 0x008
+  volatile uint32_t CTRL1;             // 0x00C
+  volatile uint32_t CTRL2;             // 0x010
+  volatile uint32_t CLOCK;             // 0x014
+  volatile uint32_t USER;              // 0x018
+  volatile uint32_t USER1;             // 0x01C
+  volatile uint32_t USER2;             // 0x020
+  volatile uint32_t MOSI_DLEN;         // 0x024
+  volatile uint32_t MISO_DLEN;         // 0x028
+  volatile uint32_t RD_STATUS;         // 0x02C
+           uint32_t _pad_030;          // 0x030
+  volatile uint32_t MISC;              // 0x034
+  volatile uint32_t TX_CRC;            // 0x038
+  volatile uint32_t CACHE_FCTRL;       // 0x03C
+           uint32_t _pad_040[(0x54-0x40) / 4];
+  volatile uint32_t FSM;               // 0x054
+  volatile uint32_t W[16];             // 0x058 .. 0x094
+  volatile uint32_t FLASH_WAITI_CTRL;  // 0x098
+  volatile uint32_t FLASH_SUS_CTRL;    // 0x09C
+  volatile uint32_t FLASH_SUS_CMD;     // 0x0A0
+  volatile uint32_t SUS_STATUS;        // 0x0A4
+  volatile uint32_t TIMING_CALI;       // 0x0A8
+  volatile uint32_t DIN_MODE;          // 0x0AC
+  volatile uint32_t DIN_NUM;           // 0x0B0
+  volatile uint32_t DOUT_MODE;         // 0x0B4
+           uint32_t _pad_0B8[2];
+  volatile uint32_t INT_ENA;           // 0x0C0
+  volatile uint32_t INT_CLR;           // 0x0C4
+  volatile uint32_t INT_RAW;           // 0x0C8
+  volatile uint32_t INT_ST;            // 0x0CC
+           uint32_t _pad_0D0[3];
+  volatile uint32_t CLOCK_GATE;        // 0x0DC
+  volatile uint32_t CORE_CLK_SEL;      // 0x0E0
+           uint32_t _pad_0E4[(0x3FC-0x0E4) / 4];
+  volatile uint32_t DATE;              // 0x3FC
+//
+} esp_spi_mem_t;
+
+#if 1
+  // definition check:
+
+  static_assert(offsetof(esp_spi_mem_t, CLOCK_GATE)      == 0x0DC, "offset error");
+  static_assert(offsetof(esp_spi_mem_t, CORE_CLK_SEL)    == 0x0E0, "offset error");
+#endif
+
+#define SPIMEM0   ((esp_spi_mem_t *)(0x60003000))
+#define SPIMEM1   ((esp_spi_mem_t *)(0x60002000))
 
 //-----------------------------------------------------------------------------
 // Espressif definitions

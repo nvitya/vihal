@@ -1,8 +1,7 @@
 /*
  *  file:     mcu_impl.h (ESP)
  *  brief:    ESP list of implemented VIHAL core peripherals
- *  version:  1.00
- *  date:     2022-01-29
+ *  created:  2022-01-29
  *  authors:  nvitya
 */
 
@@ -14,3 +13,10 @@
   #include "hwuart_esp.h"
 #endif
 
+#ifdef HWSPI_H_
+  #include "hwspi_esp.h"
+#endif
+
+#ifdef HWDMA_H_
+  #define SKIP_UNIMPLEMENTED_WARNING
+#endif

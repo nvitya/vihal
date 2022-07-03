@@ -33,9 +33,6 @@
 
 bool THwUart_esp::Init(int adevnum)
 {
-  uint32_t tmp;
-	unsigned code;
-
 	devnum = adevnum;
 	initialized = false;
 

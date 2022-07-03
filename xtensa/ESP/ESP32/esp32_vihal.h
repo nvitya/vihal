@@ -569,5 +569,73 @@ typedef struct
 //#define UHCI0     ((esp_uhci_t *)(DR_REG_UHCI0_BASE))
 //#define UHCI1     ((esp_uhci_t *)(DR_REG_UHCI1_BASE))
 
+//-----------------------------------------------------------------------------
+// SPI
+//-----------------------------------------------------------------------------
 
+typedef struct
+{
+  volatile uint32_t CMD;                   // 0x000
+  volatile uint32_t ADDR;                  // 0x004
+  volatile uint32_t CTRL;                  // 0x008
+  volatile uint32_t CTRL1;                 // 0x00C
+  volatile uint32_t RD_STATUS;             // 0x010
+  volatile uint32_t CTRL2;                 // 0x014
+  volatile uint32_t CLOCK;                 // 0x018
+  volatile uint32_t USER;                  // 0x01C
+  volatile uint32_t USER1;                 // 0x020
+  volatile uint32_t USER2;                 // 0x024
+  volatile uint32_t MOSI_DLEN;             // 0x028
+  volatile uint32_t MISO_DLEN;             // 0x02C
+  volatile uint32_t SLV_WR_STATUS;         // 0x030
+  volatile uint32_t PIN;                   // 0x034
+  volatile uint32_t SLAVE;                 // 0x038
+  volatile uint32_t SLAVE1;                // 0x03C
+  volatile uint32_t SLAVE2;                // 0x040
+  volatile uint32_t SLAVE3;                // 0x044
+  volatile uint32_t SLV_WRBUF_DLEN;        // 0x048
+  volatile uint32_t SLV_RDBUF_DLEN;        // 0x04C
+  volatile uint32_t CACHE_FCTRL;           // 0x050
+  volatile uint32_t CACHE_SCTRL;           // 0x054
+  volatile uint32_t SRAM_CMD;              // 0x058
+  volatile uint32_t SRAM_DRD_CMD;          // 0x05C
+  volatile uint32_t SRAM_DWR_CMD;          // 0x060
+  volatile uint32_t SLV_RD_BIT;            // 0x064
+  uint32_t          _pad_068[(0x080-0x068) / 4];
+  volatile uint32_t W[16];                 // 0x080
+  volatile uint32_t TX_CRC;                // 0x0C0
+  uint32_t          _pad_0C4[(0x0F0-0x0C4) / 4];
+  volatile uint32_t EXT0;                  // 0x0F0
+  volatile uint32_t EXT1;                  // 0x0F4
+  volatile uint32_t EXT2;                  // 0x0F8
+  volatile uint32_t EXT3;                  // 0x0FC
+  volatile uint32_t DMA_CONF;              // 0x100
+  volatile uint32_t DMA_OUT_LINK;          // 0x104
+  volatile uint32_t DMA_IN_LINK;           // 0x108
+  volatile uint32_t DMA_STATUS;            // 0x10C
+  volatile uint32_t DMA_INT_ENA;           // 0x110
+  volatile uint32_t DMA_INT_RAW;           // 0x114
+  volatile uint32_t DMA_INT_ST;            // 0x118
+  volatile uint32_t DMA_INT_CLR;           // 0x11C
+  volatile uint32_t IN_ERR_EOF_DES_ADDR;   // 0x120
+  volatile uint32_t IN_SUC_EOF_DES_ADDR;   // 0x124
+  volatile uint32_t INLINK_DSCR;           // 0x128
+  volatile uint32_t INLINK_DSCR_BF0;       // 0x12C
+  volatile uint32_t INLINK_DSCR_BF1;       // 0x130
+  volatile uint32_t OUT_EOF_BFR_DES_ADDR;  // 0x134
+  volatile uint32_t OUT_EOF_DES_ADDR;      // 0x138
+  volatile uint32_t OUTLINK_DSCR;          // 0x13C
+  volatile uint32_t OUTLINK_DSCR_BF0;      // 0x140
+  volatile uint32_t OUTLINK_DSCR_BF1;      // 0x144
+  volatile uint32_t DMA_RSTATUS;           // 0x148
+  volatile uint32_t DMA_TSTATUS;           // 0x14C
+  uint32_t          _pad_150[(0x3FC-0x150) / 4];
+  volatile uint32_t DATE;                  // 0x3FC
+//
+} esp32_spi_t;
+
+#define SPI0     ((esp32_spi_t *)(DR_REG_SPI0_BASE))
+#define SPI1     ((esp32_spi_t *)(DR_REG_SPI1_BASE))
+#define SPI2     ((esp32_spi_t *)(DR_REG_SPI2_BASE))
+#define SPI3     ((esp32_spi_t *)(DR_REG_SPI3_BASE))
 
