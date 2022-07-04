@@ -376,7 +376,8 @@ typedef struct
 //
 } sys_systimer_regs_t;
 
-#define SYSTIMER  ((sys_systimer_regs_t *)(SYSTIMER_BASE))
+#define SYSTIMER   ((sys_systimer_regs_t *)(SYSTIMER_BASE))
+#define SYS_TIMER  ((sys_systimer_regs_t *)(SYSTIMER_BASE))
 
 //---------------------------------------------------------------------------------------
 // RCU

@@ -72,3 +72,12 @@ inline void __attribute__ ((always_inline)) cpu_csr_clrbits(const int csr_id, ui
   asm volatile ("csrrc %[result], %[input_i], %[input_j]" : [result] "=r" (__tmp) : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
 }
 
+inline void __attribute__ ((always_inline)) __ISB(void)
+{
+  //asm volatile ("isb 0xF":::"memory");
+}
+
+inline void __attribute__ ((always_inline)) __DSB(void)
+{
+  //asm volatile ("dsb 0xF":::"memory");
+}
