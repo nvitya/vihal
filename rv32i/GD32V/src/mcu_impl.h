@@ -16,7 +16,7 @@
 #endif
 
 #ifdef HWSPI_H_
-  //#include "hwspi_gd32v.h"
+  #include "hwspi_gd32v.h"
 #endif
 
 #ifdef HWI2C_H_

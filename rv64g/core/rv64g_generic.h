@@ -27,6 +27,18 @@
 
 #define MCU_RV64G
 
+#define MCU_RV32I
+#define CPU_RV32I
+
+#define MSTATUS_MIE         0x00000008
+
+#define CSR_MSTATUS         0x300
+#define CSR_MIE             0x304
+#define CSR_MTVEC           0x305
+#define CSR_MTVT            0x307
+#define CSR_MEPC            0x341
+#define CSR_MCAUSE          0x342
+
 // read mtime:
 #define CLOCKCNT  (cpu_csr_read(0xB00))
 

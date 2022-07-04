@@ -46,3 +46,16 @@ inline void __attribute__ ((always_inline)) cpu_csr_write(const int csr_id, uint
   asm volatile ("csrw %[input_i], %[input_j]" :  : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
 }
 
+inline void __attribute__ ((always_inline)) cpu_csr_setbits(const int csr_id, uint64_t abits)
+{
+  register uint64_t __tmp;
+  register uint64_t csr_data = abits;
+  asm volatile ("csrrs %[result], %[input_i], %[input_j]" : [result] "=r" (__tmp) : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
+}
+
+inline void __attribute__ ((always_inline)) cpu_csr_clrbits(const int csr_id, uint32_t abits)
+{
+  register uint64_t __tmp;
+  register uint64_t csr_data = abits;
+  asm volatile ("csrrc %[result], %[input_i], %[input_j]" : [result] "=r" (__tmp) : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
+}

@@ -53,8 +53,8 @@ _reset_entry:
 //-------------------------------------------------
 // Development entry point for self-flashing
 //-------------------------------------------------
-.global _self_flashing_entry
-_self_flashing_entry:
+.global _soft_entry
+_soft_entry:
 
   li    x15, 1
 
