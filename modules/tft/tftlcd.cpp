@@ -116,6 +116,47 @@ static const uint8_t lcd_init_cmdlist_7735R[] =
     0xFF // close the list
 };
 
+static const uint8_t lcd_init_cmdlist_7735S[] =
+{
+    0xB1, 3,
+      0x05, 0x3A, 0x3A,
+    0xB2, 3,
+      0x05, 0x3A, 0x3A,
+    0xB3, 6,
+      0x05, 0x3A, 0x3A,
+      0x05, 0x3A, 0x3A,
+    0xB4 , 1,
+      0x03,
+    0xC0 , 3,
+      0x62,
+      0x02,
+      0x04,
+    0xC1 , 1,
+      0xC0,
+    0xC2 , 2,
+      0x0D,
+      0x00,
+    0xC3 , 2,
+      0x8D,
+      0x6A,
+    0xC4 , 2,
+      0x8D, 0xEE,
+    0xC5 , 1,
+      0x0E,
+// Rcmd3:
+    0xE0, 16      , //  Positive gamma control
+      0x10, 0x0E, 0x02, 0x03,
+      0x0E, 0x07, 0x02, 0x07,
+      0x0A, 0x12, 0x27, 0x37,
+      0x00, 0x0D, 0x0E, 0x10,
+    0xE1, 16      , //  Negative gamma control
+      0x10, 0x0E, 0x03, 0x03,
+      0x0F, 0x06, 0x02, 0x08,
+      0x0A, 0x13, 0x26, 0x36,
+      0x00, 0x0D, 0x0E, 0x10,
+    0xFF // close the list
+};
+
 static const uint8_t lcd_init_cmdlist_ILI9486[] =
 {
 		0xF2, 9,		// ?????
@@ -287,8 +328,11 @@ void TTftLcd::InitLcdPanel()
 
 	// universal minimal init for all LCD panels
 
-  WriteCmd(0x01);   // soft reset
-	delay_ms(100);
+  if (ctrltype != LCD_CTRL_ST7735S)
+  {
+    WriteCmd(0x01);   // soft reset
+	  delay_ms(100);
+  }
 
 	WriteCmd(0x11);		// Sleep OUT
 	delay_ms(100);
@@ -297,10 +341,14 @@ void TTftLcd::InitLcdPanel()
 	{
 		RunCommandList(&lcd_init_cmdlist_ILI9341[0]);
 	}
-	else if (ctrltype == LCD_CTRL_ST7735)
+	else if (ctrltype == LCD_CTRL_ST7735R)
 	{
 		RunCommandList(&lcd_init_cmdlist_7735R[0]);
 	}
+  else if (ctrltype == LCD_CTRL_ST7735S)
+  {
+    RunCommandList(&lcd_init_cmdlist_7735S[0]);
+  }
 	else if (ctrltype == LCD_CTRL_ILI9486)
 	{
 		RunCommandList(&lcd_init_cmdlist_ILI9486[0]);
@@ -310,10 +358,17 @@ void TTftLcd::InitLcdPanel()
 		RunCommandList(&lcd_init_cmdlist_HX8357B[0]);
 	}
 
-	WriteCmd(0x3A);		// Set Interface Pixel Format
-	WriteData8(0x55);	// 16 Bit
+  WriteCmd(0x3A);   // Set Interface Pixel Format
+  WriteData8(0x05); // 16 Bit
 
-  WriteCmd(0x20);   // Inversion off
+  if (invert_color)
+  {
+    WriteCmd(0x21);   // Inversion on
+  }
+  else
+  {
+    WriteCmd(0x20);   // Inversion off
+  }
 
   WriteCmd(0x13);    // Normal display on
   delay_ms(10);

@@ -36,18 +36,24 @@ typedef enum
 	LCD_CTRL_UNKNOWN = 0,
 	LCD_CTRL_ILI9341,
 	LCD_CTRL_ILI9486,
-	LCD_CTRL_ST7735,
-	LCD_CTRL_HX8357B
+	LCD_CTRL_ST7735R,
+	LCD_CTRL_ST7735S,
+	LCD_CTRL_HX8357B,
+	LCD_CTRL_GC9102
 //
 } TLcdCtrlType;
 
 class TTftLcd : public TGfxBase
 {
 public:
-	uint32_t 				devid;
+
+  int16_t         shift_x = 0;
+  int16_t         shift_y = 0;
 
 	bool            mirrorx = false;
+	bool            invert_color = false;
 	TLcdCtrlType    ctrltype = LCD_CTRL_UNKNOWN;
+	uint32_t        devid;
 
 	virtual ~TTftLcd() {} // to avoid warning
 

@@ -88,8 +88,20 @@ void TTftLcd_spi::WriteData16(uint16_t adata)
 
 void TTftLcd_spi::SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h)
 {
+  if (rotation & 1)
+  {
+    x0 += shift_y;
+    y0 += shift_x;
+  }
+  else
+  {
+    x0 += shift_x;
+    y0 += shift_y;
+  }
+
 	uint16_t x1 = x0 + w - 1;
 	uint16_t y1 = y0 + h - 1;
+
 
 	WriteCmd(0x2A);
 	WriteData8(x0 >> 8);
