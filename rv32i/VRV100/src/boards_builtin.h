@@ -15,49 +15,65 @@
 
 #define BOARD_NAME "VRV100_103"
 #define MCU_VRV100_103
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_104)
 
 #define BOARD_NAME "VRV100_104"
 #define MCU_VRV100_104
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_241)
 
 #define BOARD_NAME "VRV100_241"
 #define MCU_VRV100_241
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_365)
 
 #define BOARD_NAME "VRV100_365"
 #define MCU_VRV100_365
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_401)
 
 #define BOARD_NAME "VRV100_401"
 #define MCU_VRV100_401
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_441)
 
 #define BOARD_NAME "VRV100_441"
 #define MCU_VRV100_441
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_443)
 
 #define BOARD_NAME "VRV100_443"
 #define MCU_VRV100_443
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #elif defined(BOARD_VRV100_543)
 
 #define BOARD_NAME "VRV100_543"
 #define MCU_VRV100_543
-#define MCU_FIXED_SPEED  100000000
+#ifndef MCU_FIXED_SPEED
+  #define MCU_FIXED_SPEED  100000000
+#endif
 
 #else
 
