@@ -8,7 +8,7 @@ It targets bare metal embedded software development, with the following main goa
  - Vendor independent
  - No intermediate libraries, external dependencies 
  - non-blocking communication interfaces (extensive use of DMA and state machines) which allows simple cooperative multi-tasking
- - license permitting unrestricted commercial usage (without warranty)
+ - license permitting unrestricted commercial usage, without any obligation to the customers
  - Built-in support for multiple popular Microcontrollers
  - Support multiple development environments
  - Provide SW modules and examples for usual scenarios
