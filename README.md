@@ -37,8 +37,8 @@ __Architecture ID__ | Description
 --------------------|------------
 ARMM  | ARM Cortex-M (M0, M3, M4, M7)
 RV32I | 32-bit RISC-V
-RV64G | 64-bit RISC-V (experimental)
-XTENSA | Tensilica Xtensa LX6 (ESP32, experimental)
+RV64G | 64-bit RISC-V
+XTENSA | Tensilica Xtensa LX6 (ESP32)
 
 ## Currently Included MCU Families
 
@@ -53,8 +53,8 @@ ARMM   | LPC_V3   | LPC546xx | LPC54608J512
 RV32I  | GD32V    | F1 | GD32VF103C8
 RV32I  | ESP      | C3 | ESP32-C3
 RV32I  | VRV100*  | 103 .. 446 (FPGA only) | VRV100_441
-RV64G  | Kendryte | K2 | K210
-XTENSA | ESP      | ESP32 | ESP32
+RV64G  | Kendryte | K2 | K210 (experimental)
+XTENSA | ESP      | ESP32 | ESP32 (experimental)
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
 
