@@ -34,7 +34,7 @@ depending on the peripheral complexity.
 __Driver__ | __Function__ | __Reference__
 -----------|--------------|----------------
 CPU Clock | CPU and chip clock setup (concentrating mainly on high performance mode) and clock counter | [reference](/doc/hwclk.md)
-Pin Cfg. + GPIO | Pin / Pad configuration + GPIO control | [reference](/doc/pinhwclk.md)
+Pin Cfg. + GPIO | Pin / Pad configuration + GPIO control | [reference](/doc/hwpins.md)
 Ext. IRQ | IRQ handling on GPIO Input Pins | [reference](/doc/hwextirq.md)
 DMA | Direct Memory Access (cpu-less data transfers) | [reference](/doc/hwdma.md)
 UART | Asynchronous serial communication with DMA support | [reference](/doc/hwuart.md)
