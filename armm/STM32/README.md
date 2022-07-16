@@ -1,6 +1,21 @@
 # VIHAL Support for the STM32 microcontrollers
 
-## VIHAL Driver Status for the STM32 Integrated Peripherals
+## Microcontrollers
+
+The full list of built-in microcontrollers can be found here:
+(/armm/STM32/src/mcu_builtin.h)
+
+Sub Family | Built-In MCU Examples
+-----------|--------------
+F0 | STM32F030F6
+L0 |
+F1 |
+F3 |
+F4 |
+F7 |
+H7 |
+
+## Driver Status
 
   Driver              | Status  |
 ----------------------|---------|
