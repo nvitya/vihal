@@ -1,5 +1,5 @@
 # VIHAL CPU Clock Driver
 
-''' #include "hwclk.h" '''
+``` #include "hwclk.h" ```
 
 To be filled...
