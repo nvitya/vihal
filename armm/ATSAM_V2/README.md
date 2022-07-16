@@ -31,3 +31,6 @@ __CAN, CANFD__        | OK
 __SDCARD__            | planned
 __SDRAM__             | - 
 __Ethernet__          | -
+
+# Known Problems
+ - I'v noticed at the USB-Uart test that it jams sometimes. It can be an USB problem or a DMA problem. I plan to fix it soon
