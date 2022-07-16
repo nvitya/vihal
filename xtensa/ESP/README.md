@@ -16,7 +16,7 @@ __CPU Clock__         | OK      |
 __Pin Cfg. + GPIO__   | OK      |
 __UART__              | OK      |
 __DMA__               | planned |
-__SPI Master__        | planned |
+__SPI Master__        | OK |
 __I2C Master__        | planned |
 __I2C Slave__         | planned |
 __Ext. IRQ.__         | planned |
