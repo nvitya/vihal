@@ -1,6 +1,6 @@
 # VIHAL Support for ESP32 (Xtensa)
 
-The ESP32 is a very strong and affordable microcontroller, with a quite special Xtensa LX16 CPU using Windowed ABI.
+The ESP32 is a very strong and affordable microcontroller, with a quite special Xtensa LX6 CPU using Windowed ABI.
 I've invested a lot of time to find the necessary low-level Xtensa CPU initialization codes and linker requirements.
 Fortunately it seems to work now. 
 
