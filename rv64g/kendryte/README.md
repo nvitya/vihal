@@ -9,7 +9,7 @@ So I plan to provide more drivers in the near future.
 ## Microcontrollers
 
 The full list of built-in microcontrollers can be found here:
-[/rv32i/GD32V/src/mcu_builtin.h](/rv32i/GD32V/src/mcu_builtin.h)
+[/rv64g/kendryte/src/mcu_builtin.h](/rv64g/kendryte/src/mcu_builtin.h)
 
 Sub Family | Built-In MCU Examples
 -----------|--------------
