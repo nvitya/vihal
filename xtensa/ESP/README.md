@@ -1,12 +1,12 @@
 # VIHAL Support for ESP32 (Xtensa)
 
-The ESP32 is a very strong and affordable microcontroller, with a quite special Xtensa LX6 CPU using Windowed ABI.
+The ESP32 is a very strong and affordable microcontroller, with a quite special Xtensa LX16 CPU using Windowed ABI.
 I've invested a lot of time to find the necessary low-level Xtensa CPU initialization codes and linker requirements.
 Fortunately it seems to work now. 
 
 Only exececution from RAM is supported so far. XIP is not planned by me (but is not so hard to implement).
 
-__WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__
+__WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__ (Because these parts are closed source and no hw documentation is available)
 
 ## VIHAL Driver Status for the ESP32 Integrated Peripherals
 
