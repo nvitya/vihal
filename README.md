@@ -4,9 +4,9 @@ VIHAL = Vendor Independent Hardware Access Layer/Library.
 
 It targets bare metal embedded software development, with the following main goals:
  - Easy to use
- - Small, simple but effective
+ - Small, simple but effective. Easy to verify.
  - Vendor independent
- - No intermediate libraries
+ - No intermediate libraries, external dependencies 
  - non-blocking communication interfaces (extensive use of DMA and state machines) which allows simple cooperative multi-tasking
  - license permitting unrestricted commercial usage (without warranty)
  - Built-in support for multiple popular Microcontrollers
@@ -35,23 +35,25 @@ depending on the peripheral complexity.
 
 __Architecture ID__ | Description
 --------------------|------------
-ARMM  | ARM Cortex-M (M0, M3, M7)
+ARMM  | ARM Cortex-M (M0, M3, M4, M7)
 RV32I | 32-bit RISC-V
 RV64G | 64-bit RISC-V (experimental)
-
+XTENSA | Tensilica Xtensa LX6 (ESP32, experimental)
 
 ## Currently Included MCU Families
 
 Those microcontrollers that share the same drivers belong to the same VIHAL microcontroller family. The families are named usually after the part ordering numbers.
 
-Family ID | Arch. | Sub-Families | Examples
+Arch. | Family ID | Sub-Families | Examples
 ----------|-------|--------------|---------
-STM32 | ARMM | F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB
-ATSAM | ARMM | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20
-ATSAM_V2 | ARMM | D51/E5x, C2x, D10 | ATSAME51J20
-LPC_V3 | ARMM | LPC546xx | LPC54608J512
-GD32V | RV32I | F1 | GD32VF103C8
-VRV100* | RV32I | 103 .. 446 (FPGA only) | VRV100_441
+ARMM   | STM32    |  F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB
+ARMM   | ATSAM    | ARMM | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20
+ARMM   | ATSAM_V2 | ARMM | D51/E5x, C2x, D10 | ATSAME51J20
+ARMM   | LPC_V3   | ARMM | LPC546xx | LPC54608J512
+RV32I  | GD32V    | F1 | GD32VF103C8
+RV32I  | VRV100*  | 103 .. 446 (FPGA only) | VRV100_441
+RV64G  | Kendryte | K2 | K210
+XTENSA | ESP      | ESP32 | ESP32
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
 
