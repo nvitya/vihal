@@ -5,7 +5,6 @@ I developed the peripheral drivers using a Longan Nano board which has a GD32VF1
 The peripherals try to clone the STM32F1xx family.
 The GD32VF1 outperforms the STM32F1 thanks to faster Flash and higher clock speed (108 vs 72 MHz).
 
-
 ## VIHAL Driver Status for the GD32V Integrated Peripherals
 
   Driver              | Status  |
@@ -14,10 +13,10 @@ __CPU Clock__         | OK      |
 __Pin Cfg. + GPIO__   | OK      |
 __UART__              | OK      |
 __DMA__               | OK      |
-__SPI Master__        | planned |
+__SPI Master__        | OK      |
 __I2C Master__        | planned |
 __I2C Slave__         | planned |
-__Ext. IRQ.__         | planned |
+__Ext. IRQ.__         | OK      |
 __ADC__               | planned |
 __DAC__               | planned |
 __CAN__               | planned |
