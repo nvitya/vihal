@@ -28,23 +28,27 @@ For the quick start here are ready to use examples for several popular boards (f
 # Peripheral Drivers
 
 The VIHAL has its own peripheral drivers which uses only the peripheral register interface,
-no MCU vendor libraries are involved. Developing a peripheral driver for VIHAL can be a harder task,
+no MCU vendor libraries are involved. So developing a peripheral driver for VIHAL can be a harder task,
 depending on the peripheral complexity.
 
-The VIHAL provides vendor independent drivers for the following intergrated peripherals:
- - CPU and chip clock setup (concentrating on high performance mode)
- - Pin / Pad configuration + GPIO control
- - Ext. IRQ: IRQ handling on GPIO Pins
- - DMA: Direct Memory Access (cpu-less data transfers) 
- - UART: Asynchronous serial communication with DMA support
- - SPI Master: 4-wire high speed serial communication
- - QSPI Master: high speed serial communication with two (dual) or 4 (quad) parallel data lines
- - Internal Flash: Erasing / Writing the internal Flash memory
- - ADC: Analogue to digital converter (Free Running + Recording modes)
- - Simple PWM: PWM outputs with adjustable frequency and duty ratio
- - CAN: Control Area Network (FD modes not supported yet)
- - USB Device: Device mode USB (Universal Serial Bus)
- - SDCARD (experimental): Built-in SDMMC peripherals for 4-line data modes
+__Driver__ | __Function__ | __Reference__
+-----------|--------------|----------------
+CPU Clock | CPU and chip clock setup (concentrating mainly on high performance mode) and clock counter | [reference](/doc/hwclk.md)
+Pin Cfg. + GPIO | Pin / Pad configuration + GPIO control | [reference](/doc/pinhwclk.md)
+Ext. IRQ | IRQ handling on GPIO Input Pins | [reference](/doc/hwextirq.md)
+DMA | Direct Memory Access (cpu-less data transfers) | [reference](/doc/hwdma.md)
+UART | Asynchronous serial communication with DMA support | [reference](/doc/hwuart.md)
+SPI Master | 4-wire high speed serial communication | [reference](/doc/hwspi.md)
+QSPI Master | High speed serial communication with two (dual) or 4 (quad) parallel data lines, usually only Master mode is supported | [reference](/doc/hwqspi.md)
+Internal Flash | Erasing / Writing the internal Flash memory | [reference](/doc/hwintflash.md)
+ADC | Analogue to digital converter (Free Running + Recording modes) | [reference](/doc/hwadc.md)
+Simple PWM | PWM outputs with adjustable frequency and duty ratio | [reference](/doc/hwpwm.md)
+CAN | Control Area Network - two wire industrial communication, (FD mode not supported yet) | [reference](/doc/hwcan.md)
+USB Device | USB (Universal Serial Bus) device mode | [reference](/doc/hwusb.md)
+Ethernet | Integrated Ethernet Controller | [reference](/doc/hweth.md)
+SDCARD (experimental) | Built-in SDMMC for 4-line data modes | ...
+SDRAM | SDRAM Initialization | [reference](/doc/hwsdram.md)
+LCD | Integrated LCD Controller (in framebuffer mode) | [reference](/doc/hwlcd.md)
  
 ## Included CPU Architectures
 
