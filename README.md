@@ -49,6 +49,7 @@ Arch. | Family ID | Sub-Families | Driver Support | Examples
 ARMM   | STM32    | F0, F1, F3, F4, F7, H7 | good | STM32F103C8, STM32H750VB
 ARMM   | ATSAM    | 3X, 4S, E70/S70/V70 | good | ATSAME3X8E, ATSAME70Q20
 ARMM   | ATSAM_V2 | D51/E5x, C2x, D10 | good | ATSAME51J20
+ARMM   | RP       | 20 | good | RP2040
 ARMM   | LPC_V3   | LPC546xx | partial | LPC54608J512
 RV32I  | GD32V    | F1 | partial | GD32VF103C8
 RV32I  | ESP      | C3 | experimental | ESP32-C3
