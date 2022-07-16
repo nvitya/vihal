@@ -3,7 +3,7 @@
 ## Microcontrollers
 
 The full list of built-in microcontrollers can be found here:
-(/armm/STM32/src/mcu_builtin.h)
+[/armm/STM32/src/mcu_builtin.h](/armm/STM32/src/mcu_builtin.h)
 
 Sub Family | Built-In MCU Examples
 -----------|--------------
