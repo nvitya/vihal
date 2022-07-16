@@ -3,7 +3,7 @@
 There are several real boards and FPGA soft-cores available with the RV32I architecture.
 I own a Longan Nano (GD32VF) two ESP32-C3 boards and several FPGA Boards which can run soft cores.
 
-## Supported 23-bit RISC-V Microcontrollers
+## Supported 32-bit RISC-V Microcontrollers
 
 Family ID | Sub-Families | Examples | Driver Support
 ----------|--------------|----------|---------------
