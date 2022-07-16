@@ -35,10 +35,10 @@ depending on the peripheral complexity.
 
 __Architecture ID__ | Description
 --------------------|------------
-ARMM  | ARM Cortex-M (M0, M3, M4, M7)
-RV32I | 32-bit RISC-V
-RV64G | 64-bit RISC-V
-XTENSA | Tensilica Xtensa LX6 (ESP32)
+[ARMM](armm) | ARM Cortex-M (M0, M3, M4, M7)
+[RV32I](rv32i) | 32-bit RISC-V
+[RV64G](rv64g) | 64-bit RISC-V
+[XTENSA](xtensa) | Tensilica Xtensa LX6 (ESP32)
 
 ## Currently Included MCU Families
 
