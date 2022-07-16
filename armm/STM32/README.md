@@ -8,12 +8,15 @@ The full list of built-in microcontrollers can be found here:
 Sub Family | Built-In MCU Examples
 -----------|--------------
 F0 | STM32F030F6
-L0 |
-F1 |
-F3 |
-F4 |
-F7 |
-H7 |
+L0 | STM32L011
+G0 | STM32G030F6
+F1 | STM32F103C8
+F3 | STM32F303CB
+F4 | STM32F401CC, STM32F429ZI
+G4 | STM32G431KB, STM32G473CE
+WB | STM32WB55VG, STM32WB5MMG
+F7 | STM32F746ZG
+H7 | STM32F743ZI, STM32F750VB
 
 ## Driver Status
 
