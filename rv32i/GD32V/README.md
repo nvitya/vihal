@@ -12,7 +12,7 @@ The full list of built-in microcontrollers can be found here:
 
 Sub Family | Built-In MCU Examples
 -----------|--------------
-F1 | GD32VF103C8
+F1 | GD32VF103CB
 
 ## Driver Status
 
