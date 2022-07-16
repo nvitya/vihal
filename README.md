@@ -31,6 +31,21 @@ The VIHAL has its own peripheral drivers which uses only the peripheral register
 no MCU vendor libraries are involved. Developing a peripheral driver for VIHAL can be a harder task,
 depending on the peripheral complexity.
 
+The VIHAL provides vendor independent drivers for the following intergrated peripherals:
+ - CPU and chip clock setup (concentrating on high performance mode)
+ - Pin / Pad configuration + GPIO control
+ - Ext. IRQ: IRQ handling on GPIO Pins
+ - DMA: Direct Memory Access (cpu-less data transfers) 
+ - UART: Asynchronous serial communication with DMA support
+ - SPI Master: 4-wire high speed serial communication
+ - QSPI Master: high speed serial communication with two (dual) or 4 (quad) parallel data lines
+ - Internal Flash: Erasing / Writing the internal Flash memory
+ - ADC: Analogue to digital converter (Free Running + Recording modes)
+ - Simple PWM: PWM outputs with adjustable frequency and duty ratio
+ - CAN: Control Area Network (FD modes not supported yet)
+ - USB Device: Device mode USB (Universal Serial Bus)
+ - SDCARD (experimental): Built-in SDMMC peripherals for 4-line data modes
+ 
 ## Included CPU Architectures
 
 __Architecture ID__ | Description
