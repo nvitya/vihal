@@ -1,9 +1,14 @@
-# VIHAL Support for 32-bit Risc-V (RV32I)
+# VIHAL Support for 32-bit RISC-V (RV32I)
 
 There are several real boards and FPGA soft-cores available with the RV32I architecture.
 I own a Longan Nano (GD32VF) two ESP32-C3 boards and several FPGA Boards which can run soft cores.
-I've played a lot with the VexRiscV soft-core and SoC, and made some ready to use variants from that
-as VRV100 (https://github.com/nvitya/VRV100).
 
-The driver deveopment is in the early stages now. More progress can be expected here soon.
+## Supported 23-bit RISC-V Microcontrollers
 
+Family ID | Sub-Families | Examples | Driver Support
+----------|--------------|----------|---------------
+[GD32V](rv32i/GD32V) | F1 | GD32VF103C8 | [partial](rv32i/GD32V)
+[ESP](rv32i/ESP) | C3 | ESP32-C3 | [experimental](rv32i/ESP)
+[VRV100](rv32i/VRV100)*  | 103 .. 446 (FPGA only) | VRV100_441 | [good](rv32i/VRV100)
+
+*The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
