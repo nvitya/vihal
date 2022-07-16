@@ -63,5 +63,5 @@ The NVCM project furthermore includes these - rather incomplete - family drivers
 
 # Users Manual
 
-I will write a users manual sometime ...
+Work in progress here ...
 
