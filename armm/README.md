@@ -1,6 +1,6 @@
 # ARM Cortex-M (armm) Architecture Support for VIHAL
 
-## Currently Supported ARM Cortex
+## Supported ARM Cortex-M Microcontrollers
 
  Family ID | Sub-Families | Examples | Driver Support
 -----------|--------------|----------|---------------
