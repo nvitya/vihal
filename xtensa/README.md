@@ -8,4 +8,4 @@
 
 ## Notes
 
-The ESP8266 does not have JTAG interface so I could not develop the VIHAL there the usual way. 
+The ESP8266 does not have JTAG interface so I could not develop the VIHAL there my usual way. 
