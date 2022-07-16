@@ -44,17 +44,17 @@ XTENSA | Tensilica Xtensa LX6 (ESP32)
 
 Those microcontrollers that share the same drivers belong to the same VIHAL microcontroller family. The families are named usually after the part ordering numbers.
 
-Arch. | Family ID | Sub-Families | Examples
-----------|-------|--------------|---------
-ARMM   | STM32    | F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB
-ARMM   | ATSAM    | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20
-ARMM   | ATSAM_V2 | D51/E5x, C2x, D10 | ATSAME51J20
-ARMM   | LPC_V3   | LPC546xx | LPC54608J512
-RV32I  | GD32V    | F1 | GD32VF103C8
-RV32I  | ESP      | C3 | ESP32-C3
-RV32I  | VRV100*  | 103 .. 446 (FPGA only) | VRV100_441
-RV64G  | Kendryte | K2 | K210 (experimental)
-XTENSA | ESP      | ESP32 | ESP32 (experimental)
+Arch. | Family ID | Sub-Families | Driver Support | Examples 
+------|-----------|--------------|----------------|---------
+ARMM   | STM32    | F0, F1, F3, F4, F7, H7 | good | STM32F103C8, STM32H750VB
+ARMM   | ATSAM    | 3X, 4S, E70/S70/V70 | good | ATSAME3X8E, ATSAME70Q20
+ARMM   | ATSAM_V2 | D51/E5x, C2x, D10 | good | ATSAME51J20
+ARMM   | LPC_V3   | LPC546xx | partial | LPC54608J512
+RV32I  | GD32V    | F1 | partial | GD32VF103C8
+RV32I  | ESP      | C3 | experimental | ESP32-C3
+RV32I  | VRV100*  | 103 .. 446 (FPGA only) | good | VRV100_441
+RV64G  | Kendryte | K2 | experimental | K210
+XTENSA | ESP      | ESP32 | experimental | ESP32
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
 
