@@ -44,18 +44,18 @@ XTENSA | Tensilica Xtensa LX6 (ESP32)
 
 Those microcontrollers that share the same drivers belong to the same VIHAL microcontroller family. The families are named usually after the part ordering numbers.
 
-Arch. | Family ID | Sub-Families | Driver Support | Examples 
-------|-----------|--------------|----------------|---------
-[ARMM](armm)   | [STM32](https://github.com/nvitya/vihal/tree/main/armm/STM32) | F0, F1, F3, F4, F7, H7 | good | STM32F103C8, STM32H750VB
-ARMM   | ATSAM    | 3X, 4S, E70/S70/V70 | good | ATSAME3X8E, ATSAME70Q20
-ARMM   | ATSAM_V2 | D51/E5x, C2x, D10 | good | ATSAME51J20
-ARMM   | RP       | 20 | good | RP2040
-ARMM   | LPC_V3   | LPC546xx | partial | LPC54608J512
-RV32I  | GD32V    | F1 | partial | GD32VF103C8
-RV32I  | ESP      | C3 | experimental | ESP32-C3
-RV32I  | VRV100*  | 103 .. 446 (FPGA only) | good | VRV100_441
-RV64G  | Kendryte | K2 | experimental | K210
-XTENSA | ESP      | ESP32 | experimental | ESP32
+Arch. | Family ID | Sub-Families | Examples | Driver Support
+------|-----------|--------------|----------|---------------
+[ARMM](armm)   | [STM32](armm/STM32) | F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB | [good](armm/STM32)
+[ARMM](armm)   | [ATSAM](armm/ATSAM) | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20 | [good](armm/ATSAM)
+[ARMM](armm)   | [ATSAM_V2](armm/ATSAM_V2) | D51/E5x, C2x, D10 | ATSAME51J20 | [good](armm/ATSAM_V2)
+[ARMM](armm)   | [RP](armm/RP)       | 20  | RP2040 | [good](armm/RP)
+[ARMM](armm)   | [LPC_V3](armm/LPC_V3)  | LPC546xx | LPC54608J512 | [partial](armm/LPC_V3)
+[RV32I](rv32i) | [GD32V](rv32i/GD32V) | F1 | GD32VF103C8 | [partial](rv32i/GD32V)
+[RV32I](rv32i) | [ESP](rv32i/ESP) | C3 | ESP32-C3 | [experimental](rv32i/ESP)
+[RV32I](rv32i) | [VRV100](rv32i/VRV100)*  | 103 .. 446 (FPGA only) | VRV100_441 | [good](rv32i/VRV100)
+[RV64G](rv64g) | [Kendryte](rv64g/kendryte) | K2 | K210 | [experimental](rv64g/kendryte)
+[XTENSA](xtensa) | [ESP](xtensa/ESP) | ESP32 | ESP32 | [experimental](xtensa/ESP)
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
 
