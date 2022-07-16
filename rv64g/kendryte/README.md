@@ -3,10 +3,29 @@
 The Kendryte K210 is a very powerful 64-bit embedded RISC-V processor at an affordable price.
 
 I own a MaiX Bit and a Maix Dock board. I've begun the development, had a good progress but
-once the openocd stopped working and since then I could not connect to JTAG with the openocd (from Kendryte).
-I've tried DP Busblaster, J-Link and FT232H. Other boards work with these. My K210 does not.
+once the openocd stopped working. It seems that the JTAG lines are demaged at the Maix Bit board I've used and I took a while until I got another one.
+So I plan to provide more drivers in the near future.
 
-So I have only a basic UART driver working yet.
+## Microcontrollers
 
+The full list of built-in microcontrollers can be found here:
+[/rv32i/GD32V/src/mcu_builtin.h](/rv32i/GD32V/src/mcu_builtin.h)
 
-Any hints welcome what can I try with the Kendryte openocd...
+Sub Family | Built-In MCU Examples
+-----------|--------------
+F1 | GD32VF103CB
+
+## Driver Status
+
+  Driver              | Status  |
+----------------------|---------|
+__CPU Clock__         | planned |
+__Pin Cfg. + GPIO__   | planned |
+__UART__              | planned |
+__DMA__               | planned |
+__SPI Master__        | planned |
+__I2C Master__        | planned |
+__I2C Slave__         | planned |
+__Ext. IRQ.__         | planned |
+__ADC__               | planned |
+__Simple PWM__        | planned |
