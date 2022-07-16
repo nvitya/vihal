@@ -46,11 +46,12 @@ Those microcontrollers that share the same drivers belong to the same VIHAL micr
 
 Arch. | Family ID | Sub-Families | Examples
 ----------|-------|--------------|---------
-ARMM   | STM32    |  F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB
-ARMM   | ATSAM    | ARMM | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20
-ARMM   | ATSAM_V2 | ARMM | D51/E5x, C2x, D10 | ATSAME51J20
-ARMM   | LPC_V3   | ARMM | LPC546xx | LPC54608J512
+ARMM   | STM32    | F0, F1, F3, F4, F7, H7 | STM32F103C8, STM32H750VB
+ARMM   | ATSAM    | 3X, 4S, E70/S70/V70 | ATSAME3X8E, ATSAME70Q20
+ARMM   | ATSAM_V2 | D51/E5x, C2x, D10 | ATSAME51J20
+ARMM   | LPC_V3   | LPC546xx | LPC54608J512
 RV32I  | GD32V    | F1 | GD32VF103C8
+RV32I  | ESP      | C3 | ESP32-C3
 RV32I  | VRV100*  | 103 .. 446 (FPGA only) | VRV100_441
 RV64G  | Kendryte | K2 | K210
 XTENSA | ESP      | ESP32 | ESP32
