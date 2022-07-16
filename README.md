@@ -15,7 +15,7 @@ It targets bare metal embedded software development, with the following main goa
  - Ready to use examples for popular evaluation/development boards
  - Easily extensible with additional microcontrollers or architectures
 
-The project development began in 2017, the direct predecessor is my NVCM project (which supports only ARM Cortex-M).
+The project development began in 2017, the direct predecessor is my [NVCM](https://github.com/nvitya/nvcm) project (which supports only ARM Cortex-M).
 
 The VIHAL tries to provide the same SW interface for the different microcontrollers,
 and so it does not cover all hardware features of all Microcontrollers.
