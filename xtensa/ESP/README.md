@@ -6,7 +6,7 @@ Fortunately it seems to work now.
 
 Only exececution from RAM is supported so far. XIP is not planned by me (but is not so hard to implement).
 
-__WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__ (Because these parts are closed source and no hw documentation is available)
+__WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__ (No hardware documentation is available and the Espressif drivers are closed source for these parts)
 
 ## VIHAL Driver Status for the ESP32 Integrated Peripherals
 
