@@ -3,6 +3,8 @@
 The VRV100 RISC-V SoC project is created by me (nvitya) making some ready to use variants using
 the VexRiscV project (https://github.com/SpinalHDL/VexRiscv).
 
+The VRV100 SoC-s are accessible here: https://github.com/nvitya/VRV100
+
 Actually there is not much driver development needed here, because these FPGA soft-core have only
 a few fix peripherals, which intended to be extended via APB (using HDL code).
 
