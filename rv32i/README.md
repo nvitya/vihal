@@ -7,8 +7,8 @@ I own a Longan Nano (GD32VF) two ESP32-C3 boards and several FPGA Boards which c
 
 Family ID | Sub-Families | Examples | Driver Support
 ----------|--------------|----------|---------------
-[GD32V](rv32i/GD32V) | F1 | GD32VF103C8 | [partial](rv32i/GD32V)
-[ESP](rv32i/ESP) | C3 | ESP32-C3 | [experimental](rv32i/ESP)
-[VRV100](rv32i/VRV100)*  | 103 .. 446 (FPGA only) | VRV100_441 | [good](rv32i/VRV100)
+[GD32V](/rv32i/GD32V) | F1 | GD32VF103C8 | [partial](/rv32i/GD32V)
+[ESP](/rv32i/ESP) | C3 | ESP32-C3 | [experimental](/rv32i/ESP)
+[VRV100](/rv32i/VRV100)*  | 103 .. 446 (FPGA only) | VRV100_441 | [good](/rv32i/VRV100)
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
