@@ -18,6 +18,8 @@ The project development began in 2017, the direct predecessor is my [NVCM](https
 
 For the quick start here are ready to use examples for several popular boards (for Eclipse CDT):
   https://github.com/nvitya/vihaltests
+  
+To get a quick picture see these [Code Examples](/doc/code_examples.md).
 
 # Supported CPU Architectures
 
