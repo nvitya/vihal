@@ -54,12 +54,10 @@ The [NVCM](https://github.com/nvitya/nvcm) project furthermore includes these - 
 
 # Peripheral Drivers
 
-The VIHAL has its own peripheral drivers which uses only the peripheral register interface,
-no MCU vendor libraries are involved. So developing a peripheral driver for VIHAL can be a harder task,
-depending on the peripheral complexity.
-
-The VIHAL tries to provide the same SW interface for the different microcontrollers,
-and so it does not cover all hardware features of all Microcontrollers.
+The VIHAL has its own peripheral drivers which use only the peripheral register interface,
+no MCU vendor libraries are involved. 
+As the VIHAL tries to provide the same SW interface for the different microcontrollers,
+it does not cover all hardware features of all Microcontrollers.
 
 __Driver__ | __Function__ | __Reference__
 -----------|--------------|----------------
