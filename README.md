@@ -78,7 +78,7 @@ Arch. | Family ID | Sub-Families | Examples | Driver Support
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
 
-The NVCM project furthermore includes these - rather incomplete - family drivers: XMC, LPC, IMXRT. These can be expected in the future too.
+The [NVCM](https://github.com/nvitya/nvcm) project furthermore includes these - rather incomplete - family drivers: XMC, LPC, IMXRT. These can be expected in the future too.
 
 # Users Manual
 
