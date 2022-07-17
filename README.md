@@ -3,7 +3,7 @@
 VIHAL = Vendor Independent Hardware Access Layer/Library.
 
 It targets bare metal embedded software development, with the following main goals:
- - Easy to use
+ - Easy to use, C++ interfaces for shorter lines like in Arduino
  - Small, simple but effective. Easy to verify.
  - Vendor independent
  - No intermediate libraries, external dependencies 
