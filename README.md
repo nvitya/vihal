@@ -77,7 +77,30 @@ SDCARD (experimental) | Built-in SDMMC for 4-line data modes | ...
 SDRAM | SDRAM Initialization | [reference](/doc/hwsdram.md)
 LCD | Integrated LCD Controller (in framebuffer mode) | [reference](/doc/hwlcd.md)
 
-# Users Manual
+# Additional VIHAL Software Components
 
-Work in progress here ...
+Beside the Hardware and CPU architecture specific peripheral drivers the VIHAL offers some additional MCU independent software compontents:
+ - External HW Modules
+   - Graphics Displays
+     - Color TFT displays (SPI, Parallel, RGB - framebuffer)
+     - LCD / OLED Monochrome displays with SPI or I2C interface
+     - Text Screen support
+   - Seven Segment display with different drivers (74HC595, TM1638, MAX7219 etc.)   
+   - Simple LED-Stripe Handlers (APA102, WS2813)  
+   - External memories (SPI / QSPI Flash, PSRAM, I2C EEPROM)
+   - Input Devices
+     - Keyboard Matrix
+     - LED&KEY module
+   - Special Sensors (AHT-10, BMP-280)
+   - Simple GPIO-based stepper motor control
+ - USB Device Support
+   - HID device demo
+   - CDC device skeleton, USB-Uart module
+ - Networking Support
+   - UDP Networking (work in progress)
+   - TCR Networking (planned)
+
+# User Manual
+
+For more information you find the user manual here: [/doc/README.md](/doc/README.md) (work in progress)
 
