@@ -22,7 +22,7 @@ The project development began in 2017, the direct predecessor is my [NVCM](https
 For the quick start here are ready to use examples for several popular boards (for Eclipse CDT):
   https://github.com/nvitya/vihaltests
 
-## Supported CPU Architectures
+# Supported CPU Architectures
 
 __Architecture ID__ | Description
 --------------------|------------
@@ -31,7 +31,7 @@ __Architecture ID__ | Description
 [RV64G](rv64g) | 64-bit RISC-V
 [XTENSA](xtensa) | Tensilica Xtensa LX6 (ESP32)
 
-## Supported Microcontroller Families
+# Supported Microcontroller Families
 
 Those microcontrollers that share the same drivers belong to the same VIHAL microcontroller family. The families are named usually after the part ordering numbers.
 
