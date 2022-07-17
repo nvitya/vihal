@@ -5,15 +5,12 @@ VIHAL = Vendor Independent Hardware Access Layer/Library.
 It targets bare metal embedded software development, with the following main goals:
  - Easy to use, C++ interfaces for shorter lines like in Arduino
  - Small, simple but effective. Easy to verify.
- - Vendor independent
- - No intermediate libraries, external dependencies 
+ - Vendor independent, no intermediate libraries, external dependencies 
  - non-blocking communication interfaces (extensive use of DMA and state machines) which allows simple cooperative multi-tasking
  - license permitting unrestricted commercial usage, without any obligation to the customers
  - Built-in support for multiple popular Microcontrollers
- - Support multiple development environments
- - Provide SW modules and examples for usual scenarios
- - Ready to use examples for popular evaluation/development boards
- - Easily extensible with additional microcontrollers or architectures
+ - Provide SW modules and examples for usual scenarios 
+ - Easily extensible
 
 The project development began in 2017, the direct predecessor is my [NVCM](https://github.com/nvitya/nvcm) project (which supports only ARM Cortex-M).
 
