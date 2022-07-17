@@ -17,10 +17,7 @@ It targets bare metal embedded software development, with the following main goa
 
 The project development began in 2017, the direct predecessor is my [NVCM](https://github.com/nvitya/nvcm) project (which supports only ARM Cortex-M).
 
-The VIHAL tries to provide the same SW interface for the different microcontrollers,
-and so it does not cover all hardware features of all Microcontrollers.
-
-# Quick Start
+# Quick Start / Examples
 
 For the quick start here are ready to use examples for several popular boards (for Eclipse CDT):
   https://github.com/nvitya/vihaltests
@@ -30,6 +27,9 @@ For the quick start here are ready to use examples for several popular boards (f
 The VIHAL has its own peripheral drivers which uses only the peripheral register interface,
 no MCU vendor libraries are involved. So developing a peripheral driver for VIHAL can be a harder task,
 depending on the peripheral complexity.
+
+The VIHAL tries to provide the same SW interface for the different microcontrollers,
+and so it does not cover all hardware features of all Microcontrollers.
 
 __Driver__ | __Function__ | __Reference__
 -----------|--------------|----------------
