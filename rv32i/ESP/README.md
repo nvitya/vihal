@@ -1,6 +1,6 @@
 # VIHAL Support for RV32I ESP Microcontrollers
 
-I own two ESP32-C3 Boards to develop the necessary drivers.
+__WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__ (For these parts is no hardware documentation available and the Espressif drivers are closed source)
 
 ## Microcontrollers
 
@@ -26,6 +26,8 @@ __Ext. IRQ.__         | planned |
 __ADC__               | planned |
 __CAN__               | planned |
 __Simple PWM__        | planned |
+__WIFI__              | not planned ! |
+__Bluetooth__         | not planned ! |
 
 ## Important note
 Unfortunately I'm stuck with accessing the external flash memory. This is crucial to provide self-flashing applications, which are required for this device.
