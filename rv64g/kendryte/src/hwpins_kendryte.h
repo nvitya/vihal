@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _HWPINS_KENDRYTE_H
+#define _HWPINS_KENDRYTE_H
 
 #define HWPINS_PRE_ONLY
 #include "hwpins.h"
@@ -34,19 +35,18 @@
 
 class THwPinCtrl_kendryte : public THwPinCtrl_pre
 {
-public:
-	// platform specific
-	bool PinSetup(int aportnum, int apinnum, unsigned flags);
+public: // platform specific
 
-	kendryte_gpio_t * GetGpioRegs(int aportnum);
+  bool PadSetup(int apadnum, int afuncnum, unsigned flags);  // Kendrytye specific FPIOA routing / configuration
+
+public: //
+	bool PinSetup(int aportnum, int apinnum, unsigned flags);  // this does only GPIO setup
 
 	void GpioSet(int aportnum, int apinnum, int value);
 
 	inline bool GpioSetup(int aportnum, int apinnum, unsigned flags)  { return PinSetup(aportnum, apinnum, flags); }
 
 	void GpioIrqSetup(int aportnum, int apinnum, int amode); // not implemented yet
-
-	bool GpioPortEnable(int aportnum);
 };
 
 class TGpioPort_kendryte : public TGpioPort_pre
@@ -56,24 +56,36 @@ public:
 	void Set(unsigned value);
 
 public:
-	kendryte_gpio_t *       regs = nullptr;
-	volatile unsigned *  portptr = nullptr;
+	volatile uint32_t *  portptr = nullptr;
 };
 
-class TGpioPin_kendryte : public TGpioPin_common
+class TGpioPin_kendryte : public TGpioPin_pre
 {
 public:
-  kendryte_gpio_t *   regs = nullptr;
+  void InitDummy(); // for unassigned ports
 
-	bool Setup(unsigned flags);
+  inline void Set1()                 { *setbitptr |= pinmask; }
+  inline void Set0()                 { *setbitptr &= negpinmask; }
+  inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
+
+  inline unsigned char Value()       { return ((*getbitptr >> pinnum) & 1); }
+  inline unsigned char OutValue()    { return ((*setbitptr >> pinnum) & 1); }
+
 	void Assign(int aportnum, int apinnum, bool ainvert);
 
 	void Toggle();
 
 	void SwitchDirection(int adirection);
+
+public:
+	uint32_t            pinmask = 0;
+	uint32_t            negpinmask = 0;
+	uint32_t *          setbitptr = nullptr;
+	uint32_t *          getbitptr = nullptr;
 };
 
 #define HWPINCTRL_IMPL   THwPinCtrl_kendryte
 #define HWGPIOPORT_IMPL  TGpioPort_kendryte
 #define HWGPIOPIN_IMPL   TGpioPin_kendryte
 
+#endif

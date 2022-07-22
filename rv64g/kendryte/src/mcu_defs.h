@@ -21,12 +21,12 @@
 /*
  *  file:     mcu_defs.h (Kendryte)
  *  brief:    Kendryte special MCU definitions
- *  version:  1.00
- *  date:     2022-02-01
+ *  created:  2022-02-01
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _MCU_DEFS_H
+#define _MCU_DEFS_H
 
 #define MCUF_KENDRYTE
 
@@ -34,9 +34,8 @@
 
 #define HW_DMA_MAX_COUNT          32764
 
-typedef volatile uint32_t kendryte_gpio_t;
-
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
 }
 
+#endif

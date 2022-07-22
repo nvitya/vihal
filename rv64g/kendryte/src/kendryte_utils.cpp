@@ -18,10 +18,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     gd32v_utils.cpp
- *  brief:    GD32V Utilities
- *  version:  1.00
- *  date:     2021-10-21
+ *  file:     kendryte_utils.cpp
+ *  brief:    Kendryte Utilities
+ *  created:  2022-07-22
  *  authors:  nvitya
 */
 

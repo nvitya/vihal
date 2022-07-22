@@ -20,7 +20,7 @@ K2 | K210
   Driver              | Status  |
 ----------------------|---------|
 __CPU Clock__         | planned |
-__Pin Cfg. + GPIO__   | planned |
+__Pin Cfg. + GPIO__   | PARTIAL (1) |
 __UART__              | planned |
 __DMA__               | planned |
 __SPI Master__        | planned |

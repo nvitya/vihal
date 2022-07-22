@@ -13,7 +13,7 @@
 
   #define BOARD_NAME "MAiX BiT K210 board"
   #define MCU_K210
-  #define EXTERNAL_XTAL_HZ   24000000
+  #define EXTERNAL_XTAL_HZ   26000000
 
 #else
 

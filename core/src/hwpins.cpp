@@ -49,6 +49,11 @@ bool TGpioPin::Setup(unsigned flags)
 		return false;
 	}
 
+	if (inverted)
+	{
+	  flags |= PINCFG_GPIO_INVERT;
+	}
+
 	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
 }
 
