@@ -28,18 +28,6 @@
 #define HWUART_PRE_ONLY
 #include "hwuart.h"
 
-typedef struct kendryte_usart_t
-{
-  volatile uint32_t  STAT;    // 0x00: USART status register
-  volatile uint32_t  DATA;    // 0x04: USART data register
-  volatile uint32_t  BAUD;    // 0x08: USART baud rate register
-  volatile uint32_t  CTL0;    // 0x0C: USART control register 0
-  volatile uint32_t  CTL1;    // 0x10: USART control register 1
-  volatile uint32_t  CTL2;    // 0x14: USART control register 2
-  volatile uint32_t  GP;      // 0x18: USART guard time and prescaler register
-//
-} kendryte_usart_t;
-
 class THwUart_kendryte : public THwUart_pre
 {
 public:
@@ -56,7 +44,7 @@ public:
 	//bool DmaStartRecv(THwDmaTransfer * axfer);
 
 public:
-	kendryte_usart_t *    regs = nullptr;
+	uart_regs_t *    regs = nullptr;
 };
 
 #define HWUART_IMPL THwUart_kendryte

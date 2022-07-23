@@ -20,7 +20,7 @@
  * --------------------------------------------------------------------------- */
 // file:     hwuart_kendryte.cpp
 // brief:    Kendryte UART driver
-// created:  2022-02-01
+// created:  2022-07-23
 // authors:  nvitya
 
 #include <stdio.h>
@@ -32,42 +32,33 @@
 
 bool THwUart_kendryte::Init(int adevnum)
 {
-#if 0
 	unsigned code;
-	uint8_t busid = GD32V_BUSID_APB1;
-
-	//bool     lpuart = false;
+	unsigned resetmask;
 
 	devnum = adevnum;
 	initialized = false;
 
 	regs = nullptr;
 
-	if (0 == devnum)
+  SYSCTL->CLK_EN_CENT |= SYSCTL_CLK_EN_CENT_APB0;
+
+	if (1 == devnum)
 	{
-	  regs = USART0;
-	  busid = GD32V_BUSID_APB2; // this is driven by higher clock
-		RCU->APB2EN |= RCU_APB2EN_USART0EN;
-	}
-	else if (1 == devnum)
-	{
-    regs = USART1;
-    RCU->APB1EN |= RCU_APB1EN_USART1EN;
+    regs = UART1;
+    SYSCTL->CLK_EN_PERI |= SYSCTL_CLK_EN_PERI_UART1;
+    resetmask = SYSCTL_PERI_RESET_UART1;
 	}
   else if (2 == devnum)
   {
-    regs = USART2;
-    RCU->APB1EN |= RCU_APB1EN_USART2EN;
+    regs = UART2;
+    SYSCTL->CLK_EN_PERI |= SYSCTL_CLK_EN_PERI_UART2;
+    resetmask = SYSCTL_PERI_RESET_UART2;
   }
   else if (3 == devnum)
   {
     regs = UART3;
-    RCU->APB1EN |= RCU_APB1EN_UART3EN;
-  }
-  else if (4 == devnum)
-  {
-    regs = UART4;
-    RCU->APB1EN |= RCU_APB1EN_UART4EN;
+    SYSCTL->CLK_EN_PERI |= SYSCTL_CLK_EN_PERI_UART3;
+    resetmask = SYSCTL_PERI_RESET_UART3;
   }
 
 	if (!regs)
@@ -75,119 +66,81 @@ bool THwUart_kendryte::Init(int adevnum)
 		return false;
 	}
 
-	// disable UART
-	regs->CTL0 &=  ~USART_CTL0_UEN;
+/*
+	SYSCTL->PERI_RESET |= resetmask;
+	// some delay
+	for (unsigned n = 0; n < 100; ++n)
+	{
+	  if (SYSCTL->PERI_RESET) { }
+	}
+	SYSCTL->PERI_RESET &= ~resetmask;
+*/
 
-  uint32_t ctl0 = (0
-    | (1  << 13)  // UEN: 1 = USART Enable
-    | (0  << 12)  // WL: 0 = 8 data bits, 1 = 9 data bits
-    | (0  << 11)  // WM: wakeup method
-    | (0  << 10)  // PCEN: 1 = parity check function enable
-    | (0  <<  9)  // PM: parity mode, 0 = even, 1 = odd
-    | (0  <<  8)  // PERRIE: parity error interrupt
-    | (0  <<  7)  // TBEIE: Transmitter buffer empty interrupt enable
-    | (0  <<  6)  // TCIE: Transmission complete interrupt enable
-    | (0  <<  5)  // RBNEIE: Read data buffer not empty interrupt and overrun error interrupt enable
-    | (0  <<  4)  // IDLEIE: IDLE line detected interrupt enable
-    | (1  <<  3)  // TEN: 1 = transmitter enable
-    | (1  <<  2)  // REN: 1 = receiver enable
-    | (0  <<  1)  // RWU: 0 = receiver in active mode
-    | (0  <<  0)  // SBKCMD: 1 = transmit break frame
-  );
-  // PARITY:
+  uint32_t stopbit_val = (halfstopbits > 2 ? 1 : 0);
+  uint32_t parity_val = 0;
   if (parity)
   {
-    ctl0 |= (1 << 10); // enable parity
-    if (oddparity)  ctl0 |= (1 << 9);
+    parity_val = (oddparity ? 1 : 3);
   }
 
-  uint32_t ctl1 = (0
-    | (0  << 14)  // LMEN: 1 = LIN mode enable
-    | (0  << 12)  // STB(2): Stop bits, 0 = 1 bit, 1 = 0.5 bit, 2 = bits, 3 = 1.5 bits
-    | (0  << 11)  // CKEN: 0 = CK pin disabled
-    | (0  << 10)  // CPL: CK polarity
-    | (0  <<  9)  // CPH: CK phase
-    | (0  <<  8)  // CLEN: CK length
-    | (0  <<  6)  // LBDIE: LIN break detected interrupt enable
-    | (0  <<  5)  // LBLEN: LIN break frame length
-    | (0  <<  0)  // ADDR(4):  Address of the USART (for fake up address matching)
+  uint32_t freq = kendryte_bus_speed(0);
+  uint32_t divisor = freq / baudrate;
+  uint8_t dlh = divisor >> 12;
+  uint8_t dll = (divisor - (dlh << 12)) / 16;
+  uint8_t dlf = divisor - (dlh << 12) - dll * 16;
+
+  /* Set UART registers */
+
+  regs->LCR |= (1 << 7);  // this should be some kind of config_en
+  regs->DLH = dlh;
+  regs->DLL = dll;
+  regs->DLF = dlf;
+
+  regs->LCR = 0;
+  regs->LCR = (databits - 5) | (stopbit_val << 2) | (parity_val << 3);
+  regs->LCR &= ~(1 << 7);  // remove config en
+
+  regs->IER = 0;  // disable interrupts
+  regs->FCR = (0
+    | (0 << 6)  // Receive FIFO threshold
+    | (0 << 4)  // Send FIFO threshold
+    | (1 << 3)
+    | (1 << 0)
   );
-  // Special STOP bits:
-  if      (1 == halfstopbits)  ctl1 |= (1 << 12);
-  else if (3 == halfstopbits)  ctl1 |= (3 << 12);
-  else if (4 == halfstopbits)  ctl1 |= (2 << 12);
-
-  uint32_t ctl2 = (0
-    | (0  << 10)  // CTSIE
-    | (0  <<  9)  // CTSEN
-    | (0  <<  8)  // RTSEN
-    | (0  <<  7)  // DENT: 1 = Tx DMA Enable
-    | (0  <<  6)  // DENR: 1 = Rx DMA Enable
-    | (0  <<  5)  // SCEN: 1 = Smartcard mode enable
-    | (0  <<  4)  // NKEN: 1 = NACK transmission enable in Smartcard mode
-    | (0  <<  3)  // HDEN: 1 = Half-duplex enable
-    | (0  <<  2)  // IRLP: 1 = IrDA low-power mode
-    | (0  <<  1)  // IREN: 1 = IrDA mode enable
-    | (0  <<  0)  // ERRIE: 1 = Error interrupt enable
-  );
-
-	regs->GP = 1;  // set the prescaler
-
-	unsigned periphclock = gd32v_bus_speed(busid);
-	unsigned baseclock = periphclock / 16;
-	unsigned divider = ((baseclock << 4) + 8) / baudrate;
-
-	regs->BAUD = divider;
-
-	regs->CTL2 = ctl2;
-	regs->CTL1 = ctl1;
-  regs->CTL0 = ctl0;  // also enables the UART
 
 	initialized = true;
-
-#else
-	initialized = false;
-	return false;
-#endif
 
 	return true;
 }
 
 bool THwUart_kendryte::TrySendChar(char ach)
 {
-#if 0
-	if ((regs->STAT & USART_STAT_TBE) == 0)
+	if (0 == (regs->LSR & (1 << 5)))
 	{
 		return false;
 	}
 
-	regs->DATA = ach;
+	regs->THR = ach;
 
-#endif
 	return true;
 }
 
 bool THwUart_kendryte::TryRecvChar(char * ach)
 {
-#if 0
-	if (regs->STAT & USART_STAT_RBNE)
+	if (regs->LSR & 1)
 	{
-		*ach = regs->DATA;
+		*ach = (regs->RBR & 0xFF);
 		return true;
 	}
 	else
 	{
 		return false;
 	}
-#else
-	return false;
-#endif
 }
 
 bool THwUart_kendryte::SendFinished()
 {
-#if 0
-	if (regs->STAT & USART_STAT_TBE) // not perfect
+	if (regs->LSR & (1 << 5)) // not perfect
 	{
 		return true;
 	}
@@ -195,9 +148,6 @@ bool THwUart_kendryte::SendFinished()
 	{
 		return false;
 	}
-#else
-	return true;
-#endif
 }
 
 #if HWDMA_IMPLEMENTED

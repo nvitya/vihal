@@ -199,6 +199,34 @@ typedef struct
 #define SYSCTL_CLK_EN_PERI_RTC     (1 << 29)
 
 
+#define SYSCTL_PERI_RESET_ROM      (1 <<  0)
+#define SYSCTL_PERI_RESET_DMA      (1 <<  1)
+#define SYSCTL_PERI_RESET_AI       (1 <<  2)
+#define SYSCTL_PERI_RESET_DVP      (1 <<  3)
+#define SYSCTL_PERI_RESET_FFT      (1 <<  4)
+#define SYSCTL_PERI_RESET_GPIO     (1 <<  5)
+#define SYSCTL_PERI_RESET_SPI0     (1 <<  6)
+#define SYSCTL_PERI_RESET_SPI1     (1 <<  7)
+#define SYSCTL_PERI_RESET_SPI2     (1 <<  8)
+#define SYSCTL_PERI_RESET_SPI3     (1 <<  9)
+#define SYSCTL_PERI_RESET_I2S0     (1 << 10)
+#define SYSCTL_PERI_RESET_I2S1     (1 << 11)
+#define SYSCTL_PERI_RESET_I2S2     (1 << 12)
+#define SYSCTL_PERI_RESET_I2C0     (1 << 13)
+#define SYSCTL_PERI_RESET_I2C1     (1 << 14)
+#define SYSCTL_PERI_RESET_I2C2     (1 << 15)
+#define SYSCTL_PERI_RESET_UART1    (1 << 16)
+#define SYSCTL_PERI_RESET_UART2    (1 << 17)
+#define SYSCTL_PERI_RESET_UART3    (1 << 18)
+#define SYSCTL_PERI_RESET_AES      (1 << 19)
+#define SYSCTL_PERI_RESET_FPIOA    (1 << 20)
+#define SYSCTL_PERI_RESET_TIMER0   (1 << 21)
+#define SYSCTL_PERI_RESET_TIMER1   (1 << 22)
+#define SYSCTL_PERI_RESET_TIMER2   (1 << 23)
+#define SYSCTL_PERI_RESET_WDT0     (1 << 24)
+#define SYSCTL_PERI_RESET_WDT1     (1 << 25)
+#define SYSCTL_PERI_RESET_SHA      (1 << 26)
+#define SYSCTL_PERI_RESET_RTC      (1 << 29)
 
 //------------------------------------------------------------------------------
 // FPIOA
@@ -533,11 +561,89 @@ typedef struct
 } gpiohs_regs_t;
 
 //------------------------------------------------------------------------------
+// UART
+//------------------------------------------------------------------------------
+
+// the original Kendryte register definition was here suprisingly ok:
+
+typedef struct
+{
+    union
+    {
+        volatile uint32_t RBR;
+        volatile uint32_t DLL;
+        volatile uint32_t THR;
+    };
+
+    union
+    {
+        volatile uint32_t DLH;
+        volatile uint32_t IER;
+    };
+
+    union
+    {
+        volatile uint32_t FCR;
+        volatile uint32_t IIR;
+    };
+
+    volatile uint32_t LCR;
+    volatile uint32_t MCR;
+    volatile uint32_t LSR;
+    volatile uint32_t MSR;
+
+    volatile uint32_t SCR;
+    volatile uint32_t LPDLL;
+    volatile uint32_t LPDLH;
+
+    volatile uint32_t reserved1[2];
+
+    union
+    {
+        volatile uint32_t SRBR[16];
+        volatile uint32_t STHR[16];
+    };
+
+    volatile uint32_t FAR;
+    volatile uint32_t TFR;
+    volatile uint32_t RFW;
+    volatile uint32_t USR;
+    volatile uint32_t TFL;
+    volatile uint32_t RFL;
+    volatile uint32_t SRR;
+    volatile uint32_t SRTS;
+    volatile uint32_t SBCR;
+    volatile uint32_t SDMAM;
+    volatile uint32_t SFE;
+    volatile uint32_t SRT;
+    volatile uint32_t STET;
+    volatile uint32_t HTX;
+    volatile uint32_t DMASA;
+    volatile uint32_t TCR;
+    volatile uint32_t DE_EN;
+    volatile uint32_t RE_EN;
+    volatile uint32_t DET;
+    volatile uint32_t TAT;
+    volatile uint32_t DLF;
+    volatile uint32_t RAR;
+    volatile uint32_t TAR;
+    volatile uint32_t LCR_EXT;
+    volatile uint32_t reserved2[9];
+    volatile uint32_t CPR;
+    volatile uint32_t UCV;
+    volatile uint32_t CTR;
+//
+} uart_regs_t;
+
+//------------------------------------------------------------------------------
 // Instance definitions
 //------------------------------------------------------------------------------
 
 #define FPIOA  ((fpioa_regs_t *)FPIOA_BASE_ADDR)
 #define SYSCTL ((sysctl_regs_t *)SYSCTL_BASE_ADDR)
 #define GPIOHS ((gpiohs_regs_t *)GPIOHS_BASE_ADDR)
+#define UART1  ((uart_regs_t *)UART1_BASE_ADDR)
+#define UART2  ((uart_regs_t *)UART2_BASE_ADDR)
+#define UART3  ((uart_regs_t *)UART3_BASE_ADDR)
 
 #endif

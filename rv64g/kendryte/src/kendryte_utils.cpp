@@ -28,6 +28,6 @@
 
 uint32_t kendryte_bus_speed(uint8_t abusid)
 {
-	return (SystemCoreClock >> 0);
+	return (SystemCoreClock >> 1);
 }
 
