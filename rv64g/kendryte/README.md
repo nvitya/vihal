@@ -14,22 +14,23 @@ K2 | K210
 
 ## Driver Status
 
-  Driver              | Status  
+  Driver              | Status
 ----------------------|---------
-__CPU Clock__         | planned 
-__Pin Cfg. + GPIO__   | OK 
-__UART__              | OK 
-__DMA__               | planned 
-__SPI Master__        | planned 
-__Self Flashing__     | planned 
-__I2C Master__        | planned 
-__I2C Slave__         | planned 
-__Ext. IRQ.__         | planned 
-__Simple PWM__        | planned 
+__CPU Clock__         | planned
+__Pin Cfg. + GPIO__   | OK
+__UART__              | OK
+__DMA__               | planned
+__SPI Master__        | OK
+__QSPI Master__       | planned
+__Self Flashing__     | planned
+__I2C Master__        | planned
+__I2C Slave__         | planned
+__Ext. IRQ.__         | planned
+__Simple PWM__        | planned
 
 K210 Driver Notes:
   - Only one processor core supported yet
-  - I'm not planning to support the special peripherals like AI processor, audio processor. You can still take the sdk parts for these.  
+  - I'm not planning to support the special peripherals like AI processor, audio processor. You can still take the sdk parts for these.
 
 ## Debugging
 

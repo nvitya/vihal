@@ -570,70 +570,117 @@ typedef struct
 {
     union
     {
-        volatile uint32_t RBR;
-        volatile uint32_t DLL;
-        volatile uint32_t THR;
+        volatile uint32_t  RBR;
+        volatile uint32_t  DLL;
+        volatile uint32_t  THR;
     };
 
     union
     {
-        volatile uint32_t DLH;
-        volatile uint32_t IER;
+        volatile uint32_t  DLH;
+        volatile uint32_t  IER;
     };
 
     union
     {
-        volatile uint32_t FCR;
-        volatile uint32_t IIR;
+        volatile uint32_t  FCR;
+        volatile uint32_t  IIR;
     };
 
-    volatile uint32_t LCR;
-    volatile uint32_t MCR;
-    volatile uint32_t LSR;
-    volatile uint32_t MSR;
+    volatile uint32_t  LCR;
+    volatile uint32_t  MCR;
+    volatile uint32_t  LSR;
+    volatile uint32_t  MSR;
 
-    volatile uint32_t SCR;
-    volatile uint32_t LPDLL;
-    volatile uint32_t LPDLH;
+    volatile uint32_t  SCR;
+    volatile uint32_t  LPDLL;
+    volatile uint32_t  LPDLH;
 
-    volatile uint32_t reserved1[2];
+    volatile uint32_t  reserved1[2];
 
     union
     {
-        volatile uint32_t SRBR[16];
-        volatile uint32_t STHR[16];
+        volatile uint32_t  SRBR[16];
+        volatile uint32_t  STHR[16];
     };
 
-    volatile uint32_t FAR;
-    volatile uint32_t TFR;
-    volatile uint32_t RFW;
-    volatile uint32_t USR;
-    volatile uint32_t TFL;
-    volatile uint32_t RFL;
-    volatile uint32_t SRR;
-    volatile uint32_t SRTS;
-    volatile uint32_t SBCR;
-    volatile uint32_t SDMAM;
-    volatile uint32_t SFE;
-    volatile uint32_t SRT;
-    volatile uint32_t STET;
-    volatile uint32_t HTX;
-    volatile uint32_t DMASA;
-    volatile uint32_t TCR;
-    volatile uint32_t DE_EN;
-    volatile uint32_t RE_EN;
-    volatile uint32_t DET;
-    volatile uint32_t TAT;
-    volatile uint32_t DLF;
-    volatile uint32_t RAR;
-    volatile uint32_t TAR;
-    volatile uint32_t LCR_EXT;
-    volatile uint32_t reserved2[9];
-    volatile uint32_t CPR;
-    volatile uint32_t UCV;
-    volatile uint32_t CTR;
+    volatile uint32_t  FAR;
+    volatile uint32_t  TFR;
+    volatile uint32_t  RFW;
+    volatile uint32_t  USR;
+    volatile uint32_t  TFL;
+    volatile uint32_t  RFL;
+    volatile uint32_t  SRR;
+    volatile uint32_t  SRTS;
+    volatile uint32_t  SBCR;
+    volatile uint32_t  SDMAM;
+    volatile uint32_t  SFE;
+    volatile uint32_t  SRT;
+    volatile uint32_t  STET;
+    volatile uint32_t  HTX;
+    volatile uint32_t  DMASA;
+    volatile uint32_t  TCR;
+    volatile uint32_t  DE_EN;
+    volatile uint32_t  RE_EN;
+    volatile uint32_t  DET;
+    volatile uint32_t  TAT;
+    volatile uint32_t  DLF;
+    volatile uint32_t  RAR;
+    volatile uint32_t  TAR;
+    volatile uint32_t  LCR_EXT;
+    volatile uint32_t  reserved2[9];
+    volatile uint32_t  CPR;
+    volatile uint32_t  UCV;
+    volatile uint32_t  CTR;
 //
 } uart_regs_t;
+
+//------------------------------------------------------------------------------
+// SPI / QSPI
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+
+    volatile uint32_t  CTRLR0;           // SPI Control Register 0                                    (0x00)
+    volatile uint32_t  CTRLR1;           // SPI Control Register 1                                    (0x04)
+    volatile uint32_t  SSIENR;           // SPI Enable Register                                       (0x08)
+    volatile uint32_t  MWCR;             // SPI Microwire Control Register                            (0x0c)
+    volatile uint32_t  SER;              // SPI Slave Enable Register                                 (0x10)
+    volatile uint32_t  BAUDR;            // SPI Baud Rate Select                                      (0x14)
+    volatile uint32_t  TXFTLR;           // SPI Baud Rate Select                                      (0x14)
+    volatile uint32_t  RXFTLR;           // SPI Receive FIFO Threshold Level                          (0x1c)
+    volatile uint32_t  TXFLR;            // SPI Transmit FIFO Level Register                          (0x20)
+    volatile uint32_t  RXFLR;            // SPI Receive FIFO Level Register                           (0x24)
+    volatile uint32_t  SR;               // SPI Status Register                                       (0x28)
+    volatile uint32_t  IMR;              // SPI Interrupt Mask Register                               (0x2c)
+    volatile uint32_t  ISR;              // SPI Interrupt Status Register                             (0x30)
+    volatile uint32_t  RISR;             // SPI Raw Interrupt Status Register                         (0x34)
+    volatile uint32_t  TXOICR;           // SPI Transmit FIFO Overflow Interrupt Clear Register       (0x38)
+    volatile uint32_t  RXOICR;           // SPI Receive FIFO Overflow Interrupt Clear Register        (0x3c)
+    volatile uint32_t  RXUICR;           // SPI Receive FIFO Underflow Interrupt Clear Register       (0x40)
+    volatile uint32_t  MSTICR;           // SPI Multi-Master Interrupt Clear Register                 (0x44)
+    volatile uint32_t  ICR;              // SPI Interrupt Clear Register                              (0x48)
+    volatile uint32_t  DMACR;            // SPI DMA Control Register                                  (0x4c)
+    volatile uint32_t  DMATDLR;          // SPI DMA Transmit Data Level                               (0x50)
+    volatile uint32_t  DMARDLR;          // SPI DMA Receive Data Level                                (0x54)
+    volatile uint32_t  IDR;              // SPI Identification Register                               (0x58)
+    volatile uint32_t  SSIC_VERSION_ID;  // SPI DWC_ssi component version                             (0x5c)
+    volatile uint32_t  DR[36];           // SPI Data Register 0-36                                    (0x60 -- 0xec)
+    volatile uint32_t  RX_SAMPLE_DELAY;  // SPI RX Sample Delay Register                              (0xf0)
+    volatile uint32_t  SPI_CTRLR0;       // SPI SPI Control Register                                  (0xf4)
+    volatile uint32_t  RESV;             // reserved                                                  (0xf8)
+    volatile uint32_t  XIP_MODE_BITS;    // SPI XIP Mode bits                                         (0xfc)
+    volatile uint32_t  XIP_INCR_INST;    // SPI XIP INCR transfer opcode                              (0x100)
+    volatile uint32_t  XIP_WRAP_INST;    // SPI XIP WRAP transfer opcode                              (0x104)
+    volatile uint32_t  XIP_CTRL;         // SPI XIP Control Register                                  (0x108)
+    volatile uint32_t  XIP_SER;          // SPI XIP Slave Enable Register                             (0x10c)
+    volatile uint32_t  XRXOICR;          // SPI XIP Receive FIFO Overflow Interrupt Clear Register    (0x110)
+    volatile uint32_t  XIP_CNT_TIME_OUT; // SPI XIP time out register for continuous transfers        (0x114)
+    volatile uint32_t  ENDIAN;
+//
+} spi_regs_t;
+
 
 //------------------------------------------------------------------------------
 // Instance definitions
@@ -645,5 +692,10 @@ typedef struct
 #define UART1  ((uart_regs_t *)UART1_BASE_ADDR)
 #define UART2  ((uart_regs_t *)UART2_BASE_ADDR)
 #define UART3  ((uart_regs_t *)UART3_BASE_ADDR)
+
+#define SPI0   ((spi_regs_t *)SPI0_BASE_ADDR)
+#define SPI1   ((spi_regs_t *)SPI1_BASE_ADDR)
+#define SPI3   ((spi_regs_t *)SPI3_BASE_ADDR)
+
 
 #endif

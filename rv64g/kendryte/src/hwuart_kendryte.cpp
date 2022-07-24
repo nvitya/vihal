@@ -66,7 +66,6 @@ bool THwUart_kendryte::Init(int adevnum)
 		return false;
 	}
 
-/*
 	SYSCTL->PERI_RESET |= resetmask;
 	// some delay
 	for (unsigned n = 0; n < 100; ++n)
@@ -74,7 +73,6 @@ bool THwUart_kendryte::Init(int adevnum)
 	  if (SYSCTL->PERI_RESET) { }
 	}
 	SYSCTL->PERI_RESET &= ~resetmask;
-*/
 
   uint32_t stopbit_val = (halfstopbits > 2 ? 1 : 0);
   uint32_t parity_val = 0;

@@ -12,7 +12,7 @@
 #endif
 
 #ifdef HWSPI_H_
-  //#include "hwspi_kendryte.h"
+  #include "hwspi_kendryte.h"
 #endif
 
 #ifdef HWI2C_H_
