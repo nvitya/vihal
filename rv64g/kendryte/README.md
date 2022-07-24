@@ -25,7 +25,6 @@ __Self Flashing__     | planned
 __I2C Master__        | planned 
 __I2C Slave__         | planned 
 __Ext. IRQ.__         | planned 
-__ADC__               | planned 
 __Simple PWM__        | planned 
 
 K210 Driver Notes:
