@@ -29,10 +29,12 @@
 #define _MCU_DEFS_H
 
 #define MCUF_KENDRYTE
+#define SELF_FLASHING_RAM_ADDR  0x80000000
+#define SELF_FLASHING_SPI_ADDR  0x00000000
+#define HW_DMA_MAX_COUNT             32764
 
-#define MCU_INTERNAL_RC_SPEED   8000000
+#define MCU_INTERNAL_RC_SPEED      8000000
 
-#define HW_DMA_MAX_COUNT          32764
 
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {

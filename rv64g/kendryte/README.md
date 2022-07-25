@@ -22,7 +22,7 @@ __UART__              | OK
 __DMA__               | planned
 __SPI Master__        | OK
 __QSPI Master__       | planned
-__Self Flashing__     | planned
+__Self Flashing__     | OK
 __I2C Master__        | planned
 __I2C Slave__         | planned
 __Ext. IRQ.__         | planned
