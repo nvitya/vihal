@@ -21,6 +21,8 @@ For the quick start here are ready to use examples for several popular boards (f
   
 To get a quick picture see these [Code Examples](/doc/code_examples.md).
 
+For more information read the documentation here: [/doc/README.md](/doc/README.md)
+
 # Supported CPU Architectures
 
 __Architecture ID__ | Description
@@ -100,7 +102,7 @@ Beside the Hardware and CPU architecture specific peripheral drivers the VIHAL o
    - UDP Networking (work in progress)
    - TCR Networking (planned)
 
-# User Manual
+# Documentation
 
-For more information you find the user manual here: [/doc/README.md](/doc/README.md) (work in progress)
+For more information you find the documentation here: [/doc/README.md](/doc/README.md) (work in progress)
 
