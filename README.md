@@ -21,7 +21,7 @@ For the quick start here are ready to use examples for several popular boards (f
   
 To get a quick picture see these [Code Examples](/doc/code_examples.md).
 
-For more information read the documentation here: [/doc/README.md](/doc/README.md)
+For more information read the documentation here: [/doc/VIHAL_documentation.md](/doc/VIHAL_documentation.md)
 
 # Supported CPU Architectures
 
@@ -104,5 +104,5 @@ Beside the Hardware and CPU architecture specific peripheral drivers the VIHAL o
 
 # Documentation
 
-For more information you find the documentation here: [/doc/README.md](/doc/README.md) (work in progress)
+For more information you find the documentation here: [/doc/VIHAL_documentation.md](/doc/VIHAL_documentation.md) (work in progress)
 
