@@ -3,11 +3,16 @@
 [source,c++]
 ----
 #include "hwpins.h"
+----
 
-class THwPinCtrl
-{
-  void GpioSet(int aportnum, int apinnum, int value);
-};
+The GPIO stand for general purpose I/O. You can configure an MCU pin as an output and drive it to either high (=1) or low (=0). Or you can configure an MCU pin as input and read the actual digital value of the pint (either high (=1) or low (=0)).
+
+It is also possible to change the input and output role dynamically (with the ``TGpioPin::SwitchDirection()``).
+
+Before using a pin as GPIO, it must be configured without special function with either the ``hwpinctrl.PinSetup()`` or the ``TGpioPin::Setup()``. More details on pin configuration link:hwpins_cfg.adoc[here].
+
+[source,c++]
+----
 
 class TGpioPort
 {
