@@ -36,4 +36,23 @@ class TGpioPin
 };
 ----
 
+= Flags
 
+[options="header"]
+|=======================
+|Flag Name|Description
+|PINCFG_INPUT  | Specifies pin direction as input
+|PINCFG_OUTPUT | Specifies pin direction as output
+|PINCFG_OPENDRAIN| x
+|PINCFG_PULLUP| x
+|PINCFG_PULLDOWN| x
+|PINCFG_ANALOGUE| x
+
+|PINCFG_GPIO_INVERT| x
+|PINCFG_GPIO_INIT_1| x
+|PINCFG_GPIO_INIT_0| x
+
+|PINCFG_AF_[0-15,A-P]| Example: PINCFG_AF_2
+|=======================
+
+= Examples
