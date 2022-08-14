@@ -4,15 +4,11 @@
 ----
 #include "hwpins.h"
 
-class THwPinCtrl
-{
-  bool PinSetup(int aportnum, int apinnum, unsigned flags);
-};
+THwPinCtrl  hwpinctrl;
+bool THwPinCtrl::PinSetup(int aportnum, int apinnum, unsigned flags);
 
-class TGpioPin
-{
-  bool Setup(unsigned flags);
-};
+bool TGpioPin::Setup(unsigned flags);
+
 ----
 
 [options="header"]
