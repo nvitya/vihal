@@ -62,7 +62,7 @@ it does not cover all hardware features of all Microcontrollers.
 
 __Driver__ | __Function__ | __Reference__
 -----------|--------------|----------------
-CPU Clock | CPU and chip clock setup (concentrating mainly on high performance mode) and clock counter | [reference](/doc/hwclk.md)
+CPU Clock | CPU and chip clock setup (concentrating mainly on high performance mode) and clock counter | [reference](/doc/hwclk.adoc)
 Pin Cfg. + GPIO | Pin / Pad configuration + GPIO control | [reference](/doc/hwpins.md)
 Ext. IRQ | IRQ handling on GPIO Input Pins | [reference](/doc/hwextirq.md)
 DMA | Direct Memory Access (cpu-less data transfers) | [reference](/doc/hwdma.md)
