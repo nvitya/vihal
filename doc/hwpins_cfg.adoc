@@ -8,7 +8,7 @@
 The microcontrollers usually provide multiple functions on some of their pins (also called pads). 
 Therefore the pin configuration is required before using the MCU pins.
 
-The VIHAL provides the "hwpinctrl" object for the setup:
+The VIHAL provides the "hwpinctrl" global object for the pin/pad setup:
 [source,c++]
 ----
 THwPinCtrl  hwpinctrl;
