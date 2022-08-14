@@ -36,11 +36,10 @@ class TGpioPin
 };
 ----
 
-== Pin Flags
-
 [options="header"]
 |=======================
-|Flag Name|Description
+|Pin Flag         | Description
+
 |PINCFG_INPUT     | Specifies pin direction as input
 |PINCFG_OUTPUT    | Specifies pin direction as output
 |PINCFG_OPENDRAIN | Sets Open-Drain mode (allows multiple driver with a pull-up resistor)
