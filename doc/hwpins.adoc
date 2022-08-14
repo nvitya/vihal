@@ -3,6 +3,37 @@
 [source,c++]
 ----
 #include "hwpins.h"
+
+class THwPinCtrl
+{
+  bool PinSetup(int aportnum, int apinnum, unsigned flags);
+  void GpioSet(int aportnum, int apinnum, int value);
+};
+
+class TGpioPort
+{
+  void Assign(int aportnum);
+  void Set(unsigned value);
+};
+
+class TGpioPin
+{
+  TGpioPin(int aportnum, int apinnum, bool ainvert);  // normal constructor, calls Assign()
+  TGpioPin(); // empty constructor, Assign() must be called later
+
+  void Assign(int aportnum, int apinnum, bool ainvert);
+  bool Assigned();
+  bool Setup(unsigned flags);
+
+  void Set0();
+  void Set1();
+  void SetTo(unsigned value);
+  void Toggle();
+
+  unsigned char Value();
+  unsigned char OutValue();
+  void SwitchDirection(int adirection);
+};
 ----
 
 
