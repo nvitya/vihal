@@ -52,11 +52,11 @@ PINCFG_SPEED_MEDIUM +
 PINCFG_SPEED_FAST   | Sets the speed limitiation on the pins. High speed pins might gerate interferences / disturbances. Default is "MEDIUM". The supported options are depends on the actual MCU.
 
 |PINCFG_GPIO_INVERT | GPIO inversion at hardware level. Only a few MCU supports this.
-| | Initialize the output pin to level "1". This is useful to avoid short unwanted pulses at the initialziation
+|PINCFG_GPIO_INIT_1 | Initialize the output pin to level "1". This is useful to avoid short unwanted pulses at the initialziation
 |PINCFG_GPIO_INIT_0 | Initialize the output pin to level "0". This is useful to avoid short unwanted pulses at the initialziation
 
 |PINCFG_AF_[0-15], +
-PINCFG_AF_[A-P]     | Selects the alternate function (special function) for the pin. The alternate functions / special functions are usually descriped in the microcontroller datasheet or reference manual. Some MCU (like ATSAM) use letters in the pin function table, therefore the equivalent definitions also provided
+PINCFG_AF_[A-P]     | Selects the alternate function (special function) for the pin. The alternate functions / special functions are usually descriped in the microcontroller datasheet or reference manual. Some MCU (like ATSAM) use letters in the pin function table, therefore the definitions with letters provided
 |=======================
 
 = Examples
