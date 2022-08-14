@@ -1,0 +1,45 @@
+= CPU Clock
+
+The VIHAL CPU Clock Driver basically consists of only a single function.
+
+== hwclk_init()
+
+[source,c++]
+----
+#include “hwclk.h”
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz);
+----
+
+external_clock_hz:: 
+External Crystal Frequency in Hz +
+0: use the internal RC oscillator +
+The flag HWCLK_EXTCLK_BYPASS can be added to the External Crystal Frequency to use bypass mode if an external clock signal is used instead of a crystal
+
+target_speed_hz::
+  The required CPU frequency. This must not be greater than the HW actually supports.
+  
+Returns:
+	False if setting the desired clockspeed was not successful, True otherwise.
+
+The function sets the CPU Frequency to the desired target_speed_hz value. Usually internally it carries out the following tasks:
+Sets up some required settings to achieve high speed mode, like flash wait states or voltage scaling
+activates the external crystal oscillator
+Sets up a dedicated PLL to achieve the desired CPU frequency
+Sets up the peripheral bus frequencies to the highest possible values
+If the MCU supports USB, then prepares the 48 MHz (or 480 MHz) internal clock for the USB part
+Sets the SystemCoreClock variable to the taget_speed_hz on success
+
+There is a predefined constant MAX_CLOCK_SPEED for the supported maximal MCU clock speed. The MCU_CLOCK_SPEED defaults to the maximal MCU clock speed, but it can be overridden, for example in the board.h. The built-in boards usually define the EXTERNAL_XTAL_HZ, which is the on-board external crystal frequency.
+
+The function can be called before C++ initializations, so that the constructors can run at higher speed. (This feature is not used in the example projects.)
+
+Examples:
+
+  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED)) 
+  {
+    while (1)
+    {
+      // error
+    }
+  }
