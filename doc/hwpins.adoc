@@ -1,0 +1,8 @@
+= VIHAL Pin / Pad configuration + GPIO control
+
+[source,c++]
+----
+#include "hwpins.h"
+----
+
+
