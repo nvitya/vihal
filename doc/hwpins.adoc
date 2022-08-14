@@ -47,8 +47,17 @@ class TGpioPin
 |PINCFG_PULLDOWN  | Activates the integrated weak pull-down resistor
 |PINCFG_ANALOGUE  | Hints for analogue usage of the pin. (Usually turns out the Schmitt trigger)
 
-|PINCFG_GPIO_INVERT | GPIO inversion at hardware level. Not all MCU supports it.
-|PINCFG_GPIO_INIT_1 | Initialize the output pin to level "1". This is useful to avoid short unwanted pulses at the initialziation
+|PINCFG_DRIVE_NORMAL +
+PINCFG_DRIVE_WEAK +
+PINCFG_DRIVE_MEDIUM +
+PINCFG_DRIVE_STRONG | Set the output driving strength. The default is "NORMAL", which is usually not the maximum. The supported options are depends on the actual MCU.
+
+|PINCFG_SPEED_SLOW + 
+PINCFG_SPEED_MEDIUM +
+PINCFG_SPEED_FAST   | Sets the speed limitiation on the pins. High speed pins might gerate interferences / disturbances. Default is "MEDIUM". The supported options are depends on the actual MCU.
+
+|PINCFG_GPIO_INVERT | GPIO inversion at hardware level. Only a few MCU supports this.
+| | Initialize the output pin to level "1". This is useful to avoid short unwanted pulses at the initialziation
 |PINCFG_GPIO_INIT_0 | Initialize the output pin to level "0". This is useful to avoid short unwanted pulses at the initialziation
 
 |PINCFG_AF_[0-15], +
@@ -56,3 +65,31 @@ PINCFG_AF_[A-P]     | Selects the alternate function (special function) for the 
 |=======================
 
 = Examples
+== GPIO
+[source,c++]
+----
+// Usual GPIO output scenario
+//----------------------------
+TGpioPin  pin_led1(PORTNUM_C, 13, true);  
+
+pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
+
+// If the pins assigned later
+//---------------------------
+TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };  
+
+pin_led[0].Assign(PORTNUM_C, 13, true);
+pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
+
+----
+== Special Functions
+[source,c++]
+----
+hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX (STM32)
+hwpinctrl.PinSetup(0, 14, PINCFG_OUTPUT | PINCFG_AF_1); // SPI1_SCK (RP2040)
+hwpinctrl.PinSetup(PORTNUM_A, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // analogue input (STM32)
+hwpinctrl.PinSetup(0, 27, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC1 (RP2040)
+hwpinctrl.PinSetup(PORTNUM_A, 17, PINCFG_AF_A);  // TWI0_SDA (TWD) (ATSAM3X)
+hwpinctrl.PinSetup(PORTNUM_B,  8, PINCFG_AF_D | PINCFG_PULLUP); // SERCOM4/PAD0 = SDA (ATSAME51)
+
+----
