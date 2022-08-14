@@ -3,13 +3,33 @@
 [source,c++]
 ----
 #include "hwpins.h"
-
-THwPinCtrl  hwpinctrl;
-bool THwPinCtrl::PinSetup(int aportnum, int apinnum, unsigned flags);
-
-bool TGpioPin::Setup(unsigned flags);
-
 ----
+
+The microcontrollers usually provide multiple functions on some of their pins (also called pads). 
+Therefore the pin configuration is required before using the MCU pins.
+
+The VIHAL provides the "hwpinctrl" object for the setup:
+[source,c++]
+----
+THwPinCtrl  hwpinctrl;
+----
+
+The actual pin/pad setup is carried out by these methods:
+
+[source,c++]
+----
+bool THwPinCtrl::PinSetup(int aportnum, int apinnum, unsigned flags);  // most common case
+bool THwPinCtrl::PadSetup(int apadnum, int afuncnum, unsigned flags);  // special MCU case
+bool TGpioPin::Setup(unsigned flags);  // for already assigned GPIO pins
+----
+
+aportnum, apinnum::
+  Selects the pin you want to set-up. The pins are organized usually in ports, where one port might contain 16 or 32 pins.
+  Some MCUs use letters for the ports, therefore the PORTNUM_[A-K] helper identifiers also defined.
+  (If the MCU does not have multiple ports, then call the PinSetup() with aportnum=0.)
+
+flags::
+  A combination of predefined flags, see the "Pin Flag" table below
 
 [options="header"]
 |=======================
@@ -40,24 +60,7 @@ PINCFG_AF_[A-P]     | Selects the alternate function (special function) for the 
 |=======================
 
 = Examples
-== GPIO
-[source,c++]
-----
-// Usual GPIO output scenario
-//----------------------------
-TGpioPin  pin_led1(PORTNUM_C, 13, true);  
 
-pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
-
-// If the pins assigned later
-//---------------------------
-TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };  
-
-pin_led[0].Assign(PORTNUM_C, 13, true);
-pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
-
-----
-== Special Functions
 [source,c++]
 ----
 hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX (STM32)
@@ -67,4 +70,11 @@ hwpinctrl.PinSetup(0, 27, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC1 (RP2040)
 hwpinctrl.PinSetup(PORTNUM_A, 17, PINCFG_AF_A);  // TWI0_SDA (TWD) (ATSAM3X)
 hwpinctrl.PinSetup(PORTNUM_B,  8, PINCFG_AF_D | PINCFG_PULLUP); // SERCOM4/PAD0 = SDA (ATSAME51)
 
+// Some MCUs have special PAD setup functions:
+hwpinctrl.PadSetup(4, FUNC_UART3_RX, PINCFG_INPUT);   // UART3_RX (Kendryte K210)
+hwpinctrl.PadSetup(5, FUNC_UART3_TX, PINCFG_OUTPUT);  // UART3_TX (Kendryte K210)
+
+// GPIO Setup
+TGpioPin  pin_led1(PORTNUM_C, 13, true);  
+pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
 ----
