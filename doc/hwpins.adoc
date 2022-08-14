@@ -36,23 +36,24 @@ class TGpioPin
 };
 ----
 
-= Flags
+== Pin Flags
 
 [options="header"]
 |=======================
 |Flag Name|Description
-|PINCFG_INPUT  | Specifies pin direction as input
-|PINCFG_OUTPUT | Specifies pin direction as output
-|PINCFG_OPENDRAIN| x
-|PINCFG_PULLUP| x
-|PINCFG_PULLDOWN| x
-|PINCFG_ANALOGUE| x
+|PINCFG_INPUT     | Specifies pin direction as input
+|PINCFG_OUTPUT    | Specifies pin direction as output
+|PINCFG_OPENDRAIN | Sets Open-Drain mode (allows multiple driver with a pull-up resistor)
+|PINCFG_PULLUP    | Activates the integrated weak pull-up resistor
+|PINCFG_PULLDOWN  | Activates the integrated weak pull-down resistor
+|PINCFG_ANALOGUE  | Hints for analogue usage of the pin. (Usually turns out the Schmitt trigger)
 
-|PINCFG_GPIO_INVERT| x
-|PINCFG_GPIO_INIT_1| x
-|PINCFG_GPIO_INIT_0| x
+|PINCFG_GPIO_INVERT | GPIO inversion at hardware level. Not all MCU supports it.
+|PINCFG_GPIO_INIT_1 | Initialize the output pin to level "1". This is useful to avoid short unwanted pulses at the initialziation
+|PINCFG_GPIO_INIT_0 | Initialize the output pin to level "0". This is useful to avoid short unwanted pulses at the initialziation
 
-|PINCFG_AF_[0-15,A-P]| Example: PINCFG_AF_2
+|PINCFG_AF_[0-15], +
+PINCFG_AF_[A-P]     | Selects the alternate function (special function) for the pin. The alternate functions / special functions are usually descriped in the microcontroller datasheet or reference manual. Some MCU (like ATSAM) use letters in the pin function table, therefore the equivalent definitions also provided
 |=======================
 
 = Examples
