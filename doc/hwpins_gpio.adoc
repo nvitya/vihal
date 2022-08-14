@@ -1,2 +1,66 @@
-= GPIO Handling
+= GPIO Control
 
+[source,c++]
+----
+#include "hwpins.h"
+
+class THwPinCtrl
+{
+  void GpioSet(int aportnum, int apinnum, int value);
+};
+
+class TGpioPort
+{
+  void Assign(int aportnum);
+  void Set(unsigned value);
+};
+
+class TGpioPin
+{
+  TGpioPin(int aportnum, int apinnum, bool ainvert);  // normal constructor, calls Assign()
+  TGpioPin(); // empty constructor, Assign() must be called later
+
+  void Assign(int aportnum, int apinnum, bool ainvert);
+  bool Assigned();
+  bool Setup(unsigned flags);
+
+  void Set0();
+  void Set1();
+  void SetTo(unsigned value);
+  void Toggle();
+
+  unsigned char Value();
+  unsigned char OutValue();
+  void SwitchDirection(int adirection);
+};
+----
+
+= Examples
+== GPIO
+[source,c++]
+----
+// Usual GPIO output scenario
+//----------------------------
+TGpioPin  pin_led1(PORTNUM_C, 13, true);  
+
+pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
+
+// If the pins assigned later
+//---------------------------
+TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };  
+
+pin_led[0].Assign(PORTNUM_C, 13, true);
+pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
+
+----
+== Special Functions
+[source,c++]
+----
+hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX (STM32)
+hwpinctrl.PinSetup(0, 14, PINCFG_OUTPUT | PINCFG_AF_1); // SPI1_SCK (RP2040)
+hwpinctrl.PinSetup(PORTNUM_A, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // analogue input (STM32)
+hwpinctrl.PinSetup(0, 27, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC1 (RP2040)
+hwpinctrl.PinSetup(PORTNUM_A, 17, PINCFG_AF_A);  // TWI0_SDA (TWD) (ATSAM3X)
+hwpinctrl.PinSetup(PORTNUM_B,  8, PINCFG_AF_D | PINCFG_PULLUP); // SERCOM4/PAD0 = SDA (ATSAME51)
+
+----
