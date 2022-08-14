@@ -12,15 +12,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz);
 ----
 
 external_clock_hz:: 
-External Crystal Frequency in Hz +
-0: use the internal RC oscillator +
-The flag HWCLK_EXTCLK_BYPASS can be added to the External Crystal Frequency to use bypass mode if an external clock signal is used instead of a crystal
+  External Crystal Frequency in Hz +
+  0: use the internal RC oscillator +
+  The flag HWCLK_EXTCLK_BYPASS can be added to the External Crystal Frequency to use bypass mode if an external clock signal is used instead of a crystal
 
 target_speed_hz::
   The required CPU frequency. This must not be greater than the HW actually supports.
   
-Returns:
-	False if setting the desired clockspeed was not successful, True otherwise.
+Returns::
+  False if setting the desired clockspeed was not successful, True otherwise.
 
 The function sets the CPU Frequency to the desired target_speed_hz value. Usually internally it carries out the following tasks:
 Sets up some required settings to achieve high speed mode, like flash wait states or voltage scaling
@@ -34,12 +34,15 @@ There is a predefined constant MAX_CLOCK_SPEED for the supported maximal MCU clo
 
 The function can be called before C++ initializations, so that the constructors can run at higher speed. (This feature is not used in the example projects.)
 
-Examples:
+== Examples
 
-  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED)) 
+[source,C++]
+----
+if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED)) 
+{
+  while (1)
   {
-    while (1)
-    {
-      // error
-    }
+    // error
   }
+}
+----
