@@ -1,13 +1,16 @@
 = CPU Clock
 
+[source,c++]
+----
+#include “hwclk.h”
+----
+
 The VIHAL CPU Clock Driver basically consists of only a single function.
 
 == hwclk_init()
 
 [source,c++]
 ----
-#include “hwclk.h”
-
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz);
 ----
 

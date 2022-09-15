@@ -1,0 +1,113 @@
+= GPIO Control
+
+[source,c++]
+----
+#include "hwpins.h"
+----
+
+The GPIO stand for general purpose I/O. You can configure an MCU pin as an output and drive it to either high (=1) or low (=0). Or you can configure an MCU pin as input and read the actual digital value of the pint (either high (=1) or low (=0)).
+
+It is also possible to change the input and output role dynamically (with the ``TGpioPin::SwitchDirection()``).
+
+Before using a pin as GPIO, it must be configured without special function with either the ``hwpinctrl.PinSetup()`` or the ``TGpioPin::Setup()``. More details on pin configuration link:hwpins_cfg.adoc[here].
+
+The GPIO functions are encapsulated in the ``TGpioPin`` class:
+
+[source,c++]
+----
+class TGpioPin
+{
+  TGpioPin(int aportnum, int apinnum, bool ainvert);  // normal constructor, calls Assign()
+  TGpioPin(); // empty constructor, Assign() must be called later
+
+  void Assign(int aportnum, int apinnum, bool ainvert);  // assigns the object to a specific pin, prepares the HW pointers
+  bool Assigned();  // returns true if the port is assigned
+  bool Setup(unsigned flags);  // calls the hwpinctrl.PinSetup(), required before using
+
+  void Set0();  // sets the output pin to state "0" (low), invert option considered
+  void Set1();  // sets the output pin to state "1" (high), invert option considered
+  void SetTo(unsigned value); // calls Set1() when the lowest bit is set, otherwise calls Set0()
+  void Toggle();  // toggles the output state
+
+  unsigned char Value();  // returns the input value (either 0 or 1) for the input pins
+  unsigned char OutValue();  // returns the currently set output value
+  void SwitchDirection(int adirection);  // adirection: 1 = sets to output, 0 = sets to input
+};
+----
+
+== Output Examples
+
+[source,c++]
+----
+// Usual GPIO output scenario
+//----------------------------
+TGpioPin  pin_led1(PORTNUM_C, 13, true);  
+
+pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
+
+pin_led1.Set1();    // fast inline code
+pin_led1.Set0();    // fast inline code 
+pin_led1.SetTo(1);  // somewhat slower than Set1()
+pin_led1.Toggle();  
+
+// If the pins assigned later
+//---------------------------
+TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };  
+
+pin_led[0].Assign(PORTNUM_C, 13, true);
+pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); 
+
+pin_led[0].Set1();
+
+----
+
+== Input Examples
+
+[source,c++]
+----
+
+TGpioPin  pin_input1(PORTNUM_A, 0, false);  
+
+pin_input1.Setup(PINCFG_INPUT | PINCFG_PULLUP); 
+
+uint8_t prev_value = pin_input1.Value();
+uint8_t new_value;
+
+while (true)
+{
+  new_value = pin_input1.Value();
+  if (prev_value != new_value)
+  {
+    TRACE("Input value changed: %i\r\n", new_value);
+    prev_value = new_value;
+  }
+}
+
+----
+
+== GPIO Port (experimental)
+
+The TGpioPort object is provided for the case if all pins of a port must be written in one instruction.
+
+[source,c++]
+----
+class TGpioPort
+{
+  void Assign(int aportnum);
+  void Set(unsigned value);
+};
+----
+
+=== GPIO Port Example
+
+[source,c++]
+----
+TGpioPort myport(PORNUM_C);
+
+hwpinctrl.PinSetup(PORNUM_C, 0, PINCFG_OUTPUT);
+hwpinctrl.PinSetup(PORNUM_C, 1, PINCFG_OUTPUT);
+hwpinctrl.PinSetup(PORNUM_C, 2, PINCFG_OUTPUT);
+// ...
+
+myport.Set(0x03);
+----
