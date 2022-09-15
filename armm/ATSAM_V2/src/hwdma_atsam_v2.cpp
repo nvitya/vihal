@@ -281,7 +281,6 @@ void THwDmaChannel_atsam_v2::PrepareTransfer(THwDmaTransfer * axfer)
 	}
 
 	regs->BTCNT = axfer->count;
-	regs->BTCTRL = ccreg;
 
 	if (axfer->flags & DMATR_CIRCULAR)
 	{
@@ -292,6 +291,8 @@ void THwDmaChannel_atsam_v2::PrepareTransfer(THwDmaTransfer * axfer)
 	{
 		regs->DESCADDR = 0;
 	}
+
+	regs->BTCTRL = ccreg;
 
 #ifdef DMAC_CHID_OFFSET
   ctrlregs->CHID.reg = chnum;  // select the channel
