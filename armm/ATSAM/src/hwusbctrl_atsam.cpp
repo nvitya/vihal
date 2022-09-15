@@ -164,10 +164,11 @@ int THwUsbEndpoint_atsam::ReadRecvData(void * buf, uint32_t buflen)
 	return cnt;
 }
 
-int THwUsbEndpoint_atsam::StartSendData(void * buf, unsigned len)
+int THwUsbEndpoint_atsam::StartSendData(void * buf, unsigned len, bool lastsegment)
 {
 	int sendlen = len;
 	if (sendlen > maxlen)  sendlen = maxlen;
+  CheckZeroPacketSending(sendlen, lastsegment);
 
 	if (iscontrol)
 	{

@@ -55,12 +55,15 @@ public:
 
 	bool            dir_htod = false;
 	bool            iscontrol = false;
+	uint8_t         send_zero_state = 0; // if a data with maxlength is sent then automatically send a zero packet
 
 	uint16_t        maxlen = 0;
 
 	uint32_t        attr = 0;
 
 	virtual         ~THwUsbEndpoint_pre() { }
+
+	void            CheckZeroPacketSending(unsigned asendlen, bool alastsegment = true);
 };
 
 class THwUsbCtrl_pre
@@ -103,7 +106,7 @@ public: // mandatory functions
 	bool ConfigureHwEp()  { return false; }  // based on previously set fields
 
 	int  ReadRecvData(void * buf, uint32_t buflen) { return 0; }
-	int  StartSendData(void * buf, unsigned len)   { return 0; }
+	int  StartSendData(void * buf, unsigned len, bool lastsegment = true)   { return 0; }
 	void SendAck()  { }
 
   void FinishRecv(bool reenable) { }

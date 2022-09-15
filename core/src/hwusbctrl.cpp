@@ -29,6 +29,19 @@
 #include "hwusbctrl.h"
 #include "platform.h"
 
+void THwUsbEndpoint_pre::CheckZeroPacketSending(unsigned alen, bool alastsegment)
+{
+  uint32_t eptype = (attr & HWUSB_EP_TYPE_MASK);
+  if ((eptype != HWUSB_EP_TYPE_CONTROL) && (alen == maxlen) && alastsegment)
+  {
+    send_zero_state = 1;
+  }
+  else
+  {
+    send_zero_state = 0;
+  }
+}
+
 //-------------------------------------------------------------------------------------------
 
 void THwUsbCtrl::HandleReset()
@@ -46,4 +59,6 @@ void THwUsbEndpoint::Reset()
 {
 	StopSend();
 	DisableRecv();
+  send_zero_state = 0;
 }
+

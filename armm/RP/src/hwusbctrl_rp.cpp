@@ -189,10 +189,11 @@ int THwUsbEndpoint_rp::ReadRecvData(void * buf, uint32_t buflen)
 
 // the answer of the device descriptor
 
-int THwUsbEndpoint_rp::StartSendData(void * buf, unsigned len)
+int THwUsbEndpoint_rp::StartSendData(void * buf, unsigned len, bool lastsegment)
 {
   int sendlen = len;
   if (sendlen > maxlen)  sendlen = maxlen;
+  CheckZeroPacketSending(sendlen, lastsegment);
 
   uint32_t bufcr = (0
     | (1  << 15)  // BUF0_FULL

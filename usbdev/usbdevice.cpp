@@ -675,6 +675,14 @@ bool TUsbDevice::HandleEpTransferEvent(uint8_t epid, bool htod)
 		return false;
 	}
 
+	if (!htod && (1 == ep->send_zero_state))
+	{
+	  // automatically send zero length packet
+	  ep->StartSendData(&ctrlbuf[0], 0, false);
+	  ep->send_zero_state = 2;
+	  return true;
+	}
+
 	if (ep->interface)
 	{
 		return ep->interface->HandleTransferEvent(ep, htod);

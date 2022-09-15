@@ -247,10 +247,11 @@ int THwUsbEndpoint_stm32_otg::ReadRecvData(void * buf, uint32_t buflen)
 	return bcnt;
 }
 
-int THwUsbEndpoint_stm32_otg::StartSendData(void * buf, unsigned len)
+int THwUsbEndpoint_stm32_otg::StartSendData(void * buf, unsigned len, bool lastsegment)
 {
 	uint32_t  sendlen = len;
 	if (sendlen > maxlen)  sendlen = maxlen;
+  CheckZeroPacketSending(sendlen, lastsegment);  // zero packet sending required at maximal packet size
 
 	txregs->TSIZ = 0;
 

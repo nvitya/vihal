@@ -80,7 +80,7 @@ public:
 
 	bool ConfigureHwEp();
   int  ReadRecvData(void * buf, uint32_t buflen);
-	int  StartSendData(void * buf, unsigned len);
+  int  StartSendData(void * buf, unsigned len, bool lastsegment = true);
 
 	void SendAck();
   void Stall();

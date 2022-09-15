@@ -213,7 +213,7 @@ int THwUsbEndpoint_atsam_v2::ReadRecvData(void * buf, uint32_t buflen)
 
 // the answer of the device descriptor
 
-int THwUsbEndpoint_atsam_v2::StartSendData(void * buf, unsigned len)
+int THwUsbEndpoint_atsam_v2::StartSendData(void * buf, unsigned len, bool lastsegment)
 {
 	if (regs->EPSTATUS.reg & USB_DEVICE_EPSTATUS_BK1RDY)
 	{
@@ -229,6 +229,7 @@ int THwUsbEndpoint_atsam_v2::StartSendData(void * buf, unsigned len)
 
 	int sendlen = len;
 	if (sendlen > maxlen)  sendlen = maxlen;
+	CheckZeroPacketSending(sendlen, lastsegment);  // zero packet sending required at maximal packet size
 
 	// optimized copy
 

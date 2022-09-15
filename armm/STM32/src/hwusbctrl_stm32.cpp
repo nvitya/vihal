@@ -269,12 +269,13 @@ int THwUsbEndpoint_stm32::ReadRecvData(void * buf, uint32_t buflen)
 	return cnt;
 }
 
-int THwUsbEndpoint_stm32::StartSendData(void * buf, unsigned len)
+int THwUsbEndpoint_stm32::StartSendData(void * buf, unsigned len, bool lastsegment)
 {
 	// copy words
 
 	uint16_t  sendlen = len;
 	if (sendlen > maxlen)  sendlen = maxlen;
+  CheckZeroPacketSending(sendlen, lastsegment);  // zero packet sending required at maximal packet size
 
 	uint16_t copylen = ((sendlen + 1) & 0xFFFE);  // copy 2 byte units only
 
