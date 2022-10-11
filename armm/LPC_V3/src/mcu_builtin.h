@@ -36,6 +36,15 @@
 
   #include "LPC54018.h"
 
+#elif defined(MCU_LPC55S28)
+
+  #define MCUF_LPC_V3
+  #define MCUSF_552X
+
+  #define MAX_CLOCK_SPEED  150000000
+
+  #include "LPC55S28.h"
+
 #else
 
   #error "Unknown MCU"

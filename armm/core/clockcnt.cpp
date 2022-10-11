@@ -36,7 +36,7 @@
 void clockcnt_init()
 {
 	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-#if __CORTEX_M >= 7
+#if (__CORTEX_M % 10) >= 7
 	DWT->LAR = 0xC5ACCE55;	// this is requied for Cortex M7
 #endif
 	DWT->CTRL = DWT->CTRL | 1;

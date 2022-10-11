@@ -29,6 +29,10 @@
 #ifndef HWQSPI_LPC_V3_H_
 #define HWQSPI_LPC_V3_H_
 
+#include "platform.h"
+
+#ifdef SPIFI0
+
 #define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
 
@@ -52,5 +56,7 @@ public:
 };
 
 #define HWQSPI_IMPL THwQspi_lpc_v3
+
+#endif
 
 #endif // def HWQSPI_LPC_V3_H_

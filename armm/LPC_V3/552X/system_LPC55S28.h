@@ -1,0 +1,5 @@
+#ifndef SYSTEM_LPC55S28_H
+#define SYSTEM_LPC55S28_H
+
+#endif /* SYSTEM_LPC55S28_H */
+

@@ -33,6 +33,12 @@
   #define MCU_LPC54608
   #define EXTERNAL_XTAL_HZ   12000000
 
+#elif defined(BOARD_XPRESSO_LPC55S28)
+
+  #define BOARD_NAME "LPCXpresso55S28"
+  #define MCU_LPC55S28
+  #define EXTERNAL_XTAL_HZ   12000000
+
 #else
 
   #error "Unknown board."

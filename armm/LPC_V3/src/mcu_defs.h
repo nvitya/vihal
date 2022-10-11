@@ -35,6 +35,7 @@
 
 #endif
 
+
 #if defined(MCUSF_540XX)
 
   #define IRQVECTAB_OFFS_24_VALUE  0xEDDC94BD

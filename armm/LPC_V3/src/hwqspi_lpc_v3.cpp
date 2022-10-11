@@ -27,6 +27,9 @@
 */
 
 #include "platform.h"
+
+#ifdef SPIFI0
+
 //#include "lpc_utils.h"
 #include <hwqspi.h>
 
@@ -360,3 +363,4 @@ void THwQspi_lpc_v3::Run()
 	busy = false;
 }
 
+#endif
