@@ -29,38 +29,21 @@
 #include "platform.h"
 #include "hwspi.h"
 
-static const unsigned fcbaseaddr[] = FLEXCOMM_BASE_ADDRS;
+#include "lpc_v3_utils.h"
 
 bool THwSpi_lpc_v3::Init(int adevnum)
 {
   initialized = false;
 
-	if ((adevnum < 0) || (adevnum > 9))
-	{
-		devnum = -1;
-		return false;
-	}
+  regs = (HW_SPI_REGS *)flexcomm_init(adevnum, 2);  // 2 = SPI MODE
+  if (!regs)
+  {
+    devnum = -1;
+    return false;
+  }
 
-	devnum = adevnum;
-
-	// turn on the flexcomm hw:
-	if (devnum <= 7)
-	{
-		SYSCON->AHBCLKCTRLSET[1] = (1 << (11 + devnum));
-	}
-	else
-	{
-		SYSCON->AHBCLKCTRLSET[2] = (1 << (14 + (devnum - 8)));
-	}
-
-	// set the comm type
-	FLEXCOMM_Type * fc = (FLEXCOMM_Type *)(fcbaseaddr[devnum]);
-	fc->PSELID = 2; // select SPI
-
-	regs = (HW_SPI_REGS *)fc;
-
-	SYSCON->FCLKSEL[devnum] = 1; // select the 48 MHz free running oscillator as clock source
-	basespeed = 48000000;
+  devnum = adevnum;
+  basespeed = FLEXCOMM_BASE_SPEED;
 
 	unsigned n;
 

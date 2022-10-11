@@ -28,6 +28,7 @@
 #include "platform.h"
 #include "hwclk.h"
 
+#if defined(MCUSF_540XX) || defined(MCUSF_546XX)
 
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
@@ -256,3 +257,29 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   SystemCoreClock = target_speed_hz;
   return true;
 }
+
+#elif defined(MCUSF_552X) || defined(MCUSF_556X)
+
+void hwclk_start_ext_osc(unsigned aextspeed)
+{
+
+}
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+
+}
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  #warning "hwclk_init is not implemented !!!"
+
+  SystemCoreClock = 48000000; //12000000 * 2; //target_speed_hz;
+  return true;
+}
+
+#else
+
+  #error "Uninplemented MCU"
+
+#endif

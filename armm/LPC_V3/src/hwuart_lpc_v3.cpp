@@ -31,41 +31,23 @@
 #include <stdarg.h>
 
 #include "hwuart.h"
+#include "lpc_v3_utils.h"
 
 bool THwUart_lpc_v3::Init(int adevnum)
 {
 	unsigned code;
 
-	devnum = adevnum;
 	initialized = false;
-	regs = nullptr;
 
-	if ((devnum < 0) or (devnum > 9))
-	{
-		return false;
-	}
+  regs = (HW_UART_REGS *)flexcomm_init(adevnum, 1);  // 1 = UART MODE
+  if (!regs)
+  {
+    devnum = -1;
+    return false;
+  }
 
-	unsigned fcnum = devnum;
-	unsigned fcbaseaddr[] = FLEXCOMM_BASE_ADDRS;
-
-	regs = (HW_UART_REGS *)(fcbaseaddr[fcnum]);
-
-	// turn on the flexcomm hw:
-	if (fcnum <= 7)
-	{
-		SYSCON->AHBCLKCTRLSET[1] = (1 << (11 + fcnum));
-	}
-	else
-	{
-		SYSCON->AHBCLKCTRLSET[2] = (1 << (14 + (fcnum - 8)));
-	}
-
-	SYSCON->FCLKSEL[fcnum] = 1; // select the 48 MHz free running oscillator as clock source
-	unsigned basefreq = 48000000;
-
-	// select uart mode
-	FLEXCOMM_Type * flexcomm = (FLEXCOMM_Type *)regs;
-	flexcomm->PSELID = 1; // select USART function
+  devnum = adevnum;
+  unsigned basefreq = FLEXCOMM_BASE_SPEED;
 
 	// setup UART
 
