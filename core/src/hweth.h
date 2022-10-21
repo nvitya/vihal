@@ -66,16 +66,20 @@
 #define HWETH_PMEM_HEAD_SIZE        32
 
 #define PMEMFLAG_KEEP             0x01  // do not release the Rx Packet
+#define PMEMFLAG_SYS              0x02  // special system Tx Packet, do not add back to the TX packet pool
 
 typedef struct TPacketMem
 {
   uint8_t       idx;
   uint8_t       flags;
+  uint8_t       status; // for tx 1 = sending, 0 = sending finished / aborted
+  uint8_t       _reserved;
   uint16_t      datalen;
-  uint8_t       extra[12];
-  uint8_t       _reserved[4];
-  TPacketMem *  next;    // this is reserved for the applications
+  uint16_t      max_datalen;
   uint64_t      timestamp_ns;
+  // this part can be freely used by the application / network stack
+  TPacketMem *  next;
+  uint8_t       extra[12];
 
   uint8_t       data[HWETH_MAX_PACKET_SIZE];
 //
