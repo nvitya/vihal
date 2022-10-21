@@ -29,6 +29,7 @@
 #ifndef HWETH_H_PRE_
 #define HWETH_H_PRE_
 
+#include <cstddef>
 #include "hwpins.h"
 
 #define HWETH_MAX_PACKET_SIZE   1536
@@ -84,6 +85,8 @@ typedef struct TPacketMem
   uint8_t       data[HWETH_MAX_PACKET_SIZE];
 //
 } TPacketMem, * PPacketMem;
+
+static_assert(offsetof(TPacketMem, data) == HWETH_PMEM_HEAD_SIZE, "Packet definition error!");
 
 class THwEth_pre
 {

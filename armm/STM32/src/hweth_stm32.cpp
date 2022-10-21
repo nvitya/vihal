@@ -347,7 +347,7 @@ bool THwEth_stm32::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 	{
 		if ((pdesc->DES0 & HWETH_DMADES_OWN) == 0)
 		{
-			//TRACE("TX using desc %i\r\n", i);
+			//TRACE("TX using desc %p\r\n", pdesc);
 
 			// use this descriptor
 			pdesc->B1ADD  = (uint32_t) pdata;
@@ -356,9 +356,11 @@ bool THwEth_stm32::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 
 			// Tell DMA to poll descriptors to start transfer
 			__DSB(); // required on Cortex-M7
+
 			regs->DMA_TRANS_POLL_DEMAND = 1;
 
-			*pidx = i;
+			*pidx = (unsigned(pdesc) - unsigned(&tx_desc_list[0])) / sizeof(HW_ETH_DMA_DESC);
+			//TRACE("  idx = %i\r\n", *pidx);
 			return true;
 		}
 
@@ -378,8 +380,7 @@ bool THwEth_stm32::SendFinished(uint32_t idx)
     return false;
   }
 
-  HW_ETH_DMA_DESC * pdesc = (HW_ETH_DMA_DESC *)regs->DMA_CURHOST_TRANS_DES;
-  pdesc += idx;
+  HW_ETH_DMA_DESC * pdesc = &tx_desc_list[idx];
 
   return ((pdesc->DES0 & HWETH_DMADES_OWN) == 0);
 }
