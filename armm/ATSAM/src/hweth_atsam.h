@@ -53,6 +53,7 @@ public:
   bool               TryRecv(TPacketMem * * pmem);
   void               ReleaseRxBuf(TPacketMem * pmem);
 	bool               TrySend(uint32_t * pidx, void * pdata, uint32_t datalen);
+  bool               SendFinished(uint32_t idx);
 
 	void               Start();
 	void               Stop();

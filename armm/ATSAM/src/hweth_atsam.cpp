@@ -178,6 +178,7 @@ bool THwEth_atsam::TryRecv(TPacketMem * * ppmem)
 
 			pmem->idx = i;
 			pmem->datalen = (pdesc->STATUS & 0x1FFF);
+      *ppmem = pmem;
 			return true;
 		}
 
@@ -221,6 +222,19 @@ bool THwEth_atsam::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 		return false;
 	}
 }
+
+bool THwEth_atsam::SendFinished(uint32_t idx)
+{
+  if (idx >= tx_desc_count)
+  {
+    return false;
+  }
+
+  HW_ETH_DMA_DESC * pdesc = &tx_desc_list[idx];
+
+  return (0 != (pdesc->STATUS & (1u << 31))); // OWN bit set = the descriptor is not used by the HW
+}
+
 
 void THwEth_atsam::Start(void)
 {
