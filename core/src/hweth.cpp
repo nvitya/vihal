@@ -73,6 +73,8 @@ bool THwEth::PhyInit()
 	if ( !MiiRead(HWETH_PHY_PHYID2_REG, &id2) )  return false;
 	id2 = (id2 & 0xFFF0);
 
+	bool force_reset = false;
+
 	if ((id1 == 0x0007) && (id2 == 0xC0F0))
 	{
 		// LAN8720A (on LPCXpresso)
@@ -84,11 +86,14 @@ bool THwEth::PhyInit()
 	else if ((id1 == 0x0022) && (id2 == 0x1560))
 	{
 		// KSZ8081 (on SAME70 X-Plained)
+	  force_reset = true;  // without reset it did not work for me
 	}
 	else
 	{
 		TRACE("Unknown ETH PHY!, id1=%04x, id2=%04x!\r\n", id1, id2);
-		return false;
+		TRACE_FLUSH();
+
+		force_reset = true;
 	}
 
 	// read the basic status reg
@@ -102,7 +107,7 @@ bool THwEth::PhyInit()
 		TRACE("PHY status error detected!\r\n");
 	}
 
-	if ((bsr & HWETH_PHY_BSR_LINK_STATUS) && !status_error)
+	if ((bsr & HWETH_PHY_BSR_LINK_STATUS) && !status_error && !force_reset)
 	{
 		link_up = true;
 
