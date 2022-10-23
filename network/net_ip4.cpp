@@ -425,11 +425,13 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   iph->fl_offs = __REV16(0x4000);
   iph->ttl = 64;
   iph->protocol = 17;
+  iph->csum = 0;
   iph->csum = calc_ip4_header_checksum(iph);
 
   udph->sport = __REV16(listenport);
   udph->dport = __REV16(destport);
   udph->len   = __REV16(adatalen + sizeof(TUdp4Header));
+  udph->csum  = 0;
   udph->csum  = calc_udp4_checksum(iph, adatalen);
 
   pmem->datalen = adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header) + sizeof(TEthernetHeader);
