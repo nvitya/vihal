@@ -121,6 +121,8 @@ public:
 
   uint16_t          listenport = 0;
 
+  uint16_t          idcounter = 0;
+
   TIp4Handler *     phandler = nullptr;
 
   TPacketMem *      rxpkt_first = nullptr;

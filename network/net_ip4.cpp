@@ -69,7 +69,7 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
 
   if (datalen & 1)  // one byte remained
   {
-    sum += *(uint8_t *)pd16;
+    sum += ((*(uint8_t *)pd16) << 8);
   }
 
   //  Fold 32-bit sum to 16 bits
@@ -416,10 +416,12 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 
   memcpy(pdata, adataptr, adatalen);
 
+  ++idcounter;
+
   iph->hl_v = 0x45;
   iph->tos = 0;
   iph->len = __REV16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
-  iph->id = 0x0000;
+  iph->id = __REV16(idcounter);
   iph->fl_offs = __REV16(0x4000);
   iph->ttl = 64;
   iph->protocol = 17;
