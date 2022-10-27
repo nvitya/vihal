@@ -45,4 +45,6 @@ typedef struct TAppHeader
 //
 } TAppHeader;  // 32 bytes
 
+uint32_t vgboot_checksum(void * pdata, unsigned datalen);
+
 #endif
