@@ -73,6 +73,7 @@ bool TSpiFlash::Init()
 
     unsigned qenable = 0;
     unsigned qenable_len = 0;
+    uint8_t  qenable_cmd = 0x01; // write register
 
     unsigned char mnfid = (idcode & 0xFF);
 
@@ -84,12 +85,17 @@ bool TSpiFlash::Init()
       qenable = 0x40;
       qenable_len = 1;
     }
-    else if (0xEF == mnfid)
+    else if (0xEF == mnfid) // winbond
     {
-      // Winbond
       // Quad enable is status register bit 9
       qenable = 0x200;
       qenable_len = 2;
+    }
+    else if (0x20 == mnfid) // micron
+    {
+      qenable_cmd = 0x61; // enhanced volatile configuration register
+      qenable_len = 1;
+      qenable     = 0xF7; // bit4: 0 = disable RESET and HOLD, 1 = enable reset and hold
     }
     else
     {
@@ -102,15 +108,18 @@ bool TSpiFlash::Init()
       CmdWriteEnable();
       qspi->WaitFinish();
 
-      qspi->StartWriteData(0x01, 0, &qenable, qenable_len);
+      qspi->StartWriteData(qenable_cmd, 0, &qenable, qenable_len);
       qspi->WaitFinish();
 
-      do
+      if (0x01 == qenable_cmd)
       {
-        CmdReadStatus();
-        qspi->WaitFinish();
+        do
+        {
+          CmdReadStatus();
+          qspi->WaitFinish();
+        }
+        while (rxbuf[0] & 1);
       }
-      while (rxbuf[0] & 1);
     }
   }
 
@@ -571,7 +580,10 @@ void TSpiFlash::CmdProgramPage()
 {
   if (qspi)
   {
-    if ((qspi->multi_line_count == 4) && ((idcode & 0xFF) != 0xC2))
+    if ( (qspi->multi_line_count == 4)
+         && ((idcode & 0xFF) != 0xC2)
+         && ((idcode & 0xFF) != 0x20)   // was extremely slow on micron
+       )
     {
       qspi->StartWriteData(0x32 | QSPICM_SSM | QSPICM_ADDR, address, dataptr, chunksize);
     }
