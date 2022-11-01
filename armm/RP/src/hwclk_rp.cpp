@@ -146,6 +146,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   {
     // no external crystal, the PLL does not supports it !
     SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+    rp_watchdog_tick_mul = 1;
     return true;
   }
 

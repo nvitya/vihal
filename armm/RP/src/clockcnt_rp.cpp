@@ -30,7 +30,7 @@
 #if __CORTEX_M < 3
 
 __attribute__((section(".noinit")))
-uint32_t  rp_watchdog_tick_mul = 1;
+uint32_t  rp_watchdog_tick_mul;
 
 // clock timer initialization for Cortex-M0 processors
 
