@@ -36,6 +36,8 @@ class THwSpi_stm32 : public THwSpi_pre
 public:
 	bool Init(int adevnum);
 
+	void SetSpeed(unsigned aspeed);
+
 	bool TrySendData(uint8_t adata);
 	bool TryRecvData(uint8_t * dstptr);
 	bool SendFinished();

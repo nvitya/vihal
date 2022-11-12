@@ -110,18 +110,11 @@ bool THwSpi_stm32::Init(int adevnum)
 
 	basespeed = stm32_bus_speed(busid);
 
-	// speed: the base speed will be divided with the powers of 2
-	unsigned dcode = 0;
-	while ((basespeed / (2 << dcode) > speed) && (dcode < 7))
-	{
-		++dcode;
-	}
-
 	regs->CR1 &= ~(1 << 6);  // SPI Disable
 
 	unsigned n;
 
-	n = (dcode << 3)
+	n = (7 << 3)   // BR(3): will be changed later at SetSpeed()
 		| (1 << 2)   // Master Mode
 		| (1 << 9)   // 1 = software NSS management
 		| (1 << 8)   // SSI bit
@@ -132,6 +125,8 @@ bool THwSpi_stm32::Init(int adevnum)
 	if (datasample_late) n |= (1 << 0);
 
 	regs->CR1 = n;
+
+	SetSpeed(speed);
 
 	n =	(((databits-1) & 0x7) << 8)
 		| (0 <<  4)  // Motorola Frame mode
@@ -148,6 +143,23 @@ bool THwSpi_stm32::Init(int adevnum)
 	initialized = true;
 
 	return true;
+}
+
+void THwSpi_stm32::SetSpeed(unsigned aspeed)
+{
+  // speed: the base speed will be divided with the powers of 2
+  unsigned dcode = 0;
+  while ((basespeed / (2 << dcode) > aspeed) && (dcode < 7))
+  {
+    ++dcode;
+  }
+
+  speed = basespeed / (2 << dcode);  // shows the actual speed
+
+  uint32_t c1reg = regs->CR1;
+  c1reg &= ~(7 << 3);
+  c1reg |= dcode << 3;
+  regs->CR1 = c1reg;
 }
 
 bool THwSpi_stm32::DmaStartSend(THwDmaTransfer * axfer)

@@ -135,7 +135,8 @@ public:
 class THwSpi_noimpl : public THwSpi_pre
 {
 public: // mandatory
-	bool Init(int adevnum)        { return false; }
+	bool Init(int adevnum)         { return false; }
+	void SetSpeed(unsigned aspeed) { }
 
 	bool TrySendData(uint8_t adata)     { return false; }
 	bool TryRecvData(uint8_t * dstptr)  { return false; }
