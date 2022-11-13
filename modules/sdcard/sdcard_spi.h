@@ -36,6 +36,8 @@
   #define SDCARD_SPI_BUF_SIZE  128  // allocated twice !
 #endif
 
+static_assert(SDCARD_SPI_BUF_SIZE >= 64, "The SDCARD SPI buffer size must be minimum 64 bytes");
+
 class TSdCardSpi : public TSdCard
 {
 private:
@@ -86,6 +88,8 @@ protected:
 
   bool          FindResponseCode(); // sets the rxidx (points to rxbuf[])
   bool          FindDataStart();    // sets the rxidx (points to rxbuf[])
+  bool          FindToken(uint8_t atoken);   // sets the rxidx (points to rxbuf[])
+  bool          FindNotBusy();      // check if not 0x00 received
 
   void          FinishTransfer(int aerrorcode);
 

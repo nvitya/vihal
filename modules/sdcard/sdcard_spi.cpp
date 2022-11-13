@@ -87,10 +87,11 @@ void TSdCardSpi::RunTransfer()
   case 0: // idle
     break;
 
+  //------------------------------------------
+  // READ
+  //------------------------------------------
+
   case 1: // start read blocks
-
-    //TRACE("s.r. STA=%08X\r\n", regs->STA);
-
     cmdarg = startblock;
     if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
     cmd = 17; // uses only single block transfer
@@ -101,6 +102,8 @@ void TSdCardSpi::RunTransfer()
 
     pin_cs->Set0();
     CmdSend(cmd, cmdarg, sizeof(rxbuf) - 8);
+
+    cmd_start_time = CLOCKCNT;
 
     ++trstate;
     break;
@@ -130,6 +133,13 @@ void TSdCardSpi::RunTransfer()
   case 3: // waiting for data start
     if (!FindDataStart())
     {
+      if (CLOCKCNT - cmd_start_time > us_clocks * 50000)
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+        return;
+      }
+
+      // try again
       SpiStartRead(sizeof(rxbuf));
       trstate = 3;
       break;
@@ -169,10 +179,108 @@ void TSdCardSpi::RunTransfer()
     RunTransfer();  return;
     break;
 
-  case 11: // start write blocks
+  //------------------------------------------
+  // WRITE
+  //------------------------------------------
 
-    FinishTransfer(HWERR_NOTIMPL);
+  case 11: // start write blocks
+    cmdarg = startblock;
+    if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
+    cmd = 24; // uses only single block transfer
+
+    remainingbytes = 512;
+    blockcrc = 0;
+    crcremaining = 2;  // wait extra 2 bytes at the end
+
+    pin_cs->Set0();
+    CmdSend(cmd, cmdarg, 8);
+
+    cmd_start_time = CLOCKCNT;
+
+    ++trstate;
     break;
+
+  case 12: // check command response
+
+    if (!FindResponseCode() || (rxbuf[rxidx] != 0))
+    {
+      FinishTransfer(HWERR_WRITE);
+      break;
+    }
+
+    // send the first chunk
+    i = 0;
+    txbuf[i++] = 0xFE; // data start token
+
+    while ((i < sizeof(txbuf)) && remainingbytes)
+    {
+      txbuf[i++] = *dataptr++;
+      --remainingbytes;
+    }
+
+    spi->StartTransfer(0, 0, 0, i, &txbuf[0], &rxbuf[0]);
+    ++trstate;
+    break;
+
+  case 13: // send more chunks
+    i = 0;
+    while ((i < sizeof(txbuf)) && remainingbytes)
+    {
+      txbuf[i++] = *dataptr++;
+      --remainingbytes;
+    }
+
+    if (0 == remainingbytes)
+    {
+      while ((i < sizeof(txbuf)) && crcremaining)
+      {
+        txbuf[i++] = 0xFF;
+        --crcremaining;
+      }
+    }
+
+    if (i > 0)
+    {
+      spi->StartTransfer(0, 0, 0, i, &txbuf[0], &rxbuf[0]);
+      break;
+    }
+    else
+    {
+      // start polling write command acceptance
+      SpiStartRead(8);
+      ++trstate;
+    }
+    break;
+
+  case 14: // wait write acknowledge (0xE5)
+    if (!FindToken(0xE5))
+    {
+      FinishTransfer(HWERR_WRITE);
+      break;
+    }
+
+    ++trstate;
+    // no break here, go to the next state !
+
+  case 15:
+    if (!FindNotBusy()) // wait until not 0x00 received
+    {
+      SpiStartRead(1);
+      break;
+    }
+
+    // block write finished
+    --remainingblocks;
+    ++startblock;
+    if (0 == remainingblocks)
+    {
+      FinishTransfer(0);
+      break;
+    }
+
+    // continue reading the next block
+    trstate = 11;
+    RunTransfer();  return;
   }
 }
 
@@ -532,6 +640,33 @@ bool TSdCardSpi::FindResponseCode()
   while (rxidx < max_rxidx)
   {
     if ((rxbuf[rxidx] & 0x80) == 0)
+    {
+      return true;
+    }
+    ++rxidx;
+  }
+  return false;
+}
+
+bool TSdCardSpi::FindToken(uint8_t atoken)
+{
+  while (rxidx < max_rxidx)
+  {
+    if (atoken == rxbuf[rxidx])
+    {
+      ++rxidx; // skip the token
+      return true;
+    }
+    ++rxidx;
+  }
+  return false;
+}
+
+bool TSdCardSpi::FindNotBusy()
+{
+  while (rxidx < max_rxidx)
+  {
+    if (rxbuf[rxidx] != 0x00)
     {
       return true;
     }
