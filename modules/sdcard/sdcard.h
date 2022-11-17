@@ -47,15 +47,17 @@ public:
   uint32_t      csd_max_speed = 0;
   uint32_t      card_megabytes = 0;
 
-  uint32_t      rca = 0;      // relative card address, required for point-to-point communication
-  uint32_t      reg_ocr = 0;  // Card Operating Condition + status register
-  uint8_t       reg_csd[16]  __attribute__((aligned(4)));  // Card Specific Data Register
-  uint8_t       csd_ver = 0;
-
   int           initstate = 0;
 
   bool          completed = true;  // transaction status
   int           errorcode = 0;
+
+  uint32_t      rca = 0;      // relative card address, required for point-to-point communication
+  uint32_t      reg_ocr = 0;  // Card Operating Condition + status register
+  uint8_t       csd_ver = 0;
+  uint8_t       reg_cid[16]  __attribute__((aligned(4)));  // Card Identification Register
+  uint8_t       reg_csd[16]  __attribute__((aligned(4)));  // Card Specific Data Register
+  uint8_t       reg_scr[8]   __attribute__((aligned(4)));  // SD Configuration Register
 
   virtual       ~TSdCard() { }
   virtual void  Run() { }
@@ -72,6 +74,9 @@ protected:
   uint32_t      blockcount = 0;
   int           remainingblocks = 0;
   uint8_t *     dataptr = nullptr;
+
+  uint32_t      GetRegBits(void * adata, uint32_t startpos, uint8_t bitlen);
+  void          ProcessCsd();
 
 };
 

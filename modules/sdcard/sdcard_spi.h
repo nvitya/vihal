@@ -20,7 +20,7 @@
  * --------------------------------------------------------------------------- */
 // file:     sdcard_spi.h
 // brief:    SDCARD access over SPI bus
-// created:  2022-22-12
+// created:  2022-11-12
 // authors:  nvitya
 
 #ifndef SRC_SDCARD_SPI_H_
@@ -78,9 +78,6 @@ protected:
   uint8_t       GetResult8();
   uint32_t      GetResult32();
   bool          GetResult128(uint8_t * dataptr);
-
-  uint32_t      GetRegBits(void * adata, uint32_t startpos, uint8_t bitlen);
-  void          ProcessCsd();
 
   void          RunInitialization();  // initialization state machine
 
