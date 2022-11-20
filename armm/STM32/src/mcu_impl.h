@@ -46,6 +46,10 @@
   #include "hwadc_stm32.h"
 #endif
 
+#ifdef HWDAC_H_
+  #include "hwdac_stm32.h"
+#endif
+
 #ifdef HWPWM_H_
   #include "hwpwm_stm32.h"
 #endif

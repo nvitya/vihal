@@ -179,7 +179,11 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 
 	chpos = (chnum - 1);
 
-	timer_base_speed = (stm32_bus_speed(busid) << 1); // the timer clock speed is twice of the APB speed
+	timer_base_speed = stm32_bus_speed(busid);
+	if (timer_base_speed < SystemCoreClock)
+	{
+	  timer_base_speed = (timer_base_speed << 1);  // the timer clock speed is twice of the APB speed
+	}
 
 	regs->SMCR = 0;
 

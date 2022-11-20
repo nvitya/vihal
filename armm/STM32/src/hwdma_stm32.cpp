@@ -277,9 +277,14 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
   Disable();  // this is important here
 	ClearIrqFlag();
 
-	int sizecode = 0;
+	unsigned sizecode;
 	if (axfer->bytewidth == 2)  sizecode = 1;
 	else if (axfer->bytewidth == 4)  sizecode = 2;
+	else sizecode = 0;
+
+  unsigned psizecode;
+	if (axfer->flags & DMATR_PER32)  psizecode = 2;
+	else psizecode = sizecode;
 
 	int meminc = (axfer->flags & DMATR_NO_ADDR_INC ? 0 : 1);
 
@@ -294,9 +299,9 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 	regs->CCR = 0
 		| (mem2mem << 14)   // MEM2MEM: 1 = memory to memory mode
 		| ((priority & 3) << 12)  // PL(2): priority level
-		| (sizecode << 10)  // MSIZE(2): Memory data size, 8 bit
-		| (sizecode <<  8)  // PSIZE(2): Periph data size, 8 bit
-		| (meminc   <<  7)  // MINC: Memory increment mode
+		| (sizecode  << 10) // MSIZE(2): Memory data size, 8 bit
+		| (psizecode <<  8) // PSIZE(2): Periph data size, 8 bit
+		| (meminc    <<  7) // MINC: Memory increment mode
 		| (0  <<  6)        // PINC: Peripheral increment mode
 		| (circ <<  5)      // CIRC: Circular mode
 		| (dircode <<  4)   // DIR(2): Data transfer direction (init with 0)
@@ -350,7 +355,7 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 		| ((priority & 3) << 16) // PL(2): priority level
 		| (0  << 15)        // PINCOS: peripheral increment offset
 		| (sizecode << 13)  // MSIZE(2): Memory data size, 8 bit
-		| (sizecode << 11)  // PSIZE(2): Periph data size, 8 bit
+		| (psizecode << 11)  // PSIZE(2): Periph data size, 8 bit
 		| (meminc   << 10)  // MINC: Memory increment mode
 		| (0  <<  9)        // PINC: Peripheral increment mode
 		| (circ <<  8)      // CIRC: Circular mode

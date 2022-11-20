@@ -37,6 +37,7 @@
 #define DMATR_IRQ           0x0010
 #define DMATR_CIRCULAR      0x0100  // not all HW supports it !
 #define DMATR_BYTESWAP      0x0200  // not all HW supports it !
+#define DMATR_PER32         0x0400  // 32-bit peripheral register access for narrower data
 
 class THwDmaTransfer
 {

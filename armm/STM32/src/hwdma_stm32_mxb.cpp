@@ -220,6 +220,28 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 		unsigned sinc = 0;
 		unsigned dinc = 0;
 
+	  unsigned ssizecode;
+	  unsigned dsizecode;
+	  if (axfer->flags & DMATR_PER32)
+	  {
+	    if (1 == dircode)
+	    {
+	      dsizecode = 2;
+	      ssizecode = sizecode;
+	    }
+	    else if (0 == dircode)
+	    {
+	      dsizecode = sizecode;
+	      ssizecode = 2;
+	    }
+	  }
+	  else
+	  {
+	    ssizecode = sizecode;
+	    dsizecode = sizecode;
+	  }
+
+
 		if (axfer->flags & DMATR_MEM_TO_MEM)
 		{
 			// DIR=0:
@@ -268,10 +290,10 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 			| (tlen     << 18)  // TLEN(7): Buffer Transfer Length (number of bytes - 1)
 			| (0        << 15)  // DBURST(3): destination burst, 0 = single
 			| (0        << 12)  // SBURST(3): source burst, 0 = single
-			| (sizecode << 10)  // DINCOS(2): dest. increment offset, 0=8bit, 1=16bit, 2=32bit, 3=64bit
-			| (sizecode <<  8)  // SINCOS(2): src. increment offset, 0=8bit, 1=16bit, 2=32bit, 3=64bit
-			| (sizecode <<  6)  // DSIZE(2)
-			| (sizecode <<  4)  // SSIZE(2)
+			| (dsizecode << 10)  // DINCOS(2): dest. increment offset, 0=8bit, 1=16bit, 2=32bit, 3=64bit
+			| (ssizecode <<  8)  // SINCOS(2): src. increment offset, 0=8bit, 1=16bit, 2=32bit, 3=64bit
+			| (dsizecode <<  6)  // DSIZE(2)
+			| (ssizecode <<  4)  // SSIZE(2)
 			| (dinc     <<  2)  // DINC(2): 0 = no dst. increment, 2 = +DINCOS, 3 = -DINCOS
 			| (sinc     <<  0)  // SINC(2): 0 = no src. increment, 2 = +SINCOS, 3 = -SINCOS
 		;
@@ -295,6 +317,10 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 	}
 	else
 	{
+    unsigned psizecode;
+    if (axfer->flags & DMATR_PER32)  psizecode = 2;
+    else psizecode = sizecode;
+
 		if (xregs)
 		{
 			xregs->CR = 0
@@ -303,13 +329,13 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 				| (0  << 19)        // CT: current target (for double buffer mode)
 				| (0  << 18)        // DBM: double buffer mode
 				| ((priority & 3) << 16) // PL(2): priority level
-				| (0  << 15)        // PINCOS: peripheral increment offset
-				| (sizecode << 13)  // MSIZE(2): Memory data size, 8 bit
-				| (sizecode << 11)  // PSIZE(2): Periph data size, 8 bit
-				| (meminc   << 10)  // MINC: Memory increment mode
-				| (0  <<  9)        // PINC: Peripheral increment mode
-				| (circ <<  8)      // CIRC: Circular mode
-				| (dircode <<  6)   // DIR(2): Data transfer direction
+				| (0  << 15)         // PINCOS: peripheral increment offset
+				| (sizecode  << 13)  // MSIZE(2): Memory data size, 8 bit
+				| (psizecode << 11)  // PSIZE(2): Periph data size, 8 bit
+				| (meminc    << 10)  // MINC: Memory increment mode
+				| (0  <<  9)         // PINC: Peripheral increment mode
+				| (circ <<  8)       // CIRC: Circular mode
+				| (dircode <<  6 )   // DIR(2): Data transfer direction
 				| (per_flow_controller  <<  5)        // PFCTRL: Peripheral flow controller, 0 = DMA is the flow controller
 				| (inte << 4)       // TCIE: TCIE: Transfer complete interrupt enable
 				| (0  <<  1)        // (3): error interrupts
@@ -341,7 +367,7 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 				| (0  << 15)        // DBM: double buffer mode
 				| ((priority & 3) << 12) // PL(2): priority level
 				| (sizecode << 10)  // MSIZE(2): Memory data size, 0 = 8 bit
-				| (sizecode <<  8)  // PSIZE(2): Periph data size, 0 = 8 bit
+				| (psizecode <<  8)  // PSIZE(2): Periph data size, 0 = 8 bit
 				| (meminc   <<  7)  // MINC: Memory increment mode
 				| (0        <<  6)  // PINC: Peripheral increment mode
 				| (circ     <<  5)  // CIRC: Circular mode
