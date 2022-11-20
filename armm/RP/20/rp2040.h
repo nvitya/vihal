@@ -71,6 +71,7 @@ typedef enum
 #include "hardware/structs/resets.h"
 #include "hardware/structs/clocks.h"
 #include "hardware/structs/xosc.h"
+#include "hardware/structs/rosc.h"
 #include "hardware/structs/pll.h"
 
 #include "hardware/structs/dma.h"

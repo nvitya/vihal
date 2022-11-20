@@ -47,19 +47,7 @@ typedef struct
 
 typedef struct
 {
-  uint32_t   ctrl;
-  uint32_t   read_addr;
-  uint32_t   write_addr;
-  uint32_t   trans_count; // triggers the channel
-//
-} rp_dma_al1_block_t;
-
-typedef struct
-{
-  rp_dma_al1_block_t   hreset2;  // resets the HELPER channel, which will then execute the wreset block
-  rp_dma_al1_block_t   wreset;   // resets the work channel to point to the buffer beginning
-  rp_dma_al1_block_t   workend;  // this must follow the wreset, reconfigures the work channel to do the hreset
-  rp_dma_al1_block_t   hreset;   // resets the HELPER channel, which will then execute the wreset block
+  uint32_t   original_address;
 //
 } rp_dma_circ_helper_data_t;
 
@@ -85,7 +73,7 @@ public:
 
 	inline bool Enabled() { return ((regs->ctrl_trig & DMA_CTRL_EN) != 0); }
 	inline bool Active()  { return ((regs->ctrl_trig & DMA_CTRL_BUSY) != 0); }
-	unsigned Remaining(); // more complex because of the circular buffer status watching
+	inline unsigned Remaining() { return regs->transfer_count; }
 
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer()              { Enable(); }
@@ -94,8 +82,7 @@ public:
 	int                   helper_chnum = -1;  // helper channel for the circular buffers
 	dma_channel_hw_t *    helper_regs = nullptr;
 
-	__attribute__((aligned(16)))
-	rp_dma_circ_helper_data_t  circ_data;  // alignment is important because of the masking
+	rp_dma_circ_helper_data_t  circ_data;
 
 	bool                  ConfigureCircular(THwDmaTransfer * axfer, uint32_t crreg);
 

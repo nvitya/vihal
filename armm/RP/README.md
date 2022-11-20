@@ -34,6 +34,3 @@ __Notes__:
 2. The QSPI hardware is very much restricted to handle the external Flash memory only
 3. The PIO unit is a very Raspberry PI specific one, no vendor independent driver is possible here
 
-# Known Issues
-
-* I'v noticed at the USB-Uart test that it jams sometimes. It can be an USB problem or a DMA problem. I plan to fix it soon
