@@ -133,7 +133,7 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
     uint32_t cr16 = (0
       | (0  << 14)  // CEN: calibration enable
       | (0  << 13)  // DMAUDRIE:
-      | (0  << 12)  // DMAEN:
+      | (1  << 12)  // DMAEN:
       | (0  <<  8)  // MAMP(4):
       | (0  <<  6)  // WAVE(2):
       | (dactrigger  <<  2)  // TSEL(4): trigger selection, 7 = TIM6
@@ -145,7 +145,7 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
 
     uint32_t cr16 = (0
       | (0  << 13)  // DMAUDRIE:
-      | (0  << 12)  // DMAEN:
+      | (1  << 12)  // DMAEN:
       | (0  <<  8)  // MAMP(4):
       | (0  <<  6)  // WAVE(2):
       | (0  <<  3)  // TSEL(3): trigger selection, 0 = TIM6
@@ -162,9 +162,13 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
   regs->CR = crreg;
 
   dmach.Prepare(true, (void *)outreg, 0);
-  dmach.per_flow_controller = 1;
+  dmach.per_flow_controller = 0;
   dmaxfer.bytewidth = 2;
-  dmaxfer.flags = DMATR_CIRCULAR | DMATR_PER32; // PER32 required here !
+  dmaxfer.flags = DMATR_CIRCULAR;
+  #if DAC_V2
+    // PER32 (2->4 byte conversion) required for G4 !
+    dmaxfer.flags |= DMATR_PER32;
+  #endif
 
   initialized = true;
   return true;
@@ -195,19 +199,31 @@ void THwDacChannel_stm32::RepeatPattern(uint16_t * asrc, uint32_t alen)
   dmaxfer.srcaddr = asrc;
   dmaxfer.count = alen;
 
+#if 1
+
+  //crreg &= ~((1 << 0) << chshift); // disable
+  //regs->CR = crreg;
+
+  dmach.StartTransfer(&dmaxfer);
+
+  //uint32_t crreg = regs->CR;
+  //crreg |= ((1 << 12) << chshift); // enable DMA
+  //regs->CR = crreg;
+
+
+#else
+
   uint32_t crreg = regs->CR;
   crreg &= ~((1 << 0) << chshift); // disable
+  regs->CR = crreg;
+  crreg |= ((1 << 12) << chshift); // enable DMA
   regs->CR = crreg;
 
   dmach.StartTransfer(&dmaxfer);
 
-  crreg |= (
-    (0
-    | (1 << 12)    // enable DMA
-    | (1 << 0)     // enable DAC
-    ) << chshift);
-
+  crreg |= ((1 << 0) << chshift); // enable DAC
   regs->CR = crreg;
+#endif
 }
 
 void THwDacChannel_stm32::StopPattern()
