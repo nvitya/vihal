@@ -10,7 +10,8 @@ MEMORY
 }
 
 REGION_ALIAS("TEXT", FLASH);
-REGION_ALIAS("RAM", RAM2);
+/* REGION_ALIAS("RAM", DTCRAM); */ /* much faster than the AXI ram, but no DMA access */
+REGION_ALIAS("RAM", RAM2); /* for DMA access */
 
 INCLUDE armm_default_flash.ld
 
