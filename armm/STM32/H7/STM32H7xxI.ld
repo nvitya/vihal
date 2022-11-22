@@ -10,8 +10,8 @@ MEMORY
 }
 
 REGION_ALIAS("TEXT", FLASH);
-REGION_ALIAS("RAM", DTCRAM);  /* much faster than the AXI ram */
-/* REGION_ALIAS("RAM", RAM2); */ /* if you need bigger memory */
+/* REGION_ALIAS("RAM", DTCRAM); */ /* much faster than the AXI ram */
+REGION_ALIAS("RAM", RAM2); /* the DTCM is still not supported by the DMA1-DMA2 */
 
 INCLUDE armm_default_flash.ld
 

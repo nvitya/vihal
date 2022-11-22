@@ -95,7 +95,7 @@ bool THwDmaChannel_stm32::Init(int admanum, int achannel, int arequest)
 		}
 
 		irqstshift = stm32_dma_irq_status_shifts[chnum];
-		irqclrmask = (0xF << irqstshift);
+		irqclrmask = (0x3F << irqstshift);
 
 		int muxch = (2 == dmanum ? 8 : 0) + chnum;
 		DMAMUX1[muxch].CCR = 0
@@ -299,9 +299,9 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 		;
 
 		mregs->CTBR = 0
-			| (sbus  << 17) // DBUS: destination bus, 0 = system/AXI, 1 = AHB/TCM
+			| (dbus  << 17) // DBUS: destination bus, 0 = system/AXI, 1 = AHB/TCM
 			| (sbus  << 16) // SBUS: source bus, 0 = system/AXI, 1 = AHB/TCM
-			| (rqnum <<  0) // TSEL(6): Trigger Select
+			| (chnum <<  0) // TSEL(6): Trigger Select
 		;
 
 		mregs->CBNDTR = 0

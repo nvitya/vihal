@@ -61,7 +61,7 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
         #if defined(RCC_APB1ENR_DAC1EN)
             RCC->APB1ENR |= RCC_APB1ENR_DAC1EN;
         #elif defined(RCC_APB1LENR_DAC12EN)
-            RCC->APB1HLPENR |= RCC_APB1LENR_DAC12EN;
+            RCC->APB1LENR |= RCC_APB1LENR_DAC12EN;
         #else
             RCC->AHB2ENR |= RCC_AHB2ENR_DAC1EN;
         #endif
@@ -115,7 +115,7 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
     uint32_t dactrigger;
     #if defined(MCUSF_H7)
 
-      dactrigger = 5;
+      dactrigger = 5;  // 5 = TIM6
 
     #else
 
@@ -165,7 +165,7 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
   dmach.per_flow_controller = 0;
   dmaxfer.bytewidth = 2;
   dmaxfer.flags = DMATR_CIRCULAR;
-  #if DAC_V2
+  #if DAC_V2 && !defined(MCUSF_H7)
     // PER32 (2->4 byte conversion) required for G4 !
     dmaxfer.flags |= DMATR_PER32;
   #endif
@@ -179,7 +179,7 @@ void THwDacChannel_stm32::SetFrequency(uint32_t afrequency)
   frequency = afrequency;
 
   uint32_t timer_base_speed = stm32_bus_speed(1);
-  if (timer_base_speed < SystemCoreClock)
+  if ((timer_base_speed < SystemCoreClock) && (timer_base_speed < 150000000))
   {
     timer_base_speed = (timer_base_speed << 1);  // the timer clock speed is twice of the APB speed
   }
