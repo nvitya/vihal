@@ -301,7 +301,7 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 		mregs->CTBR = 0
 			| (dbus  << 17) // DBUS: destination bus, 0 = system/AXI, 1 = AHB/TCM
 			| (sbus  << 16) // SBUS: source bus, 0 = system/AXI, 1 = AHB/TCM
-			| (chnum <<  0) // TSEL(6): Trigger Select
+			| (rqnum <<  0) // TSEL(6): Trigger Select
 		;
 
 		mregs->CBNDTR = 0
