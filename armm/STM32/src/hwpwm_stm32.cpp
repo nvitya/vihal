@@ -230,7 +230,8 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	regs->DCR = 0;
 	//regs->AF1 = 0;
 	//regs->AF2 = 0;
-	regs->DIER = 0;
+	//regs->DIER = 0;
+	regs->DIER = (1 << 8);  // UDE: update DMA enable
 
 	if (advanced_timer)
 	{
@@ -273,7 +274,7 @@ void THwPwmChannel_stm32::SetFrequency(uint32_t afrequency)
 	while (periodclocks > 65535);
 
 	regs->PSC = prescaler - 1; // prescaler
-	regs->ARR = periodclocks;
+	regs->ARR = periodclocks - 1;
 }
 
 

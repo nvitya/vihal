@@ -128,7 +128,7 @@ bool THwSpi_stm32::Init(int adevnum)
 
 	SetSpeed(speed);
 
-	n =	(((databits-1) & 0x7) << 8)
+	n =	(((databits-1) & 0xF) << 8)
 		| (0 <<  4)  // Motorola Frame mode
 		| (1 << 12)  // 8 bit fifo settings
 	;
