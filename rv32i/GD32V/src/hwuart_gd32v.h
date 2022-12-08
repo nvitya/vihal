@@ -33,6 +33,7 @@ class THwUart_gd32v : public THwUart_pre
 {
 public:
 	bool Init(int adevnum);  // 0x101 = LPUART1
+  bool SetBaudRate(int abaudrate = 0);
 
 	bool TrySendChar(char ach);
 	bool TryRecvChar(char * ach);
@@ -46,6 +47,9 @@ public:
 
 public:
 	gd32v_usart_t *    regs = nullptr;
+
+protected:
+	uint8_t            busid = 0;
 };
 
 #define HWUART_IMPL THwUart_gd32v

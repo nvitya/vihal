@@ -86,7 +86,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     cfg1 |= ((inputdiv - 1) << 0);  // select the division
   }
 
-  pllmul = (target_speed_hz / basefreq) - 2;
+  pllmul = (target_speed_hz / basefreq) - 1;
   cfg0 |= ((pllmul & 15) << 18);
   cfg0 |= ((pllmul & 0x10) << (29-4));
 

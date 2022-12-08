@@ -33,7 +33,8 @@
 bool THwUart_gd32v::Init(int adevnum)
 {
 	unsigned code;
-	uint8_t busid = GD32V_BUSID_APB1;
+
+	busid = GD32V_BUSID_APB1;
 
 	//bool     lpuart = false;
 
@@ -132,11 +133,7 @@ bool THwUart_gd32v::Init(int adevnum)
 
 	regs->GP = 1;  // set the prescaler
 
-	unsigned periphclock = gd32v_bus_speed(busid);
-	unsigned baseclock = periphclock / 16;
-	unsigned divider = ((baseclock << 4) + 8) / baudrate;
-
-	regs->BAUD = divider;
+  SetBaudRate();
 
 	regs->CTL2 = ctl2;
 	regs->CTL1 = ctl1;
@@ -145,6 +142,30 @@ bool THwUart_gd32v::Init(int adevnum)
 	initialized = true;
 
 	return true;
+}
+
+bool THwUart_gd32v::SetBaudRate(int abaudrate)
+{
+  if (abaudrate > 0)
+  {
+    baudrate = abaudrate;
+  }
+
+  unsigned periphclock = gd32v_bus_speed(busid);
+  unsigned baseclock = periphclock / 16;
+  volatile unsigned bcm16 = (baseclock << 4);
+  volatile unsigned bcd = bcm16 / unsigned(baudrate);
+  unsigned divider = ((baseclock << 4) + 8) / baudrate;
+
+  uint32_t tmp = regs->CTL0;
+  regs->CTL0 = (tmp & ~(1 << 13)); // disable UART
+
+  //if (divider > 0)  divider
+  regs->BAUD = divider;
+
+  regs->CTL0 = tmp; // enable UART
+
+  return true;
 }
 
 bool THwUart_gd32v::TrySendChar(char ach)

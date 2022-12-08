@@ -16,6 +16,12 @@
   #define MCU_GD32VF103CB
   #define EXTERNAL_XTAL_HZ   8000000
 
+#elif defined(BOARD_WIO_LITE_RV)
+
+  #define BOARD_NAME "Wio Lite RISC-V (GD32VF103CB)"
+  #define MCU_GD32VF103CB
+  #define EXTERNAL_XTAL_HZ   8000000
+
 #else
 
   #error "Unknown board."
