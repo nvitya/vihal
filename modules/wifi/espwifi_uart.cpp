@@ -24,7 +24,9 @@
  *  date:     2022-11-27
  *  authors:  nvitya
  *  notes:
- *    Currently tested with ESP AT Firmware v2.2.0 using an ESP-01S module
+ *    I had problems with ESP8266 Firmwares less than 2.2.0.0.
+ *    The firmware I've found working perfectly on the ESP-01S and WROOM-02 was this:
+ *      https://github.com/jandrassy/UnoWiFiDevEdSerial1/wiki/files/ESP8266-1MB-tx1rx3-AT_V2.2.zip
 */
 
 #include "string.h"
@@ -187,6 +189,11 @@ void TEspWifiUart::RunInit()
   else if (5 == initstate)
   {
     StartCommand("AT+CWMODE=1"); // set station mode
+    ++initstate;
+  }
+  else if (6 == initstate)
+  {
+    StartCommand("AT+GMR"); // print version info
     initstate = 10;
   }
 
@@ -810,11 +817,12 @@ void TEspWifiUart::ProcessIpdStart()
   ipd_data_len = sp.PrevToInt();
 
   // UDP source IP address
-  if (!sp.CheckSymbol(",\""))
+  if (!sp.CheckSymbol(","))
   {
     ++invalid_ipd_count; // IP address quote is missing, mandatory for the UDP
     return;
   }
+  sp.CheckSymbol("\""); // some FW use quotes some not
   if (!ParseIpAddr()) // result goes to the sp_ipaddr
   {
     ++invalid_ipd_count; // invalid IP address
@@ -822,7 +830,8 @@ void TEspWifiUart::ProcessIpdStart()
   }
   ipd_ip_addr = sp_ipaddr;
 
-  sp.CheckSymbol("\","); // skip closing quote and comma
+  sp.CheckSymbol("\""); // some FW use quotes some not
+  sp.CheckSymbol(","); // skip closing quote and comma
 
   // source Port
   if (!sp.ReadDecimalNumbers())

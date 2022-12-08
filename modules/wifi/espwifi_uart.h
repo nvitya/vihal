@@ -23,6 +23,10 @@
  *  brief:    UART (AT) WiFi Driver for Espressif Modules
  *  date:     2022-11-27
  *  authors:  nvitya
+ *  notes:
+ *    I had problems with ESP8266 Firmwares less than 2.2.0.0.
+ *    The firmware I've found working perfectly on the ESP-01S and WROOM-02 was this:
+ *      https://github.com/jandrassy/UnoWiFiDevEdSerial1/wiki/files/ESP8266-1MB-tx1rx3-AT_V2.2.zip
 */
 
 #ifndef SRC_ESPWIFI_UART_H_
