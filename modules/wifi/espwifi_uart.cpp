@@ -429,7 +429,7 @@ uint8_t * TEspWifiUart::AllocateNetMem(unsigned asize)
     TRACE("AllocateNetMem FAILED!\r\n");
     TRACE_FLUSH();
 
-    __BKPT();  // serious error, change the memory sizes, the adapter configuration
+    //__BKPT();  // serious error, change the memory sizes, the adapter configuration
 
     return nullptr;
   }
