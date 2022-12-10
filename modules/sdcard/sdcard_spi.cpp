@@ -541,8 +541,6 @@ bool TSdCardSpi::GetResult128(uint8_t * dataptr)
     return false;
   }
 
-  ++rxidx; // skip the data marker
-
   uint32_t remaining = 16;
   while (remaining)
   {
