@@ -323,7 +323,7 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 	// command
 	if (fields & 1)
 	{
-		ccr |= (mlcode << 8); // multi line command
+	  ccr |= (3 << 8); // multi line command, always QUAD
 	}
 	else
 	{
@@ -485,7 +485,7 @@ int THwQspi_stm32::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 	// command
 	if (fields & 1)
 	{
-		ccr |= (mlcode << 8); // multi line command
+    ccr |= (3 << 8); // multi line command, always QUAD
 	}
 	else
 	{

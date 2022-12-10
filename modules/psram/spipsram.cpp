@@ -47,8 +47,9 @@ bool TSpiPsram::Init()
     return false;
   }
 
-#if 1
   delay_us(150);
+
+#if 0
 
   if (qspi && (qspi->multi_line_count == 4))
   {
@@ -72,6 +73,10 @@ bool TSpiPsram::Init()
     {
       return false;
     }
+
+    ExitQpiMode();
+
+    delay_us(10);
   }
 
   pagemask = pagesize - 1;
@@ -91,7 +96,7 @@ bool TSpiPsram::Init()
     maxchunksize >>= 1;
   }
 
-  //EnterQpiMode();  // only when possible
+  EnterQpiMode();  // only when possible
 
   initialized = true;
   phase = 0;
@@ -351,7 +356,7 @@ void TSpiPsram::ResetChip()
 
 void TSpiPsram::EnterQpiMode()
 {
-  if (!qspi || (qspi->multi_line_count != 4))
+  if (!qspi || (qspi->multi_line_count != 4) || single_line_read)
   {
     qpimode = false;
     return;
@@ -364,12 +369,6 @@ void TSpiPsram::EnterQpiMode()
 
 void TSpiPsram::ExitQpiMode()
 {
-  if (!qspi || (qspi->multi_line_count != 4))
-  {
-    qpimode = false;
-    return;
-  }
-
   qspi->StartWriteData(0xF5 | QSPICM_MMM, 0, nullptr, 0);
   qspi->WaitFinish();
   qpimode = false;
@@ -394,8 +393,9 @@ void TSpiPsram::CmdRead()
     if (qpimode)
     {
       qspi->StartReadData(0xEB | QSPICM_MMM | QSPICM_ADDR | QSPICM_DUMMY3, address, dataptr, chunksize);
+      //qspi->StartReadData(0x0B | QSPICM_MMM | QSPICM_ADDR | QSPICM_DUMMY2, address, dataptr, chunksize);
     }
-    else if (qspi->multi_line_count == 4)
+    else if ((qspi->multi_line_count == 4) && !single_line_read)
     {
       qspi->StartReadData(0xEB | QSPICM_SMM | QSPICM_ADDR | QSPICM_DUMMY3, address, dataptr, chunksize);
     }

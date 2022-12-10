@@ -65,6 +65,7 @@ public: // settings
 	THwQspi *      qspi = nullptr;
   unsigned       pagesize = 1024;
 	unsigned       t_cem_ns = 8000;  // maximum allowed CE low time [ns]
+	bool           single_line_read = false;  // sometimes quad read does not work while quad write does
 
 public:
   unsigned       idcode = 0;
