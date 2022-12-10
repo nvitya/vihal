@@ -231,7 +231,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	//regs->AF1 = 0;
 	//regs->AF2 = 0;
 	//regs->DIER = 0;
-	regs->DIER = (1 << 8);  // UDE: update DMA enable
+	regs->DIER = (0x1F << 8);  // ENABLE DMA events
 
 	if (advanced_timer)
 	{

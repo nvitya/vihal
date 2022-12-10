@@ -293,6 +293,11 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 
 #ifndef DMASTREAMS // simpler DMA
 
+  if (axfer->flags & DMATR_IRQ_HALF)
+  {
+    inte |= 2; // next to TCIE
+  }
+
 	int dircode = (istx ? 1 : 0);
 	uint32_t mem2mem = (axfer->flags & DMATR_MEM_TO_MEM ? 1 : 0);
 
@@ -346,7 +351,7 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 		dircode = 0;
 	}
 
-	regs->CR = 0
+  uint32_t crreg = 0
 		| (chnum << 25)     // CHSEL(3): set the channel
 		| (mem_burst << 23)        // MBURST(2): memory burst, 0 = single transfer
 		| (per_burst << 21)        // PBURST(2): peripheral burst
@@ -361,10 +366,18 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 		| (circ <<  8)      // CIRC: Circular mode
 		| (dircode <<  6)   // DIR(2): Data transfer direction (init with 0)
 		| (per_flow_controller <<  5)        // PFCTRL: Peripheral flow controller, 0 = DMA is the flow controller
-		| (inte << 4)       // TCIE: TCIE: Transfer complete interrupt enable
-		| (0  <<  1)        // (3): error interrupts
-		| (0  <<  0)        // EN: keep not enabled
+		| (inte <<  4)      // TCIE: TCIE: Transfer complete interrupt enable
+		| (0    <<  3)      // HTIE: Half Transfer complete interrupt enable
+		| (0    <<  1)      // (2): error interrupts
+		| (0    <<  0)      // EN: keep not enabled
 	;
+
+  if (axfer->flags & DMATR_IRQ_HALF)
+  {
+    crreg |= (1 << 3);
+  }
+
+  regs->CR = crreg;
 
 	if (axfer->flags & DMATR_MEM_TO_MEM)
 	{
