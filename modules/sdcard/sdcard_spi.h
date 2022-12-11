@@ -85,7 +85,7 @@ protected:
 
   bool          FindResponseCode(); // sets the rxidx (points to rxbuf[])
   bool          FindDataStart();    // sets the rxidx (points to rxbuf[])
-  bool          FindToken(uint8_t atoken);   // sets the rxidx (points to rxbuf[])
+  bool          FindToken(uint8_t atoken, uint8_t amask = 0xFF);   // sets the rxidx (points to rxbuf[])
   bool          FindNotBusy();      // check if not 0x00 received
 
   void          FinishTransfer(int aerrorcode);

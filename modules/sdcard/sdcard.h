@@ -36,6 +36,7 @@ class TSdCard
 {
 public:
   uint32_t      clockspeed  = 20000000; //  20 MHz by default
+  uint32_t      forced_clockspeed = 0;  //  0 = no forced high-speed
   uint32_t      initial_speed = 400000; // 400 kHz for the first initialization
 
   bool          initialized = false;
