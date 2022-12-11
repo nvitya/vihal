@@ -1,6 +1,5 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
- * Copyright (c) 2018 Viktor Nagy, nvitya
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+ * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -21,7 +20,6 @@
 /*
  *  file:     imxrt_utils.cpp
  *  brief:    some generic IMXRT helper functions
- *  version:  1.00
- *  date:     2018-11-23
+ *  created:  2018-11-23
  *  authors:  nvitya
 */
