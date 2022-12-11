@@ -17,6 +17,14 @@
   #include "hwuart_imxrt.h"
 #endif
 
+#ifdef HWQSPI_H_
+  #include "hwqspi_imxrt.h"
+#endif
+
+#ifdef HWDMA_H_
+  #include "hwdma_imxrt.h"
+#endif
+
 #if defined(HWSDRAM_H_)
   #include "hwsdram_imxrt.h"
 #endif
