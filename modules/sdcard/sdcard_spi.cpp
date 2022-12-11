@@ -46,6 +46,7 @@ bool TSdCardSpi::Init(THwSpi * aspi)
   }
 
   spi->manualcspin = nullptr;  // do not let the SPI to handle the CS pin automatically !
+  spi->datazero = 0xFFFFFFFF;  // send 0xFF for the RX only transactions !
 
   card_initialized = false;
   initstate = 0;
@@ -94,18 +95,27 @@ void TSdCardSpi::RunTransfer()
   case 1: // start read blocks
     cmdarg = startblock;
     if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
-    cmd = 17; // uses only single block transfer
 
     remainingbytes = 512;
     blockcrc = 0;
     crcremaining = 2;  // wait extra 2 bytes at the end
 
     pin_cs->Set0();
-    CmdSend(cmd, cmdarg, sizeof(rxbuf) - 8);
 
+    if (false) //remainingblocks > 1)
+    {
+      cmd = 18; // multiple blocks
+      trstate = 5;
+    }
+    else
+    {
+      cmd = 17; // uses only single block transfer
+      ++trstate;
+    }
+
+    CmdSend(cmd, cmdarg, cmdlen + 8);
     cmd_start_time = CLOCKCNT;
 
-    ++trstate;
     break;
 
   case 2:  // analyze the first result block, cmd result + data maybe
@@ -120,13 +130,13 @@ void TSdCardSpi::RunTransfer()
 
     if (!FindDataStart())
     {
-      SpiStartRead(sizeof(rxbuf));
+      SpiStartRead(8);
       trstate = 3;
       break;
     }
 
     // there is some data already here
-    trstate = 4; // jump to state 4 to process
+    trstate = 4; // jump to state 4 to process it
     RunTransfer();
     return;
 
@@ -140,7 +150,7 @@ void TSdCardSpi::RunTransfer()
       }
 
       // try again
-      SpiStartRead(sizeof(rxbuf));
+      SpiStartRead(8);
       trstate = 3;
       break;
     }
@@ -150,14 +160,14 @@ void TSdCardSpi::RunTransfer()
     return;
 
   case 4: // reading data chunks
-    CopyReadData();
+    CopyReadData();  // copy already received data
 
-    if (remainingbytes)
-    {
-      SpiStartRead(sizeof(rxbuf));
-      break; // stay here
-    }
+    spi->StartTransfer(0, 0, 0, remainingbytes, nullptr, dataptr);
+    dataptr += remainingbytes;
+    ++trstate;
+    break;
 
+  case 5:
     CopyCrc();
     if (crcremaining)
     {
@@ -176,8 +186,8 @@ void TSdCardSpi::RunTransfer()
 
     // continue reading the next block
     trstate = 1;
-    RunTransfer();  return;
-    break;
+    RunTransfer();
+    return;
 
   //------------------------------------------
   // WRITE
