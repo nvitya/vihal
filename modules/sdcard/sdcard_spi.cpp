@@ -102,14 +102,14 @@ void TSdCardSpi::RunTransfer()
 
     pin_cs->Set0();
 
-    if (false) //remainingblocks > 1)
+    if (remainingblocks > 1)
     {
-      cmd = 18; // multiple blocks
-      trstate = 5;
+      cmd = 18; // read multiple blocks
+      trstate = 30;
     }
     else
     {
-      cmd = 17; // uses only single block transfer
+      cmd = 17; // read single block only
       ++trstate;
     }
 
@@ -167,13 +167,13 @@ void TSdCardSpi::RunTransfer()
     ++trstate;
     break;
 
-  case 5:
+  case 5: // add the crc
+    SpiStartRead(4);  // and two additional bytes
+    ++trstate;
+    break;
+
+  case 6:
     CopyCrc();
-    if (crcremaining)
-    {
-      SpiStartRead(4);
-      break; // stay here
-    }
 
     // block read finished
     --remainingblocks;
@@ -188,6 +188,94 @@ void TSdCardSpi::RunTransfer()
     trstate = 1;
     RunTransfer();
     return;
+
+  //------------------------------------------
+  // read multiple blocks
+  //------------------------------------------
+
+  case 30: // analyze the first result block, cmd result + data maybe
+    if (!FindResponseCode() || (rxbuf[rxidx] != 0))
+    {
+      FinishTransfer(HWERR_READ);
+      break;
+    }
+
+    ++rxidx; // skip the response code
+
+    if (!FindDataStart())
+    {
+      SpiStartRead(8);
+      trstate = 33;
+      break;
+    }
+
+    // there is some data already here
+    trstate = 34; // jump to state 4 to process it
+    RunTransfer();
+    return;
+
+  case 33: // waiting for data start
+    if (!FindDataStart())
+    {
+      if (CLOCKCNT - cmd_start_time > us_clocks * 50000)
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+        return;
+      }
+
+      // try again
+      SpiStartRead(8);
+      trstate = 33;
+      break;
+    }
+
+    trstate = 34; // jump to state 4 to process the data chunk
+    RunTransfer();
+    return;
+
+  case 34: // reading data chunks
+    CopyReadData();  // copy already received data
+
+    spi->StartTransfer(0, 0, 0, remainingbytes, nullptr, dataptr);
+    dataptr += remainingbytes;
+    ++trstate;
+    break;
+
+  case 35: // read the crc + give some chance to data start
+    SpiStartRead(16);
+    ++trstate;
+    break;
+
+  case 36:
+    CopyCrc();
+
+    // block read finished
+    --remainingblocks;
+    if (remainingblocks)
+    {
+      remainingbytes = 512;
+      crcremaining = 2;
+
+      // jump to the state 33
+      trstate = 33;
+      RunTransfer();
+      return;
+    }
+
+    CmdSend(12, 0, 16);  // send stop command
+    ++trstate;
+    break;
+
+  case 37:
+    if (!FindResponseCode() || (rxbuf[rxidx] != 0))
+    {
+      FinishTransfer(HWERR_READ);
+      break;
+    }
+
+    FinishTransfer(0);
+    return;
+
 
   //------------------------------------------
   // WRITE
