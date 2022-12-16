@@ -267,10 +267,20 @@ void TSdCardSpi::RunTransfer()
     break;
 
   case 37:
-    if (!FindResponseCode() || (rxbuf[rxidx] != 0))
+    if (!FindResponseCode())
     {
       FinishTransfer(HWERR_READ);
       break;
+    }
+
+    if (rxbuf[rxidx] != 0)
+    {
+      ++rxidx;
+      if (rxbuf[rxidx] != 0)
+      {
+        FinishTransfer(HWERR_READ);
+        break;
+      }
     }
 
     FinishTransfer(0);
