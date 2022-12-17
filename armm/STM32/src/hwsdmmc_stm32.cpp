@@ -237,36 +237,36 @@ bool THwSdmmc_stm32::CmdFinished()
 		}
 	}
 
-#ifdef MCUSF_H7
+  #ifdef MCUSF_H7
 
-#if 0
-	if ((curcmdflags & SDCMD_0ES_MASK) == SDCMD_RES_R1B)
-	{
-		if (sr & SDMMC_STA_BUSYD0END)
-		{
-			return true;
-		}
-	}
-	else
-	{
-		if (sr & SDMMC_STA_CMDREND)
-		{
-			return true;
-		}
-	}
-#else
-	if (sr & (SDMMC_STA_CMDREND | SDMMC_STA_BUSYD0END))
-	{
-		return true;
-	}
-#endif
+    #if 0
+      if ((curcmdflags & SDCMD_0ES_MASK) == SDCMD_RES_R1B)
+      {
+        if (sr & SDMMC_STA_BUSYD0END)
+        {
+          return true;
+        }
+      }
+      else
+      {
+        if (sr & SDMMC_STA_CMDREND)
+        {
+          return true;
+        }
+      }
+    #else
+      if (sr & (SDMMC_STA_CMDREND | SDMMC_STA_BUSYD0END))
+      {
+        return true;
+      }
+    #endif
 
-#else
-	if (sr & (SDMMC_STA_CMDREND))
-	{
-		return true;
-	}
-#endif
+  #else
+    if (sr & (SDMMC_STA_CMDREND))
+    {
+      return true;
+    }
+  #endif
 
 	return false;
 }
@@ -446,101 +446,133 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 	lastcmdtime = CLOCKCNT;
 }
 
+#define SDMMC_STATIC_CMD_FLAGS  ((uint32_t)(SDMMC_STA_CCRCFAIL | SDMMC_STA_CTIMEOUT | SDMMC_STA_CMDREND | SDMMC_STA_CMDSENT))
+#define SDMMC_OCR_ERRORBITS     0xFDFFE008U
+
 void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
 {
-	regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
+  // clear data control register
+  regs->DCTRL = 0;
 
-	uint32_t bsizecode = 9; // 512 byte
-	if (datalen <= 512)
-	{
-		bsizecode = 31 - __CLZ(datalen);
-	}
+  // 1. Issue the command first
 
-#ifdef MCUSF_H7
-  // setup data control register
-	uint32_t dcr = (0
-		| (1  << 13)  // FIFORST
-		| (0  << 12)  // BOOTACKEN
-		| (0  << 11)  // SDIOEN
-		| (0  << 10)  // RWMOD
-		| (0  <<  9)  // RWSTOP
-		| (0  <<  8)  // RWSTART
-		| (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
-		| (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks
-		| (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
-		| (0  <<  0)  // DTEN: 1 = start data without CPSM transfer command
-	);
+  curcmd = acmd;
+  curcmdarg = cmdarg;
+  curcmdflags = cmdflags;
 
-	// the DMA must be started before DCTRL (DTEN)
+  uint32_t waitresp = 0;
+  uint8_t restype = (cmdflags & SDCMD_RES_MASK);
+  if (restype)
+  {
+    // response present
+    if (restype == SDCMD_RES_48BIT)        waitresp = 1; // short response
+    else if (restype == SDCMD_RES_136BIT)  waitresp = 3; // long response
+    else if (restype == SDCMD_RES_R1B)     waitresp = 1; // short response
+  }
 
-	regs->IDMABASE0 = (uint32_t)dataptr;
-	regs->IDMABSIZE = datalen; // not really necessary for single buffer mode ?
-	regs->IDMACTRL = 1; // enable the internal DMA
-#else
-
-  // setup data control register
-	uint32_t dcr = (0
-		| (0  << 11)  // SDIOEN
-		| (0  << 10)  // RWMOD
-		| (0  <<  9)  // RWSTOP
-		| (0  <<  8)  // RWSTART
-		| (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
-		| (1  <<  3)  // DMAEN: 1 = enable DMA
-		| (0  <<  2)  // DTMODE: 0 = block mode, 1 = stream / multibyte
-		| (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
-		| (1  <<  0)  // DTEN: 1 = data enable
-	);
-
-	// start the DMA channel
-
-	dma.Prepare(true, (void *)&regs->FIFO, 0); // setup the DMA for receive
-
-	dmaxfer.flags = 0; // use defaults
-	dmaxfer.bytewidth = 4;  // destination must be aligned !!!
-	dmaxfer.count = (datalen >> 2);
-	dmaxfer.srcaddr = dataptr;
-	dma.StartTransfer(&dmaxfer);
-
-#endif
-
-	regs->DLEN = datalen;
-	regs->DCTRL = dcr;
-
-	// CMD
-
-	curcmd = acmd;
-	curcmdarg = cmdarg;
-	curcmdflags = cmdflags;
-
-	uint32_t waitresp = 0;
-	uint8_t restype = (cmdflags & SDCMD_RES_MASK);
-	if (restype)
-	{
-		// response present
-		if (restype == SDCMD_RES_48BIT)        waitresp = 1; // short response
-		else if (restype == SDCMD_RES_136BIT)  waitresp = 3; // long response
-		else if (restype == SDCMD_RES_R1B)     waitresp = 1; // short response
-	}
-
-	uint32_t cmdr = (0
-		|	SDMMC_CMD_CPSMEN
-		| (waitresp << SDMMC_CMD_WAITRESP_Pos)
-		| (acmd <<  SDMMC_CMD_CMDINDEX_Pos)
-	);
+  uint32_t cmdr = (0
+    | SDMMC_CMD_CPSMEN
+    | (waitresp << SDMMC_CMD_WAITRESP_Pos)
+    | (acmd <<  SDMMC_CMD_CMDINDEX_Pos)
+  );
 
 #ifdef MCUSF_H7
-	cmdr |= SDMMC_CMD_CMDTRANS;
+  cmdr |= SDMMC_CMD_CMDTRANS;
 #endif
 
-	regs->ICR = 0xFFFFFFFF; // clear all flags
+  regs->ICR = 0xFFFFFFFF; // clear all flags
 
-	regs->ARG = cmdarg;
-	regs->CMD = cmdr; // start the execution
+  regs->ARG = cmdarg;
+  regs->CMD = cmdr; // start the execution
 
 	cmderror = false;
 	cmdrunning = true;
 	lastcmdtime = CLOCKCNT;
 }
 
+bool THwSdmmc_stm32::CmdResult32Ok()
+{
+  /* Check response received is of desired command */
+  if (regs->RESPCMD != curcmd)
+  {
+    return false;
+  }
+
+  uint32_t cmdres = GetCmdResult32();
+  if ((cmdres & SDMMC_OCR_ERRORBITS) != 0)
+  {
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
+{
+  regs->ICR = SDMMC_STATIC_CMD_FLAGS;
+
+  // 2. setup data path
+
+  uint32_t bsizecode = 9; // 512 byte
+  if (datalen <= 512)
+  {
+    bsizecode = 31 - __CLZ(datalen);
+  }
+
+  #ifdef MCUSF_H7
+    // setup data control register
+    uint32_t dcr = (0
+      | (1  << 13)  // FIFORST
+      | (0  << 12)  // BOOTACKEN
+      | (0  << 11)  // SDIOEN
+      | (0  << 10)  // RWMOD
+      | (0  <<  9)  // RWSTOP
+      | (0  <<  8)  // RWSTART
+      | (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
+      | (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks
+      | (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
+      | (0  <<  0)  // DTEN: 1 = start data without CPSM transfer command
+    );
+
+    // the DMA must be started before DCTRL (DTEN)
+
+    regs->IDMABASE0 = (uint32_t)dataptr;
+    regs->IDMABSIZE = datalen; // not really necessary for single buffer mode ?
+    regs->IDMACTRL = 1; // enable the internal DMA
+  #else
+
+    regs->DCTRL |= (1 << 3); // enable DMA
+
+    uint32_t dctrl = (regs->DCTRL & 0xFFFF0008);  // keep the bits above
+    dctrl |= (0
+      | (0  << 11)  // SDIOEN
+      | (0  << 10)  // RWMOD
+      | (0  <<  9)  // RWSTOP
+      | (0  <<  8)  // RWSTART
+      | (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
+      | (1  <<  3)  // DMAEN: 1 = enable DMA
+      | (0  <<  2)  // DTMODE: 0 = block mode, 1 = stream / multibyte
+      | (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
+      | (1  <<  0)  // DTEN: 1 = data enable
+    );
+
+    // start the DMA channel
+
+    dma.Prepare(true, (void *)&regs->FIFO, 0); // setup the DMA for transmit
+
+    dmaxfer.flags = 0; // use defaults
+    dmaxfer.bytewidth = 4;  // destination must be aligned !!!
+    dmaxfer.count = (datalen >> 2);
+    dmaxfer.srcaddr = dataptr;
+    dma.StartTransfer(&dmaxfer);
+
+  #endif
+
+  regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
+  regs->DLEN = datalen;
+  regs->DCTRL = dctrl;
+}
 
 #endif

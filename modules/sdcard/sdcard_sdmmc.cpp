@@ -348,8 +348,30 @@ void TSdCardSdmmc::RunTransfer()
 
     sdmmc->StartDataReadCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
 
+    trstate = 2;
+    break;
+
+  case 2: // check command result
+    if (!sdmmc->CmdFinished())
+    {
+      return;
+    }
+
+    if (sdmmc->cmderror)
+    {
+      FinishTransfer(1);
+      return;
+    }
+
+    if (!sdmmc->CmdResult32Ok())
+    {
+      //FinishTransfer(1);
+      //return;
+    }
+
     trstate = 101;
     break;
+
 
   case 11: // start write blocks
     //TRACE("s.w. STA=%08X\r\n", regs->STA);
@@ -360,74 +382,74 @@ void TSdCardSdmmc::RunTransfer()
 
     sdmmc->StartDataWriteCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
 
+    trstate = 12;
+    break;
+
+  case 12:  // wait until the write command is accepted
+    if (!sdmmc->CmdFinished())
+    {
+      return;
+    }
+
+    if (sdmmc->cmderror)
+    {
+      FinishTransfer(1);
+      return;
+    }
+
+    if (!sdmmc->CmdResult32Ok())
+    {
+      FinishTransfer(1);
+      return;
+    }
+
+    sdmmc->StartDataWriteTransmit(dataptr, blockcount * 512);
     trstate = 101;
     break;
 
   case 101: // wait until the block transfer finishes
 
-    if (sdmmc->cmderror)
+    if (!sdmmc->TransferFinished())
     {
-      // transfer error
-      errorcode = 1;
-      completed = true;
-      trstate = 0; // transfer finished.
+      // TODO: add timeout !
+      return;
+    }
+
+    if (blockcount > 1)
+    {
+      // send the stop transmission command
+      sdmmc->SendCmd(12, 0, SDCMD_RES_R1B);
+      trstate = 105;  // wait until the stop command finishes
     }
     else
     {
-      if (!sdmmc->TransferFinished())
-      {
-        return;
-      }
-
-      if (blockcount > 1)
-      {
-        // send the stop transmission command
-        sdmmc->SendCmd(12, 0, SDCMD_RES_R1B);
-        trstate = 105;  // wait until the stop command finishes
-      }
-      else
-      {
-        completed = true;
-        trstate = 0; // finished
-      }
+      FinishTransfer(0);
     }
     break;
 
   case 105: // Handle tranmission stop
 
-    #if defined(MCUSF_H7)
-
-      if (regs->STA & SDMMC_STA_BUSYD0END)
-      {
-        //trstate = 106;  // wait until the stop command finishes
-      }
-      else
-      {
-        return;
-      }
-
-    #endif
-
-    //delay_us(1000);
-    trstate = 106;
-    break;
-
-  case 106: // wait until transfer done flag set
-
-    sdmmc->CloseTransfer();
-
-    if (sdmmc->cmderror)
+    if (!sdmmc->CmdFinished())
     {
-      // transfer error
-      errorcode = 2;
+      return;
     }
-    completed = true;
-    trstate = 0; // transfer finished.
 
-    //TRACE("f. STA=%08X\r\n", regs->STA);
+    if (!sdmmc->CmdResult32Ok())
+    {
+      FinishTransfer(1);
+      return;
+    }
 
+    FinishTransfer(0);
     break;
-  }
 
+  } // case
 }
 
+void TSdCardSdmmc::FinishTransfer(int aerrorcode)
+{
+  sdmmc->CloseTransfer();
+  errorcode = aerrorcode;
+  trstate = 0;
+  completed = true;
+}
