@@ -379,6 +379,14 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 
   regs->CR = crreg;
 
+  uint32_t fcr = (0
+    | (0  <<   7)  // FIE: Fifo Interrupt enable
+    | (0  <<   3)  // FS(4)
+    | (fifo_mode <<   2)  // DMDIS: 1 = fifo mode, 0 = direct mode
+    | (fifo_thr  <<   0)  // FTH(2): fifo threshold, 3 = fifo full
+  );
+  regs->FCR = fcr;
+
 	if (axfer->flags & DMATR_MEM_TO_MEM)
 	{
 		regs->PAR = (uint32_t)axfer->srcaddr;

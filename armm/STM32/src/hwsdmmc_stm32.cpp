@@ -102,6 +102,14 @@ bool THwSdmmc_stm32::Init()
 	// use the IDMA
 #else
 	dma.Init(2, dma_stream, 4); // channel 4
+
+	// the DMA requires special parameters here otherwise it won't work properly,
+	// the last word will be missing
+  dma.per_flow_controller = 1;
+  dma.fifo_mode = 1;
+  dma.fifo_thr  = 3;  // 4 word full
+  dma.per_burst = 1;  // 4x burst
+  dma.mem_burst = 1;  // 4x burst
 #endif
 
 	regs->POWER = (0
@@ -265,12 +273,12 @@ bool THwSdmmc_stm32::CmdFinished()
 
 bool THwSdmmc_stm32::TransferFinished()
 {
-  if (0 == (regs->STA & SDMMC_STA_DATAEND))
+  if (dma.initialized && dma.Active())
   {
     return false;
   }
 
-  if (dma.initialized && dma.Active())
+  if (0 == (regs->STA & SDMMC_STA_DATAEND))
   {
     return false;
   }
@@ -372,7 +380,10 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 #else
 
   // setup data control register
-	uint32_t dcr = (0
+	regs->DCTRL = 0;
+
+  uint32_t dctrl = (regs->DCTRL & 0xFFFF0000);  // keep the bits above
+	dctrl |= (0
 		| (0  << 11)  // SDIOEN
 		| (0  << 10)  // RWMOD
 		| (0  <<  9)  // RWSTOP
@@ -392,17 +403,12 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 	dmaxfer.bytewidth = 4;  // destination must be aligned !!!
 	dmaxfer.count = (datalen >> 2);
 	dmaxfer.dstaddr = dataptr;
-	// only with the peripheral flow controller settings works properly
-	// but the remaining count at the DMA might overflow !
-	dma.per_flow_controller = 1;
-	//dma.per_burst = 1;
-	//dma.mem_burst = 1;
-	dma.StartTransfer(&dmaxfer);
+  dma.StartTransfer(&dmaxfer);
 
 #endif
 
 	regs->DLEN = datalen;
-	regs->DCTRL = dcr;
+	regs->DCTRL = dctrl;
 
 	// CMD
 
@@ -493,11 +499,6 @@ void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t c
 	dmaxfer.bytewidth = 4;  // destination must be aligned !!!
 	dmaxfer.count = (datalen >> 2);
 	dmaxfer.srcaddr = dataptr;
-	// only with the peripheral flow controller settings works properly
-	// but the remaining count at the DMA might overflow !
-	dma.per_flow_controller = 1;
-	//dma.per_burst = 1;
-	//dma.mem_burst = 1;
 	dma.StartTransfer(&dmaxfer);
 
 #endif

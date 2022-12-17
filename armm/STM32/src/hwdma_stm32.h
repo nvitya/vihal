@@ -51,6 +51,8 @@ public: // special STM32 specific settings
 	unsigned           per_burst = 0;  // 0 = single, 1 = 4 beats, 2 = 8 beats, 3 = 16 beats
 	unsigned           mem_burst = 0;  // 0 = single, 1 = 4 beats, 2 = 8 beats, 3 = 16 beats
 	unsigned           per_flow_controller = 0;  // 0 = DMA, 1 = peripheral
+	unsigned           fifo_mode = 0;
+	unsigned           fifo_thr  = 0;
 
 public:
 	int                dmanum = 1;
