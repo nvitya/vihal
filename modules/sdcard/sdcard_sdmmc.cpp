@@ -330,9 +330,6 @@ void TSdCardSdmmc::RunInitialization()
 
 void TSdCardSdmmc::RunTransfer()
 {
-  uint8_t  cmd;
-  uint32_t cmdarg;
-
   switch (trstate)
   {
   case 0: // idle
@@ -342,33 +339,35 @@ void TSdCardSdmmc::RunTransfer()
 
     //TRACE("s.r. STA=%08X\r\n", regs->STA);
 
-    cmdarg = startblock;
-    if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
-    cmd = (blockcount > 1 ? 18 : 17);
+    StartCmdReadBlocks();
 
-    sdmmc->StartDataReadCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
-
+    cmd_start_time = CLOCKCNT;
     trstate = 2;
     break;
 
   case 2: // check command result
-    if (!sdmmc->CmdFinished())
-    {
-      return;
-    }
-
     if (sdmmc->cmderror)
     {
-      FinishTransfer(1);
+      // the previous Write command might still be running, repeat the command
+      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+      }
+      else
+      {
+        StartCmdReadBlocks();  // try again
+      }
       return;
     }
 
     if (!sdmmc->CmdResult32Ok())
     {
+      //TRACE("SDCARD_SDMMC: RD cmd %u res=%08X]\r\n", sdmmc->curcmd, sdmmc->GetCmdResult32());
       //FinishTransfer(1);
       //return;
     }
 
+    cmd_start_time = CLOCKCNT;
     trstate = 101;
     break;
 
@@ -376,42 +375,50 @@ void TSdCardSdmmc::RunTransfer()
   case 11: // start write blocks
     //TRACE("s.w. STA=%08X\r\n", regs->STA);
 
-    cmdarg = startblock;
-    if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
-    cmd = (blockcount > 1 ? 25 : 24);
+    StartCmdWriteBlocks();
 
-    sdmmc->StartDataWriteCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
-
+    cmd_start_time = CLOCKCNT;
     trstate = 12;
     break;
 
   case 12:  // wait until the write command is accepted
-    if (!sdmmc->CmdFinished())
-    {
-      return;
-    }
-
     if (sdmmc->cmderror)
     {
-      FinishTransfer(1);
+      // the previous Write command might still be running, repeat the command
+      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+      }
+      else
+      {
+        StartCmdWriteBlocks();
+      }
       return;
     }
 
     if (!sdmmc->CmdResult32Ok())
     {
-      FinishTransfer(1);
-      return;
+      //TRACE("SDCARD_SDMMC: WR cmd %u res=%08X]\r\n", sdmmc->curcmd, sdmmc->GetCmdResult32());
+
+      //FinishTransfer(1);
+      //return;
     }
 
     sdmmc->StartDataWriteTransmit(dataptr, blockcount * 512);
+
+    cmd_start_time = CLOCKCNT;
     trstate = 101;
     break;
 
-  case 101: // wait until the block transfer finishes
+  // common states for read and write
 
+  case 101: // wait until the block transfer finishes
     if (!sdmmc->TransferFinished())
     {
-      // TODO: add timeout !
+      if (CLOCKCNT - cmd_start_time > 100000 * us_clocks)  // 100 ms timeout
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+      }
       return;
     }
 
@@ -419,6 +426,7 @@ void TSdCardSdmmc::RunTransfer()
     {
       // send the stop transmission command
       sdmmc->SendCmd(12, 0, SDCMD_RES_R1B);
+      cmd_start_time = CLOCKCNT;
       trstate = 105;  // wait until the stop command finishes
     }
     else
@@ -428,16 +436,24 @@ void TSdCardSdmmc::RunTransfer()
     break;
 
   case 105: // Handle tranmission stop
-
-    if (!sdmmc->CmdFinished())
+    if (sdmmc->cmderror)
     {
+      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+      }
+      else
+      {
+        sdmmc->SendCmd(12, 0, SDCMD_RES_R1B);  // send again
+      }
       return;
     }
 
     if (!sdmmc->CmdResult32Ok())
     {
-      FinishTransfer(1);
-      return;
+      //TRACE("SDCARD_SDMMC: STP cmd %u res=%08X]\r\n", sdmmc->curcmd, sdmmc->GetCmdResult32());
+      //FinishTransfer(HWERR_UNKNOWN);
+      //return;
     }
 
     FinishTransfer(0);
@@ -452,4 +468,28 @@ void TSdCardSdmmc::FinishTransfer(int aerrorcode)
   errorcode = aerrorcode;
   trstate = 0;
   completed = true;
+}
+
+void TSdCardSdmmc::StartCmdReadBlocks()
+{
+  uint8_t  cmd;
+  uint32_t cmdarg;
+
+  cmdarg = startblock;
+  if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
+  cmd = (blockcount > 1 ? 18 : 17);
+
+  sdmmc->StartDataReadCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
+}
+
+void TSdCardSdmmc::StartCmdWriteBlocks()
+{
+  uint8_t  cmd;
+  uint32_t cmdarg;
+
+  cmdarg = startblock;
+  if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
+  cmd = (blockcount > 1 ? 25 : 24);
+
+  sdmmc->StartDataWriteCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
 }

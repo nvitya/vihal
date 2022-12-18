@@ -51,6 +51,7 @@ public:
   uint8_t       curcmd = 0;
   uint32_t      curcmdflags = 0;
   uint32_t      curcmdarg = 0;
+  uint32_t      curcmdreg = 0;
 
 	uint32_t      cmdtimeout = 0;
 	bool          cmdrunning = false;

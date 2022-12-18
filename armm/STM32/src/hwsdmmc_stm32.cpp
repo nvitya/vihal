@@ -294,8 +294,11 @@ void THwSdmmc_stm32::CloseTransfer()
     if (regs->FIFO) { }  // read the fifo
   }
 
-  regs->DCTRL &= ~(1 | (1 << 3)); // disable data, disable DMA
+  //regs->DCTRL &= ~(1 | (1 << 3)); // disable data, disable DMA
+  regs->DCTRL = 0;
 #endif
+
+  regs->ICR = 0xFFFFFFFF;
 }
 
 void THwSdmmc_stm32::GetCmdResult128(void * adataptr)
@@ -341,15 +344,14 @@ void THwSdmmc_stm32::SendCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags)  
 	regs->ARG = cmdarg;
 	regs->CMD = cmdr; // start the execution
 
+  curcmdreg = cmdr;
 	cmderror = false;
 	cmdrunning = true;
 	lastcmdtime = CLOCKCNT;
 }
 
-
 void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
 {
-	regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
 
 	uint32_t bsizecode = 9; // 512 byte
 	if (datalen <= 512)
@@ -359,7 +361,7 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 
 #ifdef MCUSF_H7
   // setup data control register
-	uint32_t dcr = (0
+	uint32_t dctrl = (0
 		| (1  << 13)  // FIFORST
 		| (0  << 12)  // BOOTACKEN
 		| (0  << 11)  // SDIOEN
@@ -382,8 +384,8 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
   // setup data control register
 	regs->DCTRL = 0;
 
-  uint32_t dctrl = (regs->DCTRL & 0xFFFF0000);  // keep the bits above
-	dctrl |= (0
+  //uint32_t dctrl = (regs->DCTRL & 0xFFFF0000);  // keep the bits above
+  uint32_t dctrl = (0
 		| (0  << 11)  // SDIOEN
 		| (0  << 10)  // RWMOD
 		| (0  <<  9)  // RWSTOP
@@ -407,6 +409,7 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 
 #endif
 
+  regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
 	regs->DLEN = datalen;
 	regs->DCTRL = dctrl;
 
@@ -441,6 +444,7 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 	regs->ARG = cmdarg;
 	regs->CMD = cmdr; // start the execution
 
+	curcmdreg = cmdr;
 	cmderror = false;
 	cmdrunning = true;
 	lastcmdtime = CLOCKCNT;
@@ -485,6 +489,7 @@ void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t c
   regs->ARG = cmdarg;
   regs->CMD = cmdr; // start the execution
 
+  curcmdreg = cmdr;
 	cmderror = false;
 	cmdrunning = true;
 	lastcmdtime = CLOCKCNT;
@@ -523,7 +528,7 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
 
   #ifdef MCUSF_H7
     // setup data control register
-    uint32_t dcr = (0
+    uint32_t dctrl = (0
       | (1  << 13)  // FIFORST
       | (0  << 12)  // BOOTACKEN
       | (0  << 11)  // SDIOEN

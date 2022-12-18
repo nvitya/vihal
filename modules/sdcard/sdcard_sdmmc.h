@@ -64,6 +64,9 @@ protected:
 
   void          FinishTransfer(int aerrorcode);
 
+  void          StartCmdReadBlocks();
+  void          StartCmdWriteBlocks();
+
 };
 
 #endif /* SDCARD_SDMMC_H_ */
