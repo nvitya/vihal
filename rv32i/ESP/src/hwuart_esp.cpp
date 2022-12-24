@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "hwuart.h"
+#include "hwuart_esp.h"
 #include "esp_utils.h"
 
 bool THwUart_esp::Init(int adevnum)

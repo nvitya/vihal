@@ -26,7 +26,7 @@
 */
 
 #include "platform.h"
-#include "hwspi.h"
+#include "hwspi_esp.h"
 
 bool THwSpi_esp::Init(int adevnum)
 {
@@ -40,9 +40,7 @@ bool THwSpi_esp::Init(int adevnum)
 
 	if (0 == devnum)  // not useable
 	{
-		mregs = SPIMEM0;
-    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_SPI01_CLK_EN;
-    sys_rst_mask = SYSTEM_SPI01_RST;
+		// total different, works only with memory mapped mode
 	}
 	else if (1 == devnum)
 	{
@@ -57,7 +55,7 @@ bool THwSpi_esp::Init(int adevnum)
     sys_rst_mask = SYSTEM_SPI2_RST;
 	}
 
-	if (!gregs || !mregs)
+	if (!gregs && !mregs)
 	{
 		return false;
 	}
@@ -171,14 +169,7 @@ bool THwSpi_esp::Init(int adevnum)
 
     mregs->USER = 0;
 
-    mregs->CLOCK_GATE = 0;
-
-    mregs->CORE_CLK_SEL = 0; // 0 = 80 MHz
-
-    // extra timing registers
-    mregs->DIN_MODE = 0;
-    mregs->DIN_NUM = 0;
-    mregs->DOUT_MODE = 0;
+    mregs->CLOCK_GATE = 1;
 
     mregs->CTRL = (0
       | (0  <<  3)  // DUMMY_OUT: In the dummy phase the signal level of spi is output by the spi controller
@@ -248,18 +239,12 @@ bool THwSpi_esp::Init(int adevnum)
     mregs->MISC = (0
       | (0  <<  0)  // CS0_DIS: SPI_CS0 pin enable  1: disable SPI_CS0  0: SPI_CS0 pin is active to select SPI device  such as flash  external RAM and so on.
       | (1  <<  1)  // CS1_DIS: SPI_CS1 pin enable  1: disable SPI_CS1  0: SPI_CS1 pin is active to select SPI device  such as flash  external RAM and so on.
-      | (0  <<  3)  // MST_ST_TRANS_END:    The bit is used to indicate the  spi0_mst_st controlled transmitting is done.
-      | (0  <<  4)  // MST_ST_TRANS_END_EN: The bit is used to enable the interrupt of  spi0_mst_st controlled transmitting is done.
-      | (0  <<  5)  // ST_TRANS_END:        The bit is used to indicate the  spi0_slv_st controlled transmitting is done.
-      | (0  <<  6)  // ST_TRANS_END_EN:     The bit is used to enable the interrupt of spi0_slv_st controlled transmitting is done.
       | (0  <<  9)  // CK_IDLE_EDGE:        1: spi clk line is high when idle     0: spi clk line is low when idle
       | (0  << 10)  // CS_KEEP_ACTIVE:      spi cs line keep low when the bit is set.
     );
 
     mregs->CACHE_FCTRL = (0
-      | (0  <<  0)  // REQ_EN: For SPI0  Cache access enable  1: enable  0:disable.
       | (0  <<  1)  // USR_ADDR_4BYTE: For SPI1   cache  read flash with 4 bytes address  1: enable  0:disable.
-      | (0  <<  2)  // FLASH_USR_CMD: For SPI0   cache  read flash for user define command  1: enable  0:disable.
       | (0  <<  3)  // FDIN_DUAL: For SPI1  din phase apply 2 signals. 1: enable 0: disable. The bit is the same with spi_mem_fread_dio.
       | (0  <<  4)  // FDOUT_DUAL: For SPI1  dout phase apply 2 signals. 1: enable 0: disable. The bit is the same with spi_mem_fread_dio.
       | (0  <<  5)  // FADDR_DUAL: For SPI1  address phase apply 2 signals. 1: enable 0: disable.  The bit is the same with spi_mem_fread_dio.
@@ -434,8 +419,8 @@ void THwSpi_esp::Run()
 	  if (mregs)
 	  {
 	    mregs->USER = (0
-	      | (0  <<  6)  // CS_HOLD: spi cs keep low when spi is in  done  phase. 1: enable 0: disable.
-	      | (0  <<  7)  // CS_SETUP: spi cs is enable when spi is in  prepare  phase. 1: enable 0: disable.
+	      //| (0  <<  6)  // CS_HOLD: spi cs keep low when spi is in  done  phase. 1: enable 0: disable.
+	      //| (0  <<  7)  // CS_SETUP: spi cs is enable when spi is in  prepare  phase. 1: enable 0: disable.
 	      | (0  <<  9)  // CK_OUT_EDGE: the bit combined with spi_mem_mosi_delay_mode bits to set mosi signal delay mode.
 	      | (0  << 12)  // FWRITE_DUAL: In the write operations read-data phase apply 2 signals
 	      | (0  << 13)  // FWRITE_QUAD: In the write operations read-data phase apply 4 signals
@@ -445,16 +430,18 @@ void THwSpi_esp::Run()
 	      | (0  << 25)  // USR_MOSI_HIGHPART: write-data phase only access to high-part of the buffer spi_mem_w8~spi_mem_w15. 1: enable 0: disable.
 	      | (0  << 26)  // USR_DUMMY_IDLE: SPI clock is disable in dummy phase when the bit is enable.
 	      | (1  << 27)  // USR_MOSI: This bit enable the write-data phase of an operation.
-	      | (1  << 28)  // USR_MISO: This bit enable the read-data phase of an operation.
+	      | (0  << 28)  // USR_MISO: This bit enable the read-data phase of an operation.
 	      | (0  << 29)  // USR_DUMMY: This bit enable the dummy phase of an operation.
 	      | (0  << 30)  // USR_ADDR: This bit enable the address phase of an operation.
-	      | (0  << 31)  // USR_COMMAND: This bit enable the command phase of an operation.
+	      | (1  << 31)  // USR_COMMAND: This bit enable the command phase of an operation.
 	    );
 
       mregs->MOSI_DLEN = (chunksize << 3) - 1;
       mregs->MISO_DLEN = (chunksize << 3) - 1;
 
       //mregs->CTRL2 |= SPI_MEM_SYNC_RESET_M;
+
+
 	  }
 	  else // gregs
 	  {
@@ -476,7 +463,8 @@ void THwSpi_esp::Run()
 	  else
 	  {
       //CmdStart();
-	    mregs->CMD |= (1 << 28); //start reading the ID
+	    //mregs->CMD |= (1 << 28); //start reading the ID
+	    mregs->CMD = (1 << 18); //start reading the ID
 	  }
 
 	  state = 2; // wait to finish
