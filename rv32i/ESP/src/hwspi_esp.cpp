@@ -389,7 +389,7 @@ void THwSpi_esp::Run()
 	    if ((unsigned(curblock->src) & 3) || (chunksize & 3))
 	    {
 	      // use 8-bit transfers
-	      uint8_t * dst8  = (uint8_t *)&pwregs;  // byte addressable !
+	      uint8_t * dst8  = (uint8_t *)pwregs;  // byte addressable !
 	      uint8_t * end8 = dst8 + chunksize;
 	      uint8_t * src8 = curblock->src;
         while (dst8 < end8)
@@ -494,7 +494,7 @@ void THwSpi_esp::Run()
       else
       {
         // use 32-bit transfers
-        uint32_t * src32 = (uint32_t *)&pwregs;
+        uint32_t * src32 = (uint32_t *)pwregs;
         uint32_t d32cnt = ((chunksize + 3) >> 2);
         uint32_t * end32 = src32 + d32cnt;
         uint32_t * dst32 = (uint32_t *)curblock->dst;

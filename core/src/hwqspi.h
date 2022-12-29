@@ -53,10 +53,10 @@
 // dummy byte count
 #define QSPICM_DUMMY      0x00800000  // send dummy with the default size
 #define QSPICM_DUMMY0     0x00000000  // do not send dummy (default)
-#define QSPICM_DUMMY1     0x00100000  // 8 dummy cycles
-#define QSPICM_DUMMY2     0x00200000  // 16 dummy cycles
-#define QSPICM_DUMMY3     0x00300000
-#define QSPICM_DUMMY4     0x00400000
+#define QSPICM_DUMMY1     0x00100000  // 1 dummy bytes
+#define QSPICM_DUMMY2     0x00200000  // 2 dummy bytes
+#define QSPICM_DUMMY3     0x00300000  // 3 dummy bytes
+#define QSPICM_DUMMY4     0x00400000  // 4 dummy bytes
 #define QSPICM_DUMMY_MASK 0x00F00000
 
 // mode bits
