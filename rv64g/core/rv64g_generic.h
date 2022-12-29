@@ -23,7 +23,8 @@
 // created:  2022-02-01
 // authors:  nvitya
 
-#pragma once
+#ifndef _RV64G_GENERIC_H_
+#define _RV64G_GENERIC_H_
 
 #define MCU_RV64G
 
@@ -101,3 +102,4 @@ inline void __set_PRIMASK(unsigned aprimask)
 
 }
 
+#endif // _RV64G_GENERIC_H_

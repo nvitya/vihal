@@ -23,7 +23,8 @@
 // created:  2022-01-29
 // authors:  nvitya
 
-#pragma once
+#ifndef _XTENSA_GENERIC_H_
+#define _XTENSA_GENERIC_H_
 
 #define MCU_XTENSA
 
@@ -86,3 +87,5 @@ inline void __set_PRIMASK(unsigned aprimask)
 {
 
 }
+
+#endif // _XTENSA_GENERIC_H_

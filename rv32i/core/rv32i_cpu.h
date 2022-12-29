@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _RV32I_CPU_H_
+#define _RV32I_CPU_H_
 
 #include "stdint.h"
 
@@ -81,3 +82,5 @@ inline void __attribute__ ((always_inline)) __DSB(void)
 {
   //asm volatile ("dsb 0xF":::"memory");
 }
+
+#endif

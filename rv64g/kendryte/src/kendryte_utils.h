@@ -25,10 +25,11 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _KENDRYTE_UTILS_H_
+#define _KENDRYTE_UTILS_H_
 
 #include "platform.h"
 
 uint32_t kendryte_bus_speed(uint8_t abusid);
 
-
+#endif // _KENDRYTE_UTILS_H_

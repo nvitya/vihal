@@ -23,7 +23,8 @@
 // created:  2022-02-01
 // authors:  nvitya
 
-#pragma once
+#ifndef _HWUART_KENDRYTE_H_
+#define _HWUART_KENDRYTE_H_
 
 #define HWUART_PRE_ONLY
 #include "hwuart.h"
@@ -49,3 +50,4 @@ public:
 
 #define HWUART_IMPL THwUart_kendryte
 
+#endif // _HWUART_KENDRYTE_H_

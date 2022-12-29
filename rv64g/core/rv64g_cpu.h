@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _RV64G_CPU_H
+#define _RV64G_CPU_H
 
 #include "stdint.h"
 
@@ -69,3 +70,5 @@ inline void __attribute__ ((always_inline)) __DSB(void)
 {
   //asm volatile ("dsb 0xF":::"memory");
 }
+
+#endif // _RV64G_CPU_H

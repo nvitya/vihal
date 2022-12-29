@@ -3,7 +3,8 @@
 // created:  2021-10-02
 // authors:  nvitya
 
-#pragma once
+#ifndef _PLATFORM_H_
+#define _PLATFORM_H_
 
 #include "generic_defs.h"
 #include "rv32i_cpu.h"
@@ -40,3 +41,4 @@
 
 #include "platform_generic.h"
 
+#endif // _PLATFORM_H_

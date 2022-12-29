@@ -26,10 +26,11 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _ESP_UTILS_H_
+#define _ESP_UTILS_H_
 
 #include "platform.h"
 
 uint32_t esp_apb_speed();
 
-
+#endif

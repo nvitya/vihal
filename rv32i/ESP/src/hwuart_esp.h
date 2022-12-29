@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _HWUART_ESP_H_
+#define _HWUART_ESP_H_
 
 #define HWUART_PRE_ONLY
 #include "hwuart.h"
@@ -58,4 +59,4 @@ public:
 
 #define HWUART_IMPL THwUart_esp
 
-
+#endif // _HWUART_ESP_H_

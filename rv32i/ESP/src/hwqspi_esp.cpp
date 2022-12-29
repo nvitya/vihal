@@ -25,14 +25,11 @@
  *  authors:  nvitya
 */
 
-#include "platform.h"
+#include "hwqspi.h" // for eclipse indexer
+//#include "hwqspi_esp.h" // for eclipse indexer
 
-#include "hwpins.h"
-//#include "hwqspi.h"
 #include "esp_utils.h"
 
-#include "hwqspi.h" // for eclipse indexer
-#include "hwqspi_esp.h" // for eclipse indexer
 
 #include "clockcnt.h"
 #include "traces.h" // temporary, remove me !!!!!!!!!!!!!!!!!!

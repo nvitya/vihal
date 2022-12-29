@@ -6,7 +6,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _MCU_DEFS_H_
+#define _MCU_DEFS_H_
 
 #define MAX_CLOCK_SPEED         240000000
 
@@ -31,3 +32,4 @@ inline void __attribute__((always_inline)) mcu_postinit_code()
 {
 }
 
+#endif // _MCU_DEFS_H_

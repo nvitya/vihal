@@ -28,6 +28,8 @@
 #ifndef HWSPI_ESP_H_
 #define HWSPI_ESP_H_
 
+#include "platform.h"
+
 #define HWSPI_OWN_RUN  // special handling, own Run() implementation
 
 #define HWSPI_PRE_ONLY

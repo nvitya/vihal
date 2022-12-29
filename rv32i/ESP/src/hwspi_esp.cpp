@@ -26,7 +26,8 @@
 */
 
 #include "platform.h"
-#include "hwspi_esp.h"
+#include "hwspi.h"
+//#include "hwspi_esp.h"
 
 bool THwSpi_esp::Init(int adevnum)
 {

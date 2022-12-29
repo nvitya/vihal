@@ -26,8 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
-
+#ifndef _HWPINS_ESP_H_
+#define _HWPINS_ESP_H_
 
 #define HWPINS_PRE_ONLY
 #include "hwpins.h"
@@ -76,3 +76,4 @@ public:
 #define HWGPIOPORT_IMPL  TGpioPort_esp
 #define HWGPIOPIN_IMPL   TGpioPin_esp
 
+#endif // _HWPINS_ESP_H_

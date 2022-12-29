@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _AHT10_H_
+#define _AHT10_H_
 
 #include "stdint.h"
 #include "hwi2c.h"
@@ -64,3 +65,4 @@ protected:
   TI2cTransaction tra;
 };
 
+#endif

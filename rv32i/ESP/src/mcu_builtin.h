@@ -6,7 +6,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _MCU_BUILTIN_H_
+#define _MCU_BUILTIN_H_
 
 #ifdef LITTLE_ENDIAN
   #undef LITTLE_ENDIAN
@@ -32,4 +33,4 @@
 
 #endif
 
-
+#endif // _MCU_BUILTIN_H_

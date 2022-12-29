@@ -3,7 +3,8 @@
 // created:  2022-02-01
 // authors:  nvitya
 
-#pragma once
+#ifndef _PLATFORM_H_
+#define _PLATFORM_H_
 
 #include "generic_defs.h"
 #include "rv64g_cpu.h"
@@ -40,3 +41,5 @@
 #include "rv64g_generic.h"
 
 #include "platform_generic.h"
+
+#endif // _PLATFORM_H_

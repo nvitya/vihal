@@ -6,7 +6,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _BOARDS_BUILTIN_H_
+#define _BOARDS_BUILTIN_H_
 
 #if 0 // to use elif everywhere
 
@@ -32,3 +33,4 @@
 
 #endif
 
+#endif

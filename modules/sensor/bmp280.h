@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _BMP280_H_
+#define _BMP280_H_
 
 #include "stdint.h"
 #include "hwi2c.h"
@@ -95,4 +96,4 @@ protected:
   uint8_t   buf[16];
 };
 
-
+#endif

@@ -24,7 +24,6 @@
 // created:  2018-02-10
 // authors:  nvitya
 
-#include "platform.h"
 #include "hwspi.h"
 
 static_assert(HWSPI_MAX_XFER_BLOCK >= 4, "Minimum 4 SPI transfer blocks are required!");

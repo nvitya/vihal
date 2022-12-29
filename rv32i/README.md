@@ -12,3 +12,12 @@ Family ID | Sub-Families | Examples | Driver Support
 [VRV100](/rv32i/VRV100)*  | 103 .. 446 (FPGA only) | VRV100_441 | [good](/rv32i/VRV100)
 
 *The VRV100 FPGA-based Risc-V SoC is made by me, using the VexRiscV CPU and the SpinalHDL system. The SoC-s are accessible here: https://github.com/nvitya/VRV100
+
+## RISC-V GCC Compiler
+
+The easiest way to obtain a RISC-V compiler (for embedded devices) to download from the xPack releases repository:
+
+https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases
+
+__Note:__
+Add the "_zicsr" to the "Target Processor" / "Other extensions" if you get "unrecognized opcode csrw ..."

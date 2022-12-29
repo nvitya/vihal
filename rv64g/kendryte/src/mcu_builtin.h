@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _MCU_BUILTIN_H_
+#define _MCU_BUILTIN_H_
 
 #if 0
 
@@ -43,3 +44,4 @@
 
 #endif
 
+#endif // _MCU_BUILTIN_H_
