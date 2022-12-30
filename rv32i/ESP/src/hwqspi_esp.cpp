@@ -187,9 +187,10 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
 
   istx = false;
   dataptr = (uint8_t *)dstptr;
-  if (len > 64)  len = 64;
   datalen = len;
-  remainingbytes = datalen;
+  remainingbytes = len;
+  if (len <= 64)  chunksize = len;
+  else            chunksize = 64;
 
   unsigned fields = ((acmd >> 8) & 0xF);
 
@@ -213,8 +214,6 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
 
 
   uint32_t ruser = (0
-    | (0  <<  6)  // CS_HOLD: spi cs keep low when spi is in  done  phase. 1: enable 0: disable.
-    | (0  <<  7)  // CS_SETUP: spi cs is enable when spi is in  prepare  phase. 1: enable 0: disable.
     | (0  <<  9)  // CK_OUT_EDGE: the bit combined with spi_mem_mosi_delay_mode bits to set mosi signal delay mode.
     | (0  << 12)  // FWRITE_DUAL: In the write operations read-data phase apply 2 signals
     | (0  << 13)  // FWRITE_QUAD: In the write operations read-data phase apply 4 signals
@@ -235,8 +234,15 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
     | (0  << 26)  // USR_ADDR_BITLEN(6): The length in bits of address phase. The register value shall be (bit_num-1).
   );
 
+  uint32_t rmisc = (0
+    | (0  <<  0)  // CS0_DIS
+    | (1  <<  1)  // CS1_DIS
+    | (0  <<  9)  // CK_IDLE_EDGE
+    | (0  << 10)  // CS_KEEP_ACTIVE
+  );
+
   // data
-  if (datalen > 0)
+  if (chunksize > 0)
   {
     ruser |= (1  << 28);  // USR_MISO: This bit enable the read-data phase of an operation.
 
@@ -253,7 +259,12 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
       // single line data
     }
 
-    mregs->MISO_DLEN = (datalen << 3) - 1;
+    mregs->MISO_DLEN = (chunksize << 3) - 1;
+
+    if (chunksize < datalen)
+    {
+      rmisc |= (1  << 10);  // CS_KEEP_ACTIVE
+    }
   }
 
   // address
@@ -336,6 +347,7 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
   mregs->USER = ruser;
   mregs->USER1 = ruser1;
   mregs->USER2 = ruser2;
+  mregs->MISC = rmisc;
 
   mregs->CMD |= cmd_usr_bit; // start the CMD
 
@@ -344,6 +356,12 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
 
   return HWERR_OK;
 }
+
+/* The ESP32 at writing reads ahead the next word and stores internally for consecutive write blocks
+ * therefore the write happens only in 60 byte chunks and the last dword holds the first dword of the next transfer
+ */
+
+#define WRITE_CHUNK_MAX  60
 
 int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, unsigned len)
 {
@@ -355,9 +373,10 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
 
   istx = true;
   dataptr = (uint8_t *)srcptr;
-  if (len > 64)  len = 64;
   datalen = len;
-  remainingbytes = datalen;
+  remainingbytes = len;
+  if (len <= 64)  chunksize = len;
+  else            chunksize = WRITE_CHUNK_MAX;  // use 60 byte chunks with write ahead
 
   unsigned fields = ((acmd >> 8) & 0xF);
 
@@ -403,8 +422,15 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
     | (0  << 26)  // USR_ADDR_BITLEN(6): The length in bits of address phase. The register value shall be (bit_num-1).
   );
 
+  uint32_t rmisc = (0
+    | (0  <<  0)  // CS0_DIS
+    | (1  <<  1)  // CS1_DIS
+    | (0  <<  9)  // CK_IDLE_EDGE
+    | (0  << 10)  // CS_KEEP_ACTIVE
+  );
+
   // data
-  if (datalen > 0)
+  if (chunksize > 0)
   {
     ruser |= (1  << 27);  // USR_MOSI: This bit enable the write-data phase of an operation.
 
@@ -422,7 +448,12 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
       // single line data
     }
 
-    mregs->MOSI_DLEN = (datalen << 3) - 1;
+    mregs->MOSI_DLEN = (chunksize << 3) - 1;
+
+    if (chunksize < datalen)
+    {
+      rmisc |= (1  << 10);  // CS_KEEP_ACTIVE
+    }
   }
 
   // address
@@ -505,10 +536,11 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
   mregs->USER = ruser;
   mregs->USER1 = ruser1;
   mregs->USER2 = ruser2;
+  mregs->MISC = rmisc;
 
   // fill the TX data
 
-  uint32_t d32cnt = ((remainingbytes + 3) >> 2);
+  uint32_t d32cnt = ((chunksize + 3) >> 2);
   uint32_t * src32 = (uint32_t *)dataptr;
   uint32_t * end32 = src32 + d32cnt;
   uint32_t * dst32 = (uint32_t *)pwregs;
@@ -517,12 +549,92 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
     *dst32++ = *src32++;
   }
 
+  if (chunksize < remainingbytes)
+  {
+    *dst32++ = *src32++;  // write ahead the the next transfer's first word
+  }
+
   mregs->CMD |= cmd_usr_bit; // start the CMD
 
   busy = true;
   runstate = 0;
 
   return HWERR_OK;
+}
+
+void THwQspi_esp::StartNextChunk()
+{
+  uint32_t ruser = mregs->USER;
+/*
+    | (0  <<  9)  // CK_OUT_EDGE: the bit combined with spi_mem_mosi_delay_mode bits to set mosi signal delay mode.
+    | (0  << 12)  // FWRITE_DUAL: In the write operations read-data phase apply 2 signals
+    | (0  << 13)  // FWRITE_QUAD: In the write operations read-data phase apply 4 signals
+    | (0  << 14)  // FWRITE_DIO: In the write operations address phase and read-data phase apply 2 signals.
+    | (0  << 15)  // FWRITE_QIO: In the write operations address phase and read-data phase apply 4 signals.
+    | (0  << 24)  // USR_MISO_HIGHPART: read-data phase only access to high-part of the buffer spi_mem_w8~spi_mem_w15. 1: enable 0: disable.
+    | (0  << 25)  // USR_MOSI_HIGHPART: write-data phase only access to high-part of the buffer spi_mem_w8~spi_mem_w15. 1: enable 0: disable.
+    | (0  << 26)  // USR_DUMMY_IDLE: SPI clock is disable in dummy phase when the bit is enable.
+    | (0  << 27)  // USR_MOSI: This bit enable the write-data phase of an operation.
+    | (0  << 28)  // USR_MISO: This bit enable the read-data phase of an operation.
+    | (0  << 29)  // USR_DUMMY: This bit enable the dummy phase of an operation.
+    | (0  << 30)  // USR_ADDR: This bit enable the address phase of an operation.
+    | (0  << 31)  // USR_COMMAND: This bit enable the command phase of an operation.
+*/
+
+  ruser &= ~(7 << 29); // Clear DUMMY, ADDR, CMD, (keep MISO/MOSI)
+
+  if (istx)
+  {
+    if (remainingbytes > WRITE_CHUNK_MAX)
+    {
+      chunksize = WRITE_CHUNK_MAX;
+    }
+    else
+    {
+      chunksize = remainingbytes;
+      mregs->MISC &= ~(1 << 10); // remove CS_KEEP_ACTIVE
+    }
+  }
+  else
+  {
+    if (remainingbytes > 64)
+    {
+      chunksize = 64;
+    }
+    else
+    {
+      chunksize = remainingbytes;
+      mregs->MISC &= ~(1 << 10); // remove CS_KEEP_ACTIVE
+    }
+  }
+
+  if (istx)
+  {
+    mregs->MOSI_DLEN = (chunksize << 3) - 1;
+
+    // fill the TX data
+
+    uint32_t d32cnt = ((chunksize + 3) >> 2);
+    uint32_t * src32 = (uint32_t *)dataptr;
+    uint32_t * end32 = src32 + d32cnt;
+    uint32_t * dst32 = (uint32_t *)pwregs;
+    while (src32 < end32)
+    {
+      *dst32++ = *src32++;
+    }
+
+    if (remainingbytes > chunksize)
+    {
+      *dst32++ = *src32++;  // write ahead the the next transfer's first word
+    }
+  }
+  else
+  {
+    mregs->MISO_DLEN = (chunksize << 3) - 1;
+  }
+
+  mregs->USER = ruser;
+  mregs->CMD |= cmd_usr_bit; // start the CMD
 }
 
 void THwQspi_esp::Run()
@@ -547,7 +659,7 @@ void THwQspi_esp::Run()
     {
       // read the data
 
-      uint32_t d32cnt = ((remainingbytes + 3) >> 2);
+      uint32_t d32cnt = ((chunksize + 3) >> 2);
       uint32_t * src32 = (uint32_t *)pwregs;
       uint32_t * end32 = src32 + d32cnt;
       uint32_t * dst32 = (uint32_t *)dataptr;
@@ -557,8 +669,22 @@ void THwQspi_esp::Run()
       }
     }
 
-    runstate = 1;
+    dataptr += chunksize;
+    remainingbytes -= chunksize;
+
+    if (remainingbytes)
+    {
+      StartNextChunk();
+      return;
+    }
+    else
+    {
+      // finished
+      runstate = 1;
+    }
+
   }
 
   busy = false;
 }
+

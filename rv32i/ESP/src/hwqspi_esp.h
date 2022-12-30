@@ -57,8 +57,12 @@ protected:
   uint32_t             mlqio = 0;
   uint32_t             mldio = 0;
 
+  uint32_t             chunksize = 0;
+
 
   unsigned             basespeed = 0;
+
+  void                 StartNextChunk();
 
 };
 
