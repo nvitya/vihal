@@ -453,4 +453,31 @@ typedef struct
 #include "soc/uart_reg.h"
 #include "soc/uhci_reg.h"
 
+//-----------------------------------------------------------------------------
+// Miscellenious
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+    uint8_t   magic;             // Magic word ESP_IMAGE_HEADER_MAGIC = 0xE9
+    uint8_t   segment_count;     // Count of memory segments
+    uint8_t   spi_mode;          // flash read mode, 2 = DIO
+    uint8_t   spi_speed_size;    // low 4 bits: speed, 0 = 40 MHz;  high 4 bits: size, 2 = 4MB
+    uint32_t  entry_addr;        // Entry address
+    uint8_t   wp_pin;            // 0xEE = disabled
+    uint8_t   spi_pin_drv[3];    // Drive settings for the SPI flash pins (read by ROM bootloader)
+    uint16_t  chip_id;           // Chip identification number, 0x0005 = ESP32c3
+    uint8_t   min_chip_rev;      // Minimum chip revision supported by image
+    uint8_t   reserved[8];       // Reserved bytes in additional header space, currently unused
+    uint8_t   hash_appended;     // If 1, a SHA256 digest "simple hash" (of the entire image) is appended after the checksum.
+    // first segment
+    uint32_t  load_addr;         // load address of the first segment
+    uint32_t  data_len;          // size of the first segment
+//
+} vihal_esp_image_header_t;
+
+// a valid (second stage bootloader) example at flash address 0:
+//   E9 03 02 20 00 E0 3C 40 EE 00 00 00 05 00 00 00
+//   00 00 00 00 00 00 00 00 00 61 CD 3F 8C 03 00 00
+
 

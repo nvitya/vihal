@@ -20,6 +20,25 @@
 
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
+  // disable watchdog
+
+  /* OpenOCD code:
+
+   # Timer Group 0 & 1 WDTs
+   mww 0x6001f064 0x50D83AA1
+   mww 0x6001F048 0
+   mww 0x60020064 0x50D83AA1
+   mww 0x60020048 0
+
+   # RTC WDT
+   mww 0x600080a8 0x50D83AA1
+   mww 0x60008090 0
+
+   # SWD
+   mww 0x600080b0 0x8F1D312A
+   mww 0x600080ac 0x84B00000
+ */
+
 }
 
 inline void __attribute__((always_inline)) mcu_postinit_code()
