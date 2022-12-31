@@ -18,9 +18,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     self_flashing_rp.cpp
- *  brief:    RP2040 SPI Self Flashing
- *  date:     2022-06-01
+ *  file:     self_flashing_esp.cpp
+ *  brief:    ESP32C3 SPI Self Flashing
+ *  date:     2022-12-31
  *  authors:  nvitya
 */
 
@@ -57,7 +57,11 @@ uint8_t esp_img_checksum(uint32_t * dataptr, uint32_t datalen)
   return result;
 }
 
-// do self flashing using the flash writer
+// FOOTER:
+//   The file is padded with zeros until its size is one byte less than a multiple of 16 bytes.
+//   A last byte (thus making the file size a multiple of 16) is the checksum of the data of all segments.
+//   The checksum is defined as the xor-sum of all bytes and the byte 0xEF.
+
 bool spi_self_flashing(TSpiFlash * spiflash)
 {
   uint8_t   localbuf[SELFFLASH_BUFSIZE] __attribute__((aligned(8)));
