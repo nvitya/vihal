@@ -213,8 +213,95 @@ typedef struct
 } esp_apb_ctrl_t;
 
 
-#define SYSTEM     ((esp_sysreg_t *)(0x600C0000))
-#define APB_CTRL ((esp_apb_ctrl_t *)(0x60026000))
+#define SYSTEM      ((esp_sysreg_t *)(0x600C0000))
+#define APB_CTRL  ((esp_apb_ctrl_t *)(0x60026000))
+
+//-----------------------------------------------------------------------------
+// RTC
+//-----------------------------------------------------------------------------
+typedef struct
+{
+  volatile uint32_t      OPTIONS0;            // 0000
+  volatile uint32_t      SLP_TIMER0;          // 0004
+  volatile uint32_t      SLP_TIMER1;          // 0008
+  volatile uint32_t      TIME_UPDATE;         // 000C
+  volatile uint32_t      TIME_LOW0;           // 0010
+  volatile uint32_t      TIME_HIGH0;          // 0014
+  volatile uint32_t      STATE0;              // 0018
+  volatile uint32_t      TIMER1;              // 001C
+  volatile uint32_t      TIMER2;              // 0020
+  volatile uint32_t      TIMER3;              // 0024
+  volatile uint32_t      TIMER4;              // 0028
+  volatile uint32_t      TIMER5;              // 002C
+  volatile uint32_t      TIMER6;              // 0030
+  volatile uint32_t      ANA_CONF;            // 0034
+  volatile uint32_t      RESET_STATE;         // 0038
+  volatile uint32_t      WAKEUP_STATE;        // 003C
+  volatile uint32_t      INT_ENA;             // 0040
+  volatile uint32_t      INT_RAW;             // 0044
+  volatile uint32_t      INT_ST;              // 0048
+  volatile uint32_t      INT_CLR;             // 004C
+  volatile uint32_t      STORE0;              // 0050
+  volatile uint32_t      STORE1;              // 0054
+  volatile uint32_t      STORE2;              // 0058
+  volatile uint32_t      STORE3;              // 005C
+  volatile uint32_t      EXT_XTL_CONF;        // 0060
+  volatile uint32_t      EXT_WAKEUP_CONF;     // 0064
+  volatile uint32_t      SLP_REJECT_CONF;     // 0068
+  volatile uint32_t      CPU_PERIOD_CONF;     // 006C
+  volatile uint32_t      CLK_CONF;            // 0070
+  volatile uint32_t      SLOW_CLK_CONF;       // 0074
+  volatile uint32_t      SDIO_CONF;           // 0078
+  volatile uint32_t      BIAS_CONF;           // 007C
+  volatile uint32_t      REG;                 // 0080
+  volatile uint32_t      PWC;                 // 0084
+  volatile uint32_t      DIG_PWC;             // 0088
+  volatile uint32_t      DIG_ISO;             // 008C
+  volatile uint32_t      WDTCONFIG0;          // 0090
+  volatile uint32_t      WDTCONFIG1;          // 0094
+  volatile uint32_t      WDTCONFIG2;          // 0098
+  volatile uint32_t      WDTCONFIG3;          // 009C
+  volatile uint32_t      WDTCONFIG4;          // 00A0
+  volatile uint32_t      WDTFEED;             // 00A4
+  volatile uint32_t      WDTWPROTECT;         // 00A8
+  volatile uint32_t      SWD_CONF;            // 00AC
+  volatile uint32_t      SWD_WPROTECT;        // 00B0
+  volatile uint32_t      SW_CPU_STALL;        // 00B4
+  volatile uint32_t      STORE4;              // 00B8
+  volatile uint32_t      STORE5;              // 00BC
+  volatile uint32_t      STORE6;              // 00C0
+  volatile uint32_t      STORE7;              // 00C4
+  volatile uint32_t      LOW_POWER_ST;        // 00C8
+  volatile uint32_t      DIAG0;               // 00CC
+  volatile uint32_t      PAD_HOLD;            // 00D0
+  volatile uint32_t      DIG_PAD_HOLD;        // 00D4
+  volatile uint32_t      BROWN_OUT;           // 00D8
+  volatile uint32_t      TIME_LOW1;           // 00DC
+  volatile uint32_t      TIME_HIGH1;          // 00E0
+  volatile uint32_t      XTAL32K_CLK_FACTOR;  // 00E4
+  volatile uint32_t      XTAL32K_CONF;        // 00E8
+  volatile uint32_t      USB_CONF;            // 00EC
+  volatile uint32_t      SLP_REJECT_CAUSE;    // 00F0
+  volatile uint32_t      OPTION1;             // 00F4
+  volatile uint32_t      SLP_WAKEUP_CAUSE;    // 00F8
+  volatile uint32_t      ULP_CP_TIMER_1;      // 00FC
+  volatile uint32_t      INT_ENA_W1TS;        // 0100
+  volatile uint32_t      INT_ENA_W1TC;        // 0104
+  volatile uint32_t      RETENTION_CTRL;      // 0108
+  volatile uint32_t      FIB_SEL;             // 010C
+  volatile uint32_t      GPIO_WAKEUP;         // 0110
+  volatile uint32_t      DBG_SEL;             // 0114
+  volatile uint32_t      DBG_MAP;             // 0118
+  volatile uint32_t      SENSOR_CTRL;         // 011C
+  volatile uint32_t      DBG_SAR_SEL;         // 0120
+  volatile uint32_t      PG_CTRL;             // 0124
+  uint32_t               _pad_128[53];        // 0128
+
+  volatile uint32_t      DATE;                // 01fc
+//
+} esp_rtc_cntl_t;
+
+#define RTC_CNTL  ((esp_rtc_cntl_t *)(0x60008000))
 
 //-----------------------------------------------------------------------------
 // SYSTIMER
@@ -249,6 +336,46 @@ typedef struct
 } esp_systimer_t;
 
 #define SYS_TIMER ((esp_systimer_t *)(0x60023000))
+
+//-----------------------------------------------------------------------------
+// Timer Group (TIMG0-1)
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t     T0CONFIG;        // 0x0000
+  volatile uint32_t     T0LO;            // 0x0004
+  volatile uint32_t     T0HI;            // 0x0008
+  volatile uint32_t     T0UPDATE;        // 0x000c
+  volatile uint32_t     T0ALARMLO;       // 0x0010
+  volatile uint32_t     T0ALARMHI;       // 0x0014
+  volatile uint32_t     T0LOADLO;        // 0x0018
+  volatile uint32_t     T0LOADHI;        // 0x001c
+  volatile uint32_t     T0LOAD;          // 0x0020
+  uint32_t              _pad_0024[9];    //     24
+  volatile uint32_t     WDTCONFIG0;      // 0x0048
+  volatile uint32_t     WDTCONFIG1;      // 0x004c
+  volatile uint32_t     WDTCONFIG2;      // 0x0050
+  volatile uint32_t     WDTCONFIG3;      // 0x0054
+  volatile uint32_t     WDTCONFIG4;      // 0x0058
+  volatile uint32_t     WDTCONFIG5;      // 0x005c
+  volatile uint32_t     WDTFEED;         // 0x0060
+  volatile uint32_t     WDTWPROTECT;     // 0x0064
+  volatile uint32_t     RTCCALICFG;      // 0x0068
+  volatile uint32_t     RTCCALICFG1;     // 0x006c
+  volatile uint32_t     INT_ENA_TIMERS;  // 0x0070
+  volatile uint32_t     INT_RAW_TIMERS;  // 0x0074
+  volatile uint32_t     INT_ST_TIMERS;   // 0x0078
+  volatile uint32_t     INT_CLR_TIMERS;  // 0x007c
+  volatile uint32_t     RTCCALICFG2;     // 0x0080
+  uint32_t              _pad_0084[29];   //     84
+  volatile uint32_t     NTIMERS_DATE;    // 0x00f8
+  volatile uint32_t     CLK;             // 0x00fc
+//
+} esp_timg_t;
+
+#define TIMG0  ((esp_timg_t *)(0x6001F000))
+#define TIMG1  ((esp_timg_t *)(0x60020000))
 
 //-----------------------------------------------------------------------------
 // UART
@@ -454,7 +581,7 @@ typedef struct
 #include "soc/uhci_reg.h"
 
 //-----------------------------------------------------------------------------
-// Miscellenious
+// Miscellaneous
 //-----------------------------------------------------------------------------
 
 typedef struct

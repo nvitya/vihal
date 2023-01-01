@@ -20,7 +20,7 @@
 
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
-  // disable watchdog
+  // disable watchdogs
 
   /* OpenOCD code:
 
@@ -39,6 +39,17 @@ inline void __attribute__((always_inline)) mcu_preinit_code()
    mww 0x600080ac 0x84B00000
  */
 
+  TIMG0->WDTWPROTECT = 0x50D83AA1;
+  TIMG0->WDTCONFIG0  = 0;
+
+  TIMG1->WDTWPROTECT = 0x50D83AA1;
+  TIMG1->WDTCONFIG0  = 0;
+
+  RTC_CNTL->WDTWPROTECT = 0x50D83AA1;
+  RTC_CNTL->WDTCONFIG0  = 0;
+
+  RTC_CNTL->SWD_WPROTECT = 0x8F1D312A;
+  RTC_CNTL->SWD_CONF     = 0x84B00000;
 }
 
 inline void __attribute__((always_inline)) mcu_postinit_code()
