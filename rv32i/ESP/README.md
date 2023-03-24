@@ -2,6 +2,10 @@
 
 __WARNING: Wifi/Bluetooth support is not included and probably they won't ever work with VIHAL__ (For these parts is no hardware documentation available and the Espressif drivers are closed source)
 
+The ESP32-C3 does not have internal flash memory but it has relative large (400 kByte) internal RAM. Even when execution from the cached external flash memory (XIP) is supported by the device, this is not preferred by me. Code execution from RAM is much simpler and faster, and also has a big advantage, that the external Flash also can be used freely for data storage.
+
+The most of the VIHAL tests/examples for the ESP32 use self-flasing.
+
 ## Microcontrollers
 
 The full list of built-in microcontrollers can be found here:
@@ -18,8 +22,11 @@ Sub Family | Built-In MCU Examples
 __CPU Clock__         | OK      |
 __Pin Cfg. + GPIO__   | OK      |
 __UART__              | OK      |
+__USB-SERIAL__        | OK      |
 __DMA__               | planned |
-__SPI Master__        | partial, no SPI flash access yet|
+__QSPI Master__       | OK (Flash only) |
+__SPI Self Flashing__ | OK |
+__SPI Master__        | work in progress |
 __I2C Master__        | planned |
 __I2C Slave__         | planned |
 __Ext. IRQ.__         | planned |
@@ -29,6 +36,3 @@ __Simple PWM__        | planned |
 __WIFI__              | not planned ! |
 __Bluetooth__         | not planned ! |
 
-## Important note
-Unfortunately I'm stuck with accessing the external flash memory. This is crucial to provide self-flashing applications, which are required for this device.
-(The external flash interface - spimem - is not documented, however some Espressif sources are available)
