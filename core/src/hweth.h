@@ -80,7 +80,7 @@ typedef struct TPacketMem
   uint64_t      timestamp_ns;
   // this part can be freely used by the application / network stack
   TPacketMem *  next;
-  uint8_t       extra[12];
+  uint8_t       extra[16 - sizeof(uintptr_t)];
 
   uint8_t       data[HWETH_MAX_PACKET_SIZE];
 //
