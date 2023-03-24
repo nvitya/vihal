@@ -27,6 +27,12 @@
   #define MCU_ESP32C3
   #define EXTERNAL_XTAL_HZ   40000000
 
+#elif defined(BOARD_WEMOS_C3MINI)
+
+  #define BOARD_NAME "Wemos ESP32-C3 Mini"
+  #define MCU_ESP32C3
+  #define EXTERNAL_XTAL_HZ   40000000
+
 #else
 
   #error "Unknown board."

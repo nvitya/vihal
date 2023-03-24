@@ -546,6 +546,38 @@ typedef struct
 #define SPIMEM1   ((esp_spi_mem_t *)(0x60002000))
 
 //-----------------------------------------------------------------------------
+// USB SERIAL JTAG
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  EP1;         // 0x00
+  volatile uint32_t  EP1_CONF;    // 0x04
+  volatile uint32_t  INT_RAW;     // 0x08
+  volatile uint32_t  INT_ST;      // 0x0c
+  volatile uint32_t  INT_ENA;     // 0x10
+  volatile uint32_t  INT_CLR;     // 0x14
+  volatile uint32_t  CONF0;       // 0x18
+  volatile uint32_t  TEST;        // 0x1c
+  volatile uint32_t  JFIFO_ST;    // 0x20
+  volatile uint32_t  FRAM_NUM;    // 0x24
+  volatile uint32_t  IN_EP0_ST;   // 0x28
+  volatile uint32_t  IN_EP1_ST;   // 0x2c
+  volatile uint32_t  IN_EP2_ST;   // 0x30
+  volatile uint32_t  IN_EP3_ST;   // 0x34
+  volatile uint32_t  OUT_EP0_ST;  // 0x38
+  volatile uint32_t  OUT_EP1_ST;  // 0x3c
+  volatile uint32_t  OUT_EP2_ST;  // 0x40
+  volatile uint32_t  MISC_CONF;   // 0x44
+  volatile uint32_t  MEM_CONF;    // 0x48
+           uint32_t  _pad[(0x80 - 0x4C) / 4];
+  volatile uint32_t  DATE;        // 0x80
+//
+} esp_usb_serial_jtag_t;
+
+#define USB_SERIAL_JTAG  ((esp_usb_serial_jtag_t *)(0x60043000))
+
+//-----------------------------------------------------------------------------
 // Espressif definitions
 //-----------------------------------------------------------------------------
 
@@ -579,6 +611,7 @@ typedef struct
 #include "soc/uart_channel.h"
 #include "soc/uart_reg.h"
 #include "soc/uhci_reg.h"
+#include "soc/usb_serial_jtag_reg.h"
 
 //-----------------------------------------------------------------------------
 // Miscellaneous
