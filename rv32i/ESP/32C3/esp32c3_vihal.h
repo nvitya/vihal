@@ -26,12 +26,12 @@
  *               esp-idf/components/soc/esp32c3/include/soc/
  *
  *            I made my own peripheral structs for some peripherals like GPIO
- *  version:  1.00
  *  date:     2022-02-03
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _ESP32C3_VIHAL_H
+#define _ESP32C3_VIHAL_H
 
 #include <cstddef>
 #include "stdint.h"
@@ -578,6 +578,80 @@ typedef struct
 #define USB_SERIAL_JTAG  ((esp_usb_serial_jtag_t *)(0x60043000))
 
 //-----------------------------------------------------------------------------
+// GDMA
+//-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  RAW;
+  volatile uint32_t  ST;
+  volatile uint32_t  ENA;
+  volatile uint32_t  CLR;
+//
+} esp_dmach_intr_t;
+
+typedef struct
+{
+  volatile uint32_t  CONF0;              // 0x070
+  volatile uint32_t  CONF1;              // 0x074
+  volatile uint32_t  FIFO_STATUS;        // 0x078
+  volatile uint32_t  POP_PUSH;           // 0x07C
+  volatile uint32_t  LINK;               // 0x080
+  volatile uint32_t  STATE;              // 0x084
+  volatile uint32_t  SUC_EOF_DES_ADDR;   // 0x088  OUT name: EOF_DES_ADDR
+  volatile uint32_t  ERR_EOF_DES_ADDR;   // 0x08C  OUT name: EOF_BFR_DES_ADDR
+  volatile uint32_t  DSCR;               // 0x090
+  volatile uint32_t  DSCR_BF0;           // 0x094
+  volatile uint32_t  DSCR_BF1;           // 0x098
+  volatile uint32_t  PRI;                // 0x09C
+  volatile uint32_t  PERI_SEL;           // 0x0A0
+           uint32_t  _pad[11];
+//
+} esp_dmainout_t;
+
+typedef struct
+{
+  esp_dmainout_t     IN;
+  esp_dmainout_t     OUT;
+//
+} esp_dmach_t;
+
+typedef struct
+{
+  esp_dmach_intr_t      INTR[3];          // 0x000 - 0x030
+
+  uint32_t  _pad_030[(0x40 - 0x30) / 4];  // 0x030
+
+  volatile uint32_t     AHB_TEST;         // 0x040
+  volatile uint32_t     MISC_CONF;        // 0x044
+  volatile uint32_t     DATE;             // 0x048
+
+  uint32_t  _pad_04C[(0x70 - 0x4C) / 4];  // 0x04C
+
+  esp_dmach_t           CH[3];            // 0x070
+//
+} esp_gdma_t;
+
+#define GDMA  ((esp_gdma_t *)(0x6003F000))
+
+//-----------------------------------------------------------------------------
+// I2C
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// TWAI = CAN
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// SARADC
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// LEDPWM
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 // Espressif definitions
 //-----------------------------------------------------------------------------
 
@@ -640,4 +714,4 @@ typedef struct
 //   E9 03 02 20 00 E0 3C 40 EE 00 00 00 05 00 00 00
 //   00 00 00 00 00 00 00 00 00 61 CD 3F 8C 03 00 00
 
-
+#endif // ifndef _ESP32C3_VIHAL_H

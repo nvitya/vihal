@@ -6,7 +6,8 @@
  *  authors:  nvitya
 */
 
-#pragma once
+#ifndef _MCU_DEFS_H
+#define _MCU_DEFS_H
 
 #include "rv32i_cpu.h"
 
@@ -87,3 +88,5 @@ inline bool mcu_irq_enabled(unsigned intnum)
 {
   return false;
 }
+
+#endif
