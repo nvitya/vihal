@@ -634,6 +634,29 @@ typedef struct
 
 #define GDMA  ((esp_gdma_t *)(0x6003F000))
 
+#define GDMA_PERI_SEL_SPI2   0
+#define GDMA_PERI_SEL_UHCI0  2
+#define GDMA_PERI_SEL_I2S    3
+#define GDMA_PERI_SEL_AES    6
+#define GDMA_PERI_SEL_SHA    7
+#define GDMA_PERI_SEL_ADC    8
+
+#define GDMA_MAX_CHANNELS    3
+
+typedef struct
+{
+  uint32_t   size_len_flags;
+  uint32_t   bufaddr;
+  uint32_t   next_desc;
+//
+} esp_dmadesc_t;
+
+#define DMADESC_FLAG_OWN      (1u << 31)
+#define DMADESC_FLAG_SUC_EOF  (1u << 30)
+#define DMADESC_FLAG_ERR_EOF  (1u << 28)
+#define DMADESC_SIZE_POS       0
+#define DMADESC_LEN_POS       12
+
 //-----------------------------------------------------------------------------
 // I2C
 //-----------------------------------------------------------------------------
@@ -849,7 +872,7 @@ typedef struct
 #include "soc/uart_channel.h"
 #include "soc/uart_reg.h"
 #include "soc/uhci_reg.h"
-#include "soc/usb_serial_jtag_reg.h"
+//#include "soc/usb_serial_jtag_reg.h"
 
 //-----------------------------------------------------------------------------
 // Miscellaneous
