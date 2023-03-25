@@ -638,17 +638,181 @@ typedef struct
 // I2C
 //-----------------------------------------------------------------------------
 
+typedef struct
+{
+  volatile uint32_t  SCL_LOW_PERIOD;          // 0x00
+  volatile uint32_t  CTR;                     // 0x04
+  volatile uint32_t  SR;                      // 0x08
+  volatile uint32_t  TO;                      // 0x0C
+  volatile uint32_t  SLAVE_ADDR;              // 0x10
+  volatile uint32_t  FIFO_ST;                 // 0x14
+  volatile uint32_t  FIFO_CONF;               // 0x18
+  volatile uint32_t  DATA;                    // 0x1C
+  volatile uint32_t  INT_RAW;                 // 0x20
+  volatile uint32_t  INT_CLR;                 // 0x24
+  volatile uint32_t  INT_ENA;                 // 0x28
+  volatile uint32_t  INT_STATUS;              // 0x2C
+  volatile uint32_t  SDA_HOLD;                // 0x30
+  volatile uint32_t  SDA_SAMPLE;              // 0x34
+  volatile uint32_t  SCL_HIGH_PERIOD;         // 0x38
+           uint32_t  _pad_3C;                 // 0x3C
+  volatile uint32_t  SCL_START_HOLD;          // 0x40
+  volatile uint32_t  SCL_RSTART_SETUP;        // 0x44
+  volatile uint32_t  SCL_STOP_HOLD;           // 0x48
+  volatile uint32_t  SCL_STOP_SETUP;          // 0x4C
+  volatile uint32_t  FILTER_CFG;              // 0x50
+  volatile uint32_t  CLK_CONF;                // 0x54
+  volatile uint32_t  COMD[8];                 // 0x58 - 0x78
+  volatile uint32_t  SCL_ST_TIME_OUT;         // 0x78
+  volatile uint32_t  SCL_MAIN_ST_TIME_OUT;    // 0x7C
+  volatile uint32_t  SCL_SP_CONF;             // 0x80
+  volatile uint32_t  SCL_STRETCH_CONF;        // 0x84
+           uint32_t  _pad_88[(0xF8-0x88)/4];  // 0x88
+  volatile uint32_t  DATE;                    // 0xF8
+           uint32_t  _pad_FC;                 // 0xFC
+  volatile uint32_t  TXFIFO_START_ADDR[32];   // 0x100
+  volatile uint32_t  RXFIFO_START_ADDR[32];   // 0x180
+//
+} esp_i2c_regs_t;
+
+#if 1
+  // definition check:
+  static_assert(offsetof(esp_i2c_regs_t, TXFIFO_START_ADDR)  == 0x100, "offset error");
+  static_assert(offsetof(esp_i2c_regs_t, RXFIFO_START_ADDR)  == 0x180, "offset error");
+#endif
+
+#define I2C0  ((esp_i2c_regs_t *)(0x60013000))
+
 //-----------------------------------------------------------------------------
 // TWAI = CAN
 //-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  MODE;                 // 00
+  volatile uint32_t  CMD;                  // 04
+  volatile uint32_t  STATUS;               // 08
+  volatile uint32_t  INT_RAW;              // 0C
+  volatile uint32_t  INT_ENA;              // 10
+  volatile uint32_t  _pad_14;              // 14
+  volatile uint32_t  BUS_TIMING_0;         // 18
+  volatile uint32_t  BUS_TIMING_1;         // 1C
+  uint32_t  _pad_20[(0x2C-0x20)/4];        // 20
+  volatile uint32_t  ARB_LOST_CAP;         // 2C
+  volatile uint32_t  ERR_CODE_CAP;         // 30
+  volatile uint32_t  ERR_WARNING_LIMIT;    // 34
+  volatile uint32_t  RX_ERR_CNT;           // 38
+  volatile uint32_t  TX_ERR_CNT;           // 3C
+
+  volatile uint32_t  DATA[13];             // 40 - 74
+
+  volatile uint32_t  RX_MESSAGE_CNT;       // 74
+           uint32_t  _pad_78;              // 78
+  volatile uint32_t  CLOCK_DIVIDER;        // 7C
+//
+} esp_twai_regs_t;
+
+#if 1
+  // definition check:
+  static_assert(offsetof(esp_twai_regs_t, CLOCK_DIVIDER)  == 0x7C, "offset error");
+#endif
+
+#define TWAI  ((esp_twai_regs_t *)(0x6002B000))
 
 //-----------------------------------------------------------------------------
 // SARADC
 //-----------------------------------------------------------------------------
 
+typedef struct
+{
+  volatile uint32_t  CTRL;                 // 0x000
+  volatile uint32_t  CTRL2;                // 0x004
+  volatile uint32_t  FILTER_CTRL1;         // 0x008
+  volatile uint32_t  FSM_WAIT;             // 0x00C
+  volatile uint32_t  SAR1_STATUS;          // 0x010
+  volatile uint32_t  SAR2_STATUS;          // 0x014
+  volatile uint32_t  SAR_PATT_TAB1;        // 0x018
+  volatile uint32_t  SAR_PATT_TAB2;        // 0x01C
+  volatile uint32_t  ONETIME_SAMPLE;       // 0x020
+  volatile uint32_t  APB_ADC_ARB_CTRL;     // 0x024
+  volatile uint32_t  FILTER_CTRL0;         // 0x028
+  volatile uint32_t  DATA_STATUS_1;        // 0x02C  (APB_SARADC_1_DATA_STATUS_REG)
+  volatile uint32_t  DATA_STATUS_2;        // 0x030  (APB_SARADC_2_DATA_STATUS_REG)
+  volatile uint32_t  THRES0_CTRL;          // 0x034
+  volatile uint32_t  THRES1_CTRL;          // 0x038
+  volatile uint32_t  THRES_CTRL;           // 0x03C
+  volatile uint32_t  INT_ENA;              // 0x040
+  volatile uint32_t  INT_RAW;              // 0x044
+  volatile uint32_t  INT_ST;               // 0x048
+  volatile uint32_t  INT_CLR;              // 0x04C
+  volatile uint32_t  DMA_CONF;             // 0x050
+  volatile uint32_t  APB_ADC_CLKM_CONF;    // 0x054
+  volatile uint32_t  APB_TSENS_CTRL;       // 0x058
+  volatile uint32_t  APB_TSENS_CTRL2;      // 0x05C
+  volatile uint32_t  CALI;                 // 0x060
+  uint32_t  _pad_064[(0x3FC-0x64)/4];      // 0x064
+  volatile uint32_t  APB_CTRL_DATE;        // 0x3FC
+//
+} esp_saradc_regs_t;
+
+#define SARADC  ((esp_saradc_regs_t *)(0x60040000))
+
 //-----------------------------------------------------------------------------
-// LEDPWM
+// LEDC / LED PWM
 //-----------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  LSCH0_CONF0;      // 0x00
+  volatile uint32_t  LSCH0_HPOINT;     // 0x04
+  volatile uint32_t  LSCH0_DUTY;       // 0x08
+  volatile uint32_t  LSCH0_CONF1;      // 0x0C
+  volatile uint32_t  LSCH0_DUTY_R;     // 0x10
+  volatile uint32_t  LSCH1_CONF0;      // 0x14
+  volatile uint32_t  LSCH1_HPOINT;     // 0x18
+  volatile uint32_t  LSCH1_DUTY;       // 0x1C
+  volatile uint32_t  LSCH1_CONF1;      // 0x20
+  volatile uint32_t  LSCH1_DUTY_R;     // 0x24
+  volatile uint32_t  LSCH2_CONF0;      // 0x28
+  volatile uint32_t  LSCH2_HPOINT;     // 0x2C
+  volatile uint32_t  LSCH2_DUTY;       // 0x30
+  volatile uint32_t  LSCH2_CONF1;      // 0x34
+  volatile uint32_t  LSCH2_DUTY_R;     // 0x38
+  volatile uint32_t  LSCH3_CONF0;      // 0x3C
+  volatile uint32_t  LSCH3_HPOINT;     // 0x40
+  volatile uint32_t  LSCH3_DUTY;       // 0x44
+  volatile uint32_t  LSCH3_CONF1;      // 0x48
+  volatile uint32_t  LSCH3_DUTY_R;     // 0x4C
+  volatile uint32_t  LSCH4_CONF0;      // 0x50
+  volatile uint32_t  LSCH4_HPOINT;     // 0x54
+  volatile uint32_t  LSCH4_DUTY;       // 0x58
+  volatile uint32_t  LSCH4_CONF1;      // 0x5C
+  volatile uint32_t  LSCH4_DUTY_R;     // 0x60
+  volatile uint32_t  LSCH5_CONF0;      // 0x64
+  volatile uint32_t  LSCH5_HPOINT;     // 0x68
+  volatile uint32_t  LSCH5_DUTY;       // 0x6C
+  volatile uint32_t  LSCH5_CONF1;      // 0x70
+  volatile uint32_t  LSCH5_DUTY_R;     // 0x74
+  uint32_t  _pad_78[(0xA0-0x78)/4];    // 0x78
+  volatile uint32_t  LSTIMER0_CONF;    // 0xA0
+  volatile uint32_t  LSTIMER0_VALUE;   // 0xA4
+  volatile uint32_t  LSTIMER1_CONF;    // 0xA8
+  volatile uint32_t  LSTIMER1_VALUE;   // 0xAC
+  volatile uint32_t  LSTIMER2_CONF;    // 0xB0
+  volatile uint32_t  LSTIMER2_VALUE;   // 0xB4
+  volatile uint32_t  LSTIMER3_CONF;    // 0xB8
+  volatile uint32_t  LSTIMER3_VALUE;   // 0xBC
+  volatile uint32_t  INT_RAW;          // 0xC0
+  volatile uint32_t  INT_ST;           // 0xC4
+  volatile uint32_t  INT_ENA;          // 0xC8
+  volatile uint32_t  INT_CLR;          // 0xCC
+  volatile uint32_t  CONF;             // 0xD0
+  uint32_t  _pad_D4[(0xFC-0xD4)/4];    // 0xD4
+  volatile uint32_t  DATE;             // 0xFC
+//
+} esp_ledc_regs_t;
+
+#define LEDC  ((esp_ledc_regs_t *)(0x60019000))
 
 
 //-----------------------------------------------------------------------------
