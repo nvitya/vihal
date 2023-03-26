@@ -60,6 +60,8 @@ bool THwUart_esp::Init(int adevnum)
     sys_rst_mask = SYSTEM_UART1_RST;
 	}
 
+	uhci->CONF0 |= (1 << 11); // keep the UHCI CLOCK running
+
 	if (!regs)
 	{
 		return false;

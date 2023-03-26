@@ -25,6 +25,10 @@
   #include "hwqspi_esp.h"
 #endif
 
+#ifdef HWI2C_H_
+  #include "hwi2c_esp.h"
+#endif
+
 #ifdef HWDMA_H_
   #define SKIP_UNIMPLEMENTED_WARNING
 #endif

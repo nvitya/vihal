@@ -41,7 +41,7 @@ public:
 	volatile uint32_t *  irqreg = nullptr;
 	volatile uint32_t *  irqclr = nullptr;
 
-	esp_dmadesc_t        desc __attribute__((aligned(16)));
+	esp_dmadesc_t        desc  __attribute__((aligned(16)));
 
 	bool Init(int achannel, int aperiph);
 

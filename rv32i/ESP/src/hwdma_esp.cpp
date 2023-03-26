@@ -124,42 +124,40 @@ void THwDmaChannel_esp::PrepareTransfer(THwDmaTransfer * axfer)
   Disable();  // this is important here
 	ClearIrqFlag();
 
-	uint32_t slf = 0;  // | DMADESC_FLAG_SUC_EOF;
+	uint32_t slf = DMADESC_FLAG_OWN;
 
 	if (istx)
 	{
-	  slf |= DMADESC_FLAG_OWN | DMADESC_FLAG_SUC_EOF;
+	  slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
 	  slf |= ((axfer->count << 12) | (axfer->count << 0));
+    //slf |= ((axfer->count << 12) | 0); //(axfer->count << 0));
 	  desc.bufaddr = (uint32_t)axfer->srcaddr;
 	}
 	else
 	{
-	  slf |= DMADESC_FLAG_OWN;
+	  //slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
 	  slf |= ((0 << 12) | (axfer->count << 0));
     desc.bufaddr = (uint32_t)axfer->dstaddr;
 	}
 
+  // todo: handle circular, irq
+  if (axfer->flags & DMATR_CIRCULAR)
+  {
+    //ctl |= (1 << 5);
+  }
+
+  if (axfer->flags & DMATR_IRQ)
+  {
+    //ctl |= (1 << 1);
+  }
+
 	desc.size_len_flags = slf;
-	desc.next_desc = 0; //unsigned(&desc);
+	desc.next_desc = 0;
 
   regs->LINK = (0
     //| GDMA_LINK_AUTORET
     | (unsigned(&desc) & 0xFFFFF)
   );
-
-	// todo: handle circular, irq
-#if 0
-  if (axfer->flags & DMATR_CIRCULAR)
-  {
-    ctl |= (1 << 5);
-  }
-
-  if (axfer->flags & DMATR_IRQ)
-  {
-    ctl |= (1 << 1);
-  }
-#endif
-
 }
 
 
