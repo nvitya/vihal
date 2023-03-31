@@ -32,99 +32,130 @@
 bool THwI2c_esp::Init(int adevnum)
 {
 	unsigned tmp;
-	unsigned perid;
 
 	initialized = false;
 
 	devnum = adevnum;
-
 	regs = nullptr;
 
-#if 0
+  if (0 == devnum)
+  {
+    regs = I2C0;
+  }
 
-	// because of the peripheral IDs we need full multiple definitions
-	if (false)
-	{
+  if (!regs)
+  {
+    return false;
+  }
 
-	}
-#ifdef TWI0
-	else if (0 == devnum)
-	{
-		regs = (HW_I2C_REGS *)TWI0;
-		perid = ID_TWI0;
-	}
-#endif
-#ifdef TWIHS0
-	else if (0 == devnum)
-	{
-		regs = (HW_I2C_REGS *)TWIHS0;
-		perid = ID_TWIHS0;
-	}
-#endif
-#ifdef TWI1
-	else if (1 == devnum)
-	{
-		regs = (HW_I2C_REGS *)TWI1;
-		perid = ID_TWI1;
-	}
-#endif
-#ifdef TWIHS1
-	else if (1 == devnum)
-	{
-		regs = (HW_I2C_REGS *)TWIHS1;
-		perid = ID_TWIHS1;
-	}
-#endif
-#ifdef TWI2
-	else if (2 == devnum)
-	{
-		regs = (HW_I2C_REGS *)TWI2;
-		perid = ID_TWI2;
-	}
-#endif
-#ifdef TWIHS2
-	else if (2 == devnum)
-	{
-		regs = (HW_I2C_REGS *)TWIHS2;
-		perid = ID_TWIHS2;
-	}
-#endif
-	if (!regs)
-	{
-		return false;
-	}
+  uint32_t ctr = (0
+    | (1  <<  0)  // SDA_FORCE_OUT: 1 = open-drain output
+    | (1  <<  1)  // SCL_FORCE_OUT: 1 = open-drain output
+    | (0  <<  2)  // SAMPLE_SCL_LEVEL
+    | (1  <<  3)  // RX_FULL_ACK_LEVEL: 1 = send no ack
+    | (1  <<  4)  // MS_MODE: 1 = master
+    | (0  <<  5)  // TRANS_START
+    | (0  <<  6)  // TX_LSB_FIRST
+    | (0  <<  7)  // RX_LSB_FIRST
+    | (1  <<  8)  // CLK_EN
+    | (1  <<  9)  // ARBITRATION_EN
+    | (1  << 10)  // FSM_RST
+    | (0  << 11)  // CONF_UPGATE
+    | (0  << 12)  // SLV_TX_AUTO_START_EN
+    | (0  << 13)  // ADDR_10BIT_RW_CHECK_EN
+    | (0  << 14)  // ADDR_BROADCASTING_EN
+  );
+  regs->CTR = ctr;
 
-	// Enable the peripheral
-	atsam_enable_peripheral(perid);
+  tmp = (0
+    | (11 <<  0)  // RXFIFO_WM_THRHD
+    | (4  <<  5)  // TXFIFO_WM_THRHD
+    | (0  << 10)  // NONFIFO_EN
+    | (0  << 11)  // FIFO_ADDR_CFG_EN
+    | (1  << 12)  // RX_FIFO_RST
+    | (1  << 13)  // TX_FIFO_RST
+    | (0  << 14)  // FIFO_PRT_EN
+  );
+  regs->FIFO_CONF = tmp;
+  tmp &= ~(3 << 12); // remove the reset bits
+  regs->FIFO_CONF = tmp;
 
-  regs->CR = (1 << 7);  // Reset
+  regs->FILTER_CFG = (0
+    | (0  <<  0)  // SCL_FILTER_THRES
+    | (0  <<  4)  // SDA_FILTER_THRES
+    | (1  <<  8)  // SCL_FILTER_EN
+    | (1  <<  9)  // SDA_FILTER_EN
+  );
 
-	unsigned periphclock = SystemCoreClock;
-	if (periphclock > 150000000)  periphclock = periphclock / 2;
+  regs->SCL_SP_CONF = 0; // no idle pulses, no power down
 
-	unsigned halfclockdiv = ((periphclock / speed) >> 1);
-	unsigned ckdiv = 0;
-	while (halfclockdiv > 255)
-	{
-		ckdiv += 1;
-		halfclockdiv = (halfclockdiv >> 1);
-	}
-
-	regs->CWGR = 0
-		| (0 << 24)  // HOLD(5)
-		| (0 << 20)  // CKSRC: 0 = periph. clock
-		| (ckdiv << 16)  // CKDIV(3): big prescaler
-		| (halfclockdiv << 8)  // CHDIV
-		| (halfclockdiv << 0)  // CLDIV
-  ;
-
-	regs->CR = ((1 << 2) | (1 << 5));  // Master mode enable + slave disable
-
-#endif
+  SetSpeed(speed);
 
 	initialized = true;
 
 	return true;
+}
+
+void THwI2c_esp::SetSpeed(unsigned aspeed)
+{
+  speed = aspeed;
+
+  unsigned periphclock = 40000000;  // fix 40 MHz
+  unsigned half_cycle = ((periphclock / speed) >> 1);
+  unsigned clkm_div = 0;
+  while (half_cycle > 511)
+  {
+    clkm_div += 1;
+    half_cycle = (half_cycle >> 1);
+  }
+
+  // These calculations and comments were taken from Espressif IDF:
+  //   i2c_ll_cal_bus_clk()
+  //   i2c_ll_set_bus_timing()
+
+  //SCL
+  uint32_t scl_low = half_cycle;
+  // default, scl_wait_high < scl_high
+  uint32_t scl_wait_high = (speed <= 50000) ? 0 : (half_cycle / 8); // compensate the time when freq > 50K
+  uint32_t scl_high = half_cycle - scl_wait_high;
+
+  uint32_t sda_hold = half_cycle / 4;
+  // scl_wait_high < sda_sample <= scl_high
+  uint32_t sda_sample = half_cycle / 2;
+  uint32_t setup = half_cycle;
+  uint32_t hold = half_cycle;
+  //default we set the timeout value to about 10 bus cycles
+  // log(20*half_cycle)/log(2) = log(half_cycle)/log(2) +  log(20)/log(2)
+  uint32_t tout = (int)(sizeof(half_cycle) * 8 - __builtin_clz(5 * half_cycle)) + 2;
+
+  regs->CLK_CONF = (0
+    | (clkm_div <<  0)  // SCLK_DIV_NUM: integer part (one less)
+    | (0     <<  8)  // SCLK_DIV_A(6): fractional numerator
+    | (0     << 14)  // SCLK_DIV_B(6): fractional denumerator
+    | (0     << 20)  // SCLK_SEL: 0 = XTAL_CLK, 1 = RC_FAST_CLK
+    | (1     << 21)  // SCLK_ACTIVE
+  );
+
+  // SCL period
+  regs->SCL_LOW_PERIOD  = (scl_low - 2);
+  regs->SCL_HIGH_PERIOD = (0
+    | ((scl_high - 3) << 0)  // SCL_HIGH_PERIOD(9)
+    | (scl_wait_high  << 9)  // SCL_WAIT_HIGH_PERIOD(7)
+  );
+  // SDA sampling
+  regs->SDA_HOLD   = (sda_hold - 1);
+  regs->SDA_SAMPLE = (sda_sample - 1);
+  // setup
+  regs->SCL_RSTART_SETUP = (setup - 1);
+  regs->SCL_STOP_SETUP   = (setup - 1);
+  // hold
+  regs->SCL_START_HOLD = (hold - 1);
+  regs->SCL_STOP_HOLD  = (hold - 1);
+  // timeout
+  regs->TO = (0
+    | (tout <<  0)  // TIME_OUT_VALUE
+    | (1    <<  5)  // TIME_OUT_EN
+  );
 }
 
 void THwI2c_esp::RunTransaction()

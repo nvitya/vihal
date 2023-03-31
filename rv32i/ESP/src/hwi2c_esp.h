@@ -40,6 +40,9 @@ public:
 	void RunTransaction();
 
   //void DmaAssign(bool istx, THwDmaChannel * admach);
+
+	void SetSpeed(unsigned aspeed);
+
 };
 
 #define HWI2C_IMPL THwI2c_esp
