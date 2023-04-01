@@ -48,7 +48,7 @@ bool THwI2c_esp::Init(int adevnum)
     return false;
   }
 
-  uint32_t ctr = (0
+  ctr_reg_base = (0
     | (1  <<  0)  // SDA_FORCE_OUT: 1 = open-drain output
     | (1  <<  1)  // SCL_FORCE_OUT: 1 = open-drain output
     | (0  <<  2)  // SAMPLE_SCL_LEVEL
@@ -65,7 +65,8 @@ bool THwI2c_esp::Init(int adevnum)
     | (0  << 13)  // ADDR_10BIT_RW_CHECK_EN
     | (0  << 14)  // ADDR_BROADCASTING_EN
   );
-  regs->CTR = ctr;
+  regs->CTR = ctr_reg_base;
+  ConfUpgate();
 
   tmp = (0
     | (11 <<  0)  // RXFIFO_WM_THRHD
@@ -91,6 +92,8 @@ bool THwI2c_esp::Init(int adevnum)
 
   SetSpeed(speed);
 
+  ConfUpgate();
+
 	initialized = true;
 
 	return true;
@@ -109,7 +112,7 @@ void THwI2c_esp::SetSpeed(unsigned aspeed)
     half_cycle = (half_cycle >> 1);
   }
 
-  // These calculations and comments were taken from Espressif IDF:
+  // These calculations and some comments were taken from Espressif IDF:
   //   i2c_ll_cal_bus_clk()
   //   i2c_ll_set_bus_timing()
 
@@ -158,186 +161,268 @@ void THwI2c_esp::SetSpeed(unsigned aspeed)
   );
 }
 
+void THwI2c_esp::ResetComd()
+{
+  comdidx = 0;
+  wrcnt = 0;
+}
+
+void THwI2c_esp::AddComd(unsigned acomd)
+{
+  if (comdidx > 7)  return;
+
+  regs->COMD[comdidx] = acomd;
+  ++comdidx;
+}
+
+void THwI2c_esp::AddComdWrite(uint8_t adata)
+{
+
+}
+
 void THwI2c_esp::RunTransaction()
 {
-#if 0
-
-  if (0 == trastate)
+  if (0 == trastate) // prepare for the first time
   {
     istx = (0 != curtra->iswrite);
     dataptr = (uint8_t *)curtra->dataptr;
     datalen = curtra->datalen;
     remainingbytes = datalen;
 
+    regs->FIFO_CONF |=  (3 << 12);  // reset TX and RX fifo
+    ConfUpgate();
+    regs->FIFO_CONF &= ~(3 << 12);  // remove the reset (is it necessary?)
+    ConfUpgate();
+
     unsigned extracnt = ((curtra->extra >> 24) & 3);
-    if (extracnt)
+
+    ResetComd();
+
+    AddComd(COMD_OP_RSTART);
+
+    uint32_t wrc = COMD_OP_WRITE | COMD_ACK_EXP_0 | COMD_ACK_CHECK | 1;
+
+    if (extracnt || istx)
     {
-      regs->IADR = (curtra->extra & 0x00FFFFFF);
-    }
-
-    if (istx)
-    {
-      regs->MMR = 0
-        | (curtra->address << 16)
-        | (0 << 12)  // MREAD: 0 = write
-        | (extracnt <<  8)  // IADRSZ: internal address bytes
-      ;
-
-      dmaused = (txdma && (datalen > 1));
-      if (dmaused)
-      {
-        txdma->Prepare(true,  (void *)&(regs->THR), 0);
-
-        xfer.srcaddr = dataptr;
-        xfer.bytewidth = 1;
-        xfer.count = remainingbytes - 1;
-        xfer.flags = 0; // peripheral transfer with defaults
-
-        dataptr += xfer.count;
-        remainingbytes = 1;
-      }
+      PushData((curtra->address << 1) | 0); // write first
     }
     else
     {
-      regs->MMR = 0
-        | (curtra->address << 16)
-        | (1 << 12)  // MREAD: 1 = read
-        | (extracnt <<  8)  // IADRSZ: internal address bytes
-      ;
+      PushData((curtra->address << 1) | 1);  // go to read immediately
+    }
 
-      dmaused = (rxdma && (datalen > 2));
-      if (dmaused)
+    if (extracnt)
+    {
+      uint8_t   extradata[4];
+      uint32_t  eshift = ((extracnt - 1) << 3);  // reverse byte order
+      unsigned  ecnt = extracnt;
+      while (ecnt)
       {
-        rxdma->Prepare(false, (void *)&(regs->RHR), 0);
-
-        xfer.dstaddr = dataptr;
-        xfer.bytewidth = 1;
-        xfer.count = remainingbytes - 2;
-        xfer.flags = 0; // peripheral transfer with defaults
-
-        dataptr += xfer.count;
-        remainingbytes = 2;
-
-        rxdma->StartTransfer(&xfer);
+        PushData(curtra->extra >> eshift);
+        eshift -= 8;
+        wrc += 1;  // increments the byte count
+        --ecnt;
       }
     }
 
-    if (regs->SR)  { }  // read the SR register to clear flags
+    AddComd(wrc); // START + EXTRA
 
-    // Start
+    trastate = 10;  // wait for finish by default
 
-    unsigned tmp = (1 << 0);  // send a start condition
-    if (remainingbytes <= 1)
+    if (istx)
     {
-      tmp |= (1 << 0); // send a stop condition too
-    }
-    regs->CR = tmp;
+      rxremaining = 0;
+      if (remainingbytes < 32 - wrcnt)
+      {
+        // single transaction
 
-    if (istx && dmaused)
-    {
-      txdma->StartTransfer(&xfer);
+        AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | remainingbytes);
+        AddComd(COMD_OP_STOP);
+
+        while (remainingbytes)
+        {
+          PushData(*dataptr++);
+          --remainingbytes;
+        }
+      }
+      else // multiple transactions
+      {
+        AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | (32 - wrcnt));
+        AddComd(COMD_OP_END); // will be continued
+
+        while (wrcnt < 32)
+        {
+          PushData(*dataptr++);
+          --remainingbytes;
+        }
+
+        trastate = 1; // process multiple chunks
+      }
     }
+    else // RX
+    {
+      if (extracnt)
+      {
+        AddComd(COMD_OP_RSTART);
+      }
+
+      if (remainingbytes <= 32) // single transaction is possible
+      {
+        rxremaining = remainingbytes;
+        if (rxremaining > 0)
+        {
+          if (rxremaining > 1)
+          {
+            AddComd(COMD_OP_READ | COMD_ACK_0 | (rxremaining - 1));  // reads with ACK
+          }
+          AddComd(COMD_OP_READ | COMD_ACK_1 | 1); // the last one without ACK
+        }
+        AddComd(COMD_OP_STOP); // finish
+      }
+      else // multiple transactions are necessary
+      {
+        rxremaining = 32;
+
+        AddComd(COMD_OP_READ | COMD_ACK_0 | 32);  // fill the whole fifo (32 bytes)
+        AddComd(COMD_OP_END);                     // wait (stretching SCL) for the next chunk
+
+        trastate = 1; // process multiple chunks
+      }
+    }
+
+    regs->INT_CLR = 0x1FFFF; // clear all interrupts
+
+    StartComdSequence();
 
     trastate = 1;
-  }
+    return; // wait for the next call
 
-	uint32_t sr = regs->SR; // clears flags on read !
+  } // if (0 == trastate)
 
-  // check error flags
+  // check the interrupt status first
+
+	uint32_t st = regs->INT_RAW;
+
   if (!curtra->error)
   {
-    if (sr & (1 << 8))
+    if (st & I2C_INT_NACK)
     {
       curtra->error = ERR_I2C_ACK;
     }
-    else if (sr & (1 << 9))
+    else if (st & I2C_INT_ARBITRATION_LOST)
     {
       curtra->error = ERR_I2C_ARBLOST;
     }
-    else if (sr & (1 << 6))
+    else if (st & (
+                      (1 <<  8) // TIME_OUT
+                    | (1 << 13) // SCL_ST_TO_INT
+                    | (1 << 14) // SCL_MAIN_ST_TO
+                  )
+            )
     {
-      curtra->error = ERR_I2C_OVERRUN;
+      curtra->error = HWERR_TIMEOUT;
     }
-#if 0
-    else if (sr & (1 << xxx))
+    else if (st & (I2C_INT_RXFIFO_OVF | I2C_INT_MST_TXFIFO_UDF | I2C_INT_TXFIFO_OVF | I2C_INT_RXFIFO_UDF))
     {
-      curtra->error = ERR_I2C_BUS;
+      curtra->error = ERR_I2C_OVRUDR;
     }
-#endif
 
     if (curtra->error)
     {
-      regs->CR = (1 << 1);  // send stop condition
-      trastate = 90;
+      trastate = 90;  // causes transaction finish
     }
   }
 
-  if (1 == trastate)
+  if (1 == trastate)  // multiple chunk handling
   {
+    if (0 == (st & I2C_INT_END_DETECT))  // wait until the previous finishes
+    {
+      return;
+    }
+
+    while (rxremaining)  // get the rx bytes
+    {
+      *dataptr++ = regs->DATA;
+      --remainingbytes;
+      --rxremaining;
+    }
+
+    // add the next chunk
+
+    ResetComd();
+    trastate = 10;  // wait for finish by default
+
     if (istx)
     {
-      if (dmaused && txdma->Active())
+      rxremaining = 0;
+
+      while ((wrcnt < 32) && (remainingbytes > 0))
       {
-        return;
+        PushData(*dataptr++);
+        --remainingbytes;
       }
 
-      if (remainingbytes > 0)
+      AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | wrcnt);
+      if (remainingbytes)
       {
-        if ((sr & (1 << 2)) == 0)  // TX Ready?
-        {
-          return;
-        }
-
-        if (remainingbytes == 1)
-        {
-          regs->CR = (1 << 1);  // send stop condition after the following read
-        }
-
-        regs->THR = *dataptr++;
-        --remainingbytes;
-
-        if (remainingbytes > 0)
-        {
-          return;
-        }
+        AddComd(COMD_OP_END);
+        trastate = 1; // will be continued
+      }
+      else
+      {
+        AddComd(COMD_OP_STOP); // this is the last one
       }
     }
-    else
+    else // RX
     {
-      if (dmaused && rxdma->Active())
+      if (remainingbytes <= 32)  // single transaction is possible
       {
-        return;
+        rxremaining = remainingbytes;
+        if (rxremaining > 0)
+        {
+          if (rxremaining > 1)
+          {
+            AddComd(COMD_OP_READ | COMD_ACK_0 | (rxremaining - 1));  // reads with ACK
+          }
+          AddComd(COMD_OP_READ | COMD_ACK_1 | 1); // the last one without ACK
+        }
+        AddComd(COMD_OP_STOP); // finish
       }
-
-      if (remainingbytes > 0)
+      else // multiple transactions are necessary
       {
-        if ((sr & (1 << 1)) == 0)  // RX Ready?
-        {
-          return;
-        }
+        rxremaining = 32;
 
-        if (remainingbytes == 2)
-        {
-          regs->CR = (1 << 1);  // send stop condition after the following read
-        }
+        AddComd(COMD_OP_READ | COMD_ACK_0 | 32);  // fill the whole fifo (32 bytes)
+        AddComd(COMD_OP_END);                     // wait (stretching SCL) for the next chunk
 
-        *dataptr++ = regs->RHR;
-        --remainingbytes;
-
-        if (remainingbytes > 0)
-        {
-          return;
-        }
+        trastate = 1; // process multiple chunks
       }
     }
+
+    regs->INT_CLR = I2C_INT_END_DETECT;
+
+    StartComdSequence();
+    return;
+  }
+  else if (10 == trastate) // wait for the transaction complete
+  {
+    if (0 == (st & I2C_INT_TRANS_COMPLETE))
+    {
+      return;
+    }
+
+    while (rxremaining)  // get the rx bytes
+    {
+      *dataptr++ = regs->DATA;
+      --remainingbytes;
+      --rxremaining;
+    }
+
+    // no return, finish the transaction
   }
 
-	if ((sr & 1) == 0)   // transfer completed?
-	{
-		return;
-	}
+  // also in case of errors
 
   curtra->completed = true; // transaction finished.
-#endif
 }
 

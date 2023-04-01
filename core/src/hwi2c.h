@@ -39,6 +39,8 @@
 #define ERR_I2C_ARBLOST   (ERR_I2C_BASE + 2)
 #define ERR_I2C_BUS       (ERR_I2C_BASE + 3)
 #define ERR_I2C_OVERRUN   (ERR_I2C_BASE + 4)
+#define ERR_I2C_UNDERRUN  ERR_I2C_OVERRUN
+#define ERR_I2C_OVRUDR    ERR_I2C_OVERRUN
 
 #define I2CEX_0           0x00000000  // do not send extra data
 #define I2CEX_1           0x01000000  // send 1 extra byte
