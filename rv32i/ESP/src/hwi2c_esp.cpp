@@ -41,6 +41,10 @@ bool THwI2c_esp::Init(int adevnum)
   if (0 == devnum)
   {
     regs = I2C0;
+    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_I2C_EXT0_CLK_EN;
+
+    SYSTEM->PERIP_RST_EN0 |=  SYSTEM_I2C_EXT0_RST;
+    SYSTEM->PERIP_RST_EN0 &= ~SYSTEM_I2C_EXT0_RST;
   }
 
   if (!regs)
@@ -59,13 +63,14 @@ bool THwI2c_esp::Init(int adevnum)
     | (0  <<  7)  // RX_LSB_FIRST
     | (1  <<  8)  // CLK_EN
     | (1  <<  9)  // ARBITRATION_EN
-    | (1  << 10)  // FSM_RST
+    | (0  << 10)  // FSM_RST
     | (0  << 11)  // CONF_UPGATE
     | (0  << 12)  // SLV_TX_AUTO_START_EN
     | (0  << 13)  // ADDR_10BIT_RW_CHECK_EN
     | (0  << 14)  // ADDR_BROADCASTING_EN
   );
-  regs->CTR = ctr_reg_base;
+
+  regs->CTR = ctr_reg_base | (1 << 10); // FSM RESET
   ConfUpgate();
 
   tmp = (0
@@ -293,8 +298,6 @@ void THwI2c_esp::RunTransaction()
     regs->INT_CLR = 0x1FFFF; // clear all interrupts
 
     StartComdSequence();
-
-    trastate = 1;
     return; // wait for the next call
 
   } // if (0 == trastate)
@@ -313,12 +316,7 @@ void THwI2c_esp::RunTransaction()
     {
       curtra->error = ERR_I2C_ARBLOST;
     }
-    else if (st & (
-                      (1 <<  8) // TIME_OUT
-                    | (1 << 13) // SCL_ST_TO_INT
-                    | (1 << 14) // SCL_MAIN_ST_TO
-                  )
-            )
+    else if (st & (I2C_INT_TIME_OUT | I2C_INT_SCL_ST_TO | I2C_INT_SCL_MAINST_TO) )
     {
       curtra->error = HWERR_TIMEOUT;
     }
