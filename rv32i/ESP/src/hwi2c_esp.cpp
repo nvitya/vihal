@@ -192,10 +192,9 @@ void THwI2c_esp::RunTransaction()
 
     regs->INT_CLR = 0x1FFFF; // clear all interrupts
 
-    #if 1
-      regs->FIFO_CONF |=  (3 << 12);  // reset TX and RX fifo
-      regs->FIFO_CONF &= ~(3 << 12);  // remove the reset (is it necessary?)
-    #endif
+    // clear fifos
+    regs->FIFO_CONF |=  (3 << 12);  // reset TX and RX fifo
+    regs->FIFO_CONF &= ~(3 << 12);  // remove the reset (is it necessary?)
 
     unsigned extracnt = ((curtra->extra >> 24) & 3);
 
@@ -249,15 +248,19 @@ void THwI2c_esp::RunTransaction()
       }
       else // multiple transactions
       {
-        AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | (32 - wrcnt));
+        AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | (31 - wrcnt));
         AddComd(COMD_OP_END); // will be continued
 
-        while (wrcnt < 32)
+        while (wrcnt < 31)
         {
           PushData(*dataptr++);
           --remainingbytes;
         }
 
+        // silicon workaround: the next byte must be pre-pushed into the fifo
+        // the hw probably always preloads the next byte and does updaes it at transaction restarts
+
+        PushData(*dataptr++); // push the next byte for the next chunk
         trastate = 1; // process multiple chunks
       }
     }
@@ -352,15 +355,22 @@ void THwI2c_esp::RunTransaction()
     {
       rxremaining = 0;
 
-      while ((wrcnt < 32) && (remainingbytes > 0))
+      // warning: one extra byte is pre-pushed in the previous cycle!!!
+      wrcnt = 1;
+      --remainingbytes;
+
+      while ((wrcnt < 31) && (remainingbytes > 0))
       {
         PushData(*dataptr++);
         --remainingbytes;
       }
 
       AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | wrcnt);
+
       if (remainingbytes)
       {
+        PushData(*dataptr++); // pre-push the next byte
+
         AddComd(COMD_OP_END);
         trastate = 1; // will be continued
       }
