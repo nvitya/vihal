@@ -37,7 +37,8 @@ class THwPinCtrl_esp : public THwPinCtrl_pre
 {
 public: // ESP specific:
 
-  bool PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned flags);
+  bool PadSetup(unsigned apadnum, unsigned iomuxidx, unsigned flags);
+  bool PadInput(int apadnum, unsigned in_iomuxidx); // required for bi-direction pins (like I2C)
 
 public:
 

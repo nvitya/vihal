@@ -30,7 +30,7 @@
 #include "hwpins.h"
 #include "esp_utils.h"
 
-bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned flags)
+bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned iomuxidx, unsigned flags)
 {
   if ((apadnum < 0) || (apadnum >= ESP_GPIO_COUNT))
   {
@@ -85,6 +85,11 @@ bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned fla
   else
   {
     padcfg |= (1 << 12);  // 1 = GPIO function
+
+    if ((0 == (flags & PINCFG_OUTPUT)) && (iomuxidx <= 127))
+    {
+      PadInput(apadnum, iomuxidx);
+    }
   }
 
   IO_MUX->CFG[apadnum] = padcfg;
@@ -107,7 +112,7 @@ bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned fla
   if (flags & PINCFG_OUTPUT)
   {
     GPIO->FUNC_OUT_SEL_CFG[apadnum] = (0
-      | (aiomuxidx <<  0)  // OUT_SEL(8)
+      | (iomuxidx <<  0)  // OUT_SEL(8)
       | (0    <<  8)  // INV_SEL
       | (1    <<  9)  // OEN_SEL
       | (0    << 10)  // OEN_INV_SEL
@@ -137,6 +142,35 @@ bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned aiomuxidx, unsigned fla
   {
     GPIO->ENABLE.CLR = gpio_mask;
   }
+
+  return true;
+}
+
+bool THwPinCtrl_esp::PadInput(int apadnum, unsigned in_iomuxidx)
+{
+  if (in_iomuxidx > 127)
+  {
+    return false;
+  }
+
+  unsigned sel;
+  unsigned sig_sel;
+  if ((apadnum < 0) || (apadnum >= ESP_GPIO_COUNT))
+  {
+    sel = 0;
+    sig_sel = 0;
+  }
+  else
+  {
+    sel = apadnum;
+    sig_sel = 1;
+  }
+
+  GPIO->FUNC_IN_SEL_CFG[in_iomuxidx] = (0
+    | (sel     <<  0)  // IN_SEL(5)
+    | (0       <<  5)  // INV_SEL
+    | (sig_sel <<  6)  // SIG_IN_SEL
+  );
 
   return true;
 }
