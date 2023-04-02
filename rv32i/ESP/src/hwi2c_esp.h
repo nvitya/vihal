@@ -88,7 +88,6 @@ protected:
 
 	void       ResetComd();
 	void       AddComd(unsigned acomd);
-	void       AddComdWrite(uint8_t adata);
 	inline void PushData(uint8_t adata)
 	{
 	  regs->DATA = adata;

@@ -105,7 +105,7 @@ bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned iomuxidx, unsigned flag
   {
     pincfg &= ~(1 << 2); // 0 = normal
   }
-  //GPIO->PIN[apinnum] = pincfg;
+  GPIO->PIN[apadnum] = pincfg;
 
   // route the GPIO output regs to the output PAD
 

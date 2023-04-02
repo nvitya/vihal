@@ -53,8 +53,8 @@ bool THwI2c_esp::Init(int adevnum)
   }
 
   ctr_reg_base = (0
-    | (1  <<  0)  // SDA_FORCE_OUT: 1 = open-drain output
-    | (1  <<  1)  // SCL_FORCE_OUT: 1 = open-drain output
+    | (0  <<  0)  // SDA_FORCE_OUT: 1 = open-drain output
+    | (0  <<  1)  // SCL_FORCE_OUT: 1 = open-drain output
     | (0  <<  2)  // SAMPLE_SCL_LEVEL
     | (1  <<  3)  // RX_FULL_ACK_LEVEL: 1 = send no ack
     | (1  <<  4)  // MS_MODE: 1 = master
@@ -180,11 +180,6 @@ void THwI2c_esp::AddComd(unsigned acomd)
   ++comdidx;
 }
 
-void THwI2c_esp::AddComdWrite(uint8_t adata)
-{
-
-}
-
 void THwI2c_esp::RunTransaction()
 {
   if (0 == trastate) // prepare for the first time
@@ -269,6 +264,8 @@ void THwI2c_esp::RunTransaction()
       if (extracnt)
       {
         AddComd(COMD_OP_RSTART);
+        AddComd(COMD_OP_WRITE | COMD_ACK_EXP_0 | 1);  // send the address again
+        PushData((curtra->address << 1) | 1);
       }
 
       if (remainingbytes <= 32) // single transaction is possible
