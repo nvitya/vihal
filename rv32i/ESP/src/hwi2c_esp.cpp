@@ -76,7 +76,7 @@ bool THwI2c_esp::Init(int adevnum)
   tmp = (0
     | (11 <<  0)  // RXFIFO_WM_THRHD
     | (4  <<  5)  // TXFIFO_WM_THRHD
-    | (0  << 10)  // NONFIFO_EN
+    | (0  << 10)  // NONFIFO_EN: 1 = non-fifo mode
     | (0  << 11)  // FIFO_ADDR_CFG_EN
     | (1  << 12)  // RX_FIFO_RST
     | (1  << 13)  // TX_FIFO_RST
@@ -170,6 +170,7 @@ void THwI2c_esp::ResetComd()
 {
   comdidx = 0;
   wrcnt = 0;
+  rdidx = 0;
 }
 
 void THwI2c_esp::AddComd(unsigned acomd)
@@ -189,15 +190,16 @@ void THwI2c_esp::RunTransaction()
     datalen = curtra->datalen;
     remainingbytes = datalen;
 
-    regs->FIFO_CONF |=  (3 << 12);  // reset TX and RX fifo
-    ConfUpgate();
-    regs->FIFO_CONF &= ~(3 << 12);  // remove the reset (is it necessary?)
-    ConfUpgate();
+    regs->INT_CLR = 0x1FFFF; // clear all interrupts
+
+    #if 1
+      regs->FIFO_CONF |=  (3 << 12);  // reset TX and RX fifo
+      regs->FIFO_CONF &= ~(3 << 12);  // remove the reset (is it necessary?)
+    #endif
 
     unsigned extracnt = ((curtra->extra >> 24) & 3);
 
     ResetComd();
-
     AddComd(COMD_OP_RSTART);
 
     uint32_t wrc = COMD_OP_WRITE | COMD_ACK_EXP_0 | COMD_ACK_CHECK | 1;
@@ -292,7 +294,6 @@ void THwI2c_esp::RunTransaction()
       }
     }
 
-    regs->INT_CLR = 0x1FFFF; // clear all interrupts
 
     StartComdSequence();
     return; // wait for the next call
@@ -337,7 +338,7 @@ void THwI2c_esp::RunTransaction()
 
     while (rxremaining)  // get the rx bytes
     {
-      *dataptr++ = regs->DATA;
+      *dataptr++ = PopData();
       --remainingbytes;
       --rxremaining;
     }
@@ -408,7 +409,7 @@ void THwI2c_esp::RunTransaction()
 
     while (rxremaining)  // get the rx bytes
     {
-      *dataptr++ = regs->DATA;
+      *dataptr++ = PopData();
       --remainingbytes;
       --rxremaining;
     }
@@ -416,7 +417,48 @@ void THwI2c_esp::RunTransaction()
     // no return, finish the transaction
   }
 
-  // also in case of errors
+  if (90 == trastate) // if an error was detected
+  {
+    if (0 == (st & I2C_INT_TRANS_COMPLETE))
+    {
+      return;
+    }
+
+    // if an error happens like ACK error, the I2C state machine seems to stuck in a special state.
+    // The next transactions won't be successful,
+    // the HW frankly does not sends the first byte that programmed
+
+    // Resetting the state machine and the fifos do not help
+    // this is not documented, probably a silicon error
+
+    // TODO: find out a better error reset
+    #if 1
+      Init(devnum);  // full (peripheral) reset, but it takes long time
+    #else
+      // this does not work
+
+      regs->FIFO_CONF |=  (3 << 12);  // reset TX and RX fifo
+      regs->FIFO_CONF &= ~(3 << 12);  // remove the reset (is it necessary?)
+
+      regs->CTR = (1 << 10); // FSM RESET
+      regs->CTR = (3 << 10); // FSM RESET + CONF UPGATE
+      while (regs->CTR & (1 << 10))
+      {
+        // wait
+      }
+
+      for (int i = 0; i < 8; ++i)
+      {
+        regs->COMD[i] = 0x80000000;  // set the done bits
+      }
+
+      regs->CTR = ctr_reg_base;
+
+      regs->INT_CLR = 0x1FFFF; // clear all interrupts
+    #endif
+
+    // continue with closing the transaction
+  }
 
   curtra->completed = true; // transaction finished.
 }

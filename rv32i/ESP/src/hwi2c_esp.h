@@ -82,6 +82,7 @@ public:
 protected:
 	uint8_t    comdidx = 0;
 	uint8_t    wrcnt = 0;
+	uint8_t    rdidx = 0;
 	unsigned   rxremaining = 0;
 
 	uint32_t   ctr_reg_base = 0;
@@ -90,9 +91,28 @@ protected:
 	void       AddComd(unsigned acomd);
 	inline void PushData(uint8_t adata)
 	{
-	  regs->DATA = adata;
+    #if 1
+      regs->DATA = adata;
+    #else
+      if (wrcnt >= 32)  return;
+      regs->TXFIFO_START_ADDR[wrcnt] = adata;
+    #endif
 	  ++wrcnt;
 	}
+
+  inline uint8_t PopData()
+  {
+    #if 1
+      return regs->DATA;
+    #else
+      if (rdidx >= 32)
+      {
+        return 0;
+      }
+
+      return regs->RXFIFO_START_ADDR[rdidx++];
+    #endif
+  }
 
 	inline void ConfUpgate()
 	{
