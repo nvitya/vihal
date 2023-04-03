@@ -429,7 +429,7 @@ void THwI2c_esp::RunTransaction()
 
   if (90 == trastate) // if an error was detected
   {
-    if (0 == (st & I2C_INT_TRANS_COMPLETE))
+    if (0 == (st & (I2C_INT_TRANS_COMPLETE | I2C_INT_END_DETECT | I2C_INT_SCL_MAINST_TO | I2C_INT_TIME_OUT)))
     {
       return;
     }
