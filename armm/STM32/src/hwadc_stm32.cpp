@@ -483,6 +483,9 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 
 bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 {
+  int       i;
+  uint32_t  tmp;
+
 	initialized = false;
 
 	devnum = adevnum;
@@ -491,6 +494,16 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 
 	uint8_t dmamux;
 	uint16_t defaultdma;
+
+  #if defined(RCC_CCIPR_ADC12SEL_Pos)
+	  // set the ADC clock to system clock
+    tmp = RCC->CCIPR;
+    tmp &= ~(3 << RCC_CCIPR_ADC12SEL_Pos);
+    tmp &= ~(3 << RCC_CCIPR_ADC345SEL_Pos);
+    tmp |=  (2 << RCC_CCIPR_ADC12SEL_Pos);  // select the system clock
+    tmp |=  (2 << RCC_CCIPR_ADC345SEL_Pos); // select the system clock
+    RCC->CCIPR = tmp;
+  #endif
 
 	regs = nullptr;
 	if      (1 == devnum)
@@ -575,6 +588,14 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	// this gives at 168 MHz CPU speed the maximal 42 MHz ADC clock (for single ended mode)
 	adc_clock = stm32_bus_speed(0) / 4;
 
+  // stop adc
+
+  if (regs->CR & ADC_CR_ADEN)
+  {
+    regs->CR |= ADC_CR_ADDIS;
+    while (regs->CR & ADC_CR_ADDIS) { } // wait until disabled
+  }
+
 	// ADC Common register
 	commonregs->CCR = 0
 		| (1 << 24)  // VBATSEL: 1 = VBAT ch enable
@@ -589,14 +610,6 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 		| (0 <<  0)  // MULTI(5): Dual ADC selection, 0 = independent mode
 	;
 
-
-	// stop adc adc
-
-	if (regs->CR & ADC_CR_ADEN)
-	{
-		regs->CR |= ADC_CR_ADDIS;
-		while (regs->CR & ADC_CR_ADDIS) { } // wait until disabled
-	}
 
   #if defined(MCUSF_H7_V2)
     regs->DIFSEL_RES12 = 0; // all channels are single ended
@@ -703,8 +716,7 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 		++stcode;
 	}
 
-	int i;
-	uint32_t tmp = 0;
+	tmp = 0;
 	for (i = 0; i < 9; ++i)
 	{
 		tmp |= (stcode << (i * 3));
