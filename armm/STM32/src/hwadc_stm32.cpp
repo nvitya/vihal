@@ -26,7 +26,8 @@
  *  authors:  nvitya
 */
 
-#include "hwadc_stm32.h"
+#include "hwadc.h"
+//#include "hwadc_stm32.h"
 #include "clockcnt.h"
 #include "stm32_utils.h"
 
@@ -641,7 +642,10 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	}
 
 	// enable the ADC to be able to modify the other registers
-	regs->CR |= ADC_CR_ADEN;
+	while (0 == (regs->CR & ADC_CR_ADEN))
+	{
+			regs->CR |= ADC_CR_ADEN;
+  }
 
 	regs->CFGR = 0
 		| (1 << 31)  // JQDIS: Injected Queue disable
