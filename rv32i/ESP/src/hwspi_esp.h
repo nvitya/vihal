@@ -48,8 +48,7 @@ public:
 
 public:
 	unsigned  					basespeed;
-	esp_spi_t *	      	gregs = nullptr;
-	esp_spi_mem_t *	   	mregs = nullptr;
+	esp_spi_t *	      	regs = nullptr;
 
 	volatile uint32_t * pcmdreg = nullptr;
 	volatile uint32_t * pwregs = nullptr;  // pointer to the 16 data registers
