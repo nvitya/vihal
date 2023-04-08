@@ -33,10 +33,15 @@
 #include "hwdma_esp.h"
 #include "esp_utils.h"
 
-#define GDMA_LINK_AUTORET (1 << 20)
-#define GDMA_LINK_STOP    (1 << 21)
-#define GDMA_LINK_START   (1 << 22)
-#define GDMA_LINK_RESTART (1 << 23)
+#define GDMA_INLINK_AUTORET (1 << 20)
+#define GDMA_INLINK_STOP    (1 << 21)
+#define GDMA_INLINK_START   (1 << 22)
+#define GDMA_INLINK_RESTART (1 << 23)
+
+#define GDMA_OUTLINK_STOP    (1 << 20)
+#define GDMA_OUTLINK_START   (1 << 21)
+#define GDMA_OUTLINK_RESTART (1 << 22)
+
 
 bool THwDmaChannel_esp::Init(int achannel, int aperiph)
 {
@@ -74,12 +79,16 @@ void THwDmaChannel_esp::Prepare(bool aistx, void * aperiphaddr, unsigned aflags)
 	{
 	  regs = &dmaregs->CH[chnum].OUT;
 	  done_flag = (1 << 3);
+	  link_start_bit = GDMA_OUTLINK_START;
+	  link_stop_bit  = GDMA_OUTLINK_STOP;
 	  irq_mask = 0b1100101011000; // out
 	}
 	else
 	{
 	  regs = &dmaregs->CH[chnum].IN;
     done_flag = (1 << 0);
+    link_start_bit = GDMA_INLINK_START;
+    link_stop_bit  = GDMA_INLINK_STOP;
     irq_mask = 0b0011010100111; // in
 	}
 
@@ -89,7 +98,7 @@ void THwDmaChannel_esp::Prepare(bool aistx, void * aperiphaddr, unsigned aflags)
 
   if (istx)
   {
-    regs->CONF0 |= (1 << 2); // AUTO_WRBACK
+    //regs->CONF0 |= (1 << 2); // AUTO_WRBACK
   }
 
   regs->PERI_SEL = periph;
@@ -99,7 +108,7 @@ void THwDmaChannel_esp::Prepare(bool aistx, void * aperiphaddr, unsigned aflags)
 
 void THwDmaChannel_esp::Disable()
 {
-  regs->LINK |= GDMA_LINK_STOP;
+  regs->LINK |= link_stop_bit;
 
   mactive = false;
 }
@@ -107,7 +116,7 @@ void THwDmaChannel_esp::Disable()
 void THwDmaChannel_esp::Enable()
 {
 	// start the channel
-	regs->LINK |= GDMA_LINK_START;
+	regs->LINK |= link_start_bit;
 
 	mactive = true;
 }
@@ -126,38 +135,78 @@ void THwDmaChannel_esp::PrepareTransfer(THwDmaTransfer * axfer)
 
 	uint32_t slf = DMADESC_FLAG_OWN;
 
-	if (istx)
+	if (axfer->flags & DMATR_MEM_TO_MEM)
 	{
-	  slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
-	  slf |= ((axfer->count << 12) | (axfer->count << 0));
-    //slf |= ((axfer->count << 12) | 0); //(axfer->count << 0));
-	  desc.bufaddr = (uint32_t)axfer->srcaddr;
+	  // special case
+	  esp_dmainout_t *  outregs = &dmaregs->CH[chnum].OUT;
+	  esp_dmainout_t *  inregs  = &dmaregs->CH[chnum].IN;
+
+	  inregs->CONF0 = (1 << 4); // enable mem2mem
+	  inregs->CONF1 = 0;
+
+	  outregs->CONF0 = (1 << 3); // EOF mode
+	  outregs->CONF1 = 0;
+
+	  outregs->PERI_SEL = 0x00;  // this peripheral must have privilege to access the internal ram ! (0 = SPI2)
+	  inregs->PERI_SEL  = 0x00;  // this peripheral must have privilege to access the internal ram !
+
+	  // descriptor for read from memory, OUT
+	  desc.bufaddr  = unsigned(axfer->srcaddr);
+	  desc.next_desc = 0;
+	  desc.size_len_flags = ( DMADESC_FLAG_OWN | DMADESC_FLAG_ERR_EOF | (axfer->count << 12) | (axfer->count << 12) );
+
+	  // descriptor for write to memory, IN
+	  desc2.bufaddr = unsigned(axfer->dstaddr);
+    desc2.next_desc = 0;
+    desc2.size_len_flags = ( DMADESC_FLAG_OWN | DMADESC_FLAG_ERR_EOF | (0 << 12) | axfer->count );
+
+    inregs->LINK = (0
+        | GDMA_INLINK_AUTORET
+        | (unsigned(&desc2) & 0xFFFFF)
+    );
+
+    outregs->LINK = (0
+        | (unsigned(&desc) & 0xFFFFF)
+    );
+
+    inregs->LINK  |= GDMA_INLINK_START;
+    outregs->LINK |= GDMA_OUTLINK_START;
 	}
 	else
 	{
-	  //slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
-	  slf |= ((0 << 12) | (axfer->count << 0));
-    desc.bufaddr = (uint32_t)axfer->dstaddr;
+    if (istx)
+    {
+      slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
+      //slf |= ((axfer->count << 12) | (axfer->count << 0));
+      slf |= ((axfer->count << 12) | 0); //(axfer->count << 0));
+      desc.bufaddr = (uint32_t)axfer->srcaddr;
+    }
+    else
+    {
+      //slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
+      slf |= ((0 << 12) | (axfer->count << 0));
+      desc.bufaddr = (uint32_t)axfer->dstaddr;
+    }
+
+    // todo: handle circular, irq
+    if (axfer->flags & DMATR_CIRCULAR)
+    {
+      //ctl |= (1 << 5);
+    }
+
+    if (axfer->flags & DMATR_IRQ)
+    {
+      //ctl |= (1 << 1);
+    }
+
+    desc.size_len_flags = slf;
+    desc.next_desc = 0;
+
+    regs->LINK = (0
+      //| GDMA_LINK_AUTORET
+      | (unsigned(&desc) & 0xFFFFF)
+    );
 	}
-
-  // todo: handle circular, irq
-  if (axfer->flags & DMATR_CIRCULAR)
-  {
-    //ctl |= (1 << 5);
-  }
-
-  if (axfer->flags & DMATR_IRQ)
-  {
-    //ctl |= (1 << 1);
-  }
-
-	desc.size_len_flags = slf;
-	desc.next_desc = 0;
-
-  regs->LINK = (0
-    //| GDMA_LINK_AUTORET
-    | (unsigned(&desc) & 0xFFFFF)
-  );
 }
 
 

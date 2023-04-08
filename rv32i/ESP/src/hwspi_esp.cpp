@@ -205,6 +205,20 @@ bool THwSpi_esp::SendFinished()
 	}
 }
 
+void THwSpi_esp::DmaAssign(bool istx, THwDmaChannel * admach)
+{
+  if (istx)
+  {
+    txdma = admach;
+  }
+  else
+  {
+    rxdma = admach;
+  }
+
+  admach->Prepare(istx, (void *)pwregs, 0);
+}
+
 void THwSpi_esp::SetCs(unsigned value)
 {
   if (manualcspin)
@@ -247,69 +261,119 @@ void THwSpi_esp::Run()
 
 	if (1 == state) // start / continue block
 	{
-	  chunksize = remaining;
-	  if (remaining <= 60)  chunksize = remaining;
-	  else                  chunksize = 60;
+    chunksize = remaining;
 
-	  uint32_t *  dst32 = (uint32_t *)pwregs;
-	  uint32_t    d32cnt = ((chunksize + 3) >> 2);
-    uint32_t *  end32 = dst32 + d32cnt;
-
-	  // fill the tx data
-	  if (curblock->src)
+	  if ((txdma && curblock->src) || (rxdma && curblock->dst))
 	  {
-	    if ((unsigned(curblock->src) & 3) || (chunksize & 3))
-	    {
-	      // use 8-bit transfers
-	      uint8_t * dst8  = (uint8_t *)pwregs;  // byte addressable !
-	      uint8_t * end8 = dst8 + chunksize;
-	      uint8_t * src8 = curblock->src;
-        while (dst8 < end8)
-        {
-          *dst8++ = *src8++;
-        }
+	    // transmit with DMA
+      if (remaining <= HW_DMA_MAX_COUNT)  chunksize = remaining;
+      else chunksize = HW_DMA_MAX_COUNT;
 
-        if (chunksize < remaining)
+	    if (txdma && curblock->src)
+	    {
+        regs->DMA_CONF |= (1 << 28); // enable the TX DMA
+
+        txfer.bytewidth = 1;
+        txfer.srcaddr = curblock->src;
+        txfer.count = chunksize;
+        txfer.flags = 0;
+        txdma->StartTransfer(&txfer);
+	    }
+	    else  // send zeroes
+	    {
+        regs->DMA_CONF &= ~(1 << 28); // disable the TX DMA
+
+        uint32_t *  dst32 = (uint32_t *)pwregs;
+        uint32_t *  end32 = dst32 + 16;
+        while (dst32 < end32)
         {
-          // write ahead the the next transfer's first 4 bytes
-          end8 += 4;
+          *dst32++ = 0;
+        }
+	    }
+
+      if (rxdma && curblock->dst)
+      {
+        regs->DMA_CONF |= (1 << 27); // enable the RX DMA
+
+        rxfer.bytewidth = 1;
+        rxfer.dstaddr = curblock->dst;
+        rxfer.count = chunksize;
+        rxfer.flags = 0;
+        rxdma->StartTransfer(&rxfer);
+      }
+      else
+      {
+        regs->DMA_CONF &= ~(1 << 27); // disable the RX DMA
+
+        // the RX data will be discarded
+      }
+	  }
+	  else
+	  {
+      regs->DMA_CONF &= ~(3 << 27); // disable RX and TX DMA
+
+      if (remaining <= 60)  chunksize = remaining;
+      else                  chunksize = 60;
+
+      uint32_t *  dst32 = (uint32_t *)pwregs;
+      uint32_t    d32cnt = ((chunksize + 3) >> 2);
+      uint32_t *  end32 = dst32 + d32cnt;
+
+      // fill the tx data
+      if (curblock->src)
+      {
+        if ((unsigned(curblock->src) & 3) || (chunksize & 3))
+        {
+          // use 8-bit transfers
+          uint8_t * dst8  = (uint8_t *)pwregs;  // byte addressable !
+          uint8_t * end8 = dst8 + chunksize;
+          uint8_t * src8 = curblock->src;
           while (dst8 < end8)
           {
             *dst8++ = *src8++;
           }
+
+          if (chunksize < remaining)
+          {
+            // write ahead the the next transfer's first 4 bytes
+            end8 += 4;
+            while (dst8 < end8)
+            {
+              *dst8++ = *src8++;
+            }
+          }
         }
-	    }
-	    else
-	    {
-	      // use 32-bit transfers
-	      uint32_t * src32 = (uint32_t *)curblock->src;
-	      while (dst32 < end32)
-	      {
-	        *dst32++ = *src32++;
-	      }
+        else
+        {
+          // use 32-bit transfers
+          uint32_t * src32 = (uint32_t *)curblock->src;
+          while (dst32 < end32)
+          {
+            *dst32++ = *src32++;
+          }
 
-	      if (chunksize < remaining)
-	      {
-	        *dst32++ = *src32++;  // write ahead the the next transfer's first word
-	      }
-	    }
+          if (chunksize < remaining)
+          {
+            *dst32++ = *src32++;  // write ahead the the next transfer's first word
+          }
+        }
 
-      curblock->src += chunksize;
-	  }
-	  else // zero tx data
-	  {
-	    // todo: optimize to do it once for longer transfers
-	    while (dst32 < end32)
-	    {
-	      *dst32++ = 0;
-	    }
-
-      if (chunksize < remaining)
+        curblock->src += chunksize;
+      }
+      else // zero tx data
       {
-        *dst32++ = 0;  // write ahead the the next transfer's first word
+        // todo: optimize to do it once for longer transfers
+        while (dst32 < end32)
+        {
+          *dst32++ = 0;
+        }
+
+        if (chunksize < remaining)
+        {
+          *dst32++ = 0;  // write ahead the the next transfer's first word
+        }
       }
 	  }
-
 
 	  uint32_t rmisc = regs->MISC;
     if (chunksize < remaining)
@@ -334,7 +398,7 @@ void THwSpi_esp::Run()
     // start the transaction
     CmdStart();
 
-	  state = 2; // wait to finish
+    state = 2; // wait finish chunk
 	}
 	else if (2 == state) // wait the previous transaction to finish
 	{
@@ -344,7 +408,7 @@ void THwSpi_esp::Run()
 	  }
 
 	  // read and store the received data
-	  if (curblock->dst)
+	  if (!rxdma && curblock->dst)
 	  {
       if ((unsigned(curblock->dst) & 3) || (chunksize & 3))
       {
@@ -386,6 +450,14 @@ void THwSpi_esp::Run()
 	      SetCs(1);
 	      finished = true;
 	      state = 100;
+	    }
+	    else
+	    {
+        ++curblock;
+        remaining = curblock->len;
+        state = 1;
+        Run();
+        return;
 	    }
 	  }
 	}

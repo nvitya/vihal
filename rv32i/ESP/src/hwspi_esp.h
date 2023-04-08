@@ -29,6 +29,7 @@
 #define HWSPI_ESP_H_
 
 #include "platform.h"
+#include "hwdma.h"
 
 #define HWSPI_OWN_RUN  // special handling, own Run() implementation
 
@@ -60,7 +61,13 @@ public:
 	TSpiXferBlock *     curblock = nullptr;
 	TSpiXferBlock *     lastblock = nullptr;
 
+  THwDmaTransfer      rxfer;
+  THwDmaTransfer      txfer;
+
 	void SetCs(unsigned value);
+
+	void DmaAssign(bool istx, THwDmaChannel * admach);
+
 
 private:
 	inline void CmdStart() { *pcmdreg |= cmd_usr_bit; }

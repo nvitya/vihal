@@ -41,7 +41,10 @@ public:
 	volatile uint32_t *  irqreg = nullptr;
 	volatile uint32_t *  irqclr = nullptr;
 
-	esp_dmadesc_t        desc  __attribute__((aligned(16)));
+	esp_dmadesc_t        desc   __attribute__((aligned(16)));
+	esp_dmadesc_t        desc2  __attribute__((aligned(16)));
+
+	esp_dmadesc_t        xdesc[2]  __attribute__((aligned(16)));
 
 	bool Init(int achannel, int aperiph);
 
@@ -69,6 +72,9 @@ public:
   uint32_t  done_flag = 1;
   uint32_t  irq_mask  = 0;
   bool      mactive = false;
+
+  uint32_t  link_start_bit = 0;
+  uint32_t  link_stop_bit = 0;
 
 };
 
