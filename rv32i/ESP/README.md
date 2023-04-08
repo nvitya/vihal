@@ -23,10 +23,10 @@ __CPU Clock__         | OK      |
 __Pin Cfg. + GPIO__   | OK      |
 __UART__              | OK      |
 __USB-SERIAL__        | OK      |
-__DMA__               | work in progress |
+__DMA__               | OK |
 __QSPI Master__       | OK (Flash only) |
 __SPI Self Flashing__ | OK |
-__SPI Master__        | work in progress |
+__SPI Master__        | OK |
 __I2C Master__        | OK |
 __I2C Slave__         | planned |
 __Ext. IRQ.__         | planned |
