@@ -308,7 +308,7 @@ void THwSpi_esp::Run()
         // the RX data will be discarded
       }
 	  }
-	  else
+	  else  // CPU controlled mode
 	  {
       regs->DMA_CONF &= ~(3 << 27); // disable RX and TX DMA
 
@@ -322,7 +322,7 @@ void THwSpi_esp::Run()
       // fill the tx data
       if (curblock->src)
       {
-        if ((unsigned(curblock->src) & 3) || (chunksize & 3))
+        if ((unsigned(curblock->src) & 3) || (chunksize & 3))  // is something unaligned ? (this CPU cannot hande unaligned 32-bit R/W)
         {
           // use 8-bit transfers
           uint8_t * dst8  = (uint8_t *)pwregs;  // byte addressable !
@@ -343,7 +343,7 @@ void THwSpi_esp::Run()
             }
           }
         }
-        else
+        else // src is aligned, using 32-bit read and writes are safe
         {
           // use 32-bit transfers
           uint32_t * src32 = (uint32_t *)curblock->src;
@@ -376,13 +376,13 @@ void THwSpi_esp::Run()
 	  }
 
 	  uint32_t rmisc = regs->MISC;
-    if (chunksize < remaining)
+    if ((chunksize >= remaining) && (curblock == lastblock))
     {
-      rmisc |=  (1  << 30);  // CS_KEEP_ACTIVE
+      rmisc &= ~(1  << 30);  // remove CS_KEEP_ACTIVE
     }
     else
     {
-      rmisc &= ~(1  << 30);  // CS_KEEP_ACTIVE
+      rmisc |=  (1  << 30);  // set CS_KEEP_ACTIVE
     }
     regs->MISC = rmisc;
 
@@ -410,7 +410,7 @@ void THwSpi_esp::Run()
 	  // read and store the received data
 	  if (!rxdma && curblock->dst)
 	  {
-      if ((unsigned(curblock->dst) & 3) || (chunksize & 3))
+      if ((unsigned(curblock->dst) & 3) || (chunksize & 3))  // is something unaligned ? (this CPU cannot hande unaligned 32-bit R/W)
       {
         // use 8-bit transfers
         uint8_t * src8  = (uint8_t *)pwregs;  // byte addressable !
@@ -421,7 +421,7 @@ void THwSpi_esp::Run()
           *dst8++ = *src8++;
         }
       }
-      else
+      else  // using 32-bit read and writes are safe
       {
         // use 32-bit transfers
         uint32_t * src32 = (uint32_t *)pwregs;
@@ -442,23 +442,22 @@ void THwSpi_esp::Run()
 	  {
 	    state = 1; // go on with the next chunk
 	    Run();
+	    return;
 	  }
-	  else
-	  {
-	    if (curblock == lastblock)
-	    {
-	      SetCs(1);
-	      finished = true;
-	      state = 100;
-	    }
-	    else
-	    {
-        ++curblock;
-        remaining = curblock->len;
-        state = 1;
-        Run();
-        return;
-	    }
-	  }
+
+    if (curblock == lastblock)
+    {
+      SetCs(1);
+      finished = true;
+      state = 100;
+    }
+    else
+    {
+      ++curblock;
+      remaining = curblock->len;
+      state = 1;
+      Run();
+      return;
+    }
 	}
 }

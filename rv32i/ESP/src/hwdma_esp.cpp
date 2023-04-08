@@ -133,8 +133,6 @@ void THwDmaChannel_esp::PrepareTransfer(THwDmaTransfer * axfer)
   Disable();  // this is important here
 	ClearIrqFlag();
 
-	uint32_t slf = DMADESC_FLAG_OWN;
-
 	if (axfer->flags & DMATR_MEM_TO_MEM)
 	{
 	  // special case
@@ -174,16 +172,17 @@ void THwDmaChannel_esp::PrepareTransfer(THwDmaTransfer * axfer)
 	}
 	else
 	{
+	  uint32_t slf = DMADESC_FLAG_OWN | DMADESC_FLAG_SUC_EOF;
+
     if (istx)
     {
-      slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
-      //slf |= ((axfer->count << 12) | (axfer->count << 0));
-      slf |= ((axfer->count << 12) | 0); //(axfer->count << 0));
+      slf |= (DMADESC_FLAG_ERR_EOF);
+      slf |= ((axfer->count << 12) | (axfer->count << 0));
       desc.bufaddr = (uint32_t)axfer->srcaddr;
     }
     else
     {
-      //slf |= (DMADESC_FLAG_SUC_EOF | DMADESC_FLAG_ERR_EOF);
+      slf |= (DMADESC_FLAG_ERR_EOF);
       slf |= ((0 << 12) | (axfer->count << 0));
       desc.bufaddr = (uint32_t)axfer->dstaddr;
     }
