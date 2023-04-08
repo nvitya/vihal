@@ -42,7 +42,7 @@ bool THwPinCtrl_esp::PadSetup(unsigned apadnum, unsigned iomuxidx, unsigned flag
   // 1. prepare pad configuration
 
   uint32_t padcfg = (0
-    | (0  << 15)  // FILTER_EN: 1 = enable filter for the input signals
+    | (1  << 15)  // FILTER_EN: 1 = enable filter for the input signals
     | (0  << 12)  // MCU_SEL(3): function select
     | (0  << 10)  // FUN_DRV(2): drive strength
     | (1  <<  9)  // FUN_IE: 1 = input enable
