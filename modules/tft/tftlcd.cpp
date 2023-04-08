@@ -437,6 +437,7 @@ void TTftLcd::DrawPixel(int16_t x, int16_t y, uint16_t color)
   WriteData16(color);
 }
 
+/*
 extern const unsigned char font_bitmap_data_5x8[1280];  // in fontdata.cpp
 
 void TTftLcd::DrawChar(int16_t x, int16_t y, char ch)
@@ -462,3 +463,4 @@ void TTftLcd::DrawChar(int16_t x, int16_t y, char ch)
 		}
 	}
 }
+*/

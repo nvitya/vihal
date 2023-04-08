@@ -76,7 +76,7 @@ public:
 	void SetRotation(uint8_t m);
 	void DrawPixel(int16_t x, int16_t y, uint16_t color);
 
-	void DrawChar(int16_t x, int16_t y, char ch);
+	//void DrawChar(int16_t x, int16_t y, char ch);
 
 	// Panel dependent
 	void RunCommandList(const uint8_t * addr);

@@ -185,7 +185,32 @@ bool THwSpi_esp::Init(int adevnum)
 
 bool THwSpi_esp::TrySendData(unsigned short adata)
 {
-	return false;
+  // it is rather problematic here, because this SPI unit was not designed
+  // for this kind of operation
+
+  if (*pcmdreg & cmd_usr_bit) // wait for the previous transaction finish
+  {
+    return false;
+  }
+
+  regs->DMA_CONF = (3 << 29); // reset internal fifos
+
+  // used by the SPI displays, so it should be fast too
+
+  *pwregs = adata;
+
+  regs->MS_DLEN = 7;
+
+  // synchronize the transaction parameters
+  regs->CMD |= SPI_UPDATE_M;
+  while (regs->CMD & SPI_UPDATE_M)
+  {
+  }
+
+  // start the transaction
+  CmdStart();
+
+	return true;
 }
 
 bool THwSpi_esp::TryRecvData(unsigned short * dstptr)
@@ -197,11 +222,11 @@ bool THwSpi_esp::SendFinished()
 {
 	if (*pcmdreg & cmd_usr_bit) // is the USR bit still active ?
 	{
-		return true;
+		return false;
 	}
 	else
 	{
-		return false;
+		return true;
 	}
 }
 
@@ -232,7 +257,6 @@ void THwSpi_esp::SetCs(unsigned value)
 }
 
 #define WRITE_CHUNK_MAX  60
-
 
 void THwSpi_esp::Run()
 {
