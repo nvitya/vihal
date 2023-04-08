@@ -44,7 +44,7 @@ Arch. | Family ID | Sub-Families | Examples | Driver Support
 [ARMM](/armm)   | [RP](/armm/RP)       | 20  | RP2040 | [good](/armm/RP)
 [ARMM](/armm)   | [LPC_V3](/armm/LPC_V3)  | LPC546xx | LPC54608J512 | [partial](/armm/LPC_V3)
 [RV32I](/rv32i) | [GD32V](/rv32i/GD32V) | F1 | GD32VF103C8 | [partial](/rv32i/GD32V)
-[RV32I](/rv32i) | [ESP](/rv32i/ESP) | C3 | ESP32-C3 | [experimental](/rv32i/ESP)
+[RV32I](/rv32i) | [ESP](/rv32i/ESP) | C3 | ESP32-C3 | [work in progress](/rv32i/ESP)
 [RV32I](/rv32i) | [VRV100](/rv32i/VRV100)*  | 103 .. 446 (FPGA only) | VRV100_441 | [good](/rv32i/VRV100)
 [RV64G](/rv64g) | [Kendryte](/rv64g/kendryte) | K2 | K210 | [experimental](/rv64g/kendryte)
 [XTENSA](/xtensa) | [ESP](/xtensa/ESP) | ESP32 | ESP32 | [experimental](/xtensa/ESP)
