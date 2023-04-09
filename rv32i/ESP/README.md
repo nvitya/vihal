@@ -36,3 +36,6 @@ __Simple PWM__        | planned |
 __WIFI__              | not planned ! |
 __Bluetooth__         | not planned ! |
 
+## Known issues
+
+* The UART RX does not work with DMA yet. The UHCI is not documented and I did not find any useful examples.
