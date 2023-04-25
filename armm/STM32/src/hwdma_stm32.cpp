@@ -195,7 +195,7 @@ bool THwDmaChannel_stm32::Init(int admanum, int astream, int achannel)
 
 	int dma = (admanum & 0x03);
 	int st  = (astream  & 0x07);
-	int ch  = (achannel  & 0x07);
+	int ch  = (achannel  & 0x0F);
 
 	if (st > 7)  return false;
 	if (ch > 7)  return false;
