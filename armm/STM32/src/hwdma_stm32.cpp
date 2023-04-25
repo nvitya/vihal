@@ -198,7 +198,7 @@ bool THwDmaChannel_stm32::Init(int admanum, int astream, int achannel)
 	int ch  = (achannel  & 0x0F);
 
 	if (st > 7)  return false;
-	if (ch > 7)  return false;
+	if (ch > 15)  return false;
 	if (1 == dma)
 	{
 		RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
