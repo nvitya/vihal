@@ -15,6 +15,13 @@
 // ATMEL v2
 //-------------------------------------------------------------------------------------------------
 
+#elif defined(BOARD_WIO_TERMINAL)
+
+  #define BOARD_NAME "WIO Terminal D51R"
+  #define MCU_ATSAMD51P19
+  #define EXTERNAL_XTAL_HZ     32000000
+  #define EXTERNAL_XTAL_XOSC   1
+
 #elif defined(BOARD_MIBO64_ATSAME5X)
 
   #define BOARD_NAME "MIBO-64 ATSAME5X by nvitya"

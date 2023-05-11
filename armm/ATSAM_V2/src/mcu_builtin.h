@@ -19,6 +19,30 @@
 // Atmel v2
 //----------------------------------------------------------------------
 
+#elif defined(MCU_ATSAMD51J18)
+
+  #define MCUF_ATSAM_V2
+  #define MCUSF_E5X
+
+  #define __SAMD51J18A__
+  #include "samd51.h"
+
+#elif defined(MCU_ATSAMD51J19)
+
+  #define MCUF_ATSAM_V2
+  #define MCUSF_E5X
+
+  #define __SAMD51J19A__
+  #include "samd51.h"
+
+#elif defined(MCU_ATSAMD51P19)
+
+  #define MCUF_ATSAM_V2
+  #define MCUSF_E5X
+
+  #define __SAMD51P19A__
+  #include "samd51.h"
+
 #elif defined(MCU_ATSAMD51J20)
 
   #define MCUF_ATSAM_V2

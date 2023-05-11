@@ -29,10 +29,18 @@
 #include "hwclk.h"
 #include "atsam_v2_utils.h"
 
+#ifndef EXTERNAL_XTAL_XOSC
+  #define EXTERNAL_XTAL_XOSC   0
+#endif
+
 inline bool hwclk_ext_osc_ready()
 {
 #if defined(OSCCTRL_STATUS_XOSCRDY0)
-	return (OSCCTRL->STATUS.bit.XOSCRDY0 != 0);
+  #if EXTERNAL_XTAL_XOSC == 1
+    return (OSCCTRL->STATUS.bit.XOSCRDY1 != 0);
+  #else
+	  return (OSCCTRL->STATUS.bit.XOSCRDY0 != 0);
+  #endif
 #elif defined(OSCCTRL_STATUS_XOSCRDY)
 	return (OSCCTRL->STATUS.bit.XOSCRDY != 0);
 #else
@@ -49,15 +57,40 @@ void hwclk_start_ext_osc(unsigned aextspeed)
 	MCLK->APBAMASK.bit.GCLK_ = 1;
 
 	#if defined(OSCCTRL_STATUS_XOSCRDY0)
-		OSCCTRL->XOSCCTRL[0].bit.STARTUP = 8; // ~ 8 ms
-		OSCCTRL->XOSCCTRL[0].bit.ENALC = 1; // automatic amplitude
-		OSCCTRL->XOSCCTRL[0].bit.ONDEMAND = 0; // always run
+		OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.STARTUP = 8; // ~ 8 ms
+		OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.ENALC = 1; // automatic amplitude
+		OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.ONDEMAND = 0; // always run
 		// settings for 8-16 MHz Crystal:
-		OSCCTRL->XOSCCTRL[0].bit.XTALEN = 1;
-		OSCCTRL->XOSCCTRL[0].bit.IMULT = 4;
-		OSCCTRL->XOSCCTRL[0].bit.IPTAT = 3;
+		OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.XTALEN = 1;
 
-		OSCCTRL->XOSCCTRL[0].bit.ENABLE = 1;
+    unsigned imult;
+		unsigned iptat;
+
+		if (aextspeed > 24000000)  // 24 .. 48 MHz
+		{
+		  imult = 6;
+		  iptat = 3;
+		}
+		else if (aextspeed > 16000000) // 16 .. 24 MHz
+    {
+		  imult = 5;
+		  iptat = 3;
+    }
+		else if (aextspeed > 8000000) // 8 .. 16 MHz
+		{
+		  imult = 4;
+		  iptat = 3;
+		}
+		else // 8 MHz
+		{
+		  imult = 3;
+		  iptat = 2;
+		}
+
+    OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.IMULT = imult;
+    OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.IPTAT = iptat;
+
+		OSCCTRL->XOSCCTRL[EXTERNAL_XTAL_XOSC].bit.ENABLE = 1;
 	#elif defined(OSCCTRL_STATUS_XOSCRDY)
 		OSCCTRL->XOSCCTRL.bit.STARTUP = 8; // ~ 8 ms
 		OSCCTRL->XOSCCTRL.bit.GAIN = 3; // for 12 MHz Crystal
@@ -254,7 +287,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
         | ((refdiv - 1) << 16)  // DIV(11): reference divisor = (2 * (DIV + 1))
         | (1            << 11)  // LBYPASS: Lock bypass
         | (0            <<  8)  // LTIME(3): lock time
-        | (2            <<  5)  // REFCLK(3): 2 = XOSC0
+        | ((2 + EXTERNAL_XTAL_XOSC) <<  5)  // REFCLK(3): 2 = XOSC0, 3 = XOSC1
       ;
 
       OSCCTRL->Dpll[0].DPLLCTRLA.reg = (1 << 6) | (1 << 1);  // run in standby, enable
@@ -285,7 +318,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
           | ((refdiv - 1) << 16)  // DIV(11): reference divisor = (2 * (DIV + 1))
           | (1            << 11)  // LBYPASS: Lock bypass
           | (0            <<  8)  // LTIME(3): lock time
-          | (2            <<  5)  // REFCLK(3): 2 = XOSC0
+          | ((2 + EXTERNAL_XTAL_XOSC) <<  5)  // REFCLK(3): 2 = XOSC0
         ;
 
         OSCCTRL->Dpll[1].DPLLCTRLA.reg = (1 << 6) | (1 << 1);  // run in standby, enable
