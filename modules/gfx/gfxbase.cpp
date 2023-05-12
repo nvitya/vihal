@@ -310,6 +310,21 @@ void TGfxBase::FillColor(uint16_t acolor, unsigned acount)
 	 // must be overridden
 }
 
+void TGfxBase::BlockFillBegin()
+{
+  // must be overridden
+}
+
+void TGfxBase::BlockFill(uint16_t acolor, unsigned acount)
+{
+  FillColor(acolor, acount);  // should be overwritten for better performance
+}
+
+void TGfxBase::BlockFillEnd()
+{
+  // must be overridden
+}
+
 void TGfxBase::LineTo(int16_t x, int16_t y)
 {
 	DrawLine(cursor_x, cursor_y, x, y);
@@ -385,6 +400,7 @@ void TGfxBase::DrawGlyph(TGfxFont * afont, TGfxGlyph * glyph)
   	if (cursor_y + dh > height)  dh = height - cursor_y;
 
 		SetAddrWindow(cursor_x, cursor_y, dw, dh);
+		BlockFillBegin();
 
 	  uint8_t  * bmptr = &afont->bitmap[glyph->bitmapOffset];
 	  uint8_t  x, y;
@@ -413,7 +429,7 @@ void TGfxBase::DrawGlyph(TGfxFont * afont, TGfxGlyph * glyph)
 
 					if (x < dw) // ignore pixels outside the address window
 					{
-						FillColor(carr[(bits >> 7) & 1], 1);
+						BlockFill(carr[(bits >> 7) & 1], 1);
 					}
 
 					++bit;
@@ -423,11 +439,13 @@ void TGfxBase::DrawGlyph(TGfxFont * afont, TGfxGlyph * glyph)
 				{
 					if (x < dw)
 					{
-						FillColor(bgcolor, 1);
+						BlockFill(bgcolor, 1);
 					}
 				}
 			}
 		}
+
+		BlockFillEnd();
   }
   cursor_x += dw;
 }
@@ -443,4 +461,3 @@ void TGfxBase::DrawRect(int16_t x0, int16_t y0, int16_t w, int16_t h)
 	DrawLine(x0, y0, x0, y1);
 	DrawLine(x0, y1, x1, y1);
 }
-

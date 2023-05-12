@@ -37,6 +37,9 @@
 class THwSpi_atsam_v2 : public THwSpi_pre
 {
 public:
+  uint8_t   data_out_pinout = 0;  // 0 = P
+
+public:
 	bool Init(int adevnum);
 
 	bool TrySendData(uint8_t adata);

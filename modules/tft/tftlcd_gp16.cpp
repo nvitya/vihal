@@ -187,3 +187,26 @@ void TTftLcd_gp16::FillColor(uint16_t acolor, unsigned acount)
   }
 	pin_cs.Set1();
 }
+
+void TTftLcd_gp16::BlockFillBegin()
+{
+  pin_cd.Set1();
+  pin_cs.Set0();
+}
+
+void TTftLcd_gp16::BlockFill(uint16_t acolor, unsigned acount)
+{
+  SetData16(acolor);
+  while (acount > 0)
+  {
+    pin_wr.Set0();
+    delay_clocks(data_hold_clocks);
+    pin_wr.Set1();
+    --acount;
+  }
+}
+
+void TTftLcd_gp16::BlockFillEnd()
+{
+  pin_cs.Set1();
+}

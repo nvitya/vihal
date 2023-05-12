@@ -126,11 +126,30 @@ void TTftLcd_spi::FillColor(uint16_t acolor, unsigned acount)
   {
   	spi.SendData(acolor >> 8);
   	spi.SendData(acolor);
-  	//while (!spi.TrySendData(acolor >> 8)) ;
-  	//while (!spi.TrySendData(acolor)) ;
-
   	--acount;
   }
 	spi.WaitSendFinish();
 	pin_cs.Set1();
+}
+
+void TTftLcd_spi::BlockFillBegin()
+{
+  pin_cd.Set1();
+  pin_cs.Set0();
+}
+
+void TTftLcd_spi::BlockFill(uint16_t acolor, unsigned acount)
+{
+  while (acount > 0)
+  {
+    spi.SendData(acolor >> 8);
+    spi.SendData(acolor);
+    --acount;
+  }
+}
+
+void TTftLcd_spi::BlockFillEnd()
+{
+  spi.WaitSendFinish();
+  pin_cs.Set1();
 }

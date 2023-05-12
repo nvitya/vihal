@@ -51,6 +51,7 @@ public:
 
 	virtual void SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t w,  uint16_t h);
 	virtual void FillColor(uint16_t acolor, unsigned acount);
+  virtual void BlockFill(uint16_t acolor, unsigned acount);
 
 };
 

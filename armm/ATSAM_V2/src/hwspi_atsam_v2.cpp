@@ -90,7 +90,7 @@ bool THwSpi_atsam_v2::Init(int adevnum)  // devnum: 0 - 7 = SERCOM ID
 		| (0 << 28)  // CPHA: 1 = late sample
 		| (0 << 24)  // FORM(4): frame format, 0 = SPI, 2 = SPI with address
 		| (3 << 20)  // DIPO(2): Data In Pinout, pad select for MISO
-		| (0 << 16)  // DOPO(2): Data Out Pinout, 0 = P0:MOSI|P1:SCK|P2:SS
+		| (data_out_pinout << 16)  // DOPO(2): Data Out Pinout, 0 = P0:MOSI|P1:SCK|P2:SS, 2 = P1:SCK|P2:SS|P3:MOSI
 		| (0 <<  8)  // IBON: Immediate Buffer Overflow Notification
 		| (0 <<  7)  // RUNSTDBY: Run In Standby, 1 = run in stdby
 		| (3 <<  2)  // MODE(3): Mode, 3 = SPI Master

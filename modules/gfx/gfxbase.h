@@ -1,4 +1,4 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+  /* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -126,6 +126,11 @@ public:
 	virtual void SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t w,  uint16_t h);
 	virtual void SetAddrWindowStart(uint16_t x0, uint16_t y0);
 	virtual void FillColor(uint16_t acolor, unsigned acount);
+
+	// Optimization for SPI displays
+	virtual void BlockFillBegin();
+  virtual void BlockFill(uint16_t acolor, unsigned acount);
+	virtual void BlockFillEnd();
 
 	void         DrawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
 	void         DrawRect(int16_t x0, int16_t y0, int16_t w, int16_t h);

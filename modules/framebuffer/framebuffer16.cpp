@@ -138,3 +138,23 @@ void TFrameBuffer16::FillColor(uint16_t acolor, unsigned acount)
 		--acount;
 	}
 }
+
+void TFrameBuffer16::BlockFill(uint16_t acolor, unsigned acount)
+{
+  uint16_t * pp = framebuffer + aw_y * hwwidth + aw_x;
+  while (acount > 0)
+  {
+    *(pp++) = acolor;
+
+    ++aw_x;
+    if (aw_x > aw_x1)
+    {
+      aw_x = aw_x0;
+      ++aw_y;
+      if (aw_y > aw_y1)  aw_y = aw_y0;
+
+      pp = framebuffer + aw_y * hwwidth + aw_x;
+    }
+    --acount;
+  }
+}

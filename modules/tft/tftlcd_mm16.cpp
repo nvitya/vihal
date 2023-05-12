@@ -80,3 +80,13 @@ void TTftLcd_mm16::FillColor(uint16_t acolor, unsigned acount)
   	--acount;
   }
 }
+
+void TTftLcd_mm16::BlockFill(uint16_t acolor, unsigned acount)
+{
+  while (acount > 0)
+  {
+    *datareg = acolor;
+    __DSB();
+    --acount;
+  }
+}
