@@ -208,6 +208,12 @@ void THwUart_esp::DmaAssign(bool istx, THwDmaChannel * admach)
 		rxdma = admach;
 	}
   admach->Prepare(istx, (void *)&regs->FIFO, 0);
+
+  // select this uart for UHCI (DMA)
+  uint32_t uhciconf = uhci->CONF0;
+  uhciconf &= ~(3 << 2);
+  uhciconf |= (1 << (2 + devnum));
+  uhci->CONF0 = uhciconf;
 }
 
 bool THwUart_esp::DmaStartSend(THwDmaTransfer * axfer)
@@ -216,14 +222,6 @@ bool THwUart_esp::DmaStartSend(THwDmaTransfer * axfer)
 	{
 		return false;
 	}
-
-  // select this uart for UHCI (DMA)
-  uint32_t uhciconf = uhci->CONF0;
-  uhciconf &= ~(3 << 2);
-  uhciconf |= (1 << (2 + devnum));
-  uhci->CONF0 = uhciconf;
-
-	//regs->CR3 |= (1 << 7); // enable the TX DMA
 
 	txdma->StartTransfer(axfer);
 
@@ -236,13 +234,6 @@ bool THwUart_esp::DmaStartRecv(THwDmaTransfer * axfer)
 	{
 		return false;
 	}
-
-  // select this uart for UHCI (DMA)
-  uint32_t uhciconf = uhci->CONF0;
-  uhciconf &= ~(3 << 2);
-  uhciconf |= (1 << (2 + devnum));
-  uhci->CONF0 = uhciconf;
-	//regs->CR3 |= (1 << 6); // enable the RX DMA
 
 	rxdma->StartTransfer(axfer);
 

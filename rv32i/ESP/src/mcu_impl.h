@@ -29,6 +29,6 @@
   #include "hwi2c_esp.h"
 #endif
 
-#ifdef HWDMA_H_
-  #define SKIP_UNIMPLEMENTED_WARNING
+#ifdef HWADC_H_
+  #include "hwadc_esp.h"
 #endif
