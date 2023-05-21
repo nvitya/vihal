@@ -36,6 +36,8 @@
 #include "mp_printf.h"
 #include "traces.h"
 
+#define TRACE_AT_COMMANDS 0
+
 // the TEspWifiUart::InitHw() are moved to the board_pins.cpp
 
 bool TEspWifiUart::Init(void * anetmem, unsigned anetmemsize)
@@ -126,6 +128,12 @@ void TEspWifiUart::RunInit()
 
   if (1 == initstate)
   {
+    if (ssid[0] == 0)
+    {
+      // skipping initialization.
+      return;
+    }
+
     TRACE("ESP-AT: starting initialization...\r\n");
 
     uart.SetBaudRate(initial_uart_speed);  // switch back to the initial speed mode
@@ -358,7 +366,7 @@ void TEspWifiUart::StartCommand(const char *fmt, ...)
 
   if (len > 0)
   {
-#if 0
+#if TRACE_AT_COMMANDS
     if (0 == memcmp("AT+CWJAP", &fmtbuf[0], 8)) // do not print the WIFI secrets !
     {
       TRACE("ESP-AT -> \"AT+CWJAP=\"***\",\"***\"\"\r\n");

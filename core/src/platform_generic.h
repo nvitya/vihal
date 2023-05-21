@@ -29,6 +29,8 @@
 #ifndef PLATFORM_GENERIC_H_
 #define PLATFORM_GENERIC_H_
 
+#define VIHAL
+
 #if !defined(MAX_CLOCK_SPEED)
   #ifdef MCU_FIXED_SPEED
     #define MAX_CLOCK_SPEED  MCU_FIXED_SPEED
