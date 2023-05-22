@@ -1650,6 +1650,78 @@ typedef struct
 #define I2S_FLAG_FERR                   SPI_STAT_FERR                           /*!< format error interrupt flag */
 
 
+//---------------------------------------------------------------------------------------
+// INTERNAL FLASH (FMC)
+//---------------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  WS;        // 0x00: wait state register
+  volatile uint32_t  KEY;       // 0x04: unlock key register 0
+  volatile uint32_t  OBKEY;     // 0x08: option bytes unlock key register
+  volatile uint32_t  STAT;      // 0x0C: status register 0
+  volatile uint32_t  CTL;       // 0x10: control register 0
+  volatile uint32_t  ADDR;      // 0x14: address register 0
+           uint32_t  _res_18;
+  volatile uint32_t  OBSTAT;    // 0x1C: option bytes status register
+  volatile uint32_t  WP;        // 0x20: erase/program protection register
+           uint32_t  _res_24[55];
+  volatile uint32_t  PID;       // 0x100: product ID register
+//
+} gd32v_fmc_t;
+
+#define FMC                  ((gd32v_fmc_t *)(0x40022000))
+#define MEMORY_DENSITY_REG   (*(volatile uint32_t *)0x1FFFF7E0)
+
+/* FMC_STAT0 */
+#define FMC_STAT_BUSY             BIT(0)                          /*!< flash busy flag bit */
+#define FMC_STAT_PGERR            BIT(2)                          /*!< flash program error flag bit */
+#define FMC_STAT_WPERR            BIT(4)                          /*!< erase/program protection error flag bit */
+#define FMC_STAT_ENDF             BIT(5)                          /*!< end of operation flag bit */
+
+/* FMC_CTL0 */
+#define FMC_CTL_PG                BIT(0)                          /*!< main flash program for bank0 command bit */
+#define FMC_CTL_PER               BIT(1)                          /*!< main flash page erase for bank0 command bit */
+#define FMC_CTL_MER               BIT(2)                          /*!< main flash mass erase for bank0 command bit */
+#define FMC_CTL_OBPG              BIT(4)                          /*!< option bytes program command bit */
+#define FMC_CTL_OBER              BIT(5)                          /*!< option bytes erase command bit */
+#define FMC_CTL_START             BIT(6)                          /*!< send erase command to FMC bit */
+#define FMC_CTL_LK                BIT(7)                          /*!< FMC_CTL0 lock bit */
+#define FMC_CTL_OBWEN             BIT(9)                          /*!< option bytes erase/program enable bit */
+#define FMC_CTL_ERRIE             BIT(10)                         /*!< error interrupt enable bit */
+#define FMC_CTL_ENDIE             BIT(12)                         /*!< end of operation interrupt enable bit */
+
+/* FMC_OBSTAT */
+#define FMC_OBSTAT_OBERR           BIT(0)                          /*!< option bytes read error bit. */
+#define FMC_OBSTAT_SPC             BIT(1)                          /*!< option bytes security protection code */
+#define FMC_OBSTAT_USER            BITS(2,9)                       /*!< store USER of option bytes block after system reset */
+#define FMC_OBSTAT_DATA            BITS(10,25)                     /*!< store DATA of option bytes block after system reset. */
+
+/* FMC_WSEN */
+#define FMC_WSEN_WSEN              BIT(0)                          /*!< FMC wait state enable bit */
+
+/* constants definitions */
+/* define the FMC bit position and its register index offset */
+#define FMC_REGIDX_BIT(regidx, bitpos)              (((uint32_t)(regidx) << 6) | (uint32_t)(bitpos))
+#define FMC_REG_VAL(offset)                         (REG32(FMC + ((uint32_t)(offset) >> 6)))
+#define FMC_BIT_POS(val)                            ((uint32_t)(val) & 0x1FU)
+#define FMC_REGIDX_BITS(regidx, bitpos0, bitpos1)   (((uint32_t)(regidx) << 12) | ((uint32_t)(bitpos0) << 6) | (uint32_t)(bitpos1))
+#define FMC_REG_VALS(offset)                        (REG32(FMC + ((uint32_t)(offset) >> 12)))
+#define FMC_BIT_POS0(val)                           (((uint32_t)(val) >> 6) & 0x1FU)
+#define FMC_BIT_POS1(val)                           ((uint32_t)(val) & 0x1FU)
+#define FMC_REG_OFFSET_GET(flag)                    ((uint32_t)(flag) >> 12)
+
+/* unlock key */
+#define UNLOCK_KEY0                ((uint32_t)0x45670123U)        /*!< unlock key 0 */
+#define UNLOCK_KEY1                ((uint32_t)0xCDEF89ABU)        /*!< unlock key 1 */
+
+/* FMC wait state counter */
+#define WS_WSCNT(regval)           (BITS(0,2) & ((uint32_t)(regval)))
+#define WS_WSCNT_0                 WS_WSCNT(0)                    /*!< FMC 0 wait */
+#define WS_WSCNT_1                 WS_WSCNT(1)                    /*!< FMC 1 wait */
+#define WS_WSCNT_2                 WS_WSCNT(2)                    /*!< FMC 2 wait */
+
+
 #ifdef cplusplus
 }
 #endif

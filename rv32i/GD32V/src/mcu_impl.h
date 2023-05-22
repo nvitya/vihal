@@ -27,3 +27,7 @@
 #ifdef HWEXTIRQ_H_
   #include "hwextirq_gd32v.h"
 #endif
+
+#ifdef HWINTFLASH_H_
+  #include "hwintflash_gd32v.h"
+#endif

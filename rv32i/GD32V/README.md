@@ -26,6 +26,7 @@ __SPI Master__        | OK      |
 __I2C Master__        | planned |
 __I2C Slave__         | planned |
 __Ext. IRQ.__         | OK      |
+__Internal Flash__    | OK
 __ADC__               | planned |
 __DAC__               | planned |
 __CAN__               | planned |
