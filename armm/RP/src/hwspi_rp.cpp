@@ -68,7 +68,7 @@ bool THwSpi_rp::Init(int adevnum)
 	  | (scr <<  8)  // SCR(8)
 	  | (0  <<  7)  // SPH: clock phase
 	  | (0  <<  6)  // SPO: clock polarity
-	  | (0  <<  4)  // FRF(2): 0 = Motorola, 1 = TI, 2 = Microwire
+	  | (1  <<  4)  // FRF(2): 0 = Motorola, 1 = TI, 2 = Microwire
 	  | (7  <<  0)  // DSS(4): 3 = 4-bit ... 7 = 8-bit ... 15 = 16-bit
 	);
 
