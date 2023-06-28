@@ -30,9 +30,87 @@
 
 #define MAX_PORT_NUMBER   2
 
-uint32_t atsam_port_pull_dir[MAX_PORT_NUMBER];
+// The Pin-to IOMUX table made from the datasheet
+//   WARNING: they are +1 than the IOMUX->SECCFG.PINCM[] indexes !!!
 
-HW_GPIO_REGS * THwPinCtrl_msp::GetGpioRegs(int aportnum)
+uint8_t pincm_table[64] =
+{
+   1, // A0
+   2, // A1
+   7, // A2
+   8, // A3
+   9, // A4
+  10, // A5
+  11, // A6
+  14, // A7
+  19, // A8
+  20, // A9
+  21, // A10
+  22, // A11
+  34, // A12
+  35, // A13
+  36, // A14
+  37, // A15
+  38, // A16
+  39, // A17
+  40, // A18
+  41, // A19
+  42, // A20
+  46, // A21
+  47, // A22
+  53, // A23
+  54, // A24
+  55, // A25
+  59, // A26
+  60, // A27
+   3, // A28
+   4, // A29
+   5, // A30
+   6, // A31
+
+  12, // B0
+  13, // B1
+  15, // B2
+  16, // B3
+  17, // B4
+  18, // B5
+  23, // B6
+  24, // B7
+  25, // B8
+  26, // B9
+  27, // B10
+  28, // B11
+  29, // B12
+  30, // B13
+  31, // B14
+  32, // B15
+  33, // B16
+  43, // B17
+  44, // B18
+  45, // B19
+  48, // B20
+  49, // B21
+  50, // B22
+  51, // B23
+  52, // B24
+  56, // B25
+  57, // B26
+  58, // B27
+
+   0,  // B28 (non-existing)
+   0,  // B29 (non-existing)
+   0,  // B30 (non-existing)
+   0   // B31 (non-existing)
+};
+
+
+uint8_t get_pincm_index(unsigned aportnum, unsigned apinnum)
+{
+	unsigned idx = ((aportnum & 1) << 5) + (apinnum & 0x1F);
+	return pincm_table[idx];
+}
+
+GPIO_Regs * THwPinCtrl_msp::GetGpioRegs(int aportnum)
 {
 	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
 	{
@@ -42,11 +120,11 @@ HW_GPIO_REGS * THwPinCtrl_msp::GetGpioRegs(int aportnum)
 	{
 		if (aportnum == PORTNUM_B)
 		{
-			return (GPIO_Regs *)(GPIOB_BASE);
+			return GPIOB;
 		}
 		else
 		{
-			return (GPIO_Regs *)(GPIOA_BASE);
+			return GPIOA;
 		}
 	}
 }
@@ -54,7 +132,7 @@ HW_GPIO_REGS * THwPinCtrl_msp::GetGpioRegs(int aportnum)
 
 bool THwPinCtrl_msp::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
-	HW_GPIO_REGS * regs = GetGpioRegs(aportnum);
+	GPIO_Regs * regs = GetGpioRegs(aportnum);
 	if (!regs)
 	{
 		return false;
@@ -65,102 +143,99 @@ bool THwPinCtrl_msp::PinSetup(int aportnum, int apinnum, unsigned flags)
 		return false;
 	}
 
-	// 1. turn on port power
 	GpioPortEnable(aportnum);
 
-#if 0
+	unsigned pincmidx = get_pincm_index(aportnum, apinnum);
+	if (pincmidx < 1)
+	{
+		return false;
+	}
 
-	// prepare pin configuration
-	unsigned n = (1 << 1); // enable input
+  unsigned cmreg = IOMUX_PINCM_PC_CONNECTED;
+  unsigned pinmask  = (1 << apinnum);
 
 	if (flags & PINCFG_DRIVE_STRONG)
 	{
-		n |= (1 << 6);
+		cmreg |= IOMUX_PINCM_DRV_MASK;
 	}
 
 	if (flags & PINCFG_AF_MASK)
 	{
-		n |= (1 << 0);
-
-		unsigned pmidx = (apinnum >> 1);
-		unsigned pmshift = (apinnum & 1) * 4;
-
-		regs->PMUX[pmidx].reg &= ~(0xF << pmshift);
-		regs->PMUX[pmidx].reg |= (((flags >> PINCFG_AF_SHIFT) & 0xF) << pmshift);
+		cmreg |= ((flags >> PINCFG_AF_SHIFT) & 0x1F);
 	}
-	else
+	else // GPIO or analgoue input
 	{
-		// GPIO
-
+		cmreg |= (1 | IOMUX_PINCM_INENA_MASK);  // AF_1 = GPIO, + input enable
 		if (flags & PINCFG_OUTPUT)
 		{
 		  if (flags & PINCFG_GPIO_INIT_1)
 		  {
-		  	regs->OUTSET.reg = (1 << apinnum);
+		  	regs->DOUTSET31_0 = pinmask;
 		  }
 		  else
 		  {
-		  	regs->OUTCLR.reg = (1 << apinnum);
+		  	regs->DOUTCLR31_0 = pinmask;
 		  }
-			regs->DIRSET.reg = (1 << apinnum);
+			regs->DOESET31_0 = pinmask;
 		}
 		else
 		{
-			regs->DIRCLR.reg = (1 << apinnum);
+			regs->DOECLR31_0 = pinmask;
+
+			if (0 == (flags & PINCFG_ANALOGUE))  // no hysteresis for analogue inputs
+			{
+				cmreg |= IOMUX_PINCM_HYSTEN_MASK;
+			}
 		}
 	}
 
-  regs->PINCFG[apinnum].reg = n;
-
   if (flags & PINCFG_PULLUP)
   {
-  	regs->PINCFG[apinnum].reg |= (1 << 2); // pull enable, unfortunately the direction comes from the output reg
-  	regs->OUTSET.reg = (1 << apinnum);
-  	atsam_port_pull_dir[aportnum] |= (1 << apinnum); // save for later
+  	cmreg |= IOMUX_PINCM_PIPU_MASK;
   }
 
   if (flags & PINCFG_PULLDOWN)
   {
-  	regs->PINCFG[apinnum].reg |= (1 << 2);
-  	regs->OUTCLR.reg = (1 << apinnum);
-  	atsam_port_pull_dir[aportnum] &= ~(1 << apinnum);  // save for later
+  	cmreg |= IOMUX_PINCM_PIPD_MASK;
   }
 
-#endif
+  IOMUX->SECCFG.PINCM[pincmidx-1] = cmreg;
 
   return true;
 }
 
 bool THwPinCtrl_msp::GpioPortEnable(int aportnum)
 {
-	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
+	GPIO_Regs * regs = GetGpioRegs(aportnum);
+	if (!regs)
 	{
 		return false;
 	}
 
-	//PM->APBBMASK.reg |= PM_APBBMASK_PORT;
-
+  regs->GPRCM.PWREN = (GPIO_PWREN_KEY_UNLOCK_W | GPIO_PWREN_ENABLE_ENABLE);
   return true;
 }
 
 void THwPinCtrl_msp::GpioSet(int aportnum, int apinnum, int value)
 {
-#if 0
-	HW_GPIO_REGS * regs = (HW_GPIO_REGS *)&(PORT->Group[aportnum]);
+	GPIO_Regs * regs = GetGpioRegs(aportnum);
+	if (!regs)
+	{
+		return;
+	}
 
   if (1 == value)
   {
-  	regs->OUTSET.reg = (1 << apinnum);
+  	regs->DOUTSET31_0 = (1 << apinnum);
   }
   else if (value & 2) // toggle
   {
-  	regs->OUTTGL.reg = (1 << apinnum);
+  	regs->DOUTTGL31_0 = (1 << apinnum);
   }
   else
   {
-  	regs->OUTCLR.reg = (1 << apinnum);
+  	regs->DOUTCLR31_0 = (1 << apinnum);
   }
-#endif
 }
 
 void THwPinCtrl_msp::GpioIrqSetup(int aportnum, int apinnum, int amode)
@@ -177,7 +252,7 @@ void TGpioPort_msp::Assign(int aportnum)
 
 void TGpioPort_msp::Set(unsigned value)
 {
-	//regs->OUT.reg = value;
+	regs->DOUT31_0 = value;
 }
 
 // GPIO Pin
@@ -196,46 +271,32 @@ void TGpioPin_msp::Assign(int aportnum, int apinnum, bool ainvert)
 
 	setbitvalue = (1 << pinnum);
 	clrbitvalue = (1 << pinnum);
-#if 0
-  getbitptr    = (unsigned *)&(regs->IN);
-  getoutbitptr = (unsigned *)&(regs->OUT);
+
+  getbitptr    = (unsigned *)&(regs->DIN31_0);
+  getoutbitptr = (unsigned *)&(regs->DOUT31_0);
   getbitshift = pinnum;
-  togglebitptr = (unsigned *)&(regs->OUTTGL.reg);
+  togglebitptr = (unsigned *)&(regs->DOUTTGL31_0);
 
   if (ainvert)
   {
-    setbitptr = (unsigned *)&(regs->OUTCLR);
-    clrbitptr = (unsigned *)&(regs->OUTSET);
+    setbitptr = (unsigned *)&(regs->DOUTCLR31_0);
+    clrbitptr = (unsigned *)&(regs->DOUTSET31_0);
   }
   else
   {
-    setbitptr = (unsigned *)&(regs->OUTSET);
-    clrbitptr = (unsigned *)&(regs->OUTCLR);
+    setbitptr = (unsigned *)&(regs->DOUTSET31_0);
+    clrbitptr = (unsigned *)&(regs->DOUTCLR31_0);
   }
-#endif
 }
 
 void TGpioPin_msp::SwitchDirection(int adirection)
 {
-#if 0
 	if (adirection)
 	{
-		regs->DIRSET.reg = setbitvalue;
+		regs->DOESET31_0 = setbitvalue; // output enable
 	}
 	else
 	{
-		regs->DIRCLR.reg = setbitvalue;
-		if (regs->PINCFG[pinnum].bit.PULLEN)
-		{
-			if (atsam_port_pull_dir[portnum] & setbitvalue)
-			{
-				regs->OUTSET.reg = setbitvalue;  // pull up
-			}
-			else
-			{
-				regs->OUTCLR.reg = setbitvalue;  // pull down
-			}
-		}
+		regs->DOECLR31_0 = setbitvalue; // output disable
 	}
-#endif
 }

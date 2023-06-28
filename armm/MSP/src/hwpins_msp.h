@@ -37,7 +37,7 @@ public:
 	// platform specific
 	bool PinSetup(int aportnum, int apinnum, unsigned flags);
 
-	HW_GPIO_REGS * GetGpioRegs(int aportnum);
+	GPIO_Regs * GetGpioRegs(int aportnum);
 
 	bool GpioPortEnable(int aportnum);
 
@@ -55,14 +55,14 @@ public:
 	void Set(unsigned value);
 
 public:
-	HW_GPIO_REGS *       regs = nullptr;
+	GPIO_Regs *          regs = nullptr;
 	volatile unsigned *  portptr = nullptr;
 };
 
 class TGpioPin_msp : public TGpioPin_common
 {
 public:
-	HW_GPIO_REGS *   regs = nullptr;
+	GPIO_Regs *      regs = nullptr;
 	unsigned *       togglebitptr = nullptr;
 
 	bool Setup(unsigned flags);
