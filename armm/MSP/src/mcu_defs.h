@@ -31,18 +31,13 @@
 #define MAX_CLOCK_SPEED         80000000
 #define MCU_INTERNAL_RC_SPEED    4000000
 
-#define HW_GPIO_REGS      PortGroup
-#define HW_UART_REGS      SercomUsart
+#define HW_GPIO_REGS      GPIO_Regs
+#define HW_UART_REGS      UART_Regs
 
 #if __CORTEX_M < 3
   #define CLOCKCNT_BITS  32
 
-	#if defined(MCUSF_C2X)
-	  uint32_t atsam_v2_clockcnt_read();
-	  #define CLOCKCNT       (atsam_v2_clockcnt_read())
-	#else
-		#define CLOCKCNT       (TC1->COUNT32.COUNT.reg)
-	#endif
+  #define CLOCKCNT       (0)
 #endif
 
 

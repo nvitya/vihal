@@ -1,6 +1,5 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2023 Viktor Nagy, nvitya
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+ * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -19,38 +18,44 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwuart_msp.h
- *  brief:    TI MSP UART
+ *  file:     clockcnt_msp.cpp
+ *  brief:    MSP Counter for M0 MCUs
  *  date:     2023-06-28
  *  authors:  nvitya
 */
 
+#include "platform.h"
 
-#ifndef HWUART_MSP_H_
-#define HWUART_MSP_H_
+#if __CORTEX_M < 3
 
-#define HWUART_PRE_ONLY
-#include "hwuart.h"
+// clock timer initialization for Cortex-M0 processors
 
-class THwUart_msp : public THwUart_pre
+void clockcnt_init()
 {
-public:
-	bool Init(int adevnum);
+#warning "implement M0 clock counter!"
 
-	bool TrySendChar(char ach);
-	bool TryRecvChar(char * ach);
+#if 0
 
-	inline bool SendFinished()   { return true; }  // !!!!!!!!!!!!!!
+#if defined(TIM14)
+	#if defined(RCC_APBENR2_TIM14EN)
+		RCC->APBENR2 |= RCC_APBENR2_TIM14EN;
+	#else
+	  RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+	#endif
+  #define CCTIMER  TIM14
 
-	void DmaAssign(bool istx, THwDmaChannel * admach);
+#else
+	RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
+  #define CCTIMER  TIM21
+#endif
 
-	bool DmaStartSend(THwDmaTransfer * axfer);
-	bool DmaStartRecv(THwDmaTransfer * axfer);
+	CCTIMER->CR1 = 0;
+	CCTIMER->PSC = 0; // count every clock
+	CCTIMER->CR1 = 1;
+	CCTIMER->EGR = 1; // reinit, start the timer
 
-public:
-	HW_UART_REGS *      regs = nullptr;
-};
+#endif
+}
 
-#define HWUART_IMPL THwUart_msp
+#endif
 
-#endif // def HWUART_MSP_H_

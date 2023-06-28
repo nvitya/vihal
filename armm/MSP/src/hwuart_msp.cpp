@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
- * Copyright (c) 2018 Viktor Nagy, nvitya
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+ * Copyright (c) 2023 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -19,25 +19,20 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwuart_atsam_v2.cpp
- *  brief:    ATSAM_V2 UART
- *  version:  1.00
- *  date:     2018-02-10
+ *  file:     hwuart_msp.cpp
+ *  brief:    TI MSP UART
+ *  date:     2023-06-28
  *  authors:  nvitya
- *  notes:
- *    the SERCOM pads are used as follows:
- *      pad 0 = TX (ATSAM output)
- *      pad 1 = RX (ATSAM input)
 */
 
 #include <stdio.h>
 #include <stdarg.h>
 
 #include "hwuart.h"
-#include "atsam_v2_utils.h"
+//#include "atsam_v2_utils.h"
 
 
-bool THwUart_atsam_v2::Init(int adevnum)  // devnum: 0 - 7 = SERCOM ID
+bool THwUart_msp::Init(int adevnum)  // devnum: 0 - 7 = SERCOM ID
 {
 	unsigned code;
 	unsigned perid;
@@ -45,6 +40,12 @@ bool THwUart_atsam_v2::Init(int adevnum)  // devnum: 0 - 7 = SERCOM ID
 	devnum = adevnum;
 	initialized = false;
 	regs = nullptr;
+
+	return false;
+
+
+
+#if 0
 
 	if (!atsam2_sercom_enable(devnum, 0))
 	{
@@ -123,10 +124,13 @@ bool THwUart_atsam_v2::Init(int adevnum)  // devnum: 0 - 7 = SERCOM ID
 	initialized = true;
 
 	return true;
+
+#endif
 }
 
-bool THwUart_atsam_v2::TrySendChar(char ach)
+bool THwUart_msp::TrySendChar(char ach)
 {
+#if 0
 	if (regs->INTFLAG.bit.DRE)
 	{
 		regs->DATA.reg = ach;
@@ -136,10 +140,14 @@ bool THwUart_atsam_v2::TrySendChar(char ach)
 	{
 		return false;
 	}
+#else
+	return true;
+#endif
 }
 
-bool THwUart_atsam_v2::TryRecvChar(char * ach)
+bool THwUart_msp::TryRecvChar(char * ach)
 {
+#if 0
 	if (regs->INTFLAG.bit.RXC)
 	{
 		*ach = regs->DATA.reg;
@@ -149,10 +157,14 @@ bool THwUart_atsam_v2::TryRecvChar(char * ach)
 	{
 		return false;
 	}
+#else
+	return false;
+#endif
 }
 
-void THwUart_atsam_v2::DmaAssign(bool istx, THwDmaChannel * admach)
+void THwUart_msp::DmaAssign(bool istx, THwDmaChannel * admach)
 {
+#if 0
 	if (istx)
 	{
 		txdma = admach;
@@ -163,29 +175,34 @@ void THwUart_atsam_v2::DmaAssign(bool istx, THwDmaChannel * admach)
 	}
 
 	admach->Prepare(istx, (void *)&regs->DATA.reg, 0);
+#endif
 }
 
 
-bool THwUart_atsam_v2::DmaStartSend(THwDmaTransfer * axfer)
+bool THwUart_msp::DmaStartSend(THwDmaTransfer * axfer)
 {
+#if 0
 	if (!txdma)
 	{
 		return false;
 	}
 
 	txdma->StartTransfer(axfer);
+#endif
 
 	return true;
 }
 
-bool THwUart_atsam_v2::DmaStartRecv(THwDmaTransfer * axfer)
+bool THwUart_msp::DmaStartRecv(THwDmaTransfer * axfer)
 {
+#if 0
 	if (!rxdma)
 	{
 		return false;
 	}
 
 	rxdma->StartTransfer(axfer);
+#endif
 
 	return true;
 }

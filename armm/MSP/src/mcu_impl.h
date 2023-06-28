@@ -12,3 +12,5 @@
 #ifdef HWUART_H_
   #include "hwuart_msp.h"
 #endif
+
+#define SKIP_UNIMPLEMENTED_WARNING

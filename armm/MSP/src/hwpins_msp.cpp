@@ -28,11 +28,11 @@
 #include "platform.h"
 #include "hwpins.h"
 
-#define MAX_PORT_NUMBER   PORT_GROUPS
+#define MAX_PORT_NUMBER   2
 
 uint32_t atsam_port_pull_dir[MAX_PORT_NUMBER];
 
-HW_GPIO_REGS * THwPinCtrl_atsam_v2::GetGpioRegs(int aportnum)
+HW_GPIO_REGS * THwPinCtrl_msp::GetGpioRegs(int aportnum)
 {
 	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
 	{
@@ -40,12 +40,19 @@ HW_GPIO_REGS * THwPinCtrl_atsam_v2::GetGpioRegs(int aportnum)
 	}
 	else
 	{
-		return (HW_GPIO_REGS *)&(PORT->Group[aportnum]);
+		if (aportnum == PORTNUM_B)
+		{
+			return (GPIO_Regs *)(GPIOB_BASE);
+		}
+		else
+		{
+			return (GPIO_Regs *)(GPIOA_BASE);
+		}
 	}
 }
 
 
-bool THwPinCtrl_atsam_v2::PinSetup(int aportnum, int apinnum, unsigned flags)
+bool THwPinCtrl_msp::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
 	HW_GPIO_REGS * regs = GetGpioRegs(aportnum);
 	if (!regs)
@@ -60,6 +67,8 @@ bool THwPinCtrl_atsam_v2::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 	// 1. turn on port power
 	GpioPortEnable(aportnum);
+
+#if 0
 
 	// prepare pin configuration
 	unsigned n = (1 << 1); // enable input
@@ -117,27 +126,26 @@ bool THwPinCtrl_atsam_v2::PinSetup(int aportnum, int apinnum, unsigned flags)
   	atsam_port_pull_dir[aportnum] &= ~(1 << apinnum);  // save for later
   }
 
+#endif
+
   return true;
 }
 
-bool THwPinCtrl_atsam_v2::GpioPortEnable(int aportnum)
+bool THwPinCtrl_msp::GpioPortEnable(int aportnum)
 {
 	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
 	{
 		return false;
 	}
 
-#ifdef MCLK_APBBMASK_MASK
-	MCLK->APBBMASK.reg |= MCLK_APBBMASK_PORT;
-#else
-	PM->APBBMASK.reg |= PM_APBBMASK_PORT;
-#endif
+	//PM->APBBMASK.reg |= PM_APBBMASK_PORT;
 
   return true;
 }
 
-void THwPinCtrl_atsam_v2::GpioSet(int aportnum, int apinnum, int value)
+void THwPinCtrl_msp::GpioSet(int aportnum, int apinnum, int value)
 {
+#if 0
 	HW_GPIO_REGS * regs = (HW_GPIO_REGS *)&(PORT->Group[aportnum]);
 
   if (1 == value)
@@ -152,28 +160,29 @@ void THwPinCtrl_atsam_v2::GpioSet(int aportnum, int apinnum, int value)
   {
   	regs->OUTCLR.reg = (1 << apinnum);
   }
+#endif
 }
 
-void THwPinCtrl_atsam_v2::GpioIrqSetup(int aportnum, int apinnum, int amode)
+void THwPinCtrl_msp::GpioIrqSetup(int aportnum, int apinnum, int amode)
 {
 
 }
 
 // GPIO Port
 
-void TGpioPort_atsam_v2::Assign(int aportnum)
+void TGpioPort_msp::Assign(int aportnum)
 {
 	regs = hwpinctrl.GetGpioRegs(aportnum);
 }
 
-void TGpioPort_atsam_v2::Set(unsigned value)
+void TGpioPort_msp::Set(unsigned value)
 {
-	regs->OUT.reg = value;
+	//regs->OUT.reg = value;
 }
 
 // GPIO Pin
 
-void TGpioPin_atsam_v2::Assign(int aportnum, int apinnum, bool ainvert)
+void TGpioPin_msp::Assign(int aportnum, int apinnum, bool ainvert)
 {
 	portnum = aportnum;
   pinnum = apinnum;
@@ -187,6 +196,7 @@ void TGpioPin_atsam_v2::Assign(int aportnum, int apinnum, bool ainvert)
 
 	setbitvalue = (1 << pinnum);
 	clrbitvalue = (1 << pinnum);
+#if 0
   getbitptr    = (unsigned *)&(regs->IN);
   getoutbitptr = (unsigned *)&(regs->OUT);
   getbitshift = pinnum;
@@ -202,10 +212,12 @@ void TGpioPin_atsam_v2::Assign(int aportnum, int apinnum, bool ainvert)
     setbitptr = (unsigned *)&(regs->OUTSET);
     clrbitptr = (unsigned *)&(regs->OUTCLR);
   }
+#endif
 }
 
-void TGpioPin_atsam_v2::SwitchDirection(int adirection)
+void TGpioPin_msp::SwitchDirection(int adirection)
 {
+#if 0
 	if (adirection)
 	{
 		regs->DIRSET.reg = setbitvalue;
@@ -225,4 +237,5 @@ void TGpioPin_atsam_v2::SwitchDirection(int adirection)
 			}
 		}
 	}
+#endif
 }

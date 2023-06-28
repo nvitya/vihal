@@ -23,8 +23,8 @@
   #define MCUF_MSP
   #define MCUSF_M0G
 
-  #define __SAMD51J18A__
-  #include "samd51.h"
+  //#define ???
+  #include "mspm0g310x.h"
 
 #else
 

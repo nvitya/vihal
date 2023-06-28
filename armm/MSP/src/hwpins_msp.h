@@ -25,13 +25,13 @@
  *  authors:  nvitya
 */
 
-#ifndef _HWPINS_ATSAM_V2_H
-#define _HWPINS_ATSAM_V2_H
+#ifndef _HWPINS_MSP_H
+#define _HWPINS_MSP_H
 
 #define HWPINS_PRE_ONLY
 #include "hwpins.h"
 
-class THwPinCtrl_atsam_v2 : public THwPinCtrl_pre
+class THwPinCtrl_msp : public THwPinCtrl_pre
 {
 public:
 	// platform specific
@@ -48,7 +48,7 @@ public:
 	void GpioIrqSetup(int aportnum, int apinnum, int amode); // not implemented yet
 };
 
-class TGpioPort_atsam_v2 : public TGpioPort_pre
+class TGpioPort_msp : public TGpioPort_pre
 {
 public:
 	void Assign(int aportnum);
@@ -59,7 +59,7 @@ public:
 	volatile unsigned *  portptr = nullptr;
 };
 
-class TGpioPin_atsam_v2 : public TGpioPin_common
+class TGpioPin_msp : public TGpioPin_common
 {
 public:
 	HW_GPIO_REGS *   regs = nullptr;
@@ -73,8 +73,8 @@ public:
 	void SwitchDirection(int adirection);
 };
 
-#define HWPINCTRL_IMPL   THwPinCtrl_atsam_v2
-#define HWGPIOPORT_IMPL  TGpioPort_atsam_v2
-#define HWGPIOPIN_IMPL   TGpioPin_atsam_v2
+#define HWPINCTRL_IMPL   THwPinCtrl_msp
+#define HWGPIOPORT_IMPL  TGpioPort_msp
+#define HWGPIOPIN_IMPL   TGpioPin_msp
 
-#endif /* HWPINS_ATSAM_V2_H_ */
+#endif /* HWPINS_MSP_H_ */
