@@ -29,18 +29,14 @@
 #define __MCU_DEFS_H
 
 #define MAX_CLOCK_SPEED         80000000
-#define MCU_INTERNAL_RC_SPEED    4000000
+#define MCU_INTERNAL_RC_SPEED   32000000
 
 #define HW_GPIO_REGS      GPIO_Regs
 #define HW_UART_REGS      UART_Regs
 
 #if __CORTEX_M < 3
-  #define CLOCKCNT_BITS  32
-
-  #define CLOCKCNT       (0)
+  #define CLOCKCNT16       (0xFFFF - TIMG0->COUNTERREGS.CTR)
 #endif
-
-
 
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {

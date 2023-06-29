@@ -52,7 +52,25 @@ bool hwclk_start_inths_osc(unsigned aextspeed)
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
-  // !!!!!
+	unsigned fws;
+	if (acpuspeed <= 24000000)
+	{
+		fws = 0;
+	}
+	else if (acpuspeed <= 48000000)
+	{
+		fws = 1;
+	}
+	else // for 80 MHz.
+	{
+		fws = 2;
+	}
+
+	unsigned tmp;
+	tmp = SYSCTL->SOCLOCK.MCLKCFG;
+	tmp &= ~SYSCTL_MCLKCFG_FLASHWAIT_MASK;
+	tmp |= (fws << SYSCTL_MCLKCFG_FLASHWAIT_OFS);
+	SYSCTL->SOCLOCK.MCLKCFG = tmp;
 }
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)

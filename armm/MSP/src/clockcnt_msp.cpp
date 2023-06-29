@@ -32,29 +32,20 @@
 
 void clockcnt_init()
 {
-#warning "implement M0 clock counter!"
+	GPTIMER_Regs * regs = TIMG0;
 
-#if 0
+  regs->GPRCM.PWREN = (GPTIMER_PWREN_KEY_UNLOCK_W | GPTIMER_PWREN_ENABLE_ENABLE);
+  regs->CLKSEL = GPTIMER_CLKSEL_BUSCLK_SEL_ENABLE;
+  regs->CLKDIV = 0; // do not divide
+  regs->COMMONREGS.CPS = 0; // no pre-scaling
+  regs->COMMONREGS.CCLKCTL = 1;
 
-#if defined(TIM14)
-	#if defined(RCC_APBENR2_TIM14EN)
-		RCC->APBENR2 |= RCC_APBENR2_TIM14EN;
-	#else
-	  RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
-	#endif
-  #define CCTIMER  TIM14
-
-#else
-	RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
-  #define CCTIMER  TIM21
-#endif
-
-	CCTIMER->CR1 = 0;
-	CCTIMER->PSC = 0; // count every clock
-	CCTIMER->CR1 = 1;
-	CCTIMER->EGR = 1; // reinit, start the timer
-
-#endif
+  regs->COUNTERREGS.LOAD = 0xFFFFFFFF;
+  regs->COUNTERREGS.CTRCTL = (0
+  	| GPTIMER_CTRCTL_EN_MASK
+		| GPTIMER_CTRCTL_CM_DOWN  // no upcounting mode yet...
+    | GPTIMER_CTRCTL_REPEAT_REPEAT_1
+  );
 }
 
 #endif

@@ -189,6 +189,11 @@ bool THwPinCtrl_msp::PinSetup(int aportnum, int apinnum, unsigned flags)
 		}
 	}
 
+  if (flags & PINCFG_OPENDRAIN)
+  {
+  	cmreg |= IOMUX_PINCM_HIZ1_MASK;
+  }
+
   if (flags & PINCFG_PULLUP)
   {
   	cmreg |= IOMUX_PINCM_PIPU_MASK;
