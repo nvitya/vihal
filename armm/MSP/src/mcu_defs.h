@@ -34,8 +34,10 @@
 #define HW_GPIO_REGS      GPIO_Regs
 #define HW_UART_REGS      UART_Regs
 
+#define TIMG_CLOCKCNT     TIMG0  // for the eningeering samle currently, later will be TIMG12 (the only 32-bit ? timer)
+
 #if __CORTEX_M < 3
-  #define CLOCKCNT16       (0xFFFF - TIMG0->COUNTERREGS.CTR)
+  #define CLOCKCNT16       (0xFFFF - TIMG_CLOCKCNT->COUNTERREGS.CTR)
 #endif
 
 inline void __attribute__((always_inline)) mcu_preinit_code()
