@@ -130,8 +130,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
 	}
 
-  __NOP();
 
+#if 1
   // setup the SYSPLL
 
   SYSCTL->SOCLOCK.HSCLKEN &= ~SYSCTL_HSCLKEN_SYSPLLEN_ENABLE; // disable the system PLL
@@ -147,112 +147,61 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 	// the CLK0 and CLK1 clock output will be set to the half of the CLK2X
 
-	unsigned pdiv = 1;
-	unsigned mul = 1;  // = qdiv
-	unsigned rdiv = 1;
-	unsigned rdiv2x = 1;
-	unsigned vcotarget = target_speed_hz * 2;  // The VCO frequency must be within 60 and 400 MHz
+	unsigned pdiv = 0;
+	unsigned mul = 2;  // = qdiv
+  unsigned rdiv2x = 1;
+	unsigned vcospeed;  // The VCO frequency must be within 60 and 400 MHz
 
-
-  // try some round frequencies for VCO input:
-  unsigned vco_in_hz;
-  vco_in_hz = 4000000; // this is the default
-  if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
-  {
-    vco_in_hz = 5000000; // for 25 MHz input cristals
-    if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
-    {
-      vco_in_hz = 3000000;
-      if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
-      {
-        vco_in_hz = 4000000;  // not synthetizable properly, stay with the default
-      }
-    }
-  }
-
-
-
-
-	unsigned refdiv = basespeed / (2 * 1000000);  // divisor for 1 MHz
-	if (refdiv < 1)  refdiv = 1;
-
-	uint32_t pllmul = target_speed_hz / 1000000;
-
-	// do not go out of the frequency range of the PLL DSO, the upper limit is not checked.
-	while (pllmul * 1000000 < HWPLL_OSC_MIN_FREQ)
+	while (1)
 	{
-		pllmul <<= 1;
-		cpu_gclk_div <<= 1;
+	  vcospeed = (basespeed >> pdiv) * mul;
+	  if (vcospeed < 60000000)  // minimum 60 MHz
+	  {
+	    ++mul;
+	  }
+	  else if (vcospeed > 400000000) // maximum 400 MHz
+	  {
+	    if (3 == pdiv)
+	    {
+	      return false;  // no solution found !
+	    }
+	    ++pdiv;
+	    mul = 2;
+	  }
+	  else
+	  {
+	    rdiv2x = (vcospeed * 2) / target_speed_hz;
+	    if ( rdiv2x * target_speed_hz == vcospeed * 2 )  // integer divisible ?
+	    {
+	      break; // found it
+	    }
+	    else
+	    {
+	      ++mul;
+	    }
+	  }
 	}
 
+	rdiv2x = (rdiv2x >> 1);  // ??? maybe the engineering sample does not have a 2x multiplier ?
+
+  unsigned rdiv0 = rdiv2x; // results to the half frequency as the 2x output
+	unsigned rdiv1 = ((vcospeed >> 1) / 40000000);  // try to achieve 40 MHz, >> 1 comes from the divisor coding (/2)
 
   SYSCTL->SOCLOCK.SYSPLLCFG0 = (0
-    | (0  << 16)  // RDIVCLK2X(4)
-    | (0  << 12)  // RDIVCLK1(4)
-    | (0  <<  8)  // RDIVCLK0(4)
+    | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)
+    | ((rdiv1 - 1)  << 12)  // RDIVCLK1(4)
+    | ((rdiv0 - 1)  <<  8)  // RDIVCLK0(4)
     | (1  <<  6)  // ENABLECLK2X
     | (1  <<  5)  // ENABLECLK1
     | (1  <<  4)  // ENABLECLK0
-    | (1  <<  1)  // MCLK2XVCO
+    | (1  <<  1)  // MCLK2XVCO: 0 = CLK0 will be used as HSCLK, 1 = CLK2X will be used as HSCLK
     | (1  <<  0)  // SYSPLLREF: 1 = use the HFLCK as the reference
 	);
 
   SYSCTL->SOCLOCK.SYSPLLCFG1 = (0
     | ((mul - 1)  <<  8)  // QDIV(7):
-    | ((pdiv - 1) <<  0)  // PDIV(2): 0 = /1, 1 = /2, 2 = /4, 3 = /8
+    | (pdiv <<  0)  // PDIV(2): 0 = /1, 1 = /2, 2 = /4, 3 = /8
 	);
-
-#if 0
-  static const DL_SYSCTL_SYSPLLConfig gSYSPLLConfig = {
-      .inputFreq              = DL_SYSCTL_SYSPLL_INPUT_FREQ_16_32_MHZ,
-  	.rDivClk2x              = 3,
-  	.rDivClk1               = 1,
-  	.rDivClk0               = 0,
-  	.enableCLK2x            = DL_SYSCTL_SYSPLL_CLK2X_ENABLE,
-  	.enableCLK1             = DL_SYSCTL_SYSPLL_CLK1_ENABLE,
-  	.enableCLK0             = DL_SYSCTL_SYSPLL_CLK0_DISABLE,
-  	.sysPLLMCLK             = DL_SYSCTL_SYSPLL_MCLK_CLK2X,
-  	.sysPLLRef              = DL_SYSCTL_SYSPLL_REF_SYSOSC,
-  	.qDiv                   = 9,
-  	.pDiv                   = DL_SYSCTL_SYSPLL_PDIV_2
-  };
-
-
-  // set predivider PDIV (divides reference clock)
-  DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG1, ((uint32_t) config->pDiv),
-      SYSCTL_SYSPLLCFG1_PDIV_MASK);
-
-  // populate SYSPLLPARAM0/1 tuning registers from flash, based on input freq
-  SYSCTL->SOCLOCK.SYSPLLPARAM0 =
-      *(volatile uint32_t *) ((uint32_t) config->inputFreq);
-  SYSCTL->SOCLOCK.SYSPLLPARAM1 =
-      *(volatile uint32_t *) ((uint32_t) config->inputFreq + (uint32_t) 0x4);
-
-
-  // set feedback divider QDIV (multiplies to give output frequency)
-  DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG1,
-      ((config->qDiv << SYSCTL_SYSPLLCFG1_QDIV_OFS) &
-          SYSCTL_SYSPLLCFG1_QDIV_MASK),
-      SYSCTL_SYSPLLCFG1_QDIV_MASK);
-
-  // write clock output dividers, enable outputs, and MCLK source to SYSPLLCFG0
-  DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG0,
-      (((config->rDivClk2x << SYSCTL_SYSPLLCFG0_RDIVCLK2X_OFS) &
-           SYSCTL_SYSPLLCFG0_RDIVCLK2X_MASK) |
-          ((config->rDivClk1 << SYSCTL_SYSPLLCFG0_RDIVCLK1_OFS) &
-              SYSCTL_SYSPLLCFG0_RDIVCLK1_MASK) |
-          ((config->rDivClk0 << SYSCTL_SYSPLLCFG0_RDIVCLK0_OFS) &
-              SYSCTL_SYSPLLCFG0_RDIVCLK0_MASK) |
-          config->enableCLK2x | config->enableCLK1 | config->enableCLK0 |
-          (uint32_t) config->sysPLLMCLK),
-      (SYSCTL_SYSPLLCFG0_RDIVCLK2X_MASK | SYSCTL_SYSPLLCFG0_RDIVCLK1_MASK |
-          SYSCTL_SYSPLLCFG0_RDIVCLK0_MASK |
-          SYSCTL_SYSPLLCFG0_ENABLECLK2X_MASK |
-          SYSCTL_SYSPLLCFG0_ENABLECLK1_MASK |
-          SYSCTL_SYSPLLCFG0_ENABLECLK0_MASK |
-          SYSCTL_SYSPLLCFG0_MCLK2XVCO_MASK));
-#endif
-
 
   // enable SYSPLL
   SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_SYSPLLEN_ENABLE;
@@ -261,10 +210,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // wait until SYSPLL startup is stabilized
   }
 
-
-#if 1
   // switching from SYSOSC to HSCLK
-
   SYSCTL->SOCLOCK.HSCLKCFG = SYSCTL_HSCLKCFG_HSCLKSEL_SYSPLL;  // set the SYSPLL for the HSCLK source
 
   // Verify HSCLK source is valid
@@ -279,13 +225,36 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   // Verify HSCLK -> MCLK
   while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKMUX_MASK) == 0)
   {
-  	// wait until MCLK is sourced from the HSCLK
+    // wait until MCLK is sourced from the HSCLK
   }
 
+  SystemCoreClock = target_speed_hz;
+  return true;
+
+#else
+
+  // just use the external clock directly
+
+  SYSCTL->SOCLOCK.HSCLKCFG = SYSCTL_HSCLKCFG_HSCLKSEL_HFCLKCLK;  // set the SYSPLL for the HFCLK (external crystal freq)
+
+  // Verify HSCLK source is valid
+  while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKGOOD_MASK) == 0)
+  {
+    // wait until HSCLKGOOD
+  }
+
+  // Switch MCLK to HSCLK
+  SYSCTL->SOCLOCK.MCLKCFG |= SYSCTL_MCLKCFG_USEHSCLK_ENABLE;
+
+  // Verify HSCLK -> MCLK
+  while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKMUX_MASK) == 0)
+  {
+    // wait until MCLK is sourced from the HSCLK
+  }
+
+  SystemCoreClock = basespeed;
+  return true;
+
 #endif
-
-
-  //SystemCoreClock = target_speed_hz;
-	return true;
 }
 
