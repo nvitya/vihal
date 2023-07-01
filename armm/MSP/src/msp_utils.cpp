@@ -1,5 +1,4 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2023 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -19,40 +18,21 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwuart_msp.h
- *  brief:    TI MSP UART
- *  date:     2023-06-28
+ *  file:     msp_utils.cpp
+ *  brief:    MSP Utilities
+ *  created:  2023-07-01
  *  authors:  nvitya
 */
 
+#include "msp_utils.h"
 
-#ifndef HWUART_MSP_H_
-#define HWUART_MSP_H_
-
-#define HWUART_PRE_ONLY
-#include "hwuart.h"
-
-class THwUart_msp : public THwUart_pre
+uint32_t msp_bus_speed(uint8_t abusid)  // 0 = PD0 (MCLK/2), 1 = PD1 (MCLK)
 {
-public:
-	bool Init(int adevnum);
+  if ((0 == abusid) && (SYSCTL->SOCLOCK.MCLKCFG & SYSCTL_MCLKCFG_UDIV_MASK))
+  {
+    return (SystemCoreClock >> 1);
+  }
 
-  bool SetBaudRate(int abaudrate);
+  return SystemCoreClock;
+}
 
-	bool TrySendChar(char ach);
-	bool TryRecvChar(char * ach);
-
-	inline bool SendFinished()   { return true; }  // !!!!!!!!!!!!!!
-
-	void DmaAssign(bool istx, THwDmaChannel * admach);
-
-	bool DmaStartSend(THwDmaTransfer * axfer);
-	bool DmaStartRecv(THwDmaTransfer * axfer);
-
-public:
-	HW_UART_REGS *      regs = nullptr;
-};
-
-#define HWUART_IMPL THwUart_msp
-
-#endif // def HWUART_MSP_H_

@@ -1,5 +1,4 @@
-/* -----------------------------------------------------------------------------
- * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2023 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -19,40 +18,17 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwuart_msp.h
- *  brief:    TI MSP UART
- *  date:     2023-06-28
+ *  file:     msp_utils.h
+ *  brief:    MSP Utilities
+ *  created:  2023-07-01
  *  authors:  nvitya
 */
 
+#ifndef MSP_UTILS_H_
+#define MSP_UTILS_H_
 
-#ifndef HWUART_MSP_H_
-#define HWUART_MSP_H_
+#include "platform.h"
 
-#define HWUART_PRE_ONLY
-#include "hwuart.h"
+uint32_t msp_bus_speed(uint8_t abusid);
 
-class THwUart_msp : public THwUart_pre
-{
-public:
-	bool Init(int adevnum);
-
-  bool SetBaudRate(int abaudrate);
-
-	bool TrySendChar(char ach);
-	bool TryRecvChar(char * ach);
-
-	inline bool SendFinished()   { return true; }  // !!!!!!!!!!!!!!
-
-	void DmaAssign(bool istx, THwDmaChannel * admach);
-
-	bool DmaStartSend(THwDmaTransfer * axfer);
-	bool DmaStartRecv(THwDmaTransfer * axfer);
-
-public:
-	HW_UART_REGS *      regs = nullptr;
-};
-
-#define HWUART_IMPL THwUart_msp
-
-#endif // def HWUART_MSP_H_
+#endif /* MSP_UTILS_H_ */

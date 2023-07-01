@@ -103,7 +103,10 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   tmp |= 0;
   SYSCTL->SOCLOCK.SYSOSCCFG = tmp;
 
-  SYSCTL->SOCLOCK.MCLKCFG &= ~SYSCTL_MCLKCFG_USEHSCLK_ENABLE;
+  tmp = SYSCTL->SOCLOCK.MCLKCFG;
+  tmp &= ~(SYSCTL_MCLKCFG_USEHSCLK_ENABLE | SYSCTL_MCLKCFG_UDIV_MASK | SYSCTL_SYSOSCCFG_FREQ_MASK);
+  tmp |= (1 << SYSCTL_MCLKCFG_UDIV_OFS);  // Set the ULPCLK to half of the MCLK
+  SYSCTL->SOCLOCK.MCLKCFG = tmp;
 
   // Verify SYSOSC -> MCLK
   while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKMUX_MASK) != 0)
@@ -182,10 +185,9 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 	  }
 	}
 
-	rdiv2x = (rdiv2x >> 1);  // ??? maybe the engineering sample does not have a 2x multiplier ?
-
-  unsigned rdiv0 = rdiv2x; // results to the half frequency as the 2x output
+  unsigned rdiv0 = (rdiv2x >> 1); // results to the half frequency as the 2x output
 	unsigned rdiv1 = ((vcospeed >> 1) / 40000000);  // try to achieve 40 MHz, >> 1 comes from the divisor coding (/2)
+  //unsigned rdiv1 = rdiv0;  // to check the ULPCLK
 
   SYSCTL->SOCLOCK.SYSPLLCFG0 = (0
     | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)

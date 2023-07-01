@@ -29,137 +29,148 @@
 #include <stdarg.h>
 
 #include "hwuart.h"
-//#include "atsam_v2_utils.h"
+#include "msp_utils.h"
 
 
-bool THwUart_msp::Init(int adevnum)  // devnum: 0 - 7 = SERCOM ID
+bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
 {
 	unsigned code;
-	unsigned perid;
+	unsigned busid = 0;
 
 	devnum = adevnum;
 	initialized = false;
 	regs = nullptr;
 
-	return false;
-
-
-
-#if 0
-
-	if (!atsam2_sercom_enable(devnum, 0))
+	if (0 == devnum)
 	{
-		return false;
+	  regs = UART0;
+	}
+	else if (1 == devnum)
+  {
+    regs = UART1;
+  }
+  else if (2 == devnum)
+  {
+    regs = UART2;
+  }
+	else if (3 == devnum)
+	{
+	  regs = UART3;
+	  busid = 1; // high speed bus
+	}
+	else
+	{
+	  return false;
 	}
 
-	regs = (HW_UART_REGS *)sercom_inst_list[devnum];
+  periphclock = msp_bus_speed(busid);
 
-	regs->CTRLA.bit.ENABLE = 0; // disable
-	//regs->CTRLA.bit.SWRST = 1; // reset
-	//while (regs->SYNCBUSY.bit.SWRST) { } // wait for reset
+  regs->GPRCM.PWREN = (UART_PWREN_KEY_UNLOCK_W | UART_PWREN_ENABLE_ENABLE);
+  regs->CTL0 &= ~(UART_CTL0_ENABLE_ENABLE);  // disable first
 
-	//regs->CTRLA.bit.SWRST = 0; // reset
+  regs->CLKSEL = UART_CLKSEL_BUSCLK_SEL_ENABLE;
+  regs->CLKDIV = 0; // do not divide the bus clock
 
-	// baud rate calculation
-	// fbaud = fref / oversampling * (1 - baudvalue / 65536)
-	// baudvalue = 65536 * (1 - oversampling * fbaud / fref)
+  SetBaudRate(baudrate);
 
-	unsigned oversampling = 16;
-	unsigned brdiv = SystemCoreClock / ((oversampling / 8) * baudrate);  // the lower 3 bits are the fractional part
-	unsigned baudvalue = (((brdiv >> 3) & 0x1FFF) | ((brdiv & 7) << 13));
+  unsigned lcrh = (0
+    | (0  << 21)  // EXTDIR_HOLD(5)
+    | (0  << 16)  // EXTDIR_SETUP(5)
+    | (0  <<  7)  // SENDIDLE: 0 = no idle pattern sending
+    | (0  <<  6)  // SPS: 0 = disable stick parity
+    | (0  <<  4)  // WLEN(2): 0 = 5 bit, 3 = 8 bits
+    | (0  <<  3)  // STP2: 0 = 1x stop bit, 1 = 2 stop bits
+    | (0  <<  2)  // EPS: 0 = odd parity, 1 = even parity
+    | (0  <<  1)  // PEN: 1 = enable parity
+    | (0  <<  0)  // BRK: 1 = send break
+  );
+  if (parity)
+  {
+    if (!oddparity)
+    {
+      lcrh |= (1 << 2);
+    }
+    lcrh |= (1 << 1);
+  }
+  lcrh |= ((databits - 5) << 4);
+  if (halfstopbits > 2)
+  {
+    lcrh |= (1 << 3);
+  }
+  regs->LCRH = lcrh;
 
-	regs->BAUD.reg = baudvalue;
-
-	// CTRLB
-	code = 0
-		| (1 << 17)  // RXEN
-		| (1 << 16)  // TXEN
-		| ((((halfstopbits-2) / 2) & 1) << 6) // SBMODE
-		| (0 <<  0)  // CHSIZE(3): 0 = 8 bit characters
-	;
-
-	if (parity and oddparity)
-	{
-		code |= (1 << 13);
-	}
-
-	// 0x30000
-
-	while (regs->SYNCBUSY.bit.CTRLB) { } // wait for sync
-	regs->CTRLB.reg = code;
-	while (regs->SYNCBUSY.bit.CTRLB) { } // wait for sync
-
-	// CTRLC
-  #ifdef REG_SERCOM0_USART_CTRLC
-	  regs->CTRLC.reg = 0x700002; //((7 << 20) | (2 << 0));
-  #endif
-
-	// CTRLA
-	code = 0
-		| (1 << 30)  // DORD: 1 = LSB first
-		| (0 << 28)  // CMODE: async mode
-		| (0 << 24)  // FORM(4): frame format, 0 = USART without parity
-		| (0 << 22)  // SAMPA(2): sample adjustment
-		| (1 << 20)  // RXPO(2): RX pad select, 1 = PAD[1] for RX
-		| (0 << 16)  // TXPO(2): TX pad select, 2 = PAD[0] for TX, RTS=PAD[2], CTS=PAD[3]
-		| (1 << 13)  // SAMPR(3): Sample rate, 16x oversampling, fractional b.r.g.
-		| (1 <<  2)  // MODE(3): Mode, 1 = USART with internal clock
-		| (0 <<  1)  // ENABLE
-	;
-
-	if (parity)
-	{
-		code |= (1 << 24);
-	}
-
-	regs->CTRLA.reg = code;
-
-	regs->RXPL.reg = 0;
-	regs->DBGCTRL.reg = 0;
-
-	while (regs->SYNCBUSY.bit.ENABLE) { } // wait for enable
-	regs->CTRLA.reg = (code | (1 << 1)); // enable it
-	while (regs->SYNCBUSY.bit.ENABLE) { } // wait for enable
+  unsigned ctl = (0
+    | (0  << 19)  // MSBFIRST: 0 = LSB first (standard), 1 = MSB first
+    | (1  << 18)  // MAJVOTE: 1 = majority voting of 3 samples, 0 = takes center value
+    | (1  << 17)  // FEN: fifo enable, 1 = enable transmit and receive FIFOs
+    | (0  << 15)  // HSE(2): 0 = 16x oversampling, 1 = 8x oversampling, 2 = 3x oversampling
+    | (0  << 14)  // CTSEN: 1 = enable CTS HW flow control
+    | (0  << 13)  // RTSEN: 1 = enable RTS HW flow control
+    | (0  << 12)  // RTS: 1 = signal RTS
+    | (0  <<  8)  // MODE(3): 0 = normal operation, 1 = RS485, 2 = IDLE, 3 = 9-bit address, 4 = Smart Card, 5 = DALI
+    | (0  <<  7)  // MENC: 1 = enable manchester encoding
+    | (0  <<  6)  // TXD_OUT: manual TXD value
+    | (0  <<  5)  // TXD_OUT_EN: 1 = enable manual TXD control
+    | (1  <<  4)  // TXE: 1 = enable transmit
+    | (1  <<  3)  // RXE: 1 = enable receive
+    | (0  <<  2)  // LBE: 1 = loopback enable
+    | (1  <<  0)  // ENABLE: 1 = enable the uart
+  );
+  regs->CTL0 = ctl;
 
 	initialized = true;
 
 	return true;
 
-#endif
+}
+
+bool THwUart_msp::SetBaudRate(int abaudrate)
+{
+  baudrate = abaudrate;
+
+  unsigned ctl = regs->CTL0;
+  ctl &= ~(3 << 15); // clear the oversampling field (0 = 16x)
+  unsigned baseclock = (periphclock >> 4);  // div 16
+  if (baseclock < baudrate)
+  {
+    // switch to 8x oversampling
+    baseclock = (periphclock >> 3);  // div 8
+    ctl |= (1 << 15);
+  }
+  regs->CTL0 = ctl;
+
+  unsigned divider = (baseclock << 6) / baudrate;
+  regs->IBRD = (divider >> 6);
+  regs->FBRD = (divider & 0x3F);
+
+  // Reference manual:
+  // "any changes to the baud-rate divisor must be followed by a write to the LCRH register for the changes to take effect"
+  volatile unsigned lcrh = regs->LCRH;
+  regs->LCRH = lcrh;
+
+  return true;
 }
 
 bool THwUart_msp::TrySendChar(char ach)
 {
-#if 0
-	if (regs->INTFLAG.bit.DRE)
+	if (regs->STAT & UART_STAT_TXFF_MASK)
 	{
-		regs->DATA.reg = ach;
-		return true;
+	  return false;
 	}
-	else
-	{
-		return false;
-	}
-#else
+
+	regs->TXDATA = ach;
 	return true;
-#endif
 }
 
 bool THwUart_msp::TryRecvChar(char * ach)
 {
-#if 0
-	if (regs->INTFLAG.bit.RXC)
+	if (regs->STAT & UART_STAT_RXFE_MASK)
 	{
-		*ach = regs->DATA.reg;
-		return true;
+	  return false;
 	}
-	else
-	{
-		return false;
-	}
-#else
-	return false;
-#endif
+
+	*ach = regs->RXDATA;
+	return true;
 }
 
 void THwUart_msp::DmaAssign(bool istx, THwDmaChannel * admach)
