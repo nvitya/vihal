@@ -140,6 +140,7 @@ void THwI2c_rp::RunTransaction()
 
     // prepare the unit with blocked TX for preprogramming the FIFO
     regs->enable = (I2C_IC_ENABLE_TX_CMD_BLOCK_BITS | I2C_IC_ENABLE_ENABLE_BITS);
+    regs->dma_cr = 0; // disable the dmas
 
     unsigned extracnt = ((curtra->extra >> 24) & 3);
     if (extracnt)
@@ -158,20 +159,10 @@ void THwI2c_rp::RunTransaction()
 
     if (istx)
     {
-      dmaused = (txdma && (datalen > 1));
+      dmaused = (txdma && (datalen > 2));
       if (dmaused)
       {
-        regs->dma_cr = I2C_IC_DMA_CR_TDMAE_BITS; // enable only TX DMA
-
-        xfer.srcaddr = dataptr;
-        xfer.bytewidth = 1;
-        xfer.count = remainingbytes - 1;
-        xfer.flags = 0; // peripheral transfer with defaults
-
-        dataptr += xfer.count;
-        remainingbytes = 1;
-
-        txdma->StartTransfer(&xfer);
+        FillAndStartTxDma();
       }
       else
       {
@@ -231,7 +222,7 @@ void THwI2c_rp::RunTransaction()
     }
 
     // start processing the TX FIFO:
-    regs->enable &= ~I2C_IC_ENABLE_TX_CMD_BLOCK_BITS;
+    regs->enable = I2C_IC_ENABLE_ENABLE_BITS;  // remove the TX FIFO BLOCK
 
     trastate = 1;
   }
@@ -285,25 +276,35 @@ void THwI2c_rp::RunTransaction()
   {
     if (istx)
     {
-      if (dmaused && txdma->Active())
+      if (dmaused)
       {
-        return;
+        if (txdma->Active())
+        {
+          return;
+        }
+
+        if (remainingbytes > 0)
+        {
+          FillAndStartTxDma();
+        }
       }
-
-      while (remainingbytes > 0)
+      else
       {
-        if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
+        while (remainingbytes > 0)
         {
-          return; // TX fifo is full
-        }
+          if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
+          {
+            return; // TX fifo is full
+          }
 
-        uint32_t data = *dataptr++;
-        if (1 == remainingbytes)
-        {
-           data |= HWI2C_CMD_STOP;
+          uint32_t data = *dataptr++;
+          if (1 == remainingbytes)
+          {
+             data |= HWI2C_CMD_STOP;
+          }
+          regs->data_cmd = data;
+          --remainingbytes;
         }
-        regs->data_cmd = data;
-        --remainingbytes;
       }
     }
     else
@@ -372,3 +373,29 @@ void THwI2c_rp::RunTransaction()
   curtra->completed = true; // transaction finished.
 }
 
+void THwI2c_rp::FillAndStartTxDma()
+{
+  // prepare the DMA buffer
+  unsigned i = 0;
+  unsigned maxi = remainingbytes;
+  if (maxi > HWI2C_TXDMA_BUF_SIZE)  maxi = HWI2C_TXDMA_BUF_SIZE;
+  while (i < maxi)
+  {
+    txdmabuf[i++] = *dataptr++;
+  }
+  remainingbytes -= maxi;
+
+  if (0 == remainingbytes)
+  {
+    txdmabuf[i-1] |= HWI2C_CMD_STOP;
+  }
+
+  xfer.srcaddr = &txdmabuf[0];
+  xfer.bytewidth = 2;
+  xfer.count = i;
+  xfer.flags = 0; // peripheral transfer with defaults
+
+  regs->dma_cr = I2C_IC_DMA_CR_TDMAE_BITS; // enable only the TX DMA
+
+  txdma->StartTransfer(&xfer);
+}

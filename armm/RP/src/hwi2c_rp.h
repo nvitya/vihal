@@ -38,6 +38,8 @@
 #define HWI2C_CMD_STOP      (1 <<  9)
 #define HWI2C_CMD_RXDATA    (1 <<  8)
 
+#define HWI2C_TXDMA_BUF_SIZE   128
+
 class THwI2c_rp : public THwI2c_pre
 {
 public:
@@ -54,6 +56,10 @@ protected:
   uint32_t         rxcmd_remaining = 0;
   uint32_t         rxcmd_data = HWI2C_CMD_RXDATA;
   THwDmaTransfer   cmdxfer;
+
+  uint16_t         txdmabuf[HWI2C_TXDMA_BUF_SIZE]; // collect the TXDMA commands here, because 2 byte writes are required
+
+  void             FillAndStartTxDma();
 
 };
 
