@@ -191,7 +191,9 @@ void THwI2c_rp::RunTransaction()
       if (extracnt)
       {
         // restart required !
-        regs->data_cmd = (HWI2C_CMD_RESTART | HWI2C_CMD_RXDATA);
+        uint32_t r = (HWI2C_CMD_RESTART | HWI2C_CMD_RXDATA);
+        if (rxcmd_remaining < 2)  r |= HWI2C_CMD_STOP;
+        regs->data_cmd = r;
         --rxcmd_remaining;
       }
 
