@@ -60,6 +60,7 @@ protected:
   uint16_t         txdmabuf[HWI2C_TXDMA_BUF_SIZE]; // collect the TXDMA commands here, because 2 byte writes are required
 
   void             FillAndStartTxDma();
+  void             FillTxFifo();
 
 };
 

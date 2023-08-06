@@ -159,18 +159,16 @@ void THwI2c_rp::RunTransaction()
 
     if (istx)
     {
-      dmaused = (txdma && (datalen > 2));
+      dmaused = (txdma && (datalen > 12));
       if (dmaused)
       {
         FillAndStartTxDma();
+        trastate = 12;
       }
       else
       {
-        if (datalen <= 1)
-        {
-          regs->data_cmd = (*dataptr | HWI2C_CMD_STOP);
-          --remainingbytes;
-        }
+        FillTxFifo();
+        trastate = 11;
       }
 
       rxcmd_dmaused = false;
@@ -207,7 +205,7 @@ void THwI2c_rp::RunTransaction()
       dmaused = (rxcmd_dmaused && (remainingbytes > 1));
       if (dmaused)
       {
-        regs->dma_cr |= I2C_IC_DMA_CR_RDMAE_BITS; // enable only RX DMA too
+        regs->dma_cr |= I2C_IC_DMA_CR_RDMAE_BITS; // enable the RX DMA too
 
         xfer.dstaddr = dataptr;
         xfer.bytewidth = 1;
@@ -219,15 +217,15 @@ void THwI2c_rp::RunTransaction()
 
         rxdma->StartTransfer(&xfer);
       }
+
+      trastate = 1;
     }
 
     // start processing the TX FIFO:
     regs->enable = I2C_IC_ENABLE_ENABLE_BITS;  // remove the TX FIFO BLOCK
-
-    trastate = 1;
   }
 
-  if (trastate <= 2)  // error handling
+  if (trastate <= 50)  // error handling
   {
     uint32_t abrt = regs->tx_abrt_source;
     if (abrt &
@@ -272,87 +270,88 @@ void THwI2c_rp::RunTransaction()
     }
   }
 
-  if (1 == trastate) // send and receive main data
+  if (1 == trastate) // RX states (with and without DMA) send and receive main data
   {
-    if (istx)
+    if (dmaused && (txdma->Active() || rxdma->Active()))
     {
-      if (dmaused)
-      {
-        if (txdma->Active())
-        {
-          return;
-        }
+      return;
+    }
 
-        if (remainingbytes > 0)
-        {
-          FillAndStartTxDma();
-        }
+    while (rxcmd_remaining > 0)
+    {
+      if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
+      {
+        break; // TX fifo is full
+      }
+
+      if (1 == rxcmd_remaining)
+      {
+        regs->data_cmd = (HWI2C_CMD_RXDATA | HWI2C_CMD_STOP);
       }
       else
       {
-        while (remainingbytes > 0)
-        {
-          if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
-          {
-            return; // TX fifo is full
-          }
-
-          uint32_t data = *dataptr++;
-          if (1 == remainingbytes)
-          {
-             data |= HWI2C_CMD_STOP;
-          }
-          regs->data_cmd = data;
-          --remainingbytes;
-        }
+        regs->data_cmd = HWI2C_CMD_RXDATA;
       }
+      --rxcmd_remaining;
     }
-    else
+
+    while (remainingbytes > 0)
     {
-      if (dmaused && (txdma->Active() || rxdma->Active()))
+      if (0 == (regs->status & I2C_IC_STATUS_RFNE_BITS))
       {
-        return;
+        break; // RX fifo is empty
       }
 
-      while (rxcmd_remaining > 0)
-      {
-        if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
-        {
-          break; // TX fifo is full
-        }
-
-        if (1 == rxcmd_remaining)
-        {
-          regs->data_cmd = (HWI2C_CMD_RXDATA | HWI2C_CMD_STOP);
-        }
-        else
-        {
-          regs->data_cmd = HWI2C_CMD_RXDATA;
-        }
-        --rxcmd_remaining;
-      }
-
-      while (remainingbytes > 0)
-      {
-        if (0 == (regs->status & I2C_IC_STATUS_RFNE_BITS))
-        {
-          break; // RX fifo is empty
-        }
-
-        *dataptr++ = regs->data_cmd;
-        --remainingbytes;
-      }
-
-      if (remainingbytes > 0)
-      {
-        return;
-      }
+      *dataptr++ = regs->data_cmd;
+      --remainingbytes;
     }
 
-    trastate = 2; // closing
+    if (remainingbytes > 0)
+    {
+      return;
+    }
+
+    trastate = 50; // closing
   }
 
-  if (2 == trastate)  // wait until the last byte is sent and the master goes to idle
+  else if (11 == trastate) // DMA-less TX
+  {
+    while (remainingbytes > 0)
+    {
+      if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
+      {
+        return; // TX fifo is full
+      }
+
+      uint32_t data = *dataptr++;
+      if (1 == remainingbytes)
+      {
+         data |= HWI2C_CMD_STOP;
+      }
+      regs->data_cmd = data;
+      --remainingbytes;
+    }
+
+    trastate = 50;
+  }
+
+  else if (12 == trastate) // DMA Based TX
+  {
+    if (txdma->Active())
+    {
+      return;
+    }
+
+    if (remainingbytes > 0)
+    {
+      FillAndStartTxDma();
+      return;
+    }
+
+    trastate = 50;
+  }
+
+  if (50 == trastate)  // wait until the last byte is sent and the master goes to idle
   {
     if (0 == (regs->status & I2C_IC_STATUS_TFE_BITS))
     {
@@ -398,4 +397,23 @@ void THwI2c_rp::FillAndStartTxDma()
   regs->dma_cr = I2C_IC_DMA_CR_TDMAE_BITS; // enable only the TX DMA
 
   txdma->StartTransfer(&xfer);
+}
+
+void THwI2c_rp::FillTxFifo()
+{
+  while (remainingbytes > 0)
+  {
+    if (0 == (regs->status & I2C_IC_STATUS_TFNF_BITS))
+    {
+      return; // TX fifo is full
+    }
+
+    uint32_t data = *dataptr++;
+    if (1 == remainingbytes)
+    {
+       data |= HWI2C_CMD_STOP;
+    }
+    regs->data_cmd = data;
+    --remainingbytes;
+  }
 }
