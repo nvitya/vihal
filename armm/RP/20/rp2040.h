@@ -80,6 +80,7 @@ typedef enum
 #include "hardware/structs/i2c.h"
 #include "hardware/structs/adc.h"
 #include "hardware/structs/pwm.h"
+#include "hardware/structs/pio.h"
 
 #include "hardware/structs/ssi.h"
 #include "hardware/structs/ioqspi.h"
