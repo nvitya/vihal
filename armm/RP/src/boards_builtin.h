@@ -21,6 +21,12 @@
   #define MCU_RP2040
   #define EXTERNAL_XTAL_HZ   12000000
 
+#elif defined(BOARD_RPI_PICOW)
+
+  #define BOARD_NAME "Raspberry Pi Pico-W with RP2040"
+  #define MCU_RP2040
+  #define EXTERNAL_XTAL_HZ   12000000
+
 #else
 
   #error "Unknown board."
