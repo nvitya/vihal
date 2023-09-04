@@ -47,6 +47,10 @@ public:
 	void Run();
 
 	void WaitForIdle();
+
+protected:
+
+	uint32_t  cmdextradata;
 };
 
 #define HWQSPI_IMPL THwQspi_imxrt

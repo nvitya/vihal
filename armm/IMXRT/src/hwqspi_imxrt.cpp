@@ -382,16 +382,11 @@ int THwQspi_imxrt::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 
   // select sequence and coding
 
-  unsigned cmd = (acmd & 0xFF);
-
 	istx = true;
 	dataptr = (uint8_t *)srcptr;
-	datalen = len;
-	remainingbytes = datalen;
 
 	unsigned seqid = 0;
-	unsigned datasize = len;
-
+  unsigned cmd = (acmd & 0xFF);
 	if      (0x32 == cmd)  // QUAD Page Program
 	{
 		regs->IPCR0 = address;
@@ -411,22 +406,33 @@ int THwQspi_imxrt::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 		}
 
 		regs->IPCR0 = cmd;  // addr(7..0) = command
-		if (datalen == 0)
+		if (len > 0)
+		{
+      seqid = 1; // with data
+		}
+    else if (acmd & QSPICM_ADDR_MASK)
+    {
+      // special case: command with address, the address must be sent as data
+      seqid = 1; // with data
+      len = 3;
+      cmdextradata = __builtin_bswap32(address << 8);
+      dataptr = (uint8_t *)&cmdextradata;
+    }
+		else
 		{
 			seqid = 2; // no data
 		}
-		else
-		{
-			seqid = 1; // with data
-		}
 	}
+
+  datalen = len;
+  remainingbytes = len;
 
 	regs->INTR = 0xF0F; // clear interrupts
 
 	regs->IPCR1 = 0
 		| (0 << 24)         // ISEQNUM, 0 = only one sequence
 		| (seqid << 16)     // ISEQID
-		| (datasize <<  0)  // IDATSZ: data size in bytes
+		| (len <<  0)       // IDATSZ: data size in bytes
 	;
 
 	dmaused = false;
@@ -438,7 +444,7 @@ int THwQspi_imxrt::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 	;
 
 	// decide to use DMA or not
-	if (remainingbytes > 8)
+	if (len > 8)
 	{
 		dmaused = true;
   	regs->IPTXFCR |= (1 << 1);  // enable DMA
