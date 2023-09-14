@@ -28,3 +28,7 @@
 #if defined(HWSDRAM_H_)
   #include "hwsdram_imxrt.h"
 #endif
+
+#ifdef HWETH_H_
+  #include "hweth_imxrt.h"
+#endif

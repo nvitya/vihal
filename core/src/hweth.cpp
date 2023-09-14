@@ -59,6 +59,7 @@ bool THwEth::Init(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32
 
 bool THwEth::PhyInit()
 {
+	uint16_t reg;
 	uint16_t bsr;
 
 	// we don't reset the PHY always in order to keep the link active and achive a fast device start
@@ -75,6 +76,7 @@ bool THwEth::PhyInit()
 
 	bool force_reset = false;
 
+  TRACE("ETH PHY id1=%04x, id2=%04x\r\n", id1, id2);
 	if ((id1 == 0x0007) && (id2 == 0xC0F0))
 	{
 		// LAN8720A (on LPCXpresso)
@@ -130,8 +132,18 @@ bool THwEth::PhyInit()
 		if (!MiiWrite(HWETH_PHY_BCR_REG, HWETH_PHY_BCR_RESET))  return false;
 
 		delay_us(20000);
+		if (!PhyWaitReset())
+		{
+		  return false;
+		}
 
-		if (!PhyWaitReset())  return false;
+	  if ((id1 == 0x0022) && (id2 == 0x1560) && !external_ref_clock && (50 == refclock_mhz))
+	  {
+	    // set the refclock bit for the phy
+      uint16_t reg;
+      MiiRead(  0x1F, &reg);
+      MiiWrite( 0x1F, reg | (1 << 7));
+	  }
 
 		// start auto-negotiation
 		if (!MiiWrite(HWETH_PHY_BCR_REG, HWETH_PHY_BCR_AUTONEG | HWETH_PHY_BCR_RESTART_AUTONEG))  return false;
