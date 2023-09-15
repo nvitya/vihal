@@ -12,7 +12,7 @@
 // IMXRT
 //----------------------------------------------------------------------
 
-#if defined(MCU_IMXRT1020) || defined(MCU_IMXRT1021)
+#if defined(MCU_IMXRT1020) || defined(MCU_IMXRT1021) || defined(MCU_IMXRT1024)
 
   #define MCUF_IMXRT
   #define MCUSF_1020

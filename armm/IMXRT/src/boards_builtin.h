@@ -39,6 +39,12 @@
   #define MCU_IMXRT1021
   #define EXTERNAL_XTAL_HZ   24000000
 
+#elif defined(BOARD_EVK_IMXRT1024)
+
+  #define BOARD_NAME "IMXRT1024-EVK"
+  #define MCU_IMXRT1024
+  #define EXTERNAL_XTAL_HZ   24000000
+
 #elif defined(BOARD_EVK_IMXRT1050A)
 
   #define BOARD_NAME "IMXRT1050-EVK-A"
