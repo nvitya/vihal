@@ -94,7 +94,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // configure with bypass first
   CCM_ANALOG->PLL_ENET = 0
-  	| (0 <<  0)    // DIV_SELECT(2): Ethernet Reference Clock, 0 = 25 MHz, 1 = 50 MHz, 2 = 100 MHz, 3 = 125 MHz
+  	| (1 <<  0)    // DIV_SELECT(2): Ethernet Reference Clock, 0 = 25 MHz, 1 = 50 MHz, 2 = 100 MHz, 3 = 125 MHz
   	| (0 << 12)    // POWERDOWN: 1 = power down
   	| (1 << 13)    // ENABLE: enable the ethernet clock output
   	| (0 << 14)    // BYPASS_CLK_SRC(2): 0 = 24 MHz ref clock

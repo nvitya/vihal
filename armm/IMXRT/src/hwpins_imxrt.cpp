@@ -262,58 +262,65 @@ bool THwPinCtrl_imxrt::GpioSetup(int aportnum, int apinnum, unsigned flags)
 
 void THwPinCtrl_imxrt::SetPadControl(unsigned * padctrlreg, unsigned flags)
 {
-	// Set PAD control
+  // Set PAD control
 
-	unsigned padc = 0
-		| (0 << 16)  // histeresis disable
-	;
+  imxrt_set_clock_gate(4, 2, 3); // Enable IOMUXC
 
-	if (flags & PINCFG_OPENDRAIN)
-	{
-		padc |= (1 << 11);
-	}
+  unsigned padc = 0
+    | (0 << 16)  // histeresis disable
+  ;
+
+  if (flags & PINCFG_OPENDRAIN)
+  {
+    padc |= (1 << 11);
+  }
 
 
   if (flags & PINCFG_PULLUP)
   {
-  	padc |= (0
-  		|	(2 << 14)  // 100k Pullup
-  		|	(1 << 13)  // select pull
-  		|	(1 << 12)  // enable pull/keeper
-		);
+    padc |= (0
+      | (2 << 14)  // 100k Pullup
+      | (1 << 13)  // select pull
+      | (1 << 12)  // enable pull/keeper
+    );
   }
   else if (flags & PINCFG_PULLDOWN)
   {
-  	padc |= (0
-  		|	(0 << 14)  // 100k Pulldown
-  		|	(1 << 13)  // select pull
-  		|	(1 << 12)  // enable pull/keeper
-		);
+    padc |= (0
+      | (0 << 14)  // 100k Pulldown
+      | (1 << 13)  // select pull
+      | (1 << 12)  // enable pull/keeper
+    );
   }
 
   if ((flags & PINCFG_SPEED_MASK) == PINCFG_SPEED_MEDIUM)
   {
-  	padc |= (1 << 6);
+    padc |= (1 << 6);
   }
   else if ((flags & PINCFG_SPEED_MASK) == PINCFG_SPEED_FAST)
   {
-  	padc |= (3 << 6);
-  	padc |= (1 << 0); // turn on fast slew rate too!
+    padc |= (3 << 6);
+    padc |= (1 << 0); // turn on fast slew rate too!
   }
 
   if (flags & PINCFG_DRIVE_STRONG)
   {
-  	padc |= (7 << 3);
+    padc |= (7 << 3);
   }
   else
   {
-  	padc |= (6 << 3); // medium drive strength (this is the default)
+    padc |= (6 << 3); // medium drive strength (this is the default)
   }
 
-  padc |= (1 << 16); // enable hysteresis
+  if (0 == (flags & PINCFG_ANALOGUE)) // do not enable the Schmidt trigger for Analogue inputs,
+                                      // otherwise it causes significant non-linearity
+  {
+    padc |= (1 << 16); // enable hysteresis
+  }
 
   *padctrlreg = padc;
 }
+
 
 
 bool THwPinCtrl_imxrt::PadSetup(int padnum, unsigned flags)
@@ -321,10 +328,10 @@ bool THwPinCtrl_imxrt::PadSetup(int padnum, unsigned flags)
 	unsigned * iomuxaddr;
 	unsigned * padctrladdr;
 
-	if ((padnum >= 0x100) && (padnum <= 0x102))
+	if ((padnum >= PAD_WAKEUP) && (padnum <= 0x102))
 	{
 		// the special pads are not where the others are
-		unsigned pinnum = padnum - 0x100;
+		unsigned pinnum = padnum - PAD_WAKEUP;
 		iomuxaddr   = (unsigned *)(IMXRT_SPECPAD_MUX_REG_START + 4 * pinnum);
 		padctrladdr = (unsigned *)(IMXRT_SPECPAD_CTRL_REG_START + 4 * pinnum);
 	}
@@ -333,10 +340,10 @@ bool THwPinCtrl_imxrt::PadSetup(int padnum, unsigned flags)
 		iomuxaddr   = (unsigned *)(IMXRT_GENPAD_MUX_REG_START + 4 * padnum);
 		padctrladdr = (unsigned *)(IMXRT_GENPAD_CTRL_REG_START + 4 * padnum);
 	}
-   else
-   {
-      return false;
-   }
+  else
+  {
+    return false;
+  }
 
 	SetPadControl(padctrladdr, flags);
 
@@ -386,6 +393,10 @@ bool THwPinCtrl_imxrt::PadSetup(int padnum, unsigned flags)
 			}
 
 			regs->GDIR |= (1 << pinnum);
+
+#ifdef MCU_IMXRT_REVA
+      hwpinctrl.UpdateGpioOutputShadow();
+#endif
 		}
 		else
 		{
@@ -407,6 +418,7 @@ void THwPinCtrl_imxrt::PadSetup(uint32_t muxreg, uint8_t muxmode, uint32_t input
 	tmp = *reg;
 	tmp &= ~7;
 	tmp |= (muxmode & 7);
+  tmp |= (1 << 4); // force input path, e.g. ENET_REF_CLK required this
 	*reg = tmp;
 
 	reg = (volatile uint32_t *)inputreg;

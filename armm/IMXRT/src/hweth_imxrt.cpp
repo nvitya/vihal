@@ -63,13 +63,13 @@ bool THwEth_imxrt::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclis
   	}
 
 #if defined(MCUSF_1020)
-
+/*
   	// update the ethernet reference clock
     tmp = CCM_ANALOG->PLL_ENET;
     tmp &= ~(3);
     tmp |= loopdivider;
     CCM_ANALOG->PLL_ENET = tmp;
-
+*/
 #else
   	// init ethernet clock
     CCM_ANALOG->PLL_ENET = 0
@@ -312,7 +312,7 @@ void THwEth_imxrt::SetMacAddress(uint8_t * amacaddr)
 	regs->PALR = ((uint32_t) amacaddr[0] << 24) | ((uint32_t) amacaddr[1] << 16)
 					                  | ((uint32_t) amacaddr[2] <<  8) | ((uint32_t) amacaddr[3]);
 
-	regs->PAUR = ((uint32_t) amacaddr[5] << 24) | ((uint32_t) amacaddr[4] << 16);
+	regs->PAUR = ((uint32_t) amacaddr[4] << 24) | ((uint32_t) amacaddr[5] << 16);
 }
 
 void THwEth_imxrt::SetSpeed(bool speed100)
@@ -363,6 +363,8 @@ bool THwEth_imxrt::TryRecv(TPacketMem * * ppmem) // uint32_t * pidx, void * * pp
 {
 	HW_ETH_DMA_DESC * pdesc = rx_desc_list;
 
+  __DSB();
+
 	// TODO: optimize through checking only the next descriptor
 
 	int i = 0;
@@ -375,8 +377,10 @@ bool THwEth_imxrt::TryRecv(TPacketMem * * ppmem) // uint32_t * pidx, void * * pp
 			regs->EIR = (1 << 25); // clear Receive Frame Interrupt flag
 			pdesc->CONTROL |= (1 << 14); // signalize in processing
 
+		  __DSB();
+
       TPacketMem * pmem = (TPacketMem *)(pdesc->BUFFER - HWETH_PMEM_HEAD_SIZE);
-      pmem->idx = i;  // this should not be necessary
+      //pmem->idx = i;  // this should not be necessary
       pmem->datalen = (pdesc->LENGTH & 0x1FFF);
       *ppmem = pmem;
       return true;
@@ -397,6 +401,9 @@ void THwEth_imxrt::ReleaseRxBuf(TPacketMem * pmem)
 	tmp &= ~(1 << 14); // clear user flag
 	tmp |=  (1 << 15); // set empty flag
 	pdesc->CONTROL = tmp;
+
+	__DSB();
+
 	regs->RDAR = (1 << 24);  // signalize that at least one empty descriptor is available
 }
 
@@ -417,6 +424,8 @@ bool THwEth_imxrt::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 			| ((hw_ip_checksum ? 1 : 0) << 11) // IINS: Insert IP header checksum
 		;
 		pdesc->CONTROL |= (1 << 15) | (1 << 11); // signal that this descriptor has to be sent + last flag
+
+	  __DSB();
 
 		regs->TDAR = (1 << 24); // signal that at least one TX descriptor is active
 
