@@ -226,6 +226,23 @@ int imxrt_pad_by_gpio(int aportnum, int apinnum)
 	}
 }
 
+#ifdef MCUREV_1050A
+
+void THwPinCtrl_imxrt::UpdateGpioOutputShadow()
+{
+  unsigned n;
+  unsigned * output_shadow_ptr = &gpio_output_shadow[0];  // -O2 generated invalid instruction when the array was used directly
+
+  for (n = 0; n < MAX_GPIO_PORT_NUMBER; ++n)
+  {
+    HW_GPIO_REGS * regs = GetGpioRegs(n);
+    *output_shadow_ptr = regs->DR;
+    ++output_shadow_ptr;
+  }
+}
+
+#endif
+
 HW_GPIO_REGS * THwPinCtrl_imxrt::GetGpioRegs(int aportnum)
 {
 	if ((aportnum < 0) || (aportnum > MAX_GPIO_PORT_NUMBER))
@@ -394,7 +411,7 @@ bool THwPinCtrl_imxrt::PadSetup(int padnum, unsigned flags)
 
 			regs->GDIR |= (1 << pinnum);
 
-#ifdef MCU_IMXRT_REVA
+#ifdef MCUREV_1050A
       hwpinctrl.UpdateGpioOutputShadow();
 #endif
 		}
@@ -453,6 +470,37 @@ bool THwPinCtrl_imxrt::GpioPortEnable(int aportnum)
   return true;
 }
 
+#ifdef MCUREV_1050A
+
+void THwPinCtrl_imxrt::GpioSet(int aportnum, int apinnum, int value)
+{
+  HW_GPIO_REGS * regs = GetGpioRegs(aportnum);
+  unsigned * drshadow = &gpio_output_shadow[aportnum];
+
+  unsigned pm = __get_PRIMASK();  // save interrupt disable status
+  __disable_irq();
+
+  unsigned tmp = *drshadow; // shadow gpio DR register, to avoid slow read
+  if (1 == value)
+  {
+    tmp |= (1 << apinnum);
+  }
+  else if (value & 2) // toggle
+  {
+    tmp ^= (1 << apinnum);
+  }
+  else
+  {
+    tmp &= ~(1 << apinnum);
+  }
+  regs->DR = tmp;  // set the real output
+  *drshadow = tmp;  // update shadow
+
+  __set_PRIMASK(pm); // restore interrupt disable status
+}
+
+#else
+
 void THwPinCtrl_imxrt::GpioSet(int aportnum, int apinnum, int value)
 {
 	HW_GPIO_REGS * regs = GetGpioRegs(aportnum);
@@ -471,19 +519,110 @@ void THwPinCtrl_imxrt::GpioSet(int aportnum, int apinnum, int value)
   }
 }
 
+#endif
+
 // GPIO Port
 
 void TGpioPort_imxrt::Assign(int aportnum)
 {
 	regs = hwpinctrl.GetGpioRegs(aportnum);
+#ifdef MCUREV_1050A
+  drshadow = &hwpinctrl.gpio_output_shadow[aportnum];
+#endif
 }
 
 void TGpioPort_imxrt::Set(unsigned value)
 {
 	regs->DR = value;
+#ifdef MCUREV_1050A
+  *drshadow = value;
+#endif
 }
 
 // GPIO Pin
+
+#ifdef MCUREV_1050A
+
+unsigned imxrt_pinctrl_dummy = 0;
+
+void TGpioPin_imxrt::InitDummy()
+{
+  // Initialize the pointers with harmless target
+  drreal    = &imxrt_pinctrl_dummy;
+  drshadow  = &imxrt_pinctrl_dummy;
+  getbitptr = &imxrt_pinctrl_dummy;
+}
+
+void TGpioPin_imxrt::Assign(int aportnum, int apinnum, bool ainvert)
+{
+  portnum = aportnum;
+  pinnum = apinnum;
+  inverted = ainvert;
+
+  regs = hwpinctrl.GetGpioRegs(aportnum);
+  if (!regs)
+  {
+    return;
+  }
+
+  setbitvalue = (1 << pinnum);
+  clrbitvalue = ~(1 << pinnum);
+  getbitptr = (unsigned *)&(regs->PSR);
+  getbitshift = pinnum;
+
+  drreal   = (unsigned *)&(regs->DR);
+  drshadow = (unsigned *)&(hwpinctrl.gpio_output_shadow[aportnum]);
+}
+
+void TGpioPin_imxrt::Set0()
+{
+  unsigned pm = __get_PRIMASK();  // save interrupt disable status
+  __disable_irq();
+  unsigned tmp = *drshadow; // shadow gpio DR register, to avoid slow read
+  if (inverted)
+  {
+    tmp |= setbitvalue;
+  }
+  else
+  {
+    tmp &= clrbitvalue;
+  }
+
+  *drreal = tmp;  // set the real output
+  *drshadow = tmp;  // update shadow
+  __set_PRIMASK(pm); // restore interrupt disable status
+}
+
+void TGpioPin_imxrt::Set1()
+{
+  unsigned pm = __get_PRIMASK(); // save interrupt disable status
+  __disable_irq();
+  unsigned tmp = *drshadow; // read shadow gpio DR register, to avoid slow read
+  if (inverted)
+  {
+    tmp &= clrbitvalue;
+  }
+  else
+  {
+    tmp |= setbitvalue;
+  }
+  *drreal = tmp;  // set the real output
+  *drshadow = tmp;  // update shadow
+  __set_PRIMASK(pm); // restore interrupt disable status
+}
+
+void TGpioPin_imxrt::Toggle()
+{
+  unsigned pm = __get_PRIMASK(); // save interrupt disable status
+  __disable_irq();
+  unsigned tmp = *drshadow; // shadow gpio DR register, to avoid slow read
+  tmp ^= setbitvalue;
+  *drreal = tmp;  // set the real output
+  *drshadow = tmp;  // update shadow
+  __set_PRIMASK(pm); // restore interrupt disable status
+}
+
+#else
 
 void TGpioPin_imxrt::Assign(int aportnum, int apinnum, bool ainvert)
 {
@@ -521,6 +660,8 @@ void TGpioPin_imxrt::Assign(int aportnum, int apinnum, bool ainvert)
     clrbitptr = (unsigned *)&(regs->DR_CLEAR);
   }
 }
+
+#endif
 
 void TGpioPin_imxrt::SwitchDirection(int adirection)
 {

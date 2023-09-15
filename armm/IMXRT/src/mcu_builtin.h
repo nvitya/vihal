@@ -19,6 +19,19 @@
 
   #include "MIMXRT1021.h"
 
+#elif defined(MCU_IMXRT1050) || defined(MCU_IMXRT1051) || defined(MCU_IMXRT1052) || defined(MCU_IMXRT1052A)
+
+  #define MCUF_IMXRT
+  #define MCUSF_1050
+
+  #if defined(MCU_IMXRT1052A)  // old eval board ?
+    #ifndef MCUREV_1050A
+      #define MCUREV_1050A
+    #endif
+  #endif
+
+  #include "MIMXRT1052.h"
+
 #else
 
   #error "Unknown MCU"

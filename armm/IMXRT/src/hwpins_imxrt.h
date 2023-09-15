@@ -34,6 +34,8 @@
 
 #if defined(MCUSF_1020)
   #include "imxrt_iomuxc_1020.h"
+#elif defined(MCUSF_1050)
+  #include "imxrt_iomuxc_1050.h"
 #else
   #error "subfamily not supported."
 #endif
@@ -62,6 +64,14 @@ public:
 	bool GpioSetup(int aportnum, int apinnum, unsigned flags);
 
   void GpioIrqSetup(int aportnum, int apinnum, int amode); // not implemented yet
+
+#ifdef MCUREV_1050A
+public:
+  unsigned gpio_output_shadow[MAX_GPIO_PORT_NUMBER];
+
+  void     UpdateGpioOutputShadow();
+#endif
+
 };
 
 class TGpioPort_imxrt : public TGpioPort_pre
@@ -77,6 +87,39 @@ public:
 	volatile unsigned * portptr = nullptr;
 };
 
+#ifdef MCUREV_1050A // use shadow registers for gpio status tracking
+
+class TGpioPin_imxrt : public TGpioPin_pre
+{
+public:
+
+  HW_GPIO_REGS *   regs = nullptr;
+
+  unsigned *       drreal;
+  unsigned *       drshadow;
+
+  unsigned *       getbitptr = nullptr;
+  unsigned         setbitvalue = 0;
+  unsigned         clrbitvalue = 0;
+  unsigned         getbitshift = 0;
+
+  void InitDummy();
+  bool Setup(unsigned flags);
+  void Assign(int aportnum, int apinnum, bool ainvert);
+
+  void Set1();
+  void Set0();
+  inline void SetTo(unsigned value)  { if (value & 1)  Set1(); else Set0(); }
+
+  inline unsigned char Value()  { return ((*getbitptr >> getbitshift) & 1); }
+
+  void Toggle();
+
+  void SwitchDirection(int adirection);
+};
+
+#else // the REV-B has GPIO set/reset registers
+
 class TGpioPin_imxrt : public TGpioPin_common
 {
 public:
@@ -90,6 +133,8 @@ public:
 
 	void SwitchDirection(int adirection);
 };
+
+#endif
 
 #define HWPINCTRL_IMPL   THwPinCtrl_imxrt
 #define HWGPIOPORT_IMPL  TGpioPort_imxrt

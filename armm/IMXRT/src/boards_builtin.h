@@ -39,10 +39,16 @@
   #define MCU_IMXRT1021
   #define EXTERNAL_XTAL_HZ   24000000
 
-#elif defined(BOARD_MIBO100_IMXRT1021)
+#elif defined(BOARD_EVK_IMXRT1050A)
 
-  #define BOARD_NAME "MIBO-100 IMXRT1021 by nvitya"
-  #define MCU_IMXRT1021
+  #define BOARD_NAME "IMXRT1050-EVK-A"
+  #define MCU_IMXRT1052A
+  #define EXTERNAL_XTAL_HZ   24000000
+
+#elif defined(BOARD_EVK_IMXRT1050) || defined(BOARD_EVK_IMXRT1050B)
+
+  #define BOARD_NAME "IMXRT1050-EVK-B"
+  #define MCU_IMXRT1052
   #define EXTERNAL_XTAL_HZ   24000000
 
 #else
