@@ -110,6 +110,7 @@ SECTIONS
 
   } > RAM AT > TEXT
 
+  __image_end     = LOADADDR(.data) + SIZEOF(.data);
   __app_image_end = LOADADDR(.data) + SIZEOF(.data);
 
   .bss_DTCRAM (NOLOAD) : ALIGN(4) { *(.bss_DTCRAM) } > DTCRAM

@@ -66,9 +66,8 @@ public:
 
   bool               TryRecv(TPacketMem * * pmem);
   void               ReleaseRxBuf(TPacketMem * pmem);
-
 	bool               TrySend(uint32_t * pidx, void * pdata, uint32_t datalen);
-	uint64_t           GetTimeStamp(uint32_t idx); // must be called within 2 s to get the right upper 32 bit
+  bool               SendFinished(uint32_t idx);
 
 public: // ns timer
 	uint32_t           nstimer_high = 0;
@@ -77,6 +76,7 @@ public: // ns timer
 	uint32_t           nstime_inc_base = 40;
 	float              nstime_correction = 0.0;
 
+  uint64_t           GetTimeStamp(uint32_t idx); // must be called within 2 s to get the right upper 32 bit
 	void               NsTimeStart();
 	uint64_t           NsTimeRead();
 	void               NsTimeSetCorrection(float acorr);

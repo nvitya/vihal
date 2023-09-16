@@ -440,6 +440,18 @@ bool THwEth_imxrt::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 	}
 }
 
+bool THwEth_imxrt::SendFinished(uint32_t idx)
+{
+  if (idx >= tx_desc_count)
+  {
+    return false;
+  }
+
+  HW_ETH_DMA_DESC * pdesc = &tx_desc_list[idx];
+
+  return ((pdesc->CONTROL & (1 << 15)) == 0);
+}
+
 void THwEth_imxrt::StartMiiWrite(uint8_t reg, uint16_t data)
 {
 	regs->EIR = ENET_EIR_MII_MASK;
