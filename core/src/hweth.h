@@ -103,7 +103,7 @@ public: // settings
 	bool          promiscuous_mode = false;
 
 	uint8_t       refclock_mhz = 50;
-	bool          external_ref_clock = false;
+	bool          external_ref_clock = true;  // the phy provides the reference clock
 
 	bool          loopback = false;
 

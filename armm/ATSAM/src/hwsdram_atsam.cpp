@@ -82,12 +82,14 @@ void THwSdram_atsam::Cmd_ClockEnable()
 {
 	SDRAMC->SDRAMC_MR = SDRAMC_MR_MODE_NOP;
 	*(volatile uint16_t *)(HWSDRAM_ADDRESS) = 0x0;
+	__DSB();
 }
 
 void THwSdram_atsam::Cmd_AllBankPrecharge()
 {
 	SDRAMC->SDRAMC_MR = SDRAMC_MR_MODE_ALLBANKS_PRECHARGE;
 	*(volatile uint16_t *)(HWSDRAM_ADDRESS) = 0x0;
+  __DSB();
 }
 
 	void THwSdram_atsam::Cmd_AutoRefresh(int acount)
@@ -96,6 +98,7 @@ void THwSdram_atsam::Cmd_AllBankPrecharge()
 	{
 		SDRAMC->SDRAMC_MR = SDRAMC_MR_MODE_AUTO_REFRESH;
 		*(volatile uint16_t *)(HWSDRAM_ADDRESS) = (n + 1);
+	  __DSB();
 	}
 }
 
@@ -103,18 +106,21 @@ void THwSdram_atsam::Cmd_LoadModeRegister(uint16_t aregvalue)
 {
 	SDRAMC->SDRAMC_MR = SDRAMC_MR_MODE_LOAD_MODEREG;
 	*(volatile uint16_t *)(HWSDRAM_ADDRESS + (aregvalue << (data_bus_width >> 3))) = 0xCAFE;
+  __DSB();
 }
 
 void THwSdram_atsam::Cmd_LoadExtModeRegister(uint16_t aregvalue)
 {
 	SDRAMC->SDRAMC_MR = SDRAMC_MR_MODE_EXT_LOAD_MODEREG;
 	*(volatile uint16_t *)(HWSDRAM_ADDRESS + bank1_offset) = aregvalue;
+  __DSB();
 }
 
 void THwSdram_atsam::SetNormalMode()
 {
 	SDRAMC->SDRAMC_MR = SDRAMC_MR_MODE_NORMAL;
 	*(volatile uint16_t *)(HWSDRAM_ADDRESS) = 0;
+  __DSB();
 }
 
 void THwSdram_atsam::SetRefreshTime(uint32_t atime_ns)
