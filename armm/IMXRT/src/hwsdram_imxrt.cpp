@@ -177,15 +177,20 @@ void THwSdram_imxrt::SetRefreshTime(uint32_t atime_ns)
 	// for a 65 ms full refresh: 65000000/8192 = 7934 ns  row refresh time = 992 clocks (125 MHz)
 	// with 16 prescaler it fits nicely into 8 bit.
 
-	uint32_t periphclock = SystemCoreClock / 4;
-	uint32_t clks = periphclock / 1000;
-	clks *= atime_ns;
-	clks /= 1000000;
+	uint32_t periphclock_per_us = SystemCoreClock / (4*1000000);
+	uint32_t clks = periphclock_per_us * atime_ns / 1000;
 	clks >>= 4; // divide by 16
+	uint32_t presc = 1;
+	while (clks > 255)
+	{
+	  clks  = (clks >> 1);
+	  presc = (presc << 1);
+	}
 
   regs->SDRAMCR3 = 0
-  	| SEMC_SDRAMCR3_REBL(0)       // refresh burst length
-    | SEMC_SDRAMCR3_PRESCALE(1)   // prescale = 16 clocks
+    | SEMC_SDRAMCR3_REN(1)            // enable refresh
+  	| SEMC_SDRAMCR3_REBL(0)           // 0 = refresh burst length = 1
+    | SEMC_SDRAMCR3_PRESCALE(presc)   // prescale = 16 clocks
     | SEMC_SDRAMCR3_RT(clks)
     | SEMC_SDRAMCR3_UT(clks)
   ;
