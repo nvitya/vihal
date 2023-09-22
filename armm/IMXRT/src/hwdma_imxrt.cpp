@@ -279,8 +279,8 @@ void THwDmaChannel_imxrt::PrepareTransfer(THwDmaTransfer * axfer)
 		| (0 <<  0)  // START: software start request
 	;
 
-	if (axfer->flags & DMATR_IRQ)  csr |= (1 << 1);  // set the IRQ at major
-
+	if (axfer->flags & DMATR_IRQ)       csr |= (1 << 1);  // set the IRQ at major
+  if (axfer->flags & DMATR_IRQ_HALF)  csr |= (1 << 2);  // set the IRQ at half
 	if (axfer->flags & DMATR_CIRCULAR)
 	{
 		csr |= (1 << 4); // ESG: Enable Scatter/Gather (linked list)
