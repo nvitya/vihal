@@ -129,8 +129,8 @@ class TGpioPin_common : public TGpioPin_pre
 public:
 	unsigned *       setbitptr = nullptr;
 	unsigned *       clrbitptr = nullptr;
-	unsigned *       getbitptr = nullptr;
-	unsigned *       getoutbitptr = nullptr;
+	volatile unsigned *       getbitptr = nullptr;
+	volatile unsigned *       getoutbitptr = nullptr;
 	unsigned         setbitvalue = 0;
 	unsigned         clrbitvalue = 0;
 	unsigned         getbitshift = 0;
