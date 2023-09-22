@@ -49,7 +49,7 @@ bool THwEth::Init(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32
 		return false;
 	}
 
-	TRACE("EtherNET PHY initialized, link status = %i.\r\n", (link_up ? 1 : 0));
+	//TRACE("EtherNET PHY initialized, link status = %i.\r\n", (link_up ? 1 : 0));
 
 	// the PHY link might not be up yet !
 
@@ -76,7 +76,7 @@ bool THwEth::PhyInit()
 
 	bool force_reset = false;
 
-  TRACE("ETH PHY id1=%04x, id2=%04x\r\n", id1, id2);
+  //TRACE("ETH PHY id1=%04x, id2=%04x\r\n", id1, id2);
 	if ((id1 == 0x0007) && (id2 == 0xC0F0))
 	{
 		// LAN8720A (on LPCXpresso)
@@ -101,7 +101,7 @@ bool THwEth::PhyInit()
 	// read the basic status reg
 	if (!MiiRead(HWETH_PHY_BSR_REG, &bsr))  return false;
 
-	TRACE("ETH PHY BSR = %04X\r\n", bsr);
+	//TRACE("ETH PHY BSR = %04X\r\n", bsr);
 
 	bool status_error = ((bsr & (HWETH_PHY_BSR_RMT_FAULT | HWETH_PHY_BSR_JABBER_DETECT)) != 0);
 	if (status_error)
