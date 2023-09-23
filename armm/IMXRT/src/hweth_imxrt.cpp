@@ -175,8 +175,8 @@ bool THwEth_imxrt::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclis
   regs->TFWR = ENET_TFWR_STRFWD_MASK;
   regs->RSFL = 0;
 
-  regs->TXIC = 0; // disable tx interrupt coalescing
-  regs->RXIC = 0; // disable rx interrupt coalescing
+  regs->TXIC[0] = 0; // disable tx interrupt coalescing
+  regs->RXIC[0] = 0; // disable rx interrupt coalescing
 
   regs->EIMR = 0
   	| (0  << 30)  // BABR: Babbling Receive Error (rx frame too long)
