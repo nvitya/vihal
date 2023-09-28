@@ -33,6 +33,8 @@
 
 // for request sources see dma_request_source_t in MIMXRT105x.h
 
+bool     g_dma_reset_done = false;
+
 unsigned dma_unaligned_read_cnt = 0;
 unsigned dma_unaligned_write_cnt = 0;
 
@@ -50,11 +52,39 @@ bool THwDmaChannel_imxrt::Init(int achnum, int arqsrc)
 	regs = (HW_DMA_REGS *)&(DMA0->TCD[chnum]);
 
 	Disable();
+
 	DMA_TCD_Type tcd;
 	memset(&tcd, 0, sizeof(tcd));
 	*regs = tcd; // clear all channel registers, required for re-initialization
 
-	DMA0->CR |= (1 << 7); // EMLM: 1 = enable minor loop mapping, activates MLOFF in the NBYTES registers
+  if (false) //!g_dma_reset_done)
+  {
+    // reset the DMA!
+
+    //DMA0->CR = 0;
+    DMA0->ERQ = 0;
+    DMA0->EEI = 0;
+    DMA0->INT = 0xFFFFFFFFu;
+    DMA0->ERR = 0xFFFFFFFF;
+
+    for (tmp = 0; tmp < 16; ++tmp);
+    {
+      DMAMUX->CHCFG[tmp] = 0;
+      HW_DMA_REGS * ch = (HW_DMA_REGS *)&(DMA0->TCD[tmp]);
+      *ch = tcd;
+    }
+
+    g_dma_reset_done = true;
+  }
+
+  // General settings
+  tmp = DMA0->CR;
+  tmp &= ~(DMA_CR_ERCA_MASK | DMA_CR_ERGA_MASK); // fixed arbitration
+  tmp |= DMA_CR_HOE_MASK;    // halt on errors, every DMA will be stopped on errors !
+  tmp |= DMA_CR_EMLM_MASK;   // EMLM: 1 = enable minor loop mapping, activates MLOFF in the NBYTES registers
+  tmp &= ~DMA_CR_CLM_MASK;   // disable Continous Link Mode
+  tmp &= ~DMA_CR_EDBG_MASK;  // keep running during debug
+  DMA0->CR = tmp;
 
 	// Set DMA request source / peripheral id
 	if (arqsrc & 0x100)
@@ -67,13 +97,6 @@ bool THwDmaChannel_imxrt::Init(int achnum, int arqsrc)
 		perid = -1; // no peripheral id routing (mem2mem)
 	}
 
-	// General settings
-	tmp = DMA0->CR;
-	tmp &= ~(DMA_CR_ERCA_MASK | DMA_CR_ERGA_MASK); // fixed arbitration
-	tmp |= DMA_CR_HOE_MASK;    // halt on errors, every DMA will be stopped on errors !
-	tmp &= ~DMA_CR_CLM_MASK;   // disable Continous Link Mode
-	tmp &= ~DMA_CR_EDBG_MASK;  // keep running during debug
-	DMA0->CR = tmp;
 
 	// do not change the channel priority:
 	//  by default the channels prioritized by their numbers
