@@ -242,7 +242,7 @@ bool TArp4Table::ProcessArpResponse(TPacketMem * pmem)
   PEthernetHeader rxeh = PEthernetHeader(&pmem->data[0]);
   PArpHeader      parp = PArpHeader(rxeh + 1);
 
-  TRACE("ARP response.\r\n");
+  //TRACE("ARP response.\r\n");
 
   Update(PIp4Addr(&parp->spa[0]), &parp->sha[0]);
   Run();  // someone probably waits for this
@@ -260,7 +260,7 @@ void TArp4Table::Run()
 
   if (0 == phase)  // prepare the request
   {
-    TRACE("%u Start ARP %d.%d.%d.%d\r\n", adapter->mscounter, pmem->extra[0], pmem->extra[1], pmem->extra[2], pmem->extra[3]);
+    //TRACE("%u Start ARP %d.%d.%d.%d\r\n", adapter->mscounter, pmem->extra[0], pmem->extra[1], pmem->extra[2], pmem->extra[3]);
 
     PEthernetHeader txeh = PEthernetHeader(&syspkt->data[0]);
     PArpHeader      parp = PArpHeader(txeh + 1);
@@ -310,7 +310,7 @@ void TArp4Table::Run()
     else if (adapter->mscounter - start_ms > response_timeout_ms)
     {
       // something is very wrong!
-      TRACE("Timeout sending ARP request!\r\n");
+      //TRACE("Timeout sending ARP request!\r\n");
       phase = 9; // re-sending
     }
   }
@@ -320,7 +320,7 @@ void TArp4Table::Run()
     TArp4TableItem * arpitem = FindByIp(paddr);
     if (arpitem)
     {
-      TRACE("%u ARP %d.%d.%d.%d resolved, continue sending...\r\n", adapter->mscounter, pmem->extra[0], pmem->extra[1], pmem->extra[2], pmem->extra[3]);
+      //TRACE("%u ARP %d.%d.%d.%d resolved, continue sending...\r\n", adapter->mscounter, pmem->extra[0], pmem->extra[1], pmem->extra[2], pmem->extra[3]);
 
       // the address is resolved!, we can finish this job!
       // update the destination MAC (this is the first field
@@ -345,7 +345,7 @@ void TArp4Table::Run()
     }
     else // try again
     {
-      TRACE("%u re-trying ARP...\r\n", adapter->mscounter);
+      //TRACE("%u re-trying ARP...\r\n", adapter->mscounter);
 
       ++trycnt;
       adapter->SendTxPacket(syspkt);
@@ -575,7 +575,7 @@ bool TIp4Handler::HandleArp()
   {
     if (*(uint32_t *)&(parp->tpa) == ipaddress.u32)  // someone want to know my IP
     {
-      TRACE("ARP request from %u.%u.%u.%u\r\n", parp->spa[0], parp->spa[1], parp->spa[2], parp->spa[3] );
+      //TRACE("ARP request from %u.%u.%u.%u\r\n", parp->spa[0], parp->spa[1], parp->spa[2], parp->spa[3] );
 
       // it is worth to put it into the ARP table
       arptable.Update(PIp4Addr(&parp->spa[0]), &parp->sha[0]);
