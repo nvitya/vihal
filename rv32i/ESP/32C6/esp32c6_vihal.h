@@ -43,7 +43,8 @@
 #include "soc/soc.h"
 #include "soc/soc_caps.h"
 
-//#include "soc/apb_ctrl_reg.h"
+#include "soc/pcr_reg.h"
+
 //#include "soc/cache_memory.h"
 //#include "soc/efuse_reg.h"
 //#include "soc/extmem_reg.h"
@@ -219,139 +220,94 @@ typedef struct
 
 typedef struct
 {
-  volatile uint32_t      CPU_PERI_CLK_EN;    // 0000
-  volatile uint32_t      CPU_PERI_RST_EN;    // 0004
-  volatile uint32_t      CPU_PER_CONF;       // 0008
-  uint32_t               _pad_000C;
-  volatile uint32_t      PERIP_CLK_EN0;      // 0010
-  volatile uint32_t      PERIP_CLK_EN1;      // 0014
-  volatile uint32_t      PERIP_RST_EN0;      // 0018
-  volatile uint32_t      PERIP_RST_EN1;      // 001C
-  uint32_t               _pad_0020;
-  volatile uint32_t      BT_LPCK_DIV_FRAC;   // 0024
-  volatile uint32_t      CPU_INTR_FROM_CPU_0;// 0028
-  volatile uint32_t      CPU_INTR_FROM_CPU_1;// 002C
-  volatile uint32_t      CPU_INTR_FROM_CPU_2;// 0030
-  volatile uint32_t      CPU_INTR_FROM_CPU_3;// 0034
-  volatile uint32_t      RSA_PD_CTRL;        // 0038
-  uint32_t               _pad_003C;
-  volatile uint32_t      CACHE_CONTROL;      // 0040
-  volatile uint32_t      EXTERNAL_DEVICE_ENCRYPT_DECRYPT_CONTROLLER;      // 0044
-  volatile uint32_t      RTC_FASTMEM_CONFIG; // 0048
-  volatile uint32_t      RTC_FASTMEM_CRC;    // 004C
-  uint32_t               _pad_0050;
-  volatile uint32_t      CLOCK_GATE;         // 0054
-  volatile uint32_t      SYSCLK_CONF;        // 0058
+  volatile uint32_t      UART0_CONF;                    // 000
+  volatile uint32_t      UART0_SCLK_CONF;               // 004
+  volatile uint32_t      UART0_PD_CTRL;                 // 008
+  volatile uint32_t      UART1_CONF;                    // 00c
+  volatile uint32_t      UART1_SCLK_CONF;               // 010
+  volatile uint32_t      UART1_PD_CTRL;                 // 014
+  volatile uint32_t      MSPI_CONF;                     // 018
+  volatile uint32_t      MSPI_CLK_CONF;                 // 01c
+  volatile uint32_t      I2C_CONF;                      // 020
+  volatile uint32_t      I2C_SCLK_CONF;                 // 024
+  volatile uint32_t      UHCI_CONF;                     // 028
+  volatile uint32_t      RMT_CONF;                      // 02c
+  volatile uint32_t      RMT_SCLK_CONF;                 // 030
+  volatile uint32_t      LEDC_CONF;                     // 034
+  volatile uint32_t      LEDC_SCLK_CONF;                // 038
+  volatile uint32_t      TIMERGROUP0_CONF;              // 03c
+  volatile uint32_t      TIMERGROUP0_TIMER_CLK_CONF;    // 040
+  volatile uint32_t      TIMERGROUP0_WDT_CLK_CONF;      // 044
+  volatile uint32_t      TIMERGROUP1_CONF;              // 048
+  volatile uint32_t      TIMERGROUP1_TIMER_CLK_CONF;    // 04c
+  volatile uint32_t      TIMERGROUP1_WDT_CLK_CONF;      // 050
+  volatile uint32_t      SYSTIMER_CONF;                 // 054
+  volatile uint32_t      SYSTIMER_FUNC_CLK_CONF;        // 058
+  volatile uint32_t      TWAI0_CONF;                    // 05c
+  volatile uint32_t      TWAI0_FUNC_CLK_CONF;           // 060
+  volatile uint32_t      TWAI1_CONF;                    // 064
+  volatile uint32_t      TWAI1_FUNC_CLK_CONF;           // 068
+  volatile uint32_t      I2S_CONF;                      // 06c
+  volatile uint32_t      I2S_TX_CLKM_CONF;              // 070
+  volatile uint32_t      I2S_TX_CLKM_DIV_CONF;          // 074
+  volatile uint32_t      I2S_RX_CLKM_CONF;              // 078
+  volatile uint32_t      I2S_RX_CLKM_DIV_CONF;          // 07c
+  volatile uint32_t      SARADC_CONF;                   // 080
+  volatile uint32_t      SARADC_CLKM_CONF;              // 084
+  volatile uint32_t      TSENS_CLK_CONF;                // 088
+  volatile uint32_t      USB_DEVICE_CONF;               // 08c
+  volatile uint32_t      INTMTX_CONF;                   // 090
+  volatile uint32_t      PCNT_CONF;                     // 094
+  volatile uint32_t      ETM_CONF;                      // 098
+  volatile uint32_t      PWM_CONF;                      // 09c
+  volatile uint32_t      PWM_CLK_CONF;                  // 0a0
+  volatile uint32_t      PARL_IO_CONF;                  // 0a4
+  volatile uint32_t      PARL_CLK_RX_CONF;              // 0a8
+  volatile uint32_t      PARL_CLK_TX_CONF;              // 0ac
+  volatile uint32_t      SDIO_SLAVE_CONF;               // 0b0
+  volatile uint32_t      PVT_MONITOR_CONF;              // 0b4
+  volatile uint32_t      PVT_MONITOR_FUNC_CLK_CONF;     // 0b8
+  volatile uint32_t      GDMA_CONF;                     // 0bc
+  volatile uint32_t      SPI2_CONF;                     // 0c0
+  volatile uint32_t      SPI2_CLKM_CONF;                // 0c4
+  volatile uint32_t      AES_CONF;                      // 0c8
+  volatile uint32_t      SHA_CONF;                      // 0cc
+  volatile uint32_t      RSA_CONF;                      // 0d0
+  volatile uint32_t      RSA_PD_CTRL;                   // 0d4
+  volatile uint32_t      ECC_CONF;                      // 0d8
+  volatile uint32_t      ECC_PD_CTRL;                   // 0dc
+  volatile uint32_t      DS_CONF;                       // 0e0
+  volatile uint32_t      HMAC_CONF;                     // 0e4
+  volatile uint32_t      IOMUX_CONF;                    // 0e8
+  volatile uint32_t      IOMUX_CLK_CONF;                // 0ec
+  volatile uint32_t      MEM_MONITOR_CONF;              // 0f0
+  volatile uint32_t      REGDMA_CONF;                   // 0f4
+  volatile uint32_t      RETENTION_CONF;                // 0f8
+  volatile uint32_t      TRACE_CONF;                    // 0fc
+  volatile uint32_t      ASSIST_CONF;                   // 100
+  volatile uint32_t      CACHE_CONF;                    // 104
+  volatile uint32_t      MODEM_APB_CONF;                // 108
+  volatile uint32_t      TIMEOUT_CONF;                  // 10c
+  volatile uint32_t      SYSCLK_CONF;                   // 110
+  volatile uint32_t      CPU_WAITI_CONF;                // 114
+  volatile uint32_t      CPU_FREQ_CONF;                 // 118
+  volatile uint32_t      AHB_FREQ_CONF;                 // 11c
+  volatile uint32_t      APB_FREQ_CONF;                 // 120
+  volatile uint32_t      SYSCLK_FREQ_QUERY_0;           // 124
+  volatile uint32_t      PLL_DIV_CLK_EN;                // 128
+  volatile uint32_t      CTRL_CLK_OUT_EN;               // 12c
+  volatile uint32_t      CTRL_TICK_CONF;                // 130
+  volatile uint32_t      CTRL_32K_CONF;                 // 134
+  volatile uint32_t      SRAM_POWER_CONF;               // 138
+           uint32_t      _pad_13C[(0xFF0-0x138) / 4];
+  volatile uint32_t      RESET_EVENT_BYPASS;            // ff0
+  volatile uint32_t      FPGA_DEBUG;                    // ff4
+  volatile uint32_t      CLOCK_GATE;                    // ff8
+  volatile uint32_t      DATE;                          // ffc
 //
-} esp_sysreg_t;
+} esp_pcr_t;
 
-#if 1
-  // definition check:
-
-  static_assert(offsetof(esp_sysreg_t, BT_LPCK_DIV_FRAC)    == 0x024, "offset error");
-  static_assert(offsetof(esp_sysreg_t, CLOCK_GATE)          == 0x054, "offset error");
-#endif
-
-
-typedef struct
-{
-  uint32_t               _pad_0000[41];
-  volatile uint32_t      CLKGATE_FORCE_ON;   // 00A4
-  volatile uint32_t      MEM_POWER_DOWN;     // 00A8
-  volatile uint32_t      MEM_POWER_UP;       // 00AC
-//
-} esp_apb_ctrl_t;
-
-
-#define SYSTEM      ((esp_sysreg_t *)(0x600C0000))
-#define APB_CTRL  ((esp_apb_ctrl_t *)(0x60026000))
-
-//-----------------------------------------------------------------------------
-// RTC
-//-----------------------------------------------------------------------------
-typedef struct
-{
-  volatile uint32_t      OPTIONS0;            // 0000
-  volatile uint32_t      SLP_TIMER0;          // 0004
-  volatile uint32_t      SLP_TIMER1;          // 0008
-  volatile uint32_t      TIME_UPDATE;         // 000C
-  volatile uint32_t      TIME_LOW0;           // 0010
-  volatile uint32_t      TIME_HIGH0;          // 0014
-  volatile uint32_t      STATE0;              // 0018
-  volatile uint32_t      TIMER1;              // 001C
-  volatile uint32_t      TIMER2;              // 0020
-  volatile uint32_t      TIMER3;              // 0024
-  volatile uint32_t      TIMER4;              // 0028
-  volatile uint32_t      TIMER5;              // 002C
-  volatile uint32_t      TIMER6;              // 0030
-  volatile uint32_t      ANA_CONF;            // 0034
-  volatile uint32_t      RESET_STATE;         // 0038
-  volatile uint32_t      WAKEUP_STATE;        // 003C
-  volatile uint32_t      INT_ENA;             // 0040
-  volatile uint32_t      INT_RAW;             // 0044
-  volatile uint32_t      INT_ST;              // 0048
-  volatile uint32_t      INT_CLR;             // 004C
-  volatile uint32_t      STORE0;              // 0050
-  volatile uint32_t      STORE1;              // 0054
-  volatile uint32_t      STORE2;              // 0058
-  volatile uint32_t      STORE3;              // 005C
-  volatile uint32_t      EXT_XTL_CONF;        // 0060
-  volatile uint32_t      EXT_WAKEUP_CONF;     // 0064
-  volatile uint32_t      SLP_REJECT_CONF;     // 0068
-  volatile uint32_t      CPU_PERIOD_CONF;     // 006C
-  volatile uint32_t      CLK_CONF;            // 0070
-  volatile uint32_t      SLOW_CLK_CONF;       // 0074
-  volatile uint32_t      SDIO_CONF;           // 0078
-  volatile uint32_t      BIAS_CONF;           // 007C
-  volatile uint32_t      REG;                 // 0080
-  volatile uint32_t      PWC;                 // 0084
-  volatile uint32_t      DIG_PWC;             // 0088
-  volatile uint32_t      DIG_ISO;             // 008C
-  volatile uint32_t      WDTCONFIG0;          // 0090
-  volatile uint32_t      WDTCONFIG1;          // 0094
-  volatile uint32_t      WDTCONFIG2;          // 0098
-  volatile uint32_t      WDTCONFIG3;          // 009C
-  volatile uint32_t      WDTCONFIG4;          // 00A0
-  volatile uint32_t      WDTFEED;             // 00A4
-  volatile uint32_t      WDTWPROTECT;         // 00A8
-  volatile uint32_t      SWD_CONF;            // 00AC
-  volatile uint32_t      SWD_WPROTECT;        // 00B0
-  volatile uint32_t      SW_CPU_STALL;        // 00B4
-  volatile uint32_t      STORE4;              // 00B8
-  volatile uint32_t      STORE5;              // 00BC
-  volatile uint32_t      STORE6;              // 00C0
-  volatile uint32_t      STORE7;              // 00C4
-  volatile uint32_t      LOW_POWER_ST;        // 00C8
-  volatile uint32_t      DIAG0;               // 00CC
-  volatile uint32_t      PAD_HOLD;            // 00D0
-  volatile uint32_t      DIG_PAD_HOLD;        // 00D4
-  volatile uint32_t      BROWN_OUT;           // 00D8
-  volatile uint32_t      TIME_LOW1;           // 00DC
-  volatile uint32_t      TIME_HIGH1;          // 00E0
-  volatile uint32_t      XTAL32K_CLK_FACTOR;  // 00E4
-  volatile uint32_t      XTAL32K_CONF;        // 00E8
-  volatile uint32_t      USB_CONF;            // 00EC
-  volatile uint32_t      SLP_REJECT_CAUSE;    // 00F0
-  volatile uint32_t      OPTION1;             // 00F4
-  volatile uint32_t      SLP_WAKEUP_CAUSE;    // 00F8
-  volatile uint32_t      ULP_CP_TIMER_1;      // 00FC
-  volatile uint32_t      INT_ENA_W1TS;        // 0100
-  volatile uint32_t      INT_ENA_W1TC;        // 0104
-  volatile uint32_t      RETENTION_CTRL;      // 0108
-  volatile uint32_t      FIB_SEL;             // 010C
-  volatile uint32_t      GPIO_WAKEUP;         // 0110
-  volatile uint32_t      DBG_SEL;             // 0114
-  volatile uint32_t      DBG_MAP;             // 0118
-  volatile uint32_t      SENSOR_CTRL;         // 011C
-  volatile uint32_t      DBG_SAR_SEL;         // 0120
-  volatile uint32_t      PG_CTRL;             // 0124
-  uint32_t               _pad_128[53];        // 0128
-
-  volatile uint32_t      DATE;                // 01fc
-//
-} esp_rtc_cntl_t;
-
-#define RTC_CNTL  ((esp_rtc_cntl_t *)(0x60008000))
+#define PCR      ((esp_pcr_t *)(DR_REG_PCR_BASE))
 
 //-----------------------------------------------------------------------------
 // SYSTIMER

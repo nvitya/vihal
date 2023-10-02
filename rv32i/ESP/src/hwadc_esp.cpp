@@ -40,8 +40,15 @@ bool THwAdc_esp::Init(int adevnum, uint32_t achannel_map)
 	channel_map = (achannel_map & 0x1F);
 	initialized = false;
 
+#if defined(MCUSF_32C3)
   SYSTEM->PERIP_CLK_EN0 |= SYSTEM_APB_SARADC_CLK_EN;
   SYSTEM->PERIP_RST_EN0 &= ~SYSTEM_APB_SARADC_RST;
+#else
+  PCR->SARADC_CONF |= (PCR_SARADC_REG_CLK_EN | PCR_SARADC_CLK_EN);
+  PCR->SARADC_CONF &= ~(PCR_SARADC_RST_EN | PCR_SARADC_REG_RST_EN);
+#endif
+
+	regs = SARADC;
 
   regs->APB_ADC_CLKM_CONF = (0
     | (4  <<  0)  // CLKM_DIV_NUM(8): integer division

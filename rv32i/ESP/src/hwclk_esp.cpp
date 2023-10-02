@@ -28,6 +28,8 @@
 #include "platform.h"
 #include "hwclk.h"
 
+#if defined(MCUSF_32C3)
+
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   uint32_t tmp;
@@ -81,3 +83,45 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   return true;
 }
 
+#elif defined(MCUSF_32C6)
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  uint32_t tmp;
+
+  if (target_speed_hz > 160000000)  target_speed_hz = 160000000;
+
+  SystemCoreClock = external_clock_hz / 2;  // this is the defalt speed 20 MHz
+
+  // set the CPU clock source to XTAL
+
+  tmp = PCR->SYSCLK_CONF;
+  tmp &= ~(3 << 16);
+  tmp |=  (2 << 16);  // 2 = FOSC
+  PCR->SYSCLK_CONF = tmp;
+
+  PCR->CPU_FREQ_CONF = 0; // do not divide the HS CPU clocks from their sources (default)
+  PCR->AHB_FREQ_CONF = (0
+    | (0 << 0) // AHB_LS_DIV_NUM(8):
+    | (3 << 8) // AHB_HS_DIV_NUM(8): 3 = divide by 4
+  );
+
+  PCR->APB_FREQ_CONF = 0; // APB clocks = AHB clocks
+
+  // select the PLL to system clock
+
+  tmp = PCR->SYSCLK_CONF;
+  tmp &= ~(255 <<  8);  // clear the divison
+  tmp &= ~(3   << 16);
+  tmp |=  (2   <<  8);  // 2 = divide the 480 MHz PLL by 3
+  tmp |=  (1   << 16);  // 1 = PLL
+  PCR->SYSCLK_CONF = tmp;
+
+  SystemCoreClock = target_speed_hz;
+
+  return true;
+}
+
+#else
+  #error "unimplemented subfamily"
+#endif

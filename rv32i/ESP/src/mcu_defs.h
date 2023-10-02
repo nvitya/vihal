@@ -46,11 +46,15 @@ inline void __attribute__((always_inline)) mcu_preinit_code()
   TIMG1->WDTWPROTECT = 0x50D83AA1;
   TIMG1->WDTCONFIG0  = 0;
 
+#ifdef MCUSF_32C3
+
   RTC_CNTL->WDTWPROTECT = 0x50D83AA1;
   RTC_CNTL->WDTCONFIG0  = 0;
 
   RTC_CNTL->SWD_WPROTECT = 0x8F1D312A;
   RTC_CNTL->SWD_CONF     = 0x84B00000;
+
+#endif
 }
 
 inline void __attribute__((always_inline)) mcu_postinit_code()
