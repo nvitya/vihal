@@ -26,6 +26,12 @@
 
   #include "esp32c3_vihal.h"
 
+#elif defined(MCU_ESP32C6)
+
+  #define MCUF_ESP
+  #define MCUSF_32C6
+
+  #include "esp32c6_vihal.h"
 
 #else
 
