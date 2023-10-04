@@ -41,10 +41,16 @@ bool THwI2c_esp::Init(int adevnum)
   if (0 == devnum)
   {
     regs = I2C0;
-    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_I2C_EXT0_CLK_EN;
 
-    SYSTEM->PERIP_RST_EN0 |=  SYSTEM_I2C_EXT0_RST;
-    SYSTEM->PERIP_RST_EN0 &= ~SYSTEM_I2C_EXT0_RST;
+    #if defined(MCUSF_32C3)
+      SYSTEM->PERIP_CLK_EN0 |= SYSTEM_I2C_EXT0_CLK_EN;
+      SYSTEM->PERIP_RST_EN0 |=  SYSTEM_I2C_EXT0_RST;
+      SYSTEM->PERIP_RST_EN0 &= ~SYSTEM_I2C_EXT0_RST;
+    #else
+      PCR->I2C_CONF |= PCR_I2C_CLK_EN;
+      PCR->I2C_CONF |=  PCR_I2C_RST_EN;
+      PCR->I2C_CONF &= ~PCR_I2C_RST_EN;
+    #endif
   }
 
   if (!regs)

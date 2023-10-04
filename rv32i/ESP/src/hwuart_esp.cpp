@@ -45,28 +45,34 @@ bool THwUart_esp::Init(int adevnum)
 	uint32_t sys_rst_mask;
 
   uhci = UHCI0;
-  SYSTEM->PERIP_CLK_EN0 |= (SYSTEM_UART_MEM_CLK_EN | SYSTEM_UHCI0_CLK_EN);
+  uhci->CONF0 |= (1 << 11); // keep the UHCI CLOCK running
 
-	if (0 == devnum)
-	{
-    regs = UART0;
-    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART_CLK_EN;
-    sys_rst_mask = SYSTEM_UART_RST;
-	}
-	else if (1 == devnum)
-	{
-    regs = UART1;
-    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART1_CLK_EN;
-    sys_rst_mask = SYSTEM_UART1_RST;
-	}
+  #if defined(MCUSF_32C3)
 
-	uhci->CONF0 |= (1 << 11); // keep the UHCI CLOCK running
+    SYSTEM->PERIP_CLK_EN0 |= (SYSTEM_UART_MEM_CLK_EN | SYSTEM_UHCI0_CLK_EN);
+
+    if (0 == devnum)
+    {
+      regs = UART0;
+      SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART_CLK_EN;
+      sys_rst_mask = SYSTEM_UART_RST;
+    }
+    else if (1 == devnum)
+    {
+      regs = UART1;
+      SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART1_CLK_EN;
+      sys_rst_mask = SYSTEM_UART1_RST;
+    }
+  #else
+    // C6 !!!!!
+  #endif
 
 	if (!regs)
 	{
 		return false;
 	}
 
+#if defined(MCUSF_32C3)
   // following the Espressif recommended reset sequence:
 
   SYSTEM->PERIP_RST_EN0 &= ~sys_rst_mask;  // clear system UART reset
@@ -76,8 +82,11 @@ bool THwUart_esp::Init(int adevnum)
   SYSTEM->PERIP_RST_EN0 &= ~sys_rst_mask;  // remove system UART reset
   regs->CLK_CONF &= ~UART_RST_CORE;        // remove UART unit reset
 
-  regs->ID &= ~(1 << 30);  // clear UART_UPDATE_CTRL
+  regs->ID &= ~UART_UPDATE;  // clear UART_UPDATE_CTRL
   while (regs->ID & UART_UPDATE)  { /* wait */ }
+#else
+  // C6
+#endif
 
   regs->CLK_CONF = (0
     | (0  <<  0)  // SCLK_DIV_A(6)
@@ -152,8 +161,12 @@ bool THwUart_esp::Init(int adevnum)
   regs->CONF1 = conf1;
 
   // update regs:
+#if defined(MCUSF_32C3)
   regs->ID |= UART_UPDATE;
   while (regs->ID & UART_UPDATE)  { /* wait */ }
+#else
+  // C6 !!!!!!!!!!!!!!!!!!!!!
+#endif
 
 	initialized = true;
 

@@ -45,8 +45,16 @@ bool THwSpi_esp::Init(int adevnum)
 	else if (2 == devnum)
 	{
     regs = SPI2;
-    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_SPI2_CLK_EN;
-    sys_rst_mask = SYSTEM_SPI2_RST;
+
+    #if defined(MCUSF_32C3)
+      SYSTEM->PERIP_CLK_EN0 |= SYSTEM_SPI2_CLK_EN;
+      SYSTEM->PERIP_RST_EN0 |=  SYSTEM_SPI2_RST;   // set system SPI reset
+      SYSTEM->PERIP_RST_EN0 &= ~SYSTEM_SPI2_RST;  // remove system SPI reset
+    #else
+      PCR->SPI2_CONF |= PCR_SPI2_CLK_EN;
+      PCR->SPI2_CONF |=  PCR_SPI2_RST_EN;
+      PCR->SPI2_CONF &= ~PCR_SPI2_RST_EN;
+    #endif
 	}
 
 	if (!regs)
@@ -54,9 +62,6 @@ bool THwSpi_esp::Init(int adevnum)
 		return false;
 	}
 
-  SYSTEM->PERIP_RST_EN0 |= sys_rst_mask;   // set system SPI reset
-  if (SYSTEM->PERIP_RST_EN0) {} // some sync
-  SYSTEM->PERIP_RST_EN0 &= ~sys_rst_mask;  // remove system SPI reset
 
   pcmdreg = &regs->CMD;
   pwregs = &regs->W[0];

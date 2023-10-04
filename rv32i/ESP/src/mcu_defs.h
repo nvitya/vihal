@@ -54,6 +54,8 @@ inline void __attribute__((always_inline)) mcu_preinit_code()
   RTC_CNTL->SWD_WPROTECT = 0x8F1D312A;
   RTC_CNTL->SWD_CONF     = 0x84B00000;
 
+#else // C6
+
 #endif
 }
 

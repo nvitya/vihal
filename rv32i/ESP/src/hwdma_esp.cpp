@@ -56,8 +56,15 @@ bool THwDmaChannel_esp::Init(int achannel, int aperiph)
   periph = (aperiph & 0xF);
 
   dmaregs = GDMA;
-  SYSTEM->PERIP_CLK_EN1 |= SYSTEM_DMA_CLK_EN;
-  SYSTEM->PERIP_RST_EN1 &= ~SYSTEM_DMA_RST;
+
+  #if defined(MCUSF_32C3)
+    SYSTEM->PERIP_CLK_EN1 |= SYSTEM_DMA_CLK_EN;
+    SYSTEM->PERIP_RST_EN1 &= ~SYSTEM_DMA_RST;
+  #else
+    PCR->GDMA_CONF |= PCR_GDMA_CLK_EN;
+    PCR->GDMA_CONF &= ~PCR_GDMA_RST_EN;
+  #endif
+
   irqreg = &dmaregs->INTR[chnum].RAW;
   irqclr = &dmaregs->INTR[chnum].CLR;
 

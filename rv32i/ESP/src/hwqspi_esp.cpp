@@ -49,12 +49,16 @@ bool THwQspi_esp::Init()
 	initialized = false;
 
   mregs = SPIMEM1;
-  SYSTEM->PERIP_CLK_EN0 |= SYSTEM_SPI01_CLK_EN;
-  sys_rst_mask = SYSTEM_SPI01_RST;
-
-  SYSTEM->PERIP_RST_EN0 |= sys_rst_mask;   // set system SPI reset
-  if (SYSTEM->PERIP_RST_EN0) {} // some sync
-  SYSTEM->PERIP_RST_EN0 &= ~sys_rst_mask;  // remove system SPI reset
+  #if defined(MCUSF_32C3)
+    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_SPI01_CLK_EN;
+    sys_rst_mask = SYSTEM_SPI01_RST;
+    SYSTEM->PERIP_RST_EN0 |= sys_rst_mask;   // set system SPI reset
+    SYSTEM->PERIP_RST_EN0 &= ~sys_rst_mask;  // remove system SPI reset
+  #else
+    PCR->MSPI_CONF |=  PCR_MSPI_CLK_EN;
+    PCR->MSPI_CONF |=  PCR_MSPI_RST_EN;
+    PCR->MSPI_CONF &= ~PCR_MSPI_RST_EN;
+  #endif
 
   pcmdreg = &mregs->CMD;
   pwregs = &mregs->W[0];
