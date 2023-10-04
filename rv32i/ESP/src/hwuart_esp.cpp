@@ -20,8 +20,7 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     hwuart_esp.cpp
- *  brief:    ESP UART
- *  version:  1.00
+ *  brief:    ESP32-C3/C6 UART
  *  date:     2022-01-29
  *  authors:  nvitya
 */
@@ -32,47 +31,41 @@
 #include "hwuart_esp.h"
 #include "esp_utils.h"
 
+#if defined(MCUSF_32C3)
 bool THwUart_esp::Init(int adevnum)
 {
   uint32_t tmp;
-	unsigned code;
+  unsigned code;
 
-	devnum = adevnum;
-	initialized = false;
+  devnum = adevnum;
+  initialized = false;
 
-	regs = nullptr;
-
-	uint32_t sys_rst_mask;
+  regs = nullptr;
 
   uhci = UHCI0;
   uhci->CONF0 |= (1 << 11); // keep the UHCI CLOCK running
 
-  #if defined(MCUSF_32C3)
+  uint32_t sys_rst_mask;
+  SYSTEM->PERIP_CLK_EN0 |= (SYSTEM_UART_MEM_CLK_EN | SYSTEM_UHCI0_CLK_EN);
 
-    SYSTEM->PERIP_CLK_EN0 |= (SYSTEM_UART_MEM_CLK_EN | SYSTEM_UHCI0_CLK_EN);
+  if (0 == devnum)
+  {
+    regs = UART0;
+    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART_CLK_EN;
+    sys_rst_mask = SYSTEM_UART_RST;
+  }
+  else if (1 == devnum)
+  {
+    regs = UART1;
+    SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART1_CLK_EN;
+    sys_rst_mask = SYSTEM_UART1_RST;
+  }
 
-    if (0 == devnum)
-    {
-      regs = UART0;
-      SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART_CLK_EN;
-      sys_rst_mask = SYSTEM_UART_RST;
-    }
-    else if (1 == devnum)
-    {
-      regs = UART1;
-      SYSTEM->PERIP_CLK_EN0 |= SYSTEM_UART1_CLK_EN;
-      sys_rst_mask = SYSTEM_UART1_RST;
-    }
-  #else
-    // C6 !!!!!
-  #endif
+  if (!regs)
+  {
+    return false;
+  }
 
-	if (!regs)
-	{
-		return false;
-	}
-
-#if defined(MCUSF_32C3)
   // following the Espressif recommended reset sequence:
 
   SYSTEM->PERIP_RST_EN0 &= ~sys_rst_mask;  // clear system UART reset
@@ -84,9 +77,8 @@ bool THwUart_esp::Init(int adevnum)
 
   regs->ID &= ~UART_UPDATE;  // clear UART_UPDATE_CTRL
   while (regs->ID & UART_UPDATE)  { /* wait */ }
-#else
-  // C6
-#endif
+
+  unsigned periphclock = esp_apb_speed();
 
   regs->CLK_CONF = (0
     | (0  <<  0)  // SCLK_DIV_A(6)
@@ -99,8 +91,6 @@ bool THwUart_esp::Init(int adevnum)
     | (1  << 25)  // RX_SCLK_EN
   );
 
-  unsigned periphclock = esp_apb_speed();
-
   // * 16 for the fractional divider
   uint32_t brdiv_m16 = (periphclock << 4) / baudrate;  // *16 = 1
 
@@ -108,6 +98,7 @@ bool THwUart_esp::Init(int adevnum)
       | ((brdiv_m16 >> 4)  <<  0)  // CLKDIV(12)
       | ((brdiv_m16 & 15)  << 20)  // CLKDIV_FRAG(4)
   );
+
 
   uint32_t conf0 = (0
     | (0  <<  0)  // PARITY
@@ -161,17 +152,146 @@ bool THwUart_esp::Init(int adevnum)
   regs->CONF1 = conf1;
 
   // update regs:
-#if defined(MCUSF_32C3)
   regs->ID |= UART_UPDATE;
   while (regs->ID & UART_UPDATE)  { /* wait */ }
+
+  initialized = true;
+
+  return true;
+}
+
+#elif defined(MCUSF_32C6)
+
+bool THwUart_esp::Init(int adevnum) // different register layouts
+{
+  uint32_t tmp;
+  unsigned code;
+
+  devnum = adevnum;
+  initialized = false;
+
+  regs = nullptr;
+
+  uhci = UHCI0;
+  uhci->CONF0 |= (1 << 11); // keep the UHCI CLOCK running
+
+  unsigned pcr_sclk_conf = (0
+    | (0  <<  0)  // SCLK_DIV_A(6)
+    | (0  <<  6)  // SCLK_DIV_B(6)
+    | (0  << 12)  // SCLK_DIV_NUM(8)
+    | (1  << 20)  // SCLK_SEL(2): 0 = none, 1 = PLL80M, 2 = RC_FAST, 3 = XTAL
+    | (1  << 22)  // SCLK_EN:
+  );
+
+  if (0 == devnum)
+  {
+    regs = UART0;
+    PCR->UART0_PD_CTRL = (PCR_UART0_MEM_FORCE_PU);
+    PCR->UART0_CONF |= PCR_UART0_CLK_EN;
+    PCR->UART0_CONF |= PCR_UART0_RST_EN;
+    PCR->UART0_CONF &= ~PCR_UART0_RST_EN;
+    PCR->UART0_SCLK_CONF = pcr_sclk_conf;
+  }
+  else if (1 == devnum)
+  {
+    regs = UART1;
+    PCR->UART1_PD_CTRL = (PCR_UART0_MEM_FORCE_PU);
+    PCR->UART1_CONF |= PCR_UART0_CLK_EN;
+    PCR->UART1_CONF |= PCR_UART0_RST_EN;
+    PCR->UART1_CONF &= ~PCR_UART0_RST_EN;
+    PCR->UART1_SCLK_CONF = pcr_sclk_conf;
+  }
+
+  if (!regs)
+  {
+    return false;
+  }
+
+  while (regs->REG_UPDATE)  { /* wait */ }
+
+  regs->CLK_CONF = (0
+    | (1  << 24)  // TX_SCLK_EN
+    | (1  << 25)  // RX_SCLK_EN
+    | (0  << 26)  // TX_RST_CORE
+    | (0  << 27)  // RX_RST_CORE
+  );
+
+  unsigned periphclock = 80000000;
+
+  // * 16 for the fractional divider
+  uint32_t brdiv_m16 = (periphclock << 4) / baudrate;  // *16 = 1
+
+  regs->CLKDIV_SYNC = (0
+      | ((brdiv_m16 >> 4)  <<  0)  // CLKDIV(12)
+      | ((brdiv_m16 & 15)  << 20)  // CLKDIV_FRAG(4)
+  );
+
+#warning "fix these registers !!!"
+
+  uint32_t conf0 = (0
+    | (0  <<  0)  // PARITY
+    | (0  <<  1)  // PARITY_EN
+    | (0  <<  2)  // BIT_NUM(2): 0 = 5 bit, 3 = 8 bit
+    | (0  <<  4)  // STOP_BIT_NUM(2): 0 = 1 stop bit, 1 = 1.5, 2 = 2, 3 = 3
+    | (0  <<  6)  // SW_RTS
+    | (0  <<  7)  // SW_DTR
+    | (0  <<  8)  // TXD_BRK
+    | (0  <<  9)  // IRDA_DPLX
+    | (0  << 10)  // IRDA_TX_EN
+    | (0  << 11)  // IRDA_WCTL
+    | (0  << 12)  // IRDA_TX_INV
+    | (0  << 13)  // IRDA_RX_INV
+    | (0  << 14)  // LOOPBACK
+    | (0  << 15)  // TX_FLOW_EN:
+    | (0  << 16)  // IRDA_EN
+    | (0  << 17)  // RXFIFO_RST
+    | (0  << 18)  // TXFIFO_RST
+    | (0  << 19)  // RXD_INV
+    | (0  << 20)  // CTS_INV
+    | (0  << 21)  // DSR_INV
+    | (0  << 22)  // TXD_INV
+    | (0  << 23)  // RTS_INV
+    | (0  << 24)  // DTR_INV
+    | (1  << 25)  // CLK_EN: 0 = clock active only at writes, 1 = force clock on
+    | (1  << 26)  // ERR_WR_MASK: 1 = do not store wrong data in RX FIFO
+    | (0  << 27)  // AUTOBAUD_EN:
+    | (1  << 28)  // MEM_CLK_EN: 1 = enable UART RAM clock
+  );
+  // data bits
+  conf0 |= ((databits - 5) << 2);
+  // stop bits
+  if (4 == halfstopbits)  conf0 |= (2 << 4);  // set two stop bits
+  // parity
+  if (parity)
+  {
+    conf0 |= (1 << 1); // enable parity
+    if (!oddparity)  conf0 |= (1 << 0);
+  }
+  regs->CONF0_SYNC = conf0;
+
+  uint32_t conf1 = (0
+    | (0x60 <<  0)  // RXFIFO_FULL_THRHD(9)
+    | (0x60 <<  8)  // TXFIFO_EMPTY_THRHD(9)
+    | (0  << 18)  // RX_DAT_OVF: 1 = disable RX data overflow detection
+    | (0  << 19)  // RX_TOUT_FLOW_DIW
+    | (0  << 20)  // RX_FLOW_EN
+    | (0  << 21)  // RX_TOUT_EN
+  );
+  regs->CONF1 = conf1;
+
+  // update regs:
+  regs->REG_UPDATE = 1;
+  while (regs->REG_UPDATE) { /* wait */ }
+
+  initialized = true;
+
+  return true;
+}
+
 #else
-  // C6 !!!!!!!!!!!!!!!!!!!!!
+  #error "unhandled ESP32 subfamily"
 #endif
 
-	initialized = true;
-
-	return true;
-}
 
 bool THwUart_esp::TrySendChar(char ach)
 {
@@ -188,7 +308,7 @@ bool THwUart_esp::TrySendChar(char ach)
 bool THwUart_esp::TryRecvChar(char * ach)
 {
   uint32_t sr = regs->STATUS;
-	if (0 == (sr & 0x1FF)) // RX FIFO Empty?
+	if (0 == (sr & UART_RXFIFO_CNT)) // RX FIFO Empty?
 	{
 	  return false;
 	}
@@ -200,7 +320,7 @@ bool THwUart_esp::TryRecvChar(char * ach)
 bool THwUart_esp::SendFinished()
 {
   uint32_t sr = regs->STATUS;
-  if (0 == (sr & 0x1FF)) // RX FIFO Empty?
+  if (0 == (sr & UART_TXFIFO_CNT)) // TX FIFO Empty?
   {
     return true;
   }

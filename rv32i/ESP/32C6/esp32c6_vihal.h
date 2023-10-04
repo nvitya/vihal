@@ -389,39 +389,46 @@ typedef struct
 
 typedef struct
 {
-  volatile uint32_t  FIFO;            // 0000
-  volatile uint32_t  INT_RAW;         // 0004
-  volatile uint32_t  INT_ST;          // 0008
-  volatile uint32_t  INT_ENA;         // 000C
-  volatile uint32_t  INT_CLR;         // 0010
-  volatile uint32_t  CLKDIV;          // 0014
-  volatile uint32_t  RX_FILT;         // 0018
-  volatile uint32_t  STATUS;          // 001C
-  volatile uint32_t  CONF0;           // 0020
-  volatile uint32_t  CONF1;           // 0024
-  volatile uint32_t  LOWPULSE;        // 0028
-  volatile uint32_t  HIGHPULSE;       // 002C
-  volatile uint32_t  RXD_CNT;         // 0030
-  volatile uint32_t  FLOW_CONF;       // 0034
-  volatile uint32_t  SLEEP_CONF;      // 0038
-  volatile uint32_t  SWFC_CONF0;      // 003C
-  volatile uint32_t  SWFC_CONF1;      // 0040
-  volatile uint32_t  TXBRK_CONF;      // 0044
-  volatile uint32_t  IDLE_CONF;       // 0048
-  volatile uint32_t  RS485_CONF;      // 004C
-  volatile uint32_t  AT_CMD_PRECNT;   // 0050
-  volatile uint32_t  AT_CMD_POSTCNT;  // 0054
-  volatile uint32_t  AT_CMD_GAPTOUT;  // 0058
-  volatile uint32_t  AT_CMD_CHAR;     // 005C
-  volatile uint32_t  MEM_CONF;        // 0060
-  volatile uint32_t  MEM_TX_STATUS;   // 0064
-  volatile uint32_t  MEM_RX_STATUS;   // 0068
-  volatile uint32_t  FSM_STATUS;      // 006C
-  volatile uint32_t  POSPULSE;        // 0070
-  volatile uint32_t  NEGPULSE;        // 0074
-  volatile uint32_t  CLK_CONF;        // 0078
-  volatile uint32_t  DATE;            // 007C
-  volatile uint32_t  ID;              // 0080
+  volatile uint32_t  FIFO;                  // 00
+  volatile uint32_t  INT_RAW;               // 04
+  volatile uint32_t  INT_ST;                // 08
+  volatile uint32_t  INT_ENA;               // 0c
+  volatile uint32_t  INT_CLR;               // 10
+  volatile uint32_t  CLKDIV_SYNC;           // 14
+  volatile uint32_t  RX_FILT;               // 18
+  volatile uint32_t  STATUS;                // 1c
+  volatile uint32_t  CONF0_SYNC;            // 20
+  volatile uint32_t  CONF1;                 // 24
+           uint32_t  _pad_28;
+  volatile uint32_t  HWFC_CONF_SYNC;        // 2c
+  volatile uint32_t  SLEEP_CONF0;           // 30
+  volatile uint32_t  SLEEP_CONF1;           // 34
+  volatile uint32_t  SLEEP_CONF2;           // 38
+  volatile uint32_t  SWFC_CONF0_SYNC;       // 3c
+  volatile uint32_t  SWFC_CONF1;            // 40
+  volatile uint32_t  TXBRK_CONF_SYNC;       // 44
+  volatile uint32_t  IDLE_CONF_SYNC;        // 48
+  volatile uint32_t  RS485_CONF_SYNC;       // 4c
+  volatile uint32_t  AT_CMD_PRECNT_SYNC;    // 50
+  volatile uint32_t  AT_CMD_POSTCNT_SYNC;   // 54
+  volatile uint32_t  AT_CMD_GAPTOUT_SYNC;   // 58
+  volatile uint32_t  AT_CMD_CHAR_SYNC;      // 5c
+  volatile uint32_t  MEM_CONF;              // 60
+  volatile uint32_t  TOUT_CONF_SYNC;        // 64
+  volatile uint32_t  MEM_TX_STATUS;         // 68
+  volatile uint32_t  MEM_RX_STATUS;         // 6c
+  volatile uint32_t  FSM_STATUS;            // 70
+  volatile uint32_t  POSPULSE;              // 74
+  volatile uint32_t  NEGPULSE;              // 78
+  volatile uint32_t  LOWPULSE;              // 7c
+  volatile uint32_t  HIGHPULSE;             // 80
+  volatile uint32_t  RXD_CNT;               // 84
+  volatile uint32_t  CLK_CONF;              // 88
+  volatile uint32_t  DATE;                  // 8c
+  volatile uint32_t  AFIFO_STATUS;          // 90
+           uint32_t  _pad_94;
+  volatile uint32_t  REG_UPDATE;            // 98
+  volatile uint32_t  ID;                    // 9c
 //
 } esp_uart_t;
 
