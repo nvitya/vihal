@@ -31,7 +31,8 @@
 #include "hwuart_esp.h"
 #include "esp_utils.h"
 
-#if defined(MCUSF_32C3)
+#if defined(MCUSF_32C3)  // different register layouts !
+
 bool THwUart_esp::Init(int adevnum)
 {
   uint32_t tmp;
@@ -160,9 +161,9 @@ bool THwUart_esp::Init(int adevnum)
   return true;
 }
 
-#elif defined(MCUSF_32C6)
+#elif defined(MCUSF_32C6) // different register layouts !
 
-bool THwUart_esp::Init(int adevnum) // different register layouts
+bool THwUart_esp::Init(int adevnum)
 {
   uint32_t tmp;
   unsigned code;
@@ -226,37 +227,32 @@ bool THwUart_esp::Init(int adevnum) // different register layouts
       | ((brdiv_m16 & 15)  << 20)  // CLKDIV_FRAG(4)
   );
 
-#warning "fix these registers !!!"
-
   uint32_t conf0 = (0
     | (0  <<  0)  // PARITY
     | (0  <<  1)  // PARITY_EN
     | (0  <<  2)  // BIT_NUM(2): 0 = 5 bit, 3 = 8 bit
     | (0  <<  4)  // STOP_BIT_NUM(2): 0 = 1 stop bit, 1 = 1.5, 2 = 2, 3 = 3
-    | (0  <<  6)  // SW_RTS
-    | (0  <<  7)  // SW_DTR
-    | (0  <<  8)  // TXD_BRK
-    | (0  <<  9)  // IRDA_DPLX
-    | (0  << 10)  // IRDA_TX_EN
-    | (0  << 11)  // IRDA_WCTL
-    | (0  << 12)  // IRDA_TX_INV
-    | (0  << 13)  // IRDA_RX_INV
-    | (0  << 14)  // LOOPBACK
-    | (0  << 15)  // TX_FLOW_EN:
-    | (0  << 16)  // IRDA_EN
-    | (0  << 17)  // RXFIFO_RST
-    | (0  << 18)  // TXFIFO_RST
-    | (0  << 19)  // RXD_INV
-    | (0  << 20)  // CTS_INV
-    | (0  << 21)  // DSR_INV
-    | (0  << 22)  // TXD_INV
-    | (0  << 23)  // RTS_INV
-    | (0  << 24)  // DTR_INV
-    | (1  << 25)  // CLK_EN: 0 = clock active only at writes, 1 = force clock on
-    | (1  << 26)  // ERR_WR_MASK: 1 = do not store wrong data in RX FIFO
-    | (0  << 27)  // AUTOBAUD_EN:
-    | (1  << 28)  // MEM_CLK_EN: 1 = enable UART RAM clock
+    | (0  <<  6)  // TXD_BRK
+    | (0  <<  7)  // IRDA_DPLX
+    | (0  <<  8)  // IRDA_TX_EN
+    | (0  <<  9)  // IRDA_WCTL
+    | (0  << 10)  // IRDA_TX_INV
+    | (0  << 11)  // IRDA_RX_INV
+    | (0  << 12)  // LOOPBACK
+    | (0  << 13)  // TX_FLOW_EN:
+    | (0  << 14)  // IRDA_EN
+    | (0  << 15)  // RXD_INV
+    | (0  << 16)  // TXD_INV
+    | (0  << 17)  // DIS_RX_DAT_OVFa
+    | (1  << 18)  // ERR_WR_MASK: 1 = do not store wrong data in RX FIFO
+    | (0  << 19)  // AUTOBAUD_EN:
+    | (1  << 20)  // MEM_CLK_EN: 1 = enable UART RAM clock
+    | (0  << 21)  // SW_RTS
+    | (0  << 22)  // RXFIFO_RST
+    | (0  << 23)  // TXFIFO_RST
   );
+
+
   // data bits
   conf0 |= ((databits - 5) << 2);
   // stop bits
@@ -270,12 +266,14 @@ bool THwUart_esp::Init(int adevnum) // different register layouts
   regs->CONF0_SYNC = conf0;
 
   uint32_t conf1 = (0
-    | (0x60 <<  0)  // RXFIFO_FULL_THRHD(9)
-    | (0x60 <<  8)  // TXFIFO_EMPTY_THRHD(9)
-    | (0  << 18)  // RX_DAT_OVF: 1 = disable RX data overflow detection
-    | (0  << 19)  // RX_TOUT_FLOW_DIW
-    | (0  << 20)  // RX_FLOW_EN
-    | (0  << 21)  // RX_TOUT_EN
+    | (0x60 <<  0)  // RXFIFO_FULL_THRHD(8)
+    | (0x60 <<  8)  // TXFIFO_EMPTY_THRHD(8)
+    | (0    << 16)  // CTS_INV
+    | (0    << 17)  // DSR_INV
+    | (0    << 18)  // RTS_INV
+    | (0    << 19)  // DTR_INV
+    | (0    << 20)  // SW_DTR
+    | (1    << 21)  // CLK_EN
   );
   regs->CONF1 = conf1;
 
@@ -296,7 +294,7 @@ bool THwUart_esp::Init(int adevnum) // different register layouts
 bool THwUart_esp::TrySendChar(char ach)
 {
   uint32_t sr = regs->STATUS;
-	if (((sr >> 16) & 0x1FF) >= tx_fifo_size) // TX FIFO Full ?
+	if (((sr >> 16) & UART_TXFIFO_CNT) >= tx_fifo_size) // TX FIFO Full ?
 	{
 		return false;
 	}
