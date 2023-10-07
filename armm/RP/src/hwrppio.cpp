@@ -217,7 +217,7 @@ void THwRpPioSm::Start()
 void THwRpPioSm::Stop()
 {
   uint32_t tmp = (dregs->ctrl & 0xF);
-  tmp &= ~(1 << smnum); // start the state machine
+  tmp &= ~(1 << smnum); // stop the state machine
   dregs->ctrl = tmp;
 }
 
@@ -239,6 +239,24 @@ void THwRpPioSm::SetInShift(bool shift_right, bool autopush, unsigned threshold)
   shiftctrl |= ((threshold & 0x1F) << PIO_SM0_SHIFTCTRL_PUSH_THRESH_LSB);
 
   regs->shiftctrl = shiftctrl;
+}
+
+void THwRpPioSm::PreloadX(unsigned avalue, unsigned abits)
+{
+  regs->shiftctrl = shiftctrl;
+  regs->execctrl  = execctrl;
+
+  *tx_lsb = avalue;
+  regs->instr = pio_encode_out(pio_x, abits);
+}
+
+void THwRpPioSm::PreloadY(unsigned avalue, unsigned abits)
+{
+  regs->shiftctrl = shiftctrl;
+  regs->execctrl  = execctrl;
+
+  *tx_lsb = avalue;
+  regs->instr = pio_encode_out(pio_y, abits);
 }
 
 bool THwRpPioSm::TrySend32(uint32_t adata)

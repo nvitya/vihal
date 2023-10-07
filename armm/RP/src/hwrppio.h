@@ -89,6 +89,9 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetupPinsOut(unsigned abase, unsigned acount);
   void SetupPinsIn(unsigned abase, unsigned acount);
 
+  void PreloadX(unsigned avalue, unsigned abits);
+  void PreloadY(unsigned avalue, unsigned abits);
+
   bool TrySend32(uint32_t adata);
   bool TrySend16(uint16_t adata);
   bool TrySend8(uint8_t adata);
