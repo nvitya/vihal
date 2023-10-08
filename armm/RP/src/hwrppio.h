@@ -9,6 +9,7 @@
 #define SRC_HWRPPIO_H_
 
 #include "platform.h"
+#include "hwrppio_instructions.h"
 
 class THwRpPioPrg
 {
@@ -91,8 +92,17 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetupPinsOut(unsigned abase, unsigned acount);
   void SetupPinsIn(unsigned abase, unsigned acount);
 
-  void PreloadX(unsigned avalue, unsigned abits);
-  void PreloadY(unsigned avalue, unsigned abits);
+  inline void PreloadX(unsigned avalue, unsigned abits)
+  {
+    *tx_lsb = avalue;
+    regs->instr = pio_encode_out(pio_x, abits);
+  }
+
+  void PreloadY(unsigned avalue, unsigned abits)
+  {
+    *tx_lsb = avalue;
+    regs->instr = pio_encode_out(pio_y, abits);
+  }
 
   bool TrySend32(uint32_t adata);
   bool TrySend16(uint16_t adata);
