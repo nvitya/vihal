@@ -80,6 +80,8 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetClkDiv(uint32_t abasespeed, uint32_t targetfreq);
 
   void SetPinDir(uint32_t apin, unsigned aoutput);
+  inline void IrqClear(uint32_t amask) { dregs->irq = amask; }
+  inline void IrqForce(uint32_t amask) { dregs->irq_force = amask; }
 
   void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
   void SetInShift(bool shift_right, bool autopush, unsigned threshold);
