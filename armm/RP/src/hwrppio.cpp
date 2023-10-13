@@ -113,6 +113,13 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
   return true;
 }
 
+uint32_t THwRpPioSm::GetDmaRequest(bool istx)
+{
+  uint32_t result = DREQ_PIO0_TX0 + smnum + (devnum << 3);
+  if (!istx)  result += 4;
+  return result;
+}
+
 void THwRpPioSm::SetPrg(THwRpPioPrg * aprg)
 {
   prg = aprg;

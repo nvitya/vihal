@@ -104,6 +104,8 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
     regs->instr = pio_encode_out(pio_y, abits);
   }
 
+  uint32_t GetDmaRequest(bool istx);
+
   bool TrySend32(uint32_t adata);
   bool TrySend16(uint16_t adata);
   bool TrySend8(uint8_t adata);
