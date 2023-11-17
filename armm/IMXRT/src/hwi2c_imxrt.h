@@ -34,7 +34,6 @@
 class THwI2c_imxrt : public THwI2c_pre
 {
 public:
-	unsigned       runstate = 0;
 	LPI2C_Type *   regs = nullptr;
 
 	uint32_t       reloadremaining = 0;

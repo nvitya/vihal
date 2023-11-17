@@ -196,7 +196,7 @@ void THwI2c_imxrt::RunTransaction()
     if (msr & LPI2C_MSR_MBF_MASK)
     {
       curtra->error = ERR_I2C_BUS;
-      runstate = 90;
+      trastate = 90;
       return;
     }
 
@@ -328,7 +328,7 @@ void THwI2c_imxrt::RunTransaction()
       if (curtra->error)
       {
         // jump to error handling
-        runstate = 90;
+        trastate = 90;
         return;
       }
     }
@@ -391,7 +391,7 @@ void THwI2c_imxrt::RunTransaction()
 
     // issue re-start
     regs->MTDR = (4 << 8) | (curtra->address << 1) | 1;  // bit0: R/W bit, 1 = read bytes
-    runstate = 1; // go to receive
+    trastate = 1; // go to receive
     return;
   }
   else if (11 == trastate) // DMA-less TX
@@ -437,7 +437,7 @@ void THwI2c_imxrt::RunTransaction()
   {
     if (msr & (LPI2C_MSR_SDF_MASK | LPI2C_MSR_FEF_MASK)) // stop detected, or fifo error ?
     {
-      runstate = 50;
+      trastate = 50;
       curtra->completed = true;
       return;
     }
@@ -460,7 +460,7 @@ void THwI2c_imxrt::RunTransaction()
     tmp |= (3 << 8); // clear fifos
     regs->MCR = tmp;
 
-    runstate = 91; // wait until the master busy flag disappears, it takes a while
+    trastate = 91; // wait until the master busy flag disappears, it takes a while
 	}
 	else if (91 == trastate)  // wait until the master busy flag disappears, it takes a while
 	{
@@ -475,6 +475,6 @@ void THwI2c_imxrt::RunTransaction()
 
     // finish
     curtra->completed = true;	// transaction finished.
-    runstate = 50;
+    trastate = 50;
   }
 }
