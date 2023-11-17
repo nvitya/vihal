@@ -21,6 +21,10 @@
   #include "hwspi_imxrt.h"
 #endif
 
+#ifdef HWI2C_H_
+  #include "hwi2c_imxrt.h"
+#endif
+
 #ifdef HWQSPI_H_
   #include "hwqspi_imxrt.h"
 #endif
