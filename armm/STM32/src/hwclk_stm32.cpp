@@ -295,22 +295,26 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 
   // set LDO
   tmp = PWR->CR3;
-  tmp &= ~(PWR_CR3_SCUEN | PWR_CR3_LDOEN | PWR_CR3_BYPASS);
+#if defined(PWR_CR3_SMPSEN)
+  tmp &= (PWR_CR3_BYPASS);
+  tmp |= (PWR_CR3_SMPSEN | PWR_CR3_LDOEN);
+#else
+  tmp &= ~(PWR_CR3_SCUEN | PWR_CR3_BYPASS);
   tmp |= PWR_CR3_LDOEN;
+#endif
   PWR->CR3 = tmp;
 
+#if 0
   while ((PWR->CSR1 & PWR_CSR1_ACTVOSRDY) != PWR_CSR1_ACTVOSRDY)
   {
     // wait until ready....
   }
+#endif
 
   tmp = PWR->D3CR;
   tmp &= ~PWR_D3CR_VOS_Msk;
   tmp |= (LL_PWR_REGU_VOLTAGE_SCALE0 << PWR_D3CR_VOS_Pos); // VOS0 (=Scale 3) required for maximal speed
   PWR->D3CR = tmp;
-
-  if (PWR->D3CR) { } // some delay
-  if (PWR->D3CR) { } // some delay
 
 #ifndef MCUSF_H7_V2
   // Enable the PWR overdrive for the maximal speed

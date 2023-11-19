@@ -134,6 +134,14 @@
 
   #define MAX_CLOCK_SPEED  200000000
 
+#elif defined(BOARD_DISCOVERY_H747)
+
+  #define BOARD_NAME "STM32H747 Discovery"
+  #define MCU_STM32H747XI
+  #define EXTERNAL_XTAL_HZ   25000000
+
+  //#define MAX_CLOCK_SPEED  480000000
+
 #elif defined(BOARD_DISCOVERY_F429)
 
   #define BOARD_NAME "STM32F429 Discovery"

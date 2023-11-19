@@ -173,6 +173,14 @@
 
   #include "stm32h743xx.h"
 
+#elif defined(MCU_STM32H747XI)
+
+  #define MCUF_STM32
+  #define MCUSF_H7
+  #define MAX_CLOCK_SPEED  480000000
+
+  #include "stm32h747xx.h"
+
 #elif defined(MCU_STM32H750VB)
 
   #define MCUF_STM32
