@@ -40,6 +40,7 @@ public:  // special ST settings
 	uint8_t          bank = 1;
 	uint32_t         hclk_div = 2;
 	uint32_t         rpipe_delay = 0;
+	uint8_t          load_to_active_delay = 2;
 	bool             read_burst_enable = true;
 
 public:
