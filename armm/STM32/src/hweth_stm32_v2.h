@@ -50,6 +50,12 @@ typedef struct
 } HW_ETH_DMA_DESC;
 #endif
 
+
+#define HWETH_DMADES_OWN        (1 << 31)  // 1 = owned by the DMA
+#define HWETH_DMADES_CTX        (1 << 30)  // contex descriptor
+#define HWETH_DMADES_IOC        (1 << 30)  // IOC = interrupt on completition
+#define HWETH_DMADES_BUF1V      (1 << 25)  // BUF 1 Address Valid
+
 typedef struct
 {
   __IO uint32_t  DESC0;
@@ -97,12 +103,18 @@ public:
 public:
   ETH_TypeDef *      regs = nullptr;
 
+  HW_ETH_DMA_DESC *  cur_rx_desc = nullptr;
+  HW_ETH_DMA_DESC *  cur_tx_desc = nullptr;
+
   HW_ETH_DMA_DESC *  rx_desc_list = nullptr;
   HW_ETH_DMA_DESC *  tx_desc_list = nullptr;
 
-  void               AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen);
+  HW_ETH_DMA_DESC *  rx_desc_list_end = nullptr;
+  HW_ETH_DMA_DESC *  tx_desc_list_end = nullptr;
 
-  HW_ETH_DMA_DESC *  actual_rx_desc;
+  uint32_t           rxdesc_irq_flag = 0;
+
+  void               AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen);
 
 };
 

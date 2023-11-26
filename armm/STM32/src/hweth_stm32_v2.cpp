@@ -75,7 +75,12 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
   regs->MACTSAR = (100. / mhz) * (float)0x100000000;
   regs->MACTSCR |= 0x0020;  // use the new ADDEND register
   regs->MACSSIR = 10;       // increment by 10 if the addend accumulator overflows
+
+#if 0
   regs->MACTSCR = 0x0103;   // start fine mode, timestamp all frames
+#else
+  regs->MACTSCR = 0x0003;   // disable timestamping !!!!!!!!!!!!!!!!!!!!!!!
+#endif
 
   SetupMii(CalcMdcClock(), phy_address);
 
@@ -214,7 +219,7 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
     | (0  << 31)  // RPF: DMA Rx Channel Packet Flush
     | (32 <<  0)  // RXPBL(6): Receive Programmable Burst Length
     | (HWETH_MAX_PACKET_SIZE <<  1)  // RBSZ(14): Receive Buffer size
-    | (0  <<  0)  // SR
+    | (0  <<  0)  // SR: Start or stop receive
   );
 
   regs->MACIER = 0;
@@ -234,159 +239,128 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
   tx_desc_list = (HW_ETH_DMA_DESC *)ptxdesclist;
   tx_desc_count = txcnt;
 
-#if 0
-  // Initialize Tx Descriptors list: Chain Mode
-  InitDescList(true, tx_desc_count, tx_desc_list, nullptr);
-  regs->DMA_TRANS_DES_ADDR = (uint32_t)&tx_desc_list[0];
-
-  // Initialize Rx Descriptors list: Chain Mode
+  InitDescList(true,  tx_desc_count, tx_desc_list, nullptr);
   InitDescList(false, rx_desc_count, rx_desc_list, nullptr);
-  regs->DMA_REC_DES_ADDR = (uint32_t)&rx_desc_list[0];
-#endif
-
-  actual_rx_desc = &rx_desc_list[0];
 
   return true;
 }
 
 void THwEth_stm32_v2::InitDescList(bool istx, int bufnum, HW_ETH_DMA_DESC * pdesc_list, uint8_t * pbuffer)
 {
-#if 0
   int i;
   HW_ETH_DMA_DESC *  pdesc = pdesc_list;
 
   memset(pdesc_list, 0, bufnum * sizeof(HW_ETH_DMA_DESC));
 
-  for (i = 0; i < bufnum; ++i)
+  if (istx)
   {
-    if (istx)
-    {
-      // different register usage!
-      pdesc->DES0 = HWETH_DMADES_TCH;
-      if (hw_ip_checksum)
-      {
-        pdesc->DES0 |= (3 << 22);  // setup HW IP Checksum calculation
-      }
-      pdesc->DES1 = 0;
-    }
-    else
-    {
-      pdesc->DES0 = 0;    // do not enable it yet because there is no buffer assignment
-      pdesc->DES1 = HWETH_DMADES_RCH | 0;   // interrupt enabled
-    }
+    cur_tx_desc = pdesc_list;
+    tx_desc_list_end = pdesc_list + bufnum;
 
-    pdesc->B1ADD = 0; // do not assign data yet
-    pdesc->B2ADD = (uint32_t)(pdesc + 1);
-
-    if (i == bufnum - 1)
-    {
-      // last descriptor
-      pdesc->B2ADD = (uint32_t)pdesc_list;  // link back
-
-      // signal descriptor ring, it seems, that this is not really necessary, but does not hurt
-      if (istx)
-      {
-        pdesc->DES0 |= HWETH_DMADES_TER;
-      }
-      else
-      {
-        pdesc->DES1 |= HWETH_DMADES_RER;
-      }
-    }
-
-    ++pdesc;
-    pbuffer += HWETH_MAX_PACKET_SIZE;
+    regs->DMACTDRLR = bufnum - 1;          // Set Transmit Descriptor Ring Length
+    regs->DMACTDLAR = (uint32_t)&pdesc_list[0]; // Set Transmit Descriptor List Address
+    regs->DMACTDTPR = (uint32_t)&tx_desc_list[0]; // Set Receive Descriptor Tail pointer Address
   }
-#endif
+  else
+  {
+    cur_rx_desc = pdesc_list;
+    rx_desc_list_end = pdesc_list + bufnum;
+
+    regs->DMACRDRLR = bufnum - 1;  // Set Receive Descriptor Ring Length
+    regs->DMACRDLAR = (uint32_t)&pdesc_list[0];  // Set Receive Descriptor List Address
+    regs->DMACRDTPR = (uint32_t)&pdesc_list[bufnum - 1];  // Set Receive Descriptor Tail pointer Address
+  }
 }
 
 void THwEth_stm32_v2::AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen)
 {
-#if 0
   if (idx >= rx_desc_count)  return;
 
   int i;
   HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[idx];
 
+  rxdesc_irq_flag = (irq_on_rx ? HWETH_DMADES_IOC : 0);
+
   pmem->idx = idx;
 
-  pdesc->B1ADD = (uint32_t)(&pmem->data[0]);
-  pdesc->DES1 |= datalen;
-  pdesc->DES0 = HWETH_DMADES_OWN;  // enable receive on this decriptor
-#endif
+  pdesc->DESC0 = (uint32_t)(&pmem->data[0]);
+  pdesc->DESC1 = 0;
+  pdesc->DESC2 = 0;
+  pdesc->DESC3 = HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V;  // enable receive on this decriptor
+  pdesc->BackupAddr0 = (uint32_t)(&pmem->data[0]);
 }
 
 bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
 {
-#if 0
-  if (!(regs->MAC_CONFIG & HWETH_MAC_CFG_RE))
+  if (0 == (regs->MACCR & 1)) // receive enabled ?
   {
     return false;
   }
 
   __DSB();
 
-  HW_ETH_DMA_DESC * pdesc = (HW_ETH_DMA_DESC *)regs->DMA_CURHOST_REC_DES;
-
   while (1)
   {
-    uint32_t stat = actual_rx_desc->DES0;
-    if (stat & HWETH_DMADES_OWN)
+    uint32_t desc3 = cur_rx_desc->DESC3;
+    if (desc3 & HWETH_DMADES_OWN)
     {
-      // nothing was received.
-      if (actual_rx_desc != pdesc)
-      {
-        // some error, correct it
-        actual_rx_desc = (HW_ETH_DMA_DESC *)actual_rx_desc->B2ADD;
-        continue;
-      }
       return false;
     }
 
     // check for errors
-    if (stat & (1 << 15))  // Error Summary Bit
+    if (desc3 & (1 << 15))  // Error Summary Bit
     {
       ++recv_error_count;
     }
-    else if ((stat & (3 << 8)) == (3 << 8))  // First + Last Descriptor bit
+    else if (((desc3 >> 28) & 3) == 3)  // First + Last Descriptor bit
     {
       // this is ok
       ++recv_count;
-      HW_ETH_DMA_DESC * result = actual_rx_desc;
-      actual_rx_desc = (HW_ETH_DMA_DESC *)actual_rx_desc->B2ADD;
+
+      HW_ETH_DMA_DESC * result = cur_rx_desc;
+      if (cur_rx_desc < rx_desc_list_end)  cur_rx_desc += 1;
+      else                                 cur_rx_desc = rx_desc_list;
 
       // resulting
 
-      TPacketMem * pmem = (TPacketMem *)(result->B1ADD - HWETH_PMEM_HEAD_SIZE);
+      TPacketMem * pmem = (TPacketMem *)(result->BackupAddr0 - HWETH_PMEM_HEAD_SIZE);
 
       pmem->idx = (result - rx_desc_list); // / sizeof(HW_ETH_DMA_DESC);
-      pmem->datalen = ((result->DES0 >> 16) & 0x1FFF);
+      pmem->datalen = (desc3 & 0x1FFF);
       *ppmem = pmem;
       return true;
     }
 
     // free this, and go to the next.
-    actual_rx_desc->DES0 = HWETH_DMADES_OWN;
-    actual_rx_desc = (HW_ETH_DMA_DESC *)actual_rx_desc->B2ADD;
 
-    // restart the dma controller if it was out of secriptors.
+    cur_rx_desc->DESC0 = cur_rx_desc->BackupAddr0;
+    cur_rx_desc->DESC1 = 0;
+    cur_rx_desc->DESC2 = 0;
+    cur_rx_desc->DESC3 = HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V;  // enable receive on this decriptor
+
+    // go to the next rx descriptor
+    if (cur_rx_desc < rx_desc_list_end)  cur_rx_desc += 1;
+    else                                 cur_rx_desc = rx_desc_list;
+
+    // TODO:
+    // restart the dma controller if it was out of secriptors.  !!!!!!!!!!!!!!!!!!!
 
     __DSB();
-    regs->DMA_REC_POLL_DEMAND = 1;
+    //regs->DMA_REC_POLL_DEMAND = 1;
   }
-#else
-  return false;
-#endif
 }
 
 void THwEth_stm32_v2::ReleaseRxBuf(TPacketMem * pmem)
 {
-#if 0
   HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[pmem->idx];
-  pdesc->DES0 = HWETH_DMADES_OWN;
+  pdesc->DESC0 = pdesc->BackupAddr0;
+  pdesc->DESC1 = 0;
+  pdesc->DESC2 = 0;
+  pdesc->DESC3 = HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V;  // enable receive on this decriptor
   __DSB();
-  regs->DMA_REC_POLL_DEMAND = 1;  // for the case when we were out of descriptors
-#endif
+
+  // TODO: restart !!!!
+  //regs->DMA_REC_POLL_DEMAND = 1;  // for the case when we were out of descriptors
 }
 
 bool THwEth_stm32_v2::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
@@ -446,33 +420,31 @@ bool THwEth_stm32_v2::SendFinished(uint32_t idx)
 
 void THwEth_stm32_v2::Start(void)
 {
-#if 0
   // Clear all MAC interrupts
-  regs->DMA_STAT = HWETH_DMA_ST_ALL;
+  //regs->DMA_STAT = HWETH_DMA_ST_ALL;
 
   // Enable MAC interrupts
-  regs->DMA_INT_EN = HWETH_DMA_IE_RIE | HWETH_DMA_IE_NIE; // enable only receive interrupt (+Normal interrupt enable)
+  //regs->DMA_INT_EN = HWETH_DMA_IE_RIE | HWETH_DMA_IE_NIE; // enable only receive interrupt (+Normal interrupt enable)
 
-  // Enable packet reception
-  regs->MAC_CONFIG |= HWETH_MAC_CFG_RE | HWETH_MAC_CFG_TE;
+  regs->MACCR |= 3; // enable transmit and receive
 
-  // Setup DMA to flush receive FIFOs at 32 bytes, service TX FIFOs at 64 bytes
-  regs->DMA_OP_MODE |= HWETH_DMA_OM_ST | HWETH_DMA_OM_SR;
+  __DSB();
+
+  regs->DMACTCR |= 1; // start transmission
+  regs->DMACRCR |= 1; // start receive
 
   // Start receive polling
-  __DSB();
-  regs->DMA_REC_POLL_DEMAND = 1;
-#endif
+  //regs->DMA_REC_POLL_DEMAND = 1;
 }
 
 void THwEth_stm32_v2::Stop(void)
 {
-#if 0
-  regs->DMA_INT_EN = 0; // enable only receive interrupt (+Normal interrupt enable)
+  //regs->DMA_INT_EN = 0; // enable only receive interrupt (+Normal interrupt enable)
 
-  regs->DMA_OP_MODE &= ~(HWETH_DMA_OM_ST | HWETH_DMA_OM_SR); // stop transmit and receive
-  regs->MAC_CONFIG &= ~(HWETH_MAC_CFG_RE | HWETH_MAC_CFG_TE);
-#endif
+  regs->DMACTCR &= ~1; // stop transmit
+  regs->DMACRCR &= ~1; // stop receive
+
+  regs->MACCR &= ~3; // disable transmit and receive
 }
 
 uint32_t THwEth_stm32_v2::CalcMdcClock(void)
@@ -485,9 +457,9 @@ uint32_t THwEth_stm32_v2::CalcMdcClock(void)
   if (val < 100)  return ETH_MACMDIOAR_CR_DIV42;
   if (val < 150)  return ETH_MACMDIOAR_CR_DIV62;
   if (val < 250)  return ETH_MACMDIOAR_CR_DIV102;
-  if (val < 300)  return ETH_MACMDIOAR_CR_DIV124;
+  //if (val < 300)  return ETH_MACMDIOAR_CR_DIV124;
 
-  return 0;
+  return 0; //ETH_MACMDIOAR_CR_DIV124;
 }
 
 void THwEth_stm32_v2::SetMacAddress(uint8_t * amacaddr)
