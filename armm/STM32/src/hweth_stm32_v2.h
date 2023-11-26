@@ -35,19 +35,33 @@
 #define HWETH_PRE_ONLY
 #include "hweth.h"
 
+#if 0
 typedef struct
 {
   volatile uint32_t DES0;     // RDES status word
   volatile uint32_t DES1;     // Buffer 1/2 byte counts
-  volatile uint32_t B1ADD;    // Buffer 1 address
-  volatile uint32_t B2ADD;    // Buffer 2 or next descriptor address
+  volatile uint32_t DES2;    // Buffer 1 address
+  volatile uint32_t DES3;    // Buffer 2 or next descriptor address
   volatile uint32_t EXTSTAT;  // Extended Status
   volatile uint32_t _RES;     // Reserved
   volatile uint32_t TSL;      // Timestamp value low
   volatile uint32_t TSH;      // Timestamp value high
 //
 } HW_ETH_DMA_DESC;
+#endif
 
+typedef struct
+{
+  __IO uint32_t  DESC0;
+  __IO uint32_t  DESC1;
+  __IO uint32_t  DESC2;
+  __IO uint32_t  DESC3;
+  uint32_t       BackupAddr0; /* used to store rx buffer 1 address */
+  uint32_t       BackupAddr1; /* used to store rx buffer 2 address */
+//
+} ETH_DMADescTypeDef;
+
+typedef ETH_DMADescTypeDef  HW_ETH_DMA_DESC;
 
 class THwEth_stm32_v2 : public THwEth_pre
 {

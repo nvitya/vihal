@@ -79,37 +79,53 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
 
   SetupMii(CalcMdcClock(), phy_address);
 
-#if 0
+  // setup 1 us tick
+  regs->MAC1USTCR = (stm32_bus_speed(0) / 1000000) - 1;
 
-  // MAC_CONFIG / MACCR
+  // MAC Configuration
+
+  /*------------------------ MACCR Configuration --------------------*/
 
   tmp = 0
-    | (0 <<  2)  // RE: receive enable
-    | (0 <<  3)  // TE: transmit enable
+    | (0 <<  0)  // RE: receive enable
+    | (0 <<  1)  // TE: transmit enable
+    | (0 <<  2)  // PRELEN(2): ?
     | (0 <<  4)  // DC: Deferral check
     | (0 <<  5)  // BL(2): back-off limit
-    | (0 <<  7)  // ACS: Automatic PAD/CRC stripping
-    | (1 <<  9)  // RD: Retry disable
-    | (1 << 10)  // IPCO: generate frame checksum by hardware
-    | (1 << 11)  // DM: Duplex Mode
+    | (0 <<  9)  // DR: Retry disable
+    | (0 <<  9)  // DCRS: Disable Carrier Sense During Transmission
+    | (0 << 10)  // DO: Receive Own Disable
+    | (0 << 11)  // ECRSFD: Enable Carrier Sense Before Transmission in Full-Duplex Mode
     | (0 << 12)  // LM: Loopback Mode
-    | (0 << 13)  // DO: Receive Own Disable
+    | (1 << 13)  // DM: Duplex Mode
     | (1 << 14)  // FES: Fast Ethernet, 1 = 100 MBit/s
-    | (1 << 15)  // PS:
-    | (0 << 16)  // CSD: Carrier Sense Disable
-    | (0 << 17)  // IFG(3): Inter-Frame Gap, 3 = 72 Bit times
-    | (0 << 22)  // JD: Jabber Disable
-    | (0 << 23)  // WD: Watchdog Disable
-    | (0 << 25)  // CSTF: CRC Stripping
+    | (0 << 16)  // JE: Jumbo Packet Enable
+    | (0 << 17)  // JD: Jabber Disable
+    | (0 << 19)  // WD: Watchdog Disable
+    | (0 << 20)  // ACS: Automatic PAD+CRC stripping
+    | (0 << 21)  // CST: CRC stripping for Type packets
+    | (0 << 22)  // S2KP: IEEE 802.3as Support for 2K Packets
+    | (0 << 23)  // GPSLCE: Giant Packet Size Limit Control Enable
+    | (0 << 24)  // IFG(3): Inter-Frame Gap, 3 = 72 Bit times
+    | (0 << 27)  // IPC: Checksum Offload = generate frame checksum by hardware
+    | (3 << 28)  // SARC(3): Source Address Insertion/Replace Control: 3 = replace the source address with my MAC
+    | (0 << 31)  // ARPEN: ARP Offload Enable
   ;
   if (loopback)        tmp |= (1 << 12);
-  if (hw_ip_checksum)  tmp |= (1 << 10);
-  regs->MAC_CONFIG = tmp;
+  if (hw_ip_checksum)  tmp |= (1 << 27);
+  regs->MACCR = tmp;
 
+  tmp = (0
+    | (0 << 25)  // EIPG(5): Extended Inter-Packet Gap
+    | (0 << 24)  // EIPGEN: Extended Inter-Packet Gap Enable
+    | (0 << 18)  // USP: Unicast Slow Protocol Packet Detect
+    | (0 << 17)  // SPEN: Slow Protocol Detection Enable
+    | (0 << 16)  // DCRCC: Disable CRC Checking for Received Packets
+    | (0 <<  0)  // GPSL(14): Giant Packet Size Limit
+  );
+  regs->MACECR = tmp;
 
-  /* Setup filter */
-
-  // MAC_FRAME_FILTER / MACFFR
+  // MAC Packet Filter / MACFFR
 
   tmp = 0
     | (0 <<  0)  // PR: Promiscous Mode
@@ -118,57 +134,91 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
     | (0 <<  3)  // DAIF: DA Inverse Filtering
     | (0 <<  4)  // PM: Pass All Multicast
     | (0 <<  5)  // DBF: Disable Broadcast Frames
-    | (1 <<  6)  // PCF: Pass Control Frames
+    | (2 <<  6)  // PCF(2): Pass Control Frames
+    | (0 <<  8)  // SAIF: SA Inverse Filtering
+    | (0 <<  9)  // SAF: Source Address Filter Enable
     | (0 << 10)  // HPF: Hash or Perfect Filter
+    | (0 << 16)  // VTFE: VLAN Tag Filter Enable
+    | (0 << 20)  // IPFE: Layer 3 and Layer 4 Filter Enable
+    | (0 << 21)  // DNTU: Drop Non-TCP/UDP over IP Packets
     | (0 << 31)  // RA: Receive All
   ;
   if (promiscuous_mode)  tmp |= ((1 << 0) | (1u << 31));
-  regs->MAC_FRAME_FILTER = tmp;
+  regs->MACPFR = tmp;
 
-  /* Flush transmit FIFO */
-  regs->DMA_OP_MODE |= HWETH_DMA_OM_FTF;
-  while (regs->DMA_OP_MODE & HWETH_DMA_OM_FTF)
-  {
-    // wait
-  }
+  regs->MACWTR = 0; // disable watchdog
 
-  tmp = 0
-    | (0 <<  1)  // SR: Start/stop receive
-    | (1 <<  2)  // OSF: Operate on second frame
-    | (0 <<  3)  // RTC(2): Receive threshold contro
-    | (1 <<  6)  // FUGF: Forward undersized good frames
-    | (1 <<  7)  // FEF: Forward error frames
-    | (0 << 13)  // ST: Start/stop transmission
-    | (0 << 14)  // TTC(3): Transmit threshold control
-    | (0 << 20)  // FTF: Flush transmit FIFO
-    | (1 << 21)  // TSF: Transmit store and forward
-    | (0 << 24)  // DFRF: Disable flushing of received frames
-    | (1 << 25)  // RSF: Receive store and forward
-    | (0 << 26)  // DTCEFD: Dropping of TCP/IP checksum error frames disable
-  ;
-  regs->DMA_OP_MODE = tmp;
+  // Tx Flow Control
+  tmp = (0
+    | (0  << 16)  // PT(16): Pause Time
+    | (0  <<  7)  // DZPQ: Disable Zero-Quanta Pause
+    | (0  <<  4)  // PLT(3): Pause Low Threshold
+    | (0  <<  1)  // TFE: Transmit Flow Control Enable
+    | (0  <<  0)  // FCB_BPA: Flow Control Busy or Backpressure Activate
+  );
+  regs->MACTFCR = tmp;
 
-  /* Enhanced descriptors, burst length = 1 */
-  regs->DMA_BUS_MODE = 0
-    | (0  << 26)  // MB: Mixed burst
-    | (1  << 25)  // AAB: Address-aligned beats
-    | (0  << 24)  // FPM: 4xPBL mode
-    | (1  << 23)  // USP: Use separate PBL
-    | (32 << 17)  // RDP(6): Rx DMA PBL
-    | (1  << 16)  // FB: Fixed burst
-    | (0  << 14)  // PM2): Rx Tx priority ratio
-    | (32 <<  8)  // PBL(6): Programmable burst length
-    | (1  <<  7)  // EDFE: Enhanced descriptor format enable, 1 = use enhanced descriptors
-    | (0  <<  2)  // DSL(5): Descriptor skip length
-    | (0  <<  1)  // DA: DMA Arbitration
-    | (0  <<  0)  // SR: Software reset
-  ;
+  // Rx Flow Control
+  tmp = (0
+    | (0  <<  1)  // UP: Unicast Pause Packet Detect
+    | (0  <<  0)  // RFE: Receive Flow Control Enable
+  );
+  regs->MACRFCR = tmp;
 
-  /* Clear all MAC interrupts */
-  regs->DMA_STAT = HWETH_DMA_ST_ALL;
+  // Tx Queue Operating Mode
+  tmp = (0
+    | (7  << 16)  // TQS(3): Transmit queue size
+    | (0  <<  4)  // TTC(3): Transmit Threshold Control
+    | (2  <<  2)  // TXQEN(0): Transmit Queue Enable
+    | (1  <<  1)  // TSF: Transmit Store and Forward
+    | (1  <<  0)  // FTQ: Flush Transmit Queue
+  );
+  regs->MTLTQOMR = tmp;
 
-  /* Enable MAC interrupts */
-  regs->DMA_INT_EN = 0;
+
+  tmp = (0
+    | (7  << 20)  // RQS(3): Receive Queue Size
+    | (0  << 14)  // RFD(3): Threshold for Deactivating Flow Control
+    | (0  <<  8)  // RFA(3): Threshold for Activating Flow Control
+    | (0  <<  7)  // EHFC: Enable Hardware Flow Control
+    | (1  <<  6)  // DIS_TCP_EF: Disable Dropping of TCP/IP Checksum Error Packets
+    | (1  <<  5)  // RSF: Receive Queue Store and Forward
+    | (0  <<  4)  // FEP: Forward Error Packets
+    | (0  <<  3)  // FUP: Forward Undersized Good Packets
+    | (0  <<  0)  // RTC(2): Receive Queue Threshold Control
+  );
+  regs->MTLRQOMR = tmp;
+
+  // DMA Configuration
+  regs->DMAMR = 0; // keep the defaults
+
+  regs->DMASBMR = (0
+    | (1 << 12)  // AAL: Address-Aligned Beats
+    | (1 <<  0)  // FB: Fixed Burst Length
+  );
+
+  regs->DMACCR = (0
+    | (2     << 18)  // DSL(3): Descriptor Skip Length: 2 = skip 2*32-bits between the descriptors
+    | (0     << 16)  // PBLX8: 8xPBL mode
+    | (0x218 <<  0)  // MSS(14): Maximum Segment Size
+  );
+
+  regs->DMACTCR = (0
+    | (32 << 16)  // TXPBL(6): Transmit Programmable Burst Length
+    | (0  << 12)  // TSE: TCP Segmentation Enabled
+    | (0  <<  4)  // OSF: Operate on Second Packet
+    | (0  <<  0)  // ST: Start or Stop Transmission Command
+  );
+
+  regs->DMACRCR = (0
+    | (0  << 31)  // RPF: DMA Rx Channel Packet Flush
+    | (32 <<  0)  // RXPBL(6): Receive Programmable Burst Length
+    | (HWETH_MAX_PACKET_SIZE <<  1)  // RBSZ(14): Receive Buffer size
+    | (0  <<  0)  // SR
+  );
+
+  regs->MACIER = 0;
+  if (regs->MACISR) { }  // clears some interrupts
 
   // Save MAC address
   SetMacAddress(&mac_address[0]);
@@ -184,6 +234,7 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
   tx_desc_list = (HW_ETH_DMA_DESC *)ptxdesclist;
   tx_desc_count = txcnt;
 
+#if 0
   // Initialize Tx Descriptors list: Chain Mode
   InitDescList(true, tx_desc_count, tx_desc_list, nullptr);
   regs->DMA_TRANS_DES_ADDR = (uint32_t)&tx_desc_list[0];
@@ -191,10 +242,9 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
   // Initialize Rx Descriptors list: Chain Mode
   InitDescList(false, rx_desc_count, rx_desc_list, nullptr);
   regs->DMA_REC_DES_ADDR = (uint32_t)&rx_desc_list[0];
+#endif
 
   actual_rx_desc = &rx_desc_list[0];
-
-#endif
 
   return true;
 }
