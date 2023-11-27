@@ -54,7 +54,7 @@ typedef struct
 #define HWETH_DMADES_OWN        (1 << 31)  // 1 = owned by the DMA
 #define HWETH_DMADES_CTX        (1 << 30)  // contex descriptor
 #define HWETH_DMADES_IOC        (1 << 30)  // IOC = interrupt on completition
-#define HWETH_DMADES_BUF1V      (1 << 25)  // BUF 1 Address Valid
+#define HWETH_DMADES_BUF1V      (1 << 24)  // BUF 1 Address Valid
 
 typedef struct
 {
@@ -98,7 +98,7 @@ public:
 
   void               InitDescList(bool istx, int bufnum, HW_ETH_DMA_DESC * pdesc_list, uint8_t * pbuffer);
 
-  void               SetupMii(uint32_t div, uint8_t addr);
+  void               SetupMii(uint32_t divmask, uint8_t addr);
 
 public:
   ETH_TypeDef *      regs = nullptr;

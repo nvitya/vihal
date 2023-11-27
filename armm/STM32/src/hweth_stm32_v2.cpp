@@ -79,7 +79,7 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
 #if 0
   regs->MACTSCR = 0x0103;   // start fine mode, timestamp all frames
 #else
-  regs->MACTSCR = 0x0003;   // disable timestamping !!!!!!!!!!!!!!!!!!!!!!!
+  regs->MACTSCR = 0x0003;   // disable timestamping for now (requires additional descriptors) !!!!!!!!!!!!!!!!!!!!!!!
 #endif
 
   SetupMii(CalcMdcClock(), phy_address);
@@ -97,7 +97,7 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
     | (0 <<  2)  // PRELEN(2): ?
     | (0 <<  4)  // DC: Deferral check
     | (0 <<  5)  // BL(2): back-off limit
-    | (0 <<  9)  // DR: Retry disable
+    | (0 <<  8)  // DR: Retry disable
     | (0 <<  9)  // DCRS: Disable Carrier Sense During Transmission
     | (0 << 10)  // DO: Receive Own Disable
     | (0 << 11)  // ECRSFD: Enable Carrier Sense Before Transmission in Full-Duplex Mode
@@ -217,7 +217,7 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
 
   regs->DMACRCR = (0
     | (0  << 31)  // RPF: DMA Rx Channel Packet Flush
-    | (32 <<  0)  // RXPBL(6): Receive Programmable Burst Length
+    | (32 << 16)  // RXPBL(6): Receive Programmable Burst Length
     | (HWETH_MAX_PACKET_SIZE <<  1)  // RBSZ(14): Receive Buffer size
     | (0  <<  0)  // SR: Start or stop receive
   );
@@ -259,7 +259,7 @@ void THwEth_stm32_v2::InitDescList(bool istx, int bufnum, HW_ETH_DMA_DESC * pdes
 
     regs->DMACTDRLR = bufnum - 1;          // Set Transmit Descriptor Ring Length
     regs->DMACTDLAR = (uint32_t)&pdesc_list[0]; // Set Transmit Descriptor List Address
-    regs->DMACTDTPR = (uint32_t)&tx_desc_list[0]; // Set Receive Descriptor Tail pointer Address
+    regs->DMACTDTPR = 0; // Set Transmit Descriptor Tail pointer
   }
   else
   {
@@ -268,7 +268,7 @@ void THwEth_stm32_v2::InitDescList(bool istx, int bufnum, HW_ETH_DMA_DESC * pdes
 
     regs->DMACRDRLR = bufnum - 1;  // Set Receive Descriptor Ring Length
     regs->DMACRDLAR = (uint32_t)&pdesc_list[0];  // Set Receive Descriptor List Address
-    regs->DMACRDTPR = (uint32_t)&pdesc_list[bufnum - 1];  // Set Receive Descriptor Tail pointer Address
+    regs->DMACRDTPR = 0;  // Set Receive Descriptor Tail pointer Address
   }
 }
 
@@ -286,7 +286,7 @@ void THwEth_stm32_v2::AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t data
   pdesc->DESC0 = (uint32_t)(&pmem->data[0]);
   pdesc->DESC1 = 0;
   pdesc->DESC2 = 0;
-  pdesc->DESC3 = HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V;  // enable receive on this decriptor
+  pdesc->DESC3 = (HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V);  // enable receive on this decriptor
   pdesc->BackupAddr0 = (uint32_t)(&pmem->data[0]);
 }
 
@@ -336,7 +336,7 @@ bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
     cur_rx_desc->DESC0 = cur_rx_desc->BackupAddr0;
     cur_rx_desc->DESC1 = 0;
     cur_rx_desc->DESC2 = 0;
-    cur_rx_desc->DESC3 = HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V;  // enable receive on this decriptor
+    cur_rx_desc->DESC3 = (HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V);  // enable receive on this decriptor
 
     // go to the next rx descriptor
     if (cur_rx_desc < rx_desc_list_end)  cur_rx_desc += 1;
@@ -360,7 +360,7 @@ void THwEth_stm32_v2::ReleaseRxBuf(TPacketMem * pmem)
   __DSB();
 
   // TODO: restart !!!!
-  //regs->DMA_REC_POLL_DEMAND = 1;  // for the case when we were out of descriptors
+  //regs->DMACRDTPR = 0;  // Set Receive Descriptor Tail pointer Address
 }
 
 bool THwEth_stm32_v2::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
@@ -426,15 +426,17 @@ void THwEth_stm32_v2::Start(void)
   // Enable MAC interrupts
   //regs->DMA_INT_EN = HWETH_DMA_IE_RIE | HWETH_DMA_IE_NIE; // enable only receive interrupt (+Normal interrupt enable)
 
-  regs->MACCR |= 3; // enable transmit and receive
+  regs->MACCR |= (ETH_MACCR_TE | ETH_MACCR_RE); // enable transmit and receive
 
   __DSB();
 
-  regs->DMACTCR |= 1; // start transmission
-  regs->DMACRCR |= 1; // start receive
+  regs->DMACTCR |= ETH_DMACTCR_ST; // start transmission
+  regs->DMACRCR |= ETH_DMACRCR_SR; // start receive
 
   // Start receive polling
-  //regs->DMA_REC_POLL_DEMAND = 1;
+  regs->DMACSR |= (ETH_DMACSR_TPS | ETH_DMACSR_RPS);  // Clear Tx and Rx process stopped flags
+
+  //regs->DMACRDTPR = 0;  // Set Receive Descriptor Tail pointer Address
 }
 
 void THwEth_stm32_v2::Stop(void)
@@ -457,9 +459,9 @@ uint32_t THwEth_stm32_v2::CalcMdcClock(void)
   if (val < 100)  return ETH_MACMDIOAR_CR_DIV42;
   if (val < 150)  return ETH_MACMDIOAR_CR_DIV62;
   if (val < 250)  return ETH_MACMDIOAR_CR_DIV102;
-  //if (val < 300)  return ETH_MACMDIOAR_CR_DIV124;
+  if (val < 300)  return ETH_MACMDIOAR_CR_DIV124;
 
-  return 0; //ETH_MACMDIOAR_CR_DIV124;
+  return ETH_MACMDIOAR_CR_DIV124;
 }
 
 void THwEth_stm32_v2::SetMacAddress(uint8_t * amacaddr)
@@ -505,10 +507,10 @@ void THwEth_stm32_v2::SetDuplex(bool full)
 }
 
 
-void THwEth_stm32_v2::SetupMii(uint32_t div, uint8_t addr)
+void THwEth_stm32_v2::SetupMii(uint32_t divmask, uint8_t addr)
 {
   // Save clock divider and PHY address for the MACMDIOAR register
-  phy_config = (addr << ETH_MACMDIOAR_CR_Pos) | (div << ETH_MACMDIOAR_CR_Pos);
+  phy_config = (addr << ETH_MACMDIOAR_CR_Pos) | divmask;
 }
 
 bool THwEth_stm32_v2::IsMiiBusy()
