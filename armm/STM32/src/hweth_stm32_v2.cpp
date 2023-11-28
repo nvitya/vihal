@@ -325,7 +325,7 @@ bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
 
       TPacketMem * pmem = (TPacketMem *)(result->BackupAddr0 - HWETH_PMEM_HEAD_SIZE);
 
-      pmem->idx = (result - rx_desc_list); // / sizeof(HW_ETH_DMA_DESC);
+      pmem->idx = (result - rx_desc_list); // the compiler already dividies with sizeof(HW_ETH_DMA_DESC);
       pmem->datalen = (desc3 & 0x1FFF);
       *ppmem = pmem;
       return true;
@@ -484,10 +484,10 @@ void THwEth_stm32_v2::SetMacAddress(uint8_t * amacaddr)
     return;
   }
 
+  // the high mac-address must be written first, writing the low triggers the update
+  regs->MACA0HR = ((uint32_t) amacaddr[5] << 8) | ((uint32_t) amacaddr[4]) | (1u << 31);
   regs->MACA0LR = ((uint32_t) amacaddr[3] << 24) | ((uint32_t) amacaddr[2] << 16)
                 | ((uint32_t) amacaddr[1] << 8) | ((uint32_t) amacaddr[0]);
-
-  regs->MACA0HR = ((uint32_t) amacaddr[5] << 8) | ((uint32_t) amacaddr[4]);
 }
 
 void THwEth_stm32_v2::SetSpeed(bool speed100)
