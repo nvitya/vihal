@@ -318,8 +318,8 @@ bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
       ++recv_count;
 
       HW_ETH_DMA_DESC * result = cur_rx_desc;
-      if (cur_rx_desc < rx_desc_list_end)  cur_rx_desc += 1;
-      else                                 cur_rx_desc = rx_desc_list;
+      ++cur_rx_desc;
+      if (cur_rx_desc >= rx_desc_list_end)  cur_rx_desc = rx_desc_list;
 
       // resulting
 
@@ -339,11 +339,11 @@ bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
     cur_rx_desc->DESC3 = (HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V);  // enable receive on this decriptor
 
     // go to the next rx descriptor
-    if (cur_rx_desc < rx_desc_list_end)  cur_rx_desc += 1;
-    else                                 cur_rx_desc = rx_desc_list;
+    ++cur_rx_desc;
+    if (cur_rx_desc >= rx_desc_list_end)  cur_rx_desc = rx_desc_list;
 
     // TODO:
-    // restart the dma controller if it was out of secriptors.  !!!!!!!!!!!!!!!!!!!
+    // restart the dma controller if it was out of decriptors.  !!!!!!!!!!!!!!!!!!!
 
     __DSB();
     //regs->DMA_REC_POLL_DEMAND = 1;
@@ -365,46 +365,57 @@ void THwEth_stm32_v2::ReleaseRxBuf(TPacketMem * pmem)
 
 bool THwEth_stm32_v2::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 {
-#if 0
-  // it is important to know the current descriptor otherwise the transfer won't be started
-  // if this descriptor is owned by the CPU the sending is stopped and checks only this entry for the OWN bit change
+  HW_ETH_DMA_DESC * pdesc = cur_tx_desc;
 
-  HW_ETH_DMA_DESC * pdesc = (HW_ETH_DMA_DESC *)regs->DMA_CURHOST_TRANS_DES;
-
-  int i = 0;
-  while (i < tx_desc_count)
+  if (pdesc->DESC3 & HWETH_DMADES_OWN)
   {
-    if ((pdesc->DES0 & HWETH_DMADES_OWN) == 0)
-    {
-      //TRACE("TX using desc %p\r\n", pdesc);
-
-      // use this descriptor
-      pdesc->B1ADD  = (uint32_t) pdata;
-      pdesc->DES1   = datalen & 0x0FFF;
-      pdesc->DES0 |= (HWETH_DMADES_OWN | (3 << 28));  // set First + Last descriptor as well
-
-      // Tell DMA to poll descriptors to start transfer
-      __DSB(); // required on Cortex-M7
-
-      regs->DMA_TRANS_POLL_DEMAND = 1;
-
-      *pidx = (unsigned(pdesc) - unsigned(&tx_desc_list[0])) / sizeof(HW_ETH_DMA_DESC);
-      //TRACE("  idx = %i\r\n", *pidx);
-      return true;
-    }
-
-    pdesc = (HW_ETH_DMA_DESC *)pdesc->B2ADD;
-    ++i;
+    return false; // tx descriptor not sended
   }
-#endif
-  // no free descriptors
 
-  return false;
+  pdesc->DESC0 = (uint32_t) pdata;
+  pdesc->DESC1 = 0;
+  pdesc->DESC2 = (0
+    | ((irq_on_tx ? 1 : 0) << 31)
+    | (0  <<  14)  // VTIR(2)
+    | (datalen & 0xFFF)
+  );
+  pdesc->DESC3 = (0
+    | (1  << 31)  // OWN: 1 = owned by the DMA
+    | (0  << 30)  // CTX
+    | (1  << 29)  // FD: 1 = first descriptor
+    | (1  << 28)  // LD: 1 = last descriptor
+    | (0  << 26)  // CPC(2): 0 = insert CRC and padding (if necessary)
+    | (0  << 23)  // SAIC(3): 0 = do not include source address, 2 = replace the source address
+    | (0  << 19)  // THL(4):
+    | (0  << 18)  // TSE
+    | (0  << 16)  // CIC/TPL(2)
+    | ((datalen & 0x1FFF)  <<  0)  // TPL(16): total packet length
+  );
+
+  __DSB(); // required on Cortex-M7, especially if CPU caches are active
+  //__DMB();
+
+  // Tell DMA to poll descriptors to start transfer
+
+  uint32_t idx = pdesc - tx_desc_list;
+  *pidx = idx;
+
+  regs->DMACTDTPR = idx;  // activates the sending
+  //regs->DMACTDTPR = (uint32_t)pdesc;  // activates the sending
+
+  // restart TX state machine
+  //regs->DMACSR |= ETH_DMACSR_TPS;  // Clear Tx process stopped flags
+
+  // go to the next TX desc
+  ++pdesc;
+  if (pdesc >= tx_desc_list_end)  pdesc = tx_desc_list;
+  cur_tx_desc = pdesc;
+
+  return true;
 }
 
 bool THwEth_stm32_v2::SendFinished(uint32_t idx)
 {
-#if 0
   if (idx >= tx_desc_count)
   {
     return false;
@@ -412,10 +423,7 @@ bool THwEth_stm32_v2::SendFinished(uint32_t idx)
 
   HW_ETH_DMA_DESC * pdesc = &tx_desc_list[idx];
 
-  return ((pdesc->DES0 & HWETH_DMADES_OWN) == 0);
-#else
-  return false;
-#endif
+  return ((pdesc->DESC3 & HWETH_DMADES_OWN) == 0);
 }
 
 void THwEth_stm32_v2::Start(void)
