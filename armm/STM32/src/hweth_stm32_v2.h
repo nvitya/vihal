@@ -116,6 +116,23 @@ public:
 
   void               AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t datalen);
 
+  inline void        RestartStoppedRx(uint32_t idx)
+  {
+    if (4 == ((regs->DMADSR >> 8) & 0xF)) // is the receive suspended because of descriptor unavailability?
+    {
+      // try to restart
+      regs->DMACRDTPR = idx;  // Set Receive Descriptor Tail pointer Address
+    }
+  }
+
+  inline void        RestartStoppedTx(uint32_t idx)
+  {
+    if (6 == ((regs->DMADSR >> 12) & 0xF)) // is the transmit suspended because of no active descriptors?
+    {
+      regs->DMACTDTPR = idx;  // Set the Transmit Descriptor Tail pointer Address
+    }
+  }
+
 };
 
 #define HWETH_IMPL THwEth_stm32_v2

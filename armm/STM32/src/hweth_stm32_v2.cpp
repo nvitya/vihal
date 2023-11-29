@@ -297,10 +297,10 @@ bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
     return false;
   }
 
-  __DSB();
-
   while (1)
   {
+    __DSB();
+
     uint32_t desc3 = cur_rx_desc->DESC3;
     if (desc3 & HWETH_DMADES_OWN)
     {
@@ -338,15 +338,13 @@ bool THwEth_stm32_v2::TryRecv(TPacketMem * * ppmem)
     cur_rx_desc->DESC2 = 0;
     cur_rx_desc->DESC3 = (HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V);  // enable receive on this decriptor
 
+    __DSB();
+
+    RestartStoppedRx(cur_rx_desc - rx_desc_list);
+
     // go to the next rx descriptor
     ++cur_rx_desc;
     if (cur_rx_desc >= rx_desc_list_end)  cur_rx_desc = rx_desc_list;
-
-    // TODO:
-    // restart the dma controller if it was out of decriptors.  !!!!!!!!!!!!!!!!!!!
-
-    __DSB();
-    //regs->DMA_REC_POLL_DEMAND = 1;
   }
 }
 
@@ -359,12 +357,18 @@ void THwEth_stm32_v2::ReleaseRxBuf(TPacketMem * pmem)
   pdesc->DESC3 = HWETH_DMADES_OWN | rxdesc_irq_flag | HWETH_DMADES_BUF1V;  // enable receive on this decriptor
   __DSB();
 
-  // TODO: restart !!!!
-  //regs->DMACRDTPR = 0;  // Set Receive Descriptor Tail pointer Address
+  RestartStoppedRx(pmem->idx);
 }
 
 bool THwEth_stm32_v2::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 {
+  if (0 == (regs->MACCR & 2)) // transmit enabled ?
+  {
+    return false;
+  }
+
+  __DSB();
+
   HW_ETH_DMA_DESC * pdesc = cur_tx_desc;
 
   if (pdesc->DESC3 & HWETH_DMADES_OWN)
@@ -400,11 +404,8 @@ bool THwEth_stm32_v2::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
   uint32_t idx = pdesc - tx_desc_list;
   *pidx = idx;
 
-  regs->DMACTDTPR = idx;  // activates the sending
-  //regs->DMACTDTPR = (uint32_t)pdesc;  // activates the sending
-
-  // restart TX state machine
-  //regs->DMACSR |= ETH_DMACSR_TPS;  // Clear Tx process stopped flags
+  RestartStoppedTx(idx);
+  //regs->DMACTDTPR = idx;  // activates the sending
 
   // go to the next TX desc
   ++pdesc;
