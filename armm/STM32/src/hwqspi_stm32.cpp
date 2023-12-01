@@ -21,7 +21,6 @@
 /*
  *  file:     hwqspi_stm32.cpp
  *  brief:    STM32 QSPI
- *  version:  1.00
  *  date:     2018-09-21
  *  authors:  nvitya
  *  notes:
