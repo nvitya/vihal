@@ -13,4 +13,8 @@
   #include "hwuart_msp.h"
 #endif
 
+#if defined(HWCAN_H_)
+  #include "hwcan_msp.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING

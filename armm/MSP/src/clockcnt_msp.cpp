@@ -43,7 +43,11 @@ void clockcnt_init()
   regs->COUNTERREGS.LOAD = 0xFFFFFFFF;
   regs->COUNTERREGS.CTRCTL = (0
   	| GPTIMER_CTRCTL_EN_MASK
-		| GPTIMER_CTRCTL_CM_DOWN  // no upcounting mode yet...
+#if defined(MCU_EARLY_SAMPLE)
+		//| GPTIMER_CTRCTL_CM_DOWN  // no upcounting mode yet...
+#else
+		| GPTIMER_CTRCTL_CM_UP
+#endif
     | GPTIMER_CTRCTL_REPEAT_REPEAT_1
   );
 }
