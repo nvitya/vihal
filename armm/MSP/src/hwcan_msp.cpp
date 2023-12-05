@@ -162,6 +162,9 @@ bool THwCan_msp::HwInit(int adevnum)
 
 	regs->TOCC = 0xFFFF0000; // disable timeout counters
 
+	regs->RXESC = 0; // traditional CAN frames, maximum 8-byte data
+	regs->TXESC = 0; // traditional CAN frames, maximum 8-byte data
+
 	SetSpeed(speed);
 
 	// setup filtering
@@ -293,8 +296,8 @@ void THwCan_msp::HandleTx() // warning it can be called from multiple contexts!
 			break;
 		}
 
-		uint32_t tpi = ((txfs >> 16) & 0x03); // get the put index
-		if (tpi >= 3)
+		uint32_t tpi = ((txfs >> 16) & 0x1F); // get the put index
+		if (tpi >= 0x1F)
 		{
 			break;
 		}
@@ -336,15 +339,14 @@ void THwCan_msp::HandleRx()
 	while (true)
 	{
 		uint32_t rxfs = regs->RXF0S;  // store Rx FIFO(0) status register
-
-		if ((rxfs & 0x3) == 0)
+		if ((rxfs & 0x2F) == 0)
 		{
 			regs->IR = 1; // clear the interrupt (RF0N = New Message in RxFIFO0)
 			if (regs->IR) { } // some sync
 			break; // there are no (more) messages
 		}
 
-		uint8_t rgi = ((rxfs >> 8) & 3);
+		uint8_t rgi = ((rxfs >> 8) & 0x1F);
 
 		// read the message
 		hwcan_rx_fifo_t * rxmb = (rxfifo + rgi);
@@ -392,12 +394,12 @@ void THwCan_msp::HandleRx()
 		{
 			uint32_t txefs = regs->TXEFS;  // Tx FIFO Event Status register
 
-			if ((txefs & 0x7) == 0)
+			if ((txefs & 0x3F) == 0)
 			{
 				break; // there are no sent messages
 			}
 
-			unsigned efgi = ((txefs >> 8) & 3);  // event fifo get index
+			unsigned efgi = ((txefs >> 8) & 0x1F);  // event fifo get index
 
 			// read the tx event
 			hwcan_txev_fifo_t *  ptxe = (txevfifo + efgi);
