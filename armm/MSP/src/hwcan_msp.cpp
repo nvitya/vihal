@@ -237,7 +237,7 @@ void THwCan_msp::SetSpeed(uint32_t aspeed)
 
 	// set speed (nominal only)
 
-	uint32_t periphclock = SystemCoreClock / 1;
+	uint32_t periphclock = SystemCoreClock / 2;  // Uses SYSPLLCLK1, which is set to half CPU FREQ
 
 	uint32_t brp = 1;  // bit rate prescaler
 	uint32_t ts1, ts2;
@@ -256,16 +256,13 @@ void THwCan_msp::SetSpeed(uint32_t aspeed)
 		bitclocks = periphclock / (brp * speed);
 	}
 
-	bitclocks = 60;
-
 	ts2 = (bitclocks - 1) / 3;
 	if (ts2 > 128) ts2 = 128;
 	if (ts2 < 1) ts2 = 1;
 	ts1 = bitclocks - 1 - ts2;  // should not bigger than 16
 
 	regs->NBTP = 0
-//	  | (ts2  << 25)  // NSJW(7): Resynchronization jump width
-	  | (1  << 25)  // NSJW(7): Resynchronization jump width
+	  | ((ts2 >> 1) << 25)  // NSJW(7): Resynchronization jump width
 	  | ((brp - 1)  << 16)  // NBRP(9): Bit Rate Prescaler
 	  | ((ts1 - 1)  <<  8)  // NTSEG1(8): Time segment 1
 	  | ((ts2 - 1)  <<  0)  // NTSEG2(7): Time segment 2

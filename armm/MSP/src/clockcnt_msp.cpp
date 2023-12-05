@@ -35,6 +35,7 @@ void clockcnt_init()
 	GPTIMER_Regs * regs = TIMG_CLOCKCNT;
 
   regs->GPRCM.PWREN = (GPTIMER_PWREN_KEY_UNLOCK_W | GPTIMER_PWREN_ENABLE_ENABLE);
+  if (regs->GPRCM.PWREN) { }
   regs->CLKSEL = GPTIMER_CLKSEL_BUSCLK_SEL_ENABLE;
   regs->CLKDIV = 0; // do not divide
   regs->COMMONREGS.CPS = 0; // no pre-scaling
