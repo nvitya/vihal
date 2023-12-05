@@ -105,7 +105,7 @@ typedef struct
 	__IO uint32_t  DLCTS; // Length Code + TimeStamp
 	__IO uint32_t  DATAL; // DATA
 	__IO uint32_t  DATAH;
-	__IO uint32_t  DATAX[14];
+	//__IO uint32_t  DATAX[14]; // for CAN-FD required, but must be set at RXESC register
 //
 } __attribute__((packed)) hwcan_rx_fifo_t;
 
@@ -115,7 +115,7 @@ typedef struct
 	__IO uint32_t  DLC;   // Length code
 	__IO uint32_t  DATAL; // data low
 	__IO uint32_t  DATAH; // data high
-	//__IO uint32_t  DATAX[14];  // for CAN-FD required, but must be set at RXESC register
+	//__IO uint32_t  DATAX[14];  // for CAN-FD required, but must be set at TXESC register
 //
 } __attribute__((packed)) hwcan_tx_fifo_t;
 

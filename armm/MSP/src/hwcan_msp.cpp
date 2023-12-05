@@ -42,7 +42,7 @@
 
 // FIX MCAN SRAM allocation:
 
-#define SRAMCAN_FLSSA  0x0000  // Filter List Standard Start Address
+#define SRAMCAN_FLSSA  0x0004  // Filter List Standard Start Address
 #define SRAMCAN_FLESA  0x0080  // Filter List Extended Start Address
 #define SRAMCAN_RF0SA  0x0100  // Rx FIFO 0 Start Address
 #define SRAMCAN_RF1SA  0x0200  // Rx FIFO 1 Start Address
@@ -162,13 +162,12 @@ bool THwCan_msp::HwInit(int adevnum)
 
 	regs->TOCC = 0xFFFF0000; // disable timeout counters
 
-	regs->RXESC = 0; // traditional CAN frames, maximum 8-byte data
-	regs->TXESC = 0; // traditional CAN frames, maximum 8-byte data
-
 	SetSpeed(speed);
 
 	// setup filtering
 	AcceptListClear();
+
+	// FILTERING
 
 	regs->GFC = (0
 	  | (3  <<  4)  // ANFS(2): 3 = reject non-mathching frames in standard filters
@@ -186,6 +185,23 @@ bool THwCan_msp::HwInit(int adevnum)
 	 	| (0             << 16)  // LSA(5): Filter List Extended Size
 	  | (SRAMCAN_FLESA <<  0)  // FLESA(16): Filter List Extended Start Address
 	);
+
+	// RX FIFO
+
+	regs->RXESC = 0; // traditional CAN frames, maximum 8-byte data, adjust the hwcan_rx_fifo_t structure when this changed
+
+	regs->RXF0C = 0 // RX FIFO
+		| (SRAMCAN_RF0SA << 0)
+		| (HWCAN_RX_FIFO_SIZE << 16)
+		| (0 << 24) // F0WM(7): fifo watermark, 0 = watermark interrupt disabled
+		| (1 << 31) // F0OM: Operating Mode, 0 = blocking, 1 = overwrite
+	;
+
+	regs->RXF1C = 0; // no RX FIFO1, use only single FIFO
+
+  // TXFIFO
+
+	regs->TXESC = 0; // traditional CAN frames, maximum 8-byte data, adjust the hwcan_tx_fifo_t structure when this changed
 
 	regs->TXBC = 0 // TX FIFO
   	| (0                  << 30) // TFQM: 0 = FIFO mode, 1 = queue mode
