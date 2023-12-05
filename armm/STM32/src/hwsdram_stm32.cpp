@@ -28,10 +28,14 @@
 
 #include "platform.h"
 
-#if defined(FMC_SDCR1_CAS)
+#if defined(FMC_Bank5_6_R) || defined(FMC_Bank5_6)
 
 #include "hwsdram_stm32.h"
 #include "clockcnt.h"
+
+#ifndef FMC_Bank5_6
+  #define FMC_Bank5_6  FMC_Bank5_6_R
+#endif
 
 bool THwSdram_stm32::InitHw()
 {
@@ -88,16 +92,16 @@ bool THwSdram_stm32::InitHw()
   // SDRAM Timing
 
   commonbits = 0
-		| ((4                         & 15) <<  0)  // TMRD(4): Load Mode Register to Active
-		| ((exit_self_refresh_delay   & 15) <<  4)  // TXSR(4): Exit Self-refresh delay
-		| ((active_to_precharge_delay & 15) <<  8)  // TRAS(4): Self refresh time
-  	| ((row_cycle_delay           & 15) << 12)  // TRC(4): Row cycle delay
-  	| ((row_to_column_delay       & 15) << 24)  // TRCD(4): Row to column delay
+  	| (((row_cycle_delay - 1)      & 15) << 12)  // TRC(4): Row cycle delay
+    | (((row_precharge_delay - 1)  & 15) << 20)  // TRP(4): Row precharge delay
   ;
 
   bankbits = 0
-  	| ((recovery_delay            & 15) << 16)  // TWR(4): Recovery delay
-  	| ((row_precharge_delay       & 15) << 20)  // TRP(4): Row precharge delay
+    | (((load_to_active_delay - 1)      & 15) <<  0)  // TMRD(4): Load Mode Register to Active
+    | (((exit_self_refresh_delay - 1)   & 15) <<  4)  // TXSR(4): Exit Self-refresh delay
+    | (((active_to_precharge_delay - 1) & 15) <<  8)  // TRAS(4): Self refresh time
+  	| (((recovery_delay - 1)            & 15) << 16)  // TWR(4): Recovery delay
+    | (((row_to_column_delay - 1)       & 15) << 24)  // TRCD(4): Row to column delay
   ;
 
   if (2 == bank)
@@ -112,6 +116,12 @@ bool THwSdram_stm32::InitHw()
   }
 
   // let the HwSdram class do the configuration of the SDRAM device
+
+  #if defined(FMC_BCR1_FMCEN)
+
+    FMC_Bank1_R->BTCR[0] |= FMC_BCR1_FMCEN;
+
+  #endif
 
 	return true;
 }
@@ -170,10 +180,15 @@ void THwSdram_stm32::SendCommand(uint16_t command, uint32_t mrdata, uint32_t ref
 
 	delay_us(1);
 
-  while (regs->SDSR & 0x00000020)
+#ifdef FMC_SDSR_BUSY
+
+  while (regs->SDSR & FMC_SDSR_BUSY)
   {
   	// wait until the command finished
   }
+
+#endif
+
 }
 
 #endif

@@ -29,6 +29,10 @@
 #ifndef HWETH_STM32_H_
 #define HWETH_STM32_H_
 
+#include "platform.h"
+
+#if !defined(MCUSF_H7)
+
 #define HWETH_PRE_ONLY
 #include "hweth.h"
 
@@ -298,5 +302,7 @@ public:
 };
 
 #define HWETH_IMPL THwEth_stm32
+
+#endif // ! defined(MCUSF_H7)
 
 #endif // def HWETH_STM32_H_

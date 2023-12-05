@@ -306,7 +306,7 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 
 		mregs->CBNDTR = 0
 			| (0 << 20) // BRC(12): block repeat count
-			| (uint32_t)axfer->count  // no block repeat stuff here
+			| (axfer->count * axfer->bytewidth)  // no block repeat stuff here
 		;
 
 		mregs->CBRUR = 0;

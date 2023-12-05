@@ -64,7 +64,11 @@ bool TSpiFlash::Init()
     return false;
   }
 
-  bytesize = (1 << (idcode >> 16));
+  // bit size is specially coded !
+  unsigned sizeshift = ((idcode >> 16) & 0xFF);
+  if (sizeshift >= 0x20)  sizeshift -= 6;
+
+  bytesize = (1 << sizeshift);
 
   if (qspi && (4 == qspi->multi_line_count))
   {

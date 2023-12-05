@@ -59,10 +59,14 @@
 #endif
 
 #ifdef HWETH_H_
-  #include "hweth_stm32.h"
+  #if defined(MCUSF_H7)
+    #include "hweth_stm32_v2.h"
+  #else
+    #include "hweth_stm32.h"
+  #endif
 #endif
 
-#if defined(FMC_SDCR1_CAS) && defined(HWSDRAM_H_)
+#if (defined(FMC_Bank5_6_R) || defined(FMC_Bank5_6))  && defined(HWSDRAM_H_)
   #include "hwsdram_stm32.h"
 #endif
 
