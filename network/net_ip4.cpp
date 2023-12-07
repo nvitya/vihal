@@ -414,7 +414,20 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
   *PIp4Addr(&iph->dstaddr[0]) = destaddr;
 
-  memcpy(pdata, adataptr, adatalen);
+  // COPY the buffer
+
+  // memcpy is slow:
+  //memcpy(pdata, adataptr, adatalen);
+
+  // fast copy using 4-byte moves
+  unsigned dwcnt = ((adatalen + 3) >> 2);
+  uint32_t * pdst = (uint32_t *)pdata;
+  uint32_t * pdst_end = pdst + dwcnt;
+  uint32_t * psrc = (uint32_t *)adataptr;
+  while (pdst < pdst_end)
+  {
+    *pdst++ = *psrc++;
+  }
 
   ++idcounter;
 
@@ -432,7 +445,10 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   udph->dport = __REV16(destport);
   udph->len   = __REV16(adatalen + sizeof(TUdp4Header));
   udph->csum  = 0;
-  udph->csum  = calc_udp4_checksum(iph, adatalen);
+
+  // UDP checksum is optional, this takes a long time so it is turned off now
+  //  udph->csum  = calc_udp4_checksum(iph, adatalen);
+
 
   pmem->datalen = adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header) + sizeof(TEthernetHeader);
 

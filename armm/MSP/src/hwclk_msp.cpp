@@ -143,7 +143,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   // populate SYSPLLPARAM0/1 tuning registers from flash, based on input freq
   if      (basespeed >= 32000000)  tmp = 0x41C40034;
   else if (basespeed >= 16000000)  tmp = 0x41C4002C;
-  else if (basespeed >= 16000000)  tmp = 0x41C40024;
+  else if (basespeed >=  8000000)  tmp = 0x41C40024;
   else                             tmp = 0x41C4001C;
 	SYSCTL->SOCLOCK.SYSPLLPARAM0 = *(volatile uint32_t *)(tmp);
 	SYSCTL->SOCLOCK.SYSPLLPARAM1 = *(volatile uint32_t *)(tmp + 4);
@@ -185,13 +185,20 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 	  }
 	}
 
-  unsigned rdiv0 = (rdiv2x >> 1); // results to the half frequency as the 2x output
-	unsigned rdiv1 = ((vcospeed >> 1) / 40000000);  // try to achieve 40 MHz, >> 1 comes from the divisor coding (/2)
-  //unsigned rdiv1 = rdiv0;  // to check the ULPCLK
+	if ((vcospeed < 200000000) && (rdiv2x & 1)) // when the rdiv2x is odd, then the PLLCLK1 cant be set to half CPU clock
+	{
+		// multiply everything by two
+		mul      <<= 1;
+		vcospeed <<= 1;
+		rdiv2x   <<= 1;
+	}
+
+  unsigned rdiv0 = (rdiv2x >> 0); // results to the half frequency as the 2x output
+	unsigned rdiv1 = (rdiv2x >> 1); // half the CPU FREQ, the >> 1 comes from the divisor coding (/2)
 
   SYSCTL->SOCLOCK.SYSPLLCFG0 = (0
     | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)
-    | ((rdiv1 - 1)  << 12)  // RDIVCLK1(4)
+    | ((rdiv1 - 1)  << 12)  // RDIVCLK1(4) - /2 coding already applied
     | ((rdiv0 - 1)  <<  8)  // RDIVCLK0(4)
     | (1  <<  6)  // ENABLECLK2X
     | (1  <<  5)  // ENABLECLK1

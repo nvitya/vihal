@@ -159,6 +159,14 @@ bool THwPinCtrl_msp::PinSetup(int aportnum, int apinnum, unsigned flags)
 		cmreg |= IOMUX_PINCM_DRV_MASK;
 	}
 
+#if 0
+	if (0 == (flags & PINCFG_OUTPUT))
+	{
+		cmreg |= IOMUX_PINCM_INENA_MASK;
+	}
+#endif
+	cmreg |= IOMUX_PINCM_INENA_MASK;
+
 	if (flags & PINCFG_AF_MASK)
 	{
 		cmreg |= ((flags >> PINCFG_AF_SHIFT) & 0x1F);

@@ -35,6 +35,7 @@ void clockcnt_init()
 	GPTIMER_Regs * regs = TIMG_CLOCKCNT;
 
   regs->GPRCM.PWREN = (GPTIMER_PWREN_KEY_UNLOCK_W | GPTIMER_PWREN_ENABLE_ENABLE);
+  if (regs->GPRCM.PWREN) { }
   regs->CLKSEL = GPTIMER_CLKSEL_BUSCLK_SEL_ENABLE;
   regs->CLKDIV = 0; // do not divide
   regs->COMMONREGS.CPS = 0; // no pre-scaling
@@ -43,7 +44,11 @@ void clockcnt_init()
   regs->COUNTERREGS.LOAD = 0xFFFFFFFF;
   regs->COUNTERREGS.CTRCTL = (0
   	| GPTIMER_CTRCTL_EN_MASK
-		| GPTIMER_CTRCTL_CM_DOWN  // no upcounting mode yet...
+#if defined(MCU_EARLY_SAMPLE)
+		//| GPTIMER_CTRCTL_CM_DOWN  // no upcounting mode yet...
+#else
+		| GPTIMER_CTRCTL_CM_UP
+#endif
     | GPTIMER_CTRCTL_REPEAT_REPEAT_1
   );
 }
