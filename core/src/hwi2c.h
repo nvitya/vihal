@@ -111,7 +111,11 @@ public: // run state
 
 #ifndef HWI2C_IMPL
 
-#warning "HWI2C is not implemented!"
+#ifdef SKIP_UNIMPLEMENTED_WARNING
+  #undef SKIP_UNIMPLEMENTED_WARNING
+#else
+  #warning "HWI2C is not implemented!"
+#endif
 
 class THwI2c_noimpl : public THwI2c_pre
 {

@@ -17,4 +17,8 @@
   #include "hwcan_msp.h"
 #endif
 
+#ifdef HWADC_H_
+  #include "hwadc_msp.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING
