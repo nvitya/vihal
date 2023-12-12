@@ -21,4 +21,8 @@
   #include "hwadc_msp.h"
 #endif
 
+#ifdef HWDMA_H_
+  #include "hwdma_msp.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING

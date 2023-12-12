@@ -71,6 +71,9 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
   regs->CLKSEL = UART_CLKSEL_BUSCLK_SEL_ENABLE;
   regs->CLKDIV = 0; // do not divide the bus clock
 
+  regs->INT_EVENT1.IMASK = (1 << 10); // enable the RX DMA trigger
+  regs->INT_EVENT2.IMASK = (1 << 11); // enable the TX DMA trigger
+
   SetBaudRate(baudrate);
 
   unsigned lcrh = (0
@@ -99,6 +102,12 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
   }
   regs->LCRH = lcrh;
 
+  regs->IFLS = (0
+    | (0  <<  8)  // RXTOSEL(4): RX timeout select
+    | (7  <<  4)  // RXIFLSEL(3): RX interrupt / DMA level, 7 = at least 1 entry is filled
+    | (7  <<  0)  // TXIFLSEL(3): TX interrupt / DMA level, 7 = at least 1 entry is free
+  );
+
   unsigned ctl = (0
     | (0  << 19)  // MSBFIRST: 0 = LSB first (standard), 1 = MSB first
     | (1  << 18)  // MAJVOTE: 1 = majority voting of 3 samples, 0 = takes center value
@@ -117,6 +126,7 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
     | (1  <<  0)  // ENABLE: 1 = enable the uart
   );
   regs->CTL0 = ctl;
+
 
 	initialized = true;
 
@@ -175,45 +185,36 @@ bool THwUart_msp::TryRecvChar(char * ach)
 
 void THwUart_msp::DmaAssign(bool istx, THwDmaChannel * admach)
 {
-#if 0
 	if (istx)
 	{
 		txdma = admach;
+		admach->Prepare(istx, (void *)&regs->TXDATA, 0);
 	}
 	else
 	{
 		rxdma = admach;
+		admach->Prepare(istx, (void *)&regs->RXDATA, 0);
 	}
-
-	admach->Prepare(istx, (void *)&regs->DATA.reg, 0);
-#endif
 }
-
 
 bool THwUart_msp::DmaStartSend(THwDmaTransfer * axfer)
 {
-#if 0
 	if (!txdma)
 	{
 		return false;
 	}
 
 	txdma->StartTransfer(axfer);
-#endif
-
 	return true;
 }
 
 bool THwUart_msp::DmaStartRecv(THwDmaTransfer * axfer)
 {
-#if 0
 	if (!rxdma)
 	{
 		return false;
 	}
 
 	rxdma->StartTransfer(axfer);
-#endif
-
 	return true;
 }

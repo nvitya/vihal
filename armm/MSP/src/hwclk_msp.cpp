@@ -83,12 +83,6 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
 	SYSCTL->SOCLOCK.MCLKCFG = tmp;
 }
 
-static bool is_divisible(unsigned nom, unsigned div)
-{
-  unsigned res = nom / div;
-  return (res * div == nom);
-}
-
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
 	unsigned tmp;
