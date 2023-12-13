@@ -25,4 +25,8 @@
   #include "hwdma_msp.h"
 #endif
 
+#ifdef HWINTFLASH_H_
+  #include "hwintflash_msp.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING
