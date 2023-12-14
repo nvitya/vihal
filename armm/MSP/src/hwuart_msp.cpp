@@ -65,7 +65,8 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
 
   periphclock = msp_bus_speed(busid);
 
-  regs->GPRCM.PWREN = (UART_PWREN_KEY_UNLOCK_W | UART_PWREN_ENABLE_ENABLE);
+  regs->GPRCM.PWREN = (UART_PWREN_KEY_UNLOCK_W | UART_PWREN_ENABLE_MASK);
+  if (regs->GPRCM.PWREN) { } // do some syncing
   regs->CTL0 &= ~(UART_CTL0_ENABLE_ENABLE);  // disable first
 
   regs->CLKSEL = UART_CLKSEL_BUSCLK_SEL_ENABLE;
