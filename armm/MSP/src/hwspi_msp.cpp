@@ -61,21 +61,23 @@ bool THwSpi_msp::Init(int adevnum)
   regs->GPRCM.PWREN = (SPI_PWREN_KEY_UNLOCK_W | SPI_PWREN_ENABLE_MASK);
   if (regs->GPRCM.PWREN) { } // do some syncing
 
-  regs->CLKSEL = 0;  // select BUS CLOCK as clock source
+  regs->CLKSEL = (1 << 3);  // select SYSCLK = BUS CLOCK as clock source
 
   regs->CTL1 &= ~(SPI_CTL1_ENABLE_MASK);  // disable first
+
+  // SPH bit is set to 1 because of continuous sending mode
 
   uint32_t ctl0 = (0
   	| (0  << 14)  // CSCLR
   	| (0  << 12)  // CSSEL(2): 0 = CS0
-  	| (0  <<  9)  // SPH: 0 = capture at first clock edge, 1 = captuce at second edge
+  	| (1  <<  9)  // SPH: 0 = capture at first clock edge, 1 = capture at second edge
   	| (0  <<  8)  // SPO: 0 = idle clock level low, 1 = idle clock level high
   	| (0  <<  7)  // PACKEN: 0 = disable packing
-  	| (0  <<  5)  // FRF(2): 0 = 3-wire Motorola, 1 = 4-wire Motorola, 2 = TI sync, 3 = Microwire
+  	| (1  <<  5)  // FRF(2): 0 = 3-wire Motorola, 1 = 4-wire Motorola, 2 = TI sync, 3 = Microwire
   	| ((databits - 1) <<  0)  // DSS(5): data size select, 0 = 4-bit, 7 = 8-bits, 15 = 16-bits
   );
 	if (idleclk_high)     ctl0 |= (1 << 8);
-	if (datasample_late)  ctl0 |= (1 << 9);
+	if (datasample_late)  ctl0 |= (1 << 9); // this has no effect
   regs->CTL0 = ctl0;
 
   uint32_t ctl1 = (0
