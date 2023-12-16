@@ -13,8 +13,24 @@
   #include "hwuart_msp.h"
 #endif
 
+#ifdef HWSPI_H_
+  #include "hwspi_msp.h"
+#endif
+
+#ifdef HWDMA_H_
+  #include "hwdma_msp.h"
+#endif
+
 #if defined(HWCAN_H_)
   #include "hwcan_msp.h"
+#endif
+
+#ifdef HWADC_H_
+  #include "hwadc_msp.h"
+#endif
+
+#ifdef HWINTFLASH_H_
+  #include "hwintflash_msp.h"
 #endif
 
 #define SKIP_UNIMPLEMENTED_WARNING

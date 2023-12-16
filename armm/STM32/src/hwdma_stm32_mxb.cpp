@@ -210,6 +210,7 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 
 	uint32_t circ = (axfer->flags & DMATR_CIRCULAR ? 1 : 0);
 	uint32_t inte = (axfer->flags & DMATR_IRQ ? 1 : 0);
+	uint32_t hinte = (axfer->flags & DMATR_IRQ_HALF ? 1 : 0);
 
 
 	if (mregs) // MDMA
@@ -337,9 +338,10 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 				| (circ <<  8)       // CIRC: Circular mode
 				| (dircode <<  6 )   // DIR(2): Data transfer direction
 				| (per_flow_controller  <<  5)        // PFCTRL: Peripheral flow controller, 0 = DMA is the flow controller
-				| (inte << 4)       // TCIE: TCIE: Transfer complete interrupt enable
-				| (0  <<  1)        // (3): error interrupts
-				| (0  <<  0)        // EN: keep not enabled
+				| (inte  << 4)       // TCIE: Transfer complete interrupt enable
+				| (hinte << 3)       // HTIE: Half transfer complete interrupt enable
+				| (0  <<  1)         // (3): error interrupts
+				| (0  <<  0)         // EN: keep not enabled
 			;
 
 			if (axfer->flags & DMATR_MEM_TO_MEM)
@@ -372,7 +374,8 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 				| (0        <<  6)  // PINC: Peripheral increment mode
 				| (circ     <<  5)  // CIRC: Circular mode
 				| ((dircode & 1) <<  4)  // DIR: Data transfer direction, 0 = per->mem, 1 = mem->per
-				| (inte     <<  1)  // TCIE: TCIE: Transfer complete interrupt enable
+				| (hinte    <<  2)  // HTIE: Half transfer complete interrupt enable
+				| (inte     <<  1)  // TCIE: Transfer complete interrupt enable
 				| (0        <<  0)  // EN: keep not enabled
 			;
 
