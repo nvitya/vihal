@@ -44,3 +44,7 @@
 #ifdef HWETH_H_
   #include "hweth_imxrt.h"
 #endif
+
+#ifdef HWPWM_H_
+  #include "hwpwm_imxrt.h"
+#endif
