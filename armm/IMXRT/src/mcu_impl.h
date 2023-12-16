@@ -1,6 +1,6 @@
 /*
  *  file:     mcu_impl.h (IMXRT)
- *  brief:    IMXRT list of implemented NVCM core peripherals
+ *  brief:    IMXRT list of implemented VIHAL core peripherals
  *  created:  2018-11-23
  *  authors:  nvitya
 */
@@ -31,6 +31,10 @@
 
 #ifdef HWDMA_H_
   #include "hwdma_imxrt.h"
+#endif
+
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_imxrt.h"
 #endif
 
 #if defined(HWSDRAM_H_)
