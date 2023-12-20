@@ -75,8 +75,6 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
   regs->INT_EVENT1.IMASK = (1 << 10); // enable the RX DMA trigger
   regs->INT_EVENT2.IMASK = (1 << 11); // enable the TX DMA trigger
 
-  SetBaudRate(baudrate);
-
   unsigned lcrh = (0
     | (0  << 21)  // EXTDIR_HOLD(5)
     | (0  << 16)  // EXTDIR_SETUP(5)
@@ -124,10 +122,13 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
     | (1  <<  4)  // TXE: 1 = enable transmit
     | (1  <<  3)  // RXE: 1 = enable receive
     | (0  <<  2)  // LBE: 1 = loopback enable
-    | (1  <<  0)  // ENABLE: 1 = enable the uart
+    | (0  <<  0)  // ENABLE: 1 = enable the uart
   );
   regs->CTL0 = ctl;
 
+  SetBaudRate(baudrate);
+
+  regs->CTL0 |= 1; // enable
 
 	initialized = true;
 
