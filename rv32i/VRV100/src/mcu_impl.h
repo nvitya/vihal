@@ -26,6 +26,10 @@
   // #include "hwi2c_.h"
 #endif
 
+#ifdef HWETH_H_
+  #include "hweth_nv_apb_eth.h"
+#endif
+
 #ifdef HWDMA_H_
   #define SKIP_UNIMPLEMENTED_WARNING
 #endif

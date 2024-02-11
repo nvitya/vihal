@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -21,8 +21,7 @@
 /*
  *  file:     hweth.cpp
  *  brief:    Ethernet vendor-independent implementations
- *  version:  1.00
- *  date:     2018-05-30
+ *  created:  2018-05-30
  *  authors:  nvitya
 */
 

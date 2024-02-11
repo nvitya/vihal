@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -21,8 +21,7 @@
 /*
  *  file:     hweth.h
  *  brief:    Ethernet vendor-independent definitions
- *  version:  1.00
- *  date:     2018-05-30
+ *  created:  2018-05-30
  *  authors:  nvitya
 */
 
@@ -32,7 +31,10 @@
 #include <cstddef>
 #include "hwpins.h"
 
-#define HWETH_MAX_PACKET_SIZE   1536
+// the maximal packet size can be overridden externally
+#ifndef HWETH_MAX_PACKET_SIZE
+  #define HWETH_MAX_PACKET_SIZE   1536
+#endif
 
 // Generic PHY registers
 #define HWETH_PHY_BCR_REG        0x0	/*!< Basic Control Register */
