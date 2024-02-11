@@ -119,7 +119,7 @@ void THwEth_nv_apb_eth::AssignRxBuf(uint32_t idx, TPacketMem * pmem, uint32_t da
 
   pmem->idx = idx;
 
-	pdesc->LEN = datalen;
+	pdesc->LEN = 0; // 0 = empty buffer
 	pdesc->ADDR = (uint32_t *)&pmem->data[0];
 }
 
@@ -185,9 +185,9 @@ bool THwEth_nv_apb_eth::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
     return false;  // no free slot yet
   }
 
-  if (datalen > (tx_slot_words << 2)) // too much bytes ?
+  if (datalen > (tx_slot_words << 2))
   {
-    return false;
+    return false;  // datalen does not fit into the current slot size
   }
 
   uint32_t    slotaddr = ((txput >> 0) & 0xFFF);
@@ -258,7 +258,7 @@ void THwEth_nv_apb_eth::SetMacAddress(uint8_t * amacaddr)
 {
 	if (amacaddr != &mac_address[0])
 	{
-		memcpy(&mac_address, amacaddr, 6);
+		memcpy(&mac_address[0], amacaddr, 6);
 	}
 
   if (!regs)
@@ -266,8 +266,8 @@ void THwEth_nv_apb_eth::SetMacAddress(uint8_t * amacaddr)
     return;
   }
 
-	regs->MACADDR1 = *(uint32_t *)(&mac_address[0]);
-	regs->MACADDR2 = *(uint16_t *)(&mac_address[4]);
+	regs->MACADDR1 = (mac_address[0] | (mac_address[1] << 8) | (mac_address[2] << 16) | (mac_address[3] << 24));
+	regs->MACADDR2 = (mac_address[4] | (mac_address[5] << 8));
 }
 
 void THwEth_nv_apb_eth::SetSpeed(bool speed100)
@@ -304,7 +304,7 @@ void THwEth_nv_apb_eth::StartMiiRead(uint8_t reg)
 
 bool THwEth_nv_apb_eth::IsMiiBusy()
 {
-	return ((regs->MDIO_STATUS & NV_APB_ETH_MDIO_BUSY) ? false : true);
+	return ((regs->MDIO_STATUS & NV_APB_ETH_MDIO_BUSY) ? true : false);
 }
 
 void THwEth_nv_apb_eth::NsTimeStart()

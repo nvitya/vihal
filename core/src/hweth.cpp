@@ -94,6 +94,11 @@ bool THwEth::PhyInit()
 		TRACE("Unknown ETH PHY!, id1=%04x, id2=%04x!\r\n", id1, id2);
 		TRACE_FLUSH();
 
+    #if 0
+	    if (!MiiRead(HWETH_PHY_BSR_REG, &bsr))  return false;
+	    return true;
+    #endif
+
 		force_reset = true;
 	}
 
