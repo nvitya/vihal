@@ -28,6 +28,12 @@ typedef struct
     u8[2] = a2;
     u8[3] = a3;
   }
+
+  inline bool Matches(uint8_t * asrc)
+  {
+    return (u8[0] == asrc[0]) && (u8[1] == asrc[1]) && (u8[2] == asrc[2]) && (u8[3] == asrc[3]);
+  }
+
 //
 } TIp4Addr, * PIp4Addr;
 
@@ -182,7 +188,9 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen);
 
 inline void  mac_address_copy(uint8_t * pdst, uint8_t * psrc)
 {
-  *(uint32_t *)pdst = *(uint32_t *)psrc;
+  // unaligned safe version
+  *(uint16_t *)pdst = *(uint16_t *)psrc;
+  *(uint16_t *)(pdst + 2) = *(uint16_t *)(psrc + 2);
   *(uint16_t *)(pdst + 4) = *(uint16_t *)(psrc + 4);
 }
 

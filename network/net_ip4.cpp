@@ -18,10 +18,10 @@ uint16_t calc_ip4_header_checksum(TIp4Header * piph)
 
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
-  sum -= __REV16(piph->csum);  // remove the csum
+  sum -= __builtin_bswap16(piph->csum);  // remove the csum
 
   //  Fold 32-bit sum to 16 bits
   while (sum >> 16)
@@ -29,7 +29,7 @@ uint16_t calc_ip4_header_checksum(TIp4Header * piph)
     sum = (sum & 0xffff) + (sum >> 16);
   }
 
-  return __REV16(~sum);
+  return __builtin_bswap16(~sum);
 }
 
 uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
@@ -45,18 +45,18 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
   pd16_end = pd16 + 4;
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   sum += piph->protocol; // add the protocol as well (8-bit only)
-  sum += __REV16(pudp->len); // add the UDP length
+  sum += __builtin_bswap16(pudp->len); // add the UDP length
 
   // add the UDP header parts exlusive the checksum
   pd16 = (uint16_t *)pudp;
   pd16_end = pd16 + 3;
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   // and then the data
@@ -64,7 +64,7 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
   pd16_end = pd16 + (datalen >> 1);
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   if (datalen & 1)  // one byte remained
@@ -78,7 +78,7 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
     sum = (sum & 0xffff) + (sum >> 16);
   }
 
-  return __REV16(~sum);
+  return __builtin_bswap16(~sum);
 }
 
 //--------------------------------------------------------------
@@ -433,17 +433,17 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 
   iph->hl_v = 0x45;
   iph->tos = 0;
-  iph->len = __REV16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
-  iph->id = __REV16(idcounter);
-  iph->fl_offs = __REV16(0x4000);
+  iph->len = __builtin_bswap16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
+  iph->id = __builtin_bswap16(idcounter);
+  iph->fl_offs = __builtin_bswap16(0x4000);
   iph->ttl = 64;
   iph->protocol = 17;
   iph->csum = 0;
   iph->csum = calc_ip4_header_checksum(iph);
 
-  udph->sport = __REV16(listenport);
-  udph->dport = __REV16(destport);
-  udph->len   = __REV16(adatalen + sizeof(TUdp4Header));
+  udph->sport = __builtin_bswap16(listenport);
+  udph->dport = __builtin_bswap16(destport);
+  udph->len   = __builtin_bswap16(adatalen + sizeof(TUdp4Header));
   udph->csum  = 0;
 
   // UDP checksum is optional, this takes a long time so it is turned off now
@@ -475,7 +475,7 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
   PUdp4Header     udph  = PUdp4Header(iph + 1);
   uint8_t *       pdata = (uint8_t *)(udph + 1);
 
-  uint16_t dlen = __REV16(udph->len) - sizeof(TUdp4Header);
+  uint16_t dlen = __builtin_bswap16(udph->len) - sizeof(TUdp4Header);
   if (dlen > adatalen)
   {
     err = -1;
@@ -487,7 +487,7 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
   }
 
   srcaddr = *PIp4Addr(&iph->srcaddr[0]);
-  srcport = __REV16(udph->sport);
+  srcport = __builtin_bswap16(udph->sport);
 
   // unchain the pmem first
   rxpkt_first = rxpkt_first->next;
@@ -557,7 +557,7 @@ bool TIp4Handler::HandleRxPacket(TPacketMem * pmem)  // return true, if the pack
   rxpkt = pmem;
   rxeh = PEthernetHeader(&pmem->data[0]);
 
-  uint16_t etype = __REV16(rxeh->ethertype);
+  uint16_t etype = __builtin_bswap16(rxeh->ethertype);
 
   if (0x0806 == etype) // ARP ?
   {
@@ -589,7 +589,7 @@ bool TIp4Handler::HandleArp()
 
   if (0x0100 == parp->oper) // ARP request ?
   {
-    if (*(uint32_t *)&(parp->tpa) == ipaddress.u32)  // someone want to know my IP
+    if (ipaddress.Matches(parp->tpa))  // someone want to know my IP
     {
       //TRACE("ARP request from %u.%u.%u.%u\r\n", parp->spa[0], parp->spa[1], parp->spa[2], parp->spa[3] );
 
@@ -685,8 +685,8 @@ bool TIp4Handler::HandleIcmp()
     txich->cksum = 0;
 
     // the ICMP message can contain arbitrary length data, we need to calculate its size first
-    uint16_t icmp_len = __REV16(txiph->len) - sizeof(TIp4Header);
-    txich->cksum = __REV16(calc_icmp_checksum(txich, icmp_len));
+    uint16_t icmp_len = __builtin_bswap16(txiph->len) - sizeof(TIp4Header);
+    txich->cksum = __builtin_bswap16(calc_icmp_checksum(txich, icmp_len));
 
     // send the packet
     adapter->SendTxPacket(pmem);  // the tx packet will be released automatically
@@ -700,7 +700,7 @@ bool TIp4Handler::HandleUdp()
   // rxeh, rxiph is already set
   TUdp4Header * udph = (TUdp4Header *)(rxiph + 1);
 
-  uint16_t dport = __REV16(udph->dport);
+  uint16_t dport = __builtin_bswap16(udph->dport);
 
   // search for listeners
   TUdp4Socket * udp = udp_first;

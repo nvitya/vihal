@@ -118,7 +118,9 @@ uint8_t * TNetAdapter::AllocateNetMem(unsigned asize)
     TRACE("AllocateNetMem FAILED!\r\n");
     TRACE_FLUSH();
 
+#if defined(CPU_ARMM)
     __BKPT();  // serious error, change the memory sizes, the adapter configuration
+#endif
 
     return nullptr;
   }

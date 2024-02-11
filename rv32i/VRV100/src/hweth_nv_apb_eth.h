@@ -30,6 +30,8 @@
 
 #include "platform.h"
 
+#if defined(NV_APB_ETH_BASE_ADDR)
+
 #define HWETH_PRE_ONLY
 #include "hweth.h"
 
@@ -124,5 +126,7 @@ public:
 };
 
 #define HWETH_IMPL THwEth_nv_apb_eth
+
+#endif // defined NV_APB_ETH_BASE_ADDR
 
 #endif // def HWETH_NV_APB_ETH_H_
