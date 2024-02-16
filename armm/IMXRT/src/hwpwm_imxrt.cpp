@@ -48,16 +48,20 @@ bool THwPwmChannel_imxrt::Init(int adevnum, int achnum, int aoutnum)
 		commonregs = PWM2;
 		imxrt_set_clock_gate(4, 18, 3);
 	}
+#if defined(PWM3)
 	else if (3 == devnum)
 	{
 		commonregs = PWM3;
 		imxrt_set_clock_gate(4, 20, 3);
 	}
+#endif
+#if defined(PWM4)
 	else if (4 == devnum)
 	{
 		commonregs = PWM4;
 		imxrt_set_clock_gate(4, 22, 3);
 	}
+#endif
 
 	if (!commonregs)
 	{
