@@ -18,6 +18,7 @@ typedef struct
   union
   {
     uint8_t   u8[4];
+    uint16_t  u16[2]; // for unaligned handling
     uint32_t  u32;
   };
 
@@ -34,10 +35,28 @@ typedef struct
     return (u8[0] == asrc[0]) && (u8[1] == asrc[1]) && (u8[2] == asrc[2]) && (u8[3] == asrc[3]);
   }
 
+  inline void CopyFrom16(void * asrc)
+  {
+    uint8_t * src = (uint8_t *)asrc;
+
+    u16[0] = *(uint16_t *)(src + 0);
+    u16[1] = *(uint16_t *)(src + 2);
+  }
+
+  inline void CopyFrom8(void * asrc)
+  {
+    uint8_t * src = (uint8_t *)asrc;
+
+    u8[0] = src[0];
+    u8[1] = src[1];
+    u8[2] = src[2];
+    u8[3] = src[3];
+  }
+
 //
 } TIp4Addr, * PIp4Addr;
 
-typedef struct
+typedef struct  // 20 bytes
 {
   uint8_t   hl_v;      /**< Header length and version */
   uint8_t   tos;       /**< Type of service */
@@ -53,7 +72,7 @@ typedef struct
 } TIp4Header, * PIp4Header;
 
 
-typedef struct
+typedef struct  // 8 bytes
 {
   uint16_t  sport;   // source port
   uint16_t  dport;   // destination port

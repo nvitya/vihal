@@ -127,6 +127,8 @@ typedef struct
   #define SPI_SELF_FLASHING 1
 #endif
 
+#define MCU_NO_DMA   1
+
 #define BOOTBLOCK_SIGNATURE     0xC0DEBA5E
 #define BOOTROM_INFO_SIGNATURE  0xBB5AC100
 #define BOOTROM_INFO_ADDRESS    0x80000010

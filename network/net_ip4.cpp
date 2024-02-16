@@ -160,7 +160,7 @@ void TArp4Table::Update(TIp4Addr * aipaddr, uint8_t * amacaddr)
     item = CreateNewItem(amacaddr);
   }
 
-  item->ipaddr = *aipaddr;
+  item->ipaddr.CopyFrom16(aipaddr);
 
   // add as first
 
@@ -179,10 +179,13 @@ void TArp4Table::Update(TIp4Addr * aipaddr, uint8_t * amacaddr)
 
 TArp4TableItem * TArp4Table::FindByIp(PIp4Addr paddr)
 {
+  // copy the IP address locally for handling unaligned
+  TIp4Addr  laddr;
+  laddr.CopyFrom16(paddr);
   TArp4TableItem *  item = firstitem;
   while (item)
   {
-    if (item->ipaddr.u32 == paddr->u32)
+    if (item->ipaddr.u32 == laddr.u32)
     {
       return item;
     }
@@ -196,7 +199,8 @@ TArp4TableItem * TArp4Table::FindByMac(uint8_t * amacaddr)
   TArp4TableItem *  item = firstitem;
   while (item)
   {
-    if (    (*(uint32_t *)&item->macaddr[0] == *(uint32_t *)&amacaddr[0])
+    if (    (*(uint16_t *)&item->macaddr[0] == *(uint16_t *)&amacaddr[0])
+         && (*(uint16_t *)&item->macaddr[2] == *(uint16_t *)&amacaddr[2])
          && (*(uint16_t *)&item->macaddr[4] == *(uint16_t *)&amacaddr[4]) )
     {
       return item;
@@ -218,8 +222,12 @@ bool TArp4Table::SendWithArp(TPacketMem * pmem, PIp4Addr paddr)
   }
 
   // add to the jobs
+
+  // copy the IP in an unaligned safe way (the source IP might be unaligned):
+  TIp4Addr * pdest = (TIp4Addr *)pmem->extra[0];
+  pdest->CopyFrom16(paddr);  // make the source aligned
+
   pmem->next = nullptr;
-  *(PIp4Addr)&pmem->extra[0] = *paddr; // copy the required address to the extra field
 
   if (lastjob)
   {
@@ -388,6 +396,39 @@ void TUdp4Socket::Init(TIp4Handler * ahandler, uint16_t alistenport)
   phandler->AddUdpSocket(this);
 }
 
+void mem_copy_8(void * adst, void * asrc, unsigned acount)
+{
+  uint8_t * src = (uint8_t *)asrc;
+  uint8_t * dst = (uint8_t *)adst;
+  uint8_t * endptr = dst + acount;
+  while (dst < endptr)
+  {
+    *dst++ = *src++;
+  }
+}
+
+void mem_copy_16(void * adst, void * asrc, unsigned acount)
+{
+  uint16_t * src = (uint16_t *)asrc;
+  uint16_t * dst = (uint16_t *)adst;
+  uint16_t * endptr = dst + acount;
+  while (dst < endptr)
+  {
+    *dst++ = *src++;
+  }
+}
+
+void mem_copy_32(void * adst, void * asrc, unsigned acount)
+{
+  uint32_t * src = (uint32_t *)asrc;
+  uint32_t * dst = (uint32_t *)adst;
+  uint32_t * endptr = dst + acount;
+  while (dst < endptr)
+  {
+    *dst++ = *src++;
+  }
+}
+
 int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 {
   TPacketMem * pmem;
@@ -404,30 +445,45 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   }
 
   // assemble the UDP packet
-  PEthernetHeader eh    = PEthernetHeader(&pmem->data[0]);
-  PIp4Header      iph   = PIp4Header(eh + 1);
-  PUdp4Header     udph  = PUdp4Header(iph + 1);
-  uint8_t *       pdata = (uint8_t *)(udph + 1);
+  PEthernetHeader eh    = PEthernetHeader(&pmem->data[0]);  // 14 bytes
+  PIp4Header      iph   = PIp4Header(eh + 1);               // 20 bytes
+  PUdp4Header     udph  = PUdp4Header(iph + 1);             //  8 bytes
+  uint8_t *       pdata = (uint8_t *)(udph + 1);            // pdata is only 2-bytes aligned !
 
   eh->ethertype = 0x0008; // ether type: 0x0800 = IPV4 (byte swapped)
 
-  *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
-  *PIp4Addr(&iph->dstaddr[0]) = destaddr;
+  #if MCU_NO_UNALIGNED
 
-  // COPY the buffer
+    mem_copy_16(&iph->srcaddr[0], &phandler->ipaddress, 2);
+    mem_copy_16(&iph->dstaddr[0], &destaddr, 2);
 
-  // memcpy is slow:
-  //memcpy(pdata, adataptr, adatalen);
+    if (0 == (unsigned(adataptr) & 1)) // src is 16-bit aligned ?
+    {
+      mem_copy_16(pdata, adataptr, (adatalen + 1) >> 1);
+    }
+    else
+    {
+      mem_copy_8(pdata, adataptr, adatalen);
+    }
 
-  // fast copy using 4-byte moves
-  unsigned dwcnt = ((adatalen + 3) >> 2);
-  uint32_t * pdst = (uint32_t *)pdata;
-  uint32_t * pdst_end = pdst + dwcnt;
-  uint32_t * psrc = (uint32_t *)adataptr;
-  while (pdst < pdst_end)
-  {
-    *pdst++ = *psrc++;
-  }
+  #else
+
+    *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
+    *PIp4Addr(&iph->dstaddr[0]) = destaddr;
+
+    // COPY the buffer
+
+    // fast copy using 4-byte moves (memcpy is slow)
+    unsigned dwcnt = ((adatalen + 3) >> 2);
+    uint32_t * pdst = (uint32_t *)pdata;
+    uint32_t * pdst_end = pdst + dwcnt;
+    uint32_t * psrc = (uint32_t *)adataptr;
+    while (pdst < pdst_end)
+    {
+      *pdst++ = *psrc++;
+    }
+
+  #endif
 
   ++idcounter;
 
@@ -483,10 +539,23 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
   else
   {
     err = dlen;
-    memcpy(adataptr, pdata, dlen); // copy the data
+
+    // copy the data
+    #if MCU_NO_UNALIGNED
+      if (0 == (unsigned(adataptr) & 1)) // dst is 16-bit aligned ?
+      {
+        mem_copy_16(adataptr, pdata, (adatalen + 1) >> 1);
+      }
+      else
+      {
+        mem_copy_8(adataptr, pdata, adatalen);
+      }
+    #else
+      mem_copy_32(adataptr, pdata, (adatalen + 3) >> 2);
+    #endif
   }
 
-  srcaddr = *PIp4Addr(&iph->srcaddr[0]);
+  srcaddr.CopyFrom16(&iph->srcaddr[0]);
   srcport = __builtin_bswap16(udph->sport);
 
   // unchain the pmem first
@@ -718,7 +787,7 @@ bool TIp4Handler::HandleUdp()
   return true;
 }
 
-bool TIp4Handler::LocalAddress(TIp4Addr * aaddr)
+bool TIp4Handler::LocalAddress(TIp4Addr * aaddr)  // the argument must be aligned !
 {
   if ((aaddr->u32 ^ ipaddress.u32) & netmask.u32)
   {
@@ -735,12 +804,13 @@ bool TIp4Handler::SendWithRouting(TPacketMem * pmem)
   mac_address_copy(&txeh->src_mac[0], &adapter->peth->mac_address[0]);
 
   PIp4Header  txiph  = PIp4Header(&pmem->data[sizeof(TEthernetHeader)]);
-  PIp4Addr    pdstip = PIp4Addr(&txiph->dstaddr[0]);
+  TIp4Addr    dstip;
+  dstip.CopyFrom16(&txiph->dstaddr[0]);  // make it aligned
 
   // 1. is it a local network packet or it must be sent to the gateway?
-  if (LocalAddress(pdstip))
+  if (LocalAddress(&dstip))
   {
-    return arptable.SendWithArp(pmem, pdstip);
+    return arptable.SendWithArp(pmem, &dstip);
   }
   else  // send to the gateway
   {

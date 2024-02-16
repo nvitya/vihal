@@ -75,6 +75,12 @@
 
 #endif
 
+#if __CORTEX_M < 3
+  #define MCU_NO_UNALIGNED 1
+#else
+  #define MCU_NO_UNALIGNED 0
+#endif
+
 inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
 {
   NVIC_SetPriority(IRQn_Type(intnum), priority);

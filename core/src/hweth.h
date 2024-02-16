@@ -96,6 +96,7 @@ public: // settings
 
 	uint8_t       phy_address = 0;
 
+	__attribute__((aligned(2)))
 	uint8_t       mac_address[6] = {0x03, 0x01, 0x01, 0x01, 0x01, 0x01};
 
 	bool          irq_on_rx = false;  // must be set before init
