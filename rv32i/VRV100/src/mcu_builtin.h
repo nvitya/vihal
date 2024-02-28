@@ -13,7 +13,8 @@
 
 #elif defined(MCU_VRV100_104) || defined(MCU_VRV100_103) || defined(MCU_VRV100_241) \
   || defined(MCU_VRV100_365) \
-  || defined(MCU_VRV100_403) || defined(MCU_VRV100_441) || defined(MCU_VRV100_443) || defined(MCU_VRV100_543)
+  || defined(MCU_VRV100_403) || defined(MCU_VRV100_441) || defined(MCU_VRV100_443) || defined(MCU_VRV100_456) \
+  || defined(MCU_VRV100_543)
 
   #define MCUF_VRV100
 
