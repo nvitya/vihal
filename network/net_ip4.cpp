@@ -224,8 +224,7 @@ bool TArp4Table::SendWithArp(TPacketMem * pmem, PIp4Addr paddr)
   // add to the jobs
 
   // copy the IP in an unaligned safe way (the source IP might be unaligned):
-  TIp4Addr * pdest = (TIp4Addr *)pmem->extra[0];
-  pdest->CopyFrom16(paddr);  // make the source aligned
+  *(uint32_t *)&pmem->extra[0] = (paddr->u16[0] | (paddr->u16[1] << 16));
 
   pmem->next = nullptr;
 
