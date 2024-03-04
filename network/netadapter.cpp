@@ -166,7 +166,7 @@ void TNetAdapter::Run()
     pmem = first_sending_pkt;
     first_sending_pkt = first_sending_pkt->next; // unchain first before free !
 
-    //TRACE("Releasing TX packet %u\r\n", pmem->idx);
+    //TRACE("%u Releasing TX packet %u\r\n", mscounter, pmem->idx);
     ReleaseTxPacket(pmem);
   }
   if (!first_sending_pkt)
@@ -254,11 +254,13 @@ bool TNetAdapter::SendTxPacket(TPacketMem * apmem)  // the packet will be automa
     return false;
   }
 
-  // add to the sending chain
+  //TRACE("%u TX packet %u sent\r\n", mscounter, idx);
+
   apmem->idx = idx;
   apmem->status = 1; // sending active
   apmem->next = nullptr;
 
+  // add to the sending chain
   if (last_sending_pkt)
   {
     last_sending_pkt->next = apmem;
@@ -269,6 +271,8 @@ bool TNetAdapter::SendTxPacket(TPacketMem * apmem)  // the packet will be automa
     first_sending_pkt = apmem;
     last_sending_pkt = apmem;
   }
+
+  apmem->next = nullptr;  // prevents circular chaining on double addition
 
   return true;
 }

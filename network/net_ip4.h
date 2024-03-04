@@ -107,7 +107,7 @@ public:
 
   uint8_t             max_items = 8;
   uint8_t             max_tries = 5;  // after so many tries will be given up
-  uint32_t            response_timeout_ms = 5000;
+  uint32_t            response_timeout_ms = 800;
 
 
   TPacketMem *        firstjob = nullptr;

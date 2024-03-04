@@ -317,7 +317,7 @@ void TArp4Table::Run()
     else if (adapter->mscounter - start_ms > response_timeout_ms)
     {
       // something is very wrong!
-      //TRACE("Timeout sending ARP request!\r\n");
+      //TRACE("%u Timeout sending ARP request!\r\n", adapter->mscounter);
       phase = 9; // re-sending
     }
   }
