@@ -67,32 +67,34 @@ bool THwEth_atsam::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclis
     | (0 << 15)  // SRTSM: store timestamp (nanoseconds) instead of CRC
   ;
 
-  regs->GMAC_NCFGR = 0
+  uint32_t ncfgr = (0
     | (1 <<  0)  // SPD: 1 = 100 MBit
     | (1 <<  1)  // FD: 1 = full duplex
     | (0 <<  2)  // DNVLAN: 1 = discard VLAN Frames
     | (0 <<  3)  // JFRAME: 1 = enable jumbo frames
-  | (1 <<  4)  // CAF: copy all frames (promiscous mode?)
+    | (0 <<  4)  // CAF: copy all frames (promiscous mode?)
     | (0 <<  5)  // NBC: 1 = do not accept broadcast frames
     | (1 <<  8)  // MAXFS: 1 = Allow 1536 byte frames
     | (1 << 17)  // RFCS: 1 = remove FCS from received frame data
     | (4 << 18)  // CLK(3): MDC clock divisor
-  | (0 << 24)  // RXCOEN: 1 = Enable RX Checksum offload (wrong checksum frames will be discarded)
-  | (0 << 25)  // EFRHD: Enable Receive in half duplex
-  | (1 << 26)  // IRXFCS: Ignore RX FCS
-  | (1 << 29)  // RXBP: Receive Bad Preamble
-  | (1 << 30)  // IRXER: Ignore IPG GRXER
-  ;
+    | (0 << 24)  // RXCOEN: 1 = Enable RX Checksum offload (wrong IP checksum frames will be discarded)
+    | (0 << 25)  // EFRHD: Enable Receive in half duplex
+    | (0 << 26)  // IRXFCS: Ignore RX FCS
+    | (0 << 29)  // RXBP: Receive Bad Preamble
+    | (1 << 30)  // IRXER: Ignore IPG GRXER: "When set, GRXER has no effect on the GMAC's operation when GRXDV is low." ?
+  );
+  if (promiscuous_mode)  ncfgr |= (1 << 4);
+  regs->GMAC_NCFGR = ncfgr;
 
   regs->GMAC_DCFGR = 0
-  	| (0 << 24)  // DDRP: 1 = Discard Receive Packets when no free descriptors are available
+  	| (0  << 24)  // DDRP: 1 = Discard Receive Packets when no free descriptors are available
   	| (24 << 16)  // DRBS(8): DMA Receive Buffer Size in 64 byte units, 24 x 64 = 1536
-	| (1 << 11)  // TXCOEN: 1 = IP Checksum offload enable for sending
-  	| (1 << 10)  // TXPBMS: 4K TX Buffer Memory
-  	| (3 <<  8)  // RXBMS(2): 4K RX buffer memory
-  	| (0 <<  7)  // ESPA: 0 = LSB endian mode for packet data
-  	| (0 <<  6)  // ESMA: 0 = LSB endian mode for descriptor data
-  	| (4 <<  0)  // FBLDO(5): DMA Burst (default = 4)
+	  | (0  << 11)  // TXCOEN: 1 = IP Checksum offload enable for sending
+  	| (1  << 10)  // TXPBMS: 4K TX Buffer Memory
+  	| (3  <<  8)  // RXBMS(2): 4K RX buffer memory
+  	| (0  <<  7)  // ESPA: 0 = LSB endian mode for packet data
+  	| (0  <<  6)  // ESMA: 0 = LSB endian mode for descriptor data
+  	| (4  <<  0)  // FBLDO(5): DMA Burst (default = 4)
   ;
 
   SetMacAddress(&mac_address[0]);
@@ -193,11 +195,14 @@ void THwEth_atsam::ReleaseRxBuf(TPacketMem * pmem)
 {
 	HW_ETH_DMA_DESC *  pdesc = &rx_desc_list[pmem->idx];
 	pdesc->ADDR &= ~1;
+  __DSB();
 }
 
 bool THwEth_atsam::TrySend(uint32_t * pidx, void * pdata, uint32_t datalen)
 {
 	// we need to find the next inactive decriptor, otherwise the sending won't happen
+
+  __DSB();
 
 	HW_ETH_DMA_DESC * pdesc = &tx_desc_list[actual_tx_idx];
 	if (pdesc->STATUS & (1u << 31)) // OWN bit set = the descriptor is not used by the HW
@@ -231,8 +236,19 @@ bool THwEth_atsam::SendFinished(uint32_t idx)
   }
 
   HW_ETH_DMA_DESC * pdesc = &tx_desc_list[idx];
+  __DSB();
+  bool result = (0 != (pdesc->STATUS & (1u << 31))); // OWN bit set = the descriptor is not used by the HW
 
-  return (0 != (pdesc->STATUS & (1u << 31))); // OWN bit set = the descriptor is not used by the HW
+  if (!result)
+  {
+    if (regs->GMAC_TSR & 0x1010) // bus error occured ?
+    {
+      regs->GMAC_TSR |= 0x1010;  // clear the errors
+      regs->GMAC_NCR |= GMAC_NCR_TSTART;  // start the sending again
+    }
+  }
+
+  return result;
 }
 
 
