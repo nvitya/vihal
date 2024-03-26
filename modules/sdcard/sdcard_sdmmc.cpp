@@ -385,7 +385,7 @@ void TSdCardSdmmc::RunTransfer()
     if (sdmmc->cmderror)
     {
       // the previous Write command might still be running, repeat the command
-      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
+      if (CLOCKCNT - cmd_start_time > 200000 * us_clocks)
       {
         FinishTransfer(HWERR_TIMEOUT);
       }
@@ -438,7 +438,7 @@ void TSdCardSdmmc::RunTransfer()
   case 105: // Handle tranmission stop
     if (sdmmc->cmderror)
     {
-      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
+      if (CLOCKCNT - cmd_start_time > 100000 * us_clocks)
       {
         FinishTransfer(HWERR_TIMEOUT);
       }

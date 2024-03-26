@@ -38,13 +38,12 @@ private:
 
 public:
   THwSdmmc *    sdmmc = nullptr;
+  uint8_t       bus_width = 4;
 
   bool          Init(THwSdmmc * asdmmc);
   void          Run();  // overrides base
 
 protected:
-
-  uint8_t       bus_width = 4;
 
   uint32_t      us_clocks = 0;
 
