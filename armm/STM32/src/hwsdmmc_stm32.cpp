@@ -164,23 +164,26 @@ void THwSdmmc_stm32::SetSpeed(uint32_t speed)
 {
   uint32_t periphclock = 50000000; // SDMMCCK = 50 MHz
 
-	uint32_t clkdiv = 1;
-	while ((periphclock / clkdiv) > speed)
-	{
-		++clkdiv;
-	}
-
 	uint32_t tmp = regs->CLKCR;
 
 #ifdef MCUSF_H7
-	uint32_t hsbus = 0;
-	if (speed > 25000000)
-	{
-		hsbus = 1;
-	}
-	tmp &= ~(0x3FF | (1 << 19));
-	tmp |= ((hsbus << 19) | ((clkdiv - 2) << 0));
+
+  uint32_t clkdiv = 1;
+  while ((periphclock / (1 << (clkdiv - 1))) > speed)
+  {
+    clkdiv = (clkdiv << 1);
+  }
+	tmp &= ~(0x3FF);
+	tmp |= ((clkdiv - 1) << 0);
+
 #else
+
+  uint32_t clkdiv = 1;
+  while ((periphclock / clkdiv) > speed)
+  {
+    ++clkdiv;
+  }
+
 	tmp &= ~0x3FF;
 	tmp |= SDMMC_CLKCR_CLKEN;
 	if (clkdiv < 2)
