@@ -41,6 +41,7 @@ bool TSdCard::StartReadBlocks(uint32_t astartblock, void * adataptr, uint32_t ab
     return false;
   }
 
+  iswrite = false;
   dataptr = (uint8_t *)adataptr;
   blockcount = ablockcount;
   remainingblocks = ablockcount;
@@ -72,6 +73,7 @@ bool TSdCard::StartWriteBlocks(uint32_t astartblock, void * adataptr, uint32_t a
     return false;
   }
 
+  iswrite = true;
   dataptr = (uint8_t *)adataptr;
   blockcount = ablockcount;
   remainingblocks = ablockcount;

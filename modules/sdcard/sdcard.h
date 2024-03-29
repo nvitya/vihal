@@ -70,6 +70,7 @@ public:
 protected:
   int           trstate = 0; // transfer state machine control, 1 = start read,
 
+  bool          iswrite = false;
   uint32_t      startblock = 0;
   uint32_t      curblock = 0;
   uint32_t      blockcount = 0;

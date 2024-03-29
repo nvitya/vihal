@@ -38,7 +38,11 @@ private:
 
 public:
   THwSdmmc *    sdmmc = nullptr;
+
   uint8_t       bus_width = 4;
+
+  uint32_t      wr_errors = 0;
+  uint32_t      last_wr_status = 0;
 
   bool          Init(THwSdmmc * asdmmc);
   void          Run();  // overrides base

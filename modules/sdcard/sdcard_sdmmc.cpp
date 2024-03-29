@@ -377,6 +377,7 @@ void TSdCardSdmmc::RunTransfer()
 
     StartCmdWriteBlocks();
 
+    wr_errors = 0;
     cmd_start_time = CLOCKCNT;
     trstate = 12;
     break;
@@ -385,7 +386,7 @@ void TSdCardSdmmc::RunTransfer()
     if (sdmmc->cmderror)
     {
       // the previous Write command might still be running, repeat the command
-      if (CLOCKCNT - cmd_start_time > 200000 * us_clocks)
+      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
       {
         FinishTransfer(HWERR_TIMEOUT);
       }
@@ -415,7 +416,7 @@ void TSdCardSdmmc::RunTransfer()
   case 101: // wait until the block transfer finishes
     if (!sdmmc->TransferFinished())
     {
-      if (CLOCKCNT - cmd_start_time > 100000 * us_clocks)  // 100 ms timeout
+      if (CLOCKCNT - cmd_start_time > 300000 * us_clocks)  // 300 ms timeout
       {
         FinishTransfer(HWERR_TIMEOUT);
       }
@@ -431,14 +432,16 @@ void TSdCardSdmmc::RunTransfer()
     }
     else
     {
-      FinishTransfer(0);
+      // go to status polling for writes
+      sdmmc->SendCmd(13, rca, SDCMD_RES_R1B);  // send query status cmd
+      trstate = 111;
     }
     break;
 
   case 105: // Handle tranmission stop
     if (sdmmc->cmderror)
     {
-      if (CLOCKCNT - cmd_start_time > 100000 * us_clocks)
+      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
       {
         FinishTransfer(HWERR_TIMEOUT);
       }
@@ -456,7 +459,72 @@ void TSdCardSdmmc::RunTransfer()
       //return;
     }
 
-    FinishTransfer(0);
+    if (!iswrite)
+    {
+      FinishTransfer(0);
+      return;
+    }
+
+    // go to status polling for writes
+    sdmmc->SendCmd(13, rca, SDCMD_RES_R1B);  // send query status cmd
+    trstate = 111;
+    break;
+
+  case 111:  // wait until the write operation finishes
+    if (sdmmc->cmderror)
+    {
+      if (CLOCKCNT - cmd_start_time > 20000 * us_clocks)
+      {
+        FinishTransfer(HWERR_TIMEOUT);
+      }
+      else
+      {
+        sdmmc->SendCmd(13, rca, SDCMD_RES_R1B);  // send query status cmd
+      }
+      return;
+    }
+
+    last_wr_status = sdmmc->GetCmdResult32();
+    wr_errors |= (last_wr_status & (0
+      | (1 << 19) // ERROR
+      | (1 << 20) // CC_ERROR
+      | (1 << 21) // CARD_ECC_FAILED
+      | (1 << 22) // ILLEGAL_COMMAND
+      | (1 << 25) // CARD_IS_LOCKED
+      | (1 << 26) // WP_VIOLATION
+    ));
+
+    uint32_t stcode = ((last_wr_status >> 9) & 0xF);
+    // SDCARD states:
+    //   0 = idle
+    //   1 = ready
+    //   2 = ident
+    //   3 = stby
+    //   4 = tran
+    //   5 = data
+    //   6 = rcv
+    //   7 = prg
+    //   8 = dis
+    if (stcode != 7) // 7 = prg
+    {
+      if (wr_errors)
+      {
+        FinishTransfer(HWERR_WRITE);
+      }
+      else
+      {
+        FinishTransfer(0);
+      }
+      return;
+    }
+
+    if (CLOCKCNT - cmd_start_time > 300000 * us_clocks)  // 300 ms timeout
+    {
+      FinishTransfer(HWERR_TIMEOUT);
+      return;
+    }
+
+    sdmmc->SendCmd(13, rca, SDCMD_RES_R1B);  // send query status cmd again
     break;
 
   } // case

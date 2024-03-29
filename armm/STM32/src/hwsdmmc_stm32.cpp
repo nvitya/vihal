@@ -162,14 +162,10 @@ bool THwSdmmc_stm32::Init()
 
 void THwSdmmc_stm32::SetSpeed(uint32_t speed)
 {
-#ifdef MCUSF_H7
-	uint32_t periphclock = stm32_bus_speed(0); // get AHB bus speed
-#else
-	uint32_t periphclock = stm32_bus_speed(2); // get APB2 bus speed
-#endif
+  uint32_t periphclock = 50000000; // SDMMCCK = 50 MHz
 
-	uint32_t clkdiv = 0;
-	while ((periphclock >> clkdiv) > speed)
+	uint32_t clkdiv = 1;
+	while ((periphclock / clkdiv) > speed)
 	{
 		++clkdiv;
 	}
@@ -183,11 +179,18 @@ void THwSdmmc_stm32::SetSpeed(uint32_t speed)
 		hsbus = 1;
 	}
 	tmp &= ~(0x3FF | (1 << 19));
-	tmp |= ((hsbus << 19) | (clkdiv << 0));
+	tmp |= ((hsbus << 19) | ((clkdiv - 2) << 0));
 #else
-	tmp &= ~0xFF;
-	tmp |= (clkdiv << 0);
+	tmp &= ~0x3FF;
 	tmp |= SDMMC_CLKCR_CLKEN;
+	if (clkdiv < 2)
+	{
+	  tmp |= SDMMC_CLKCR_BYPASS;
+	}
+	else
+	{
+    tmp |= ((clkdiv - 2) << 0);
+	}
 #endif
 
 	regs->CLKCR = tmp;
