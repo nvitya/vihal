@@ -25,6 +25,7 @@
 
 #include <sdcard.h>
 #include "hwerrors.h"
+//#include "traces.h"
 
 bool TSdCard::StartReadBlocks(uint32_t astartblock, void * adataptr, uint32_t ablockcount)
 {
@@ -166,6 +167,11 @@ void TSdCard::ProcessCsd()
     if (csd_ver >= 1)
     {
       card_megabytes = ((GetRegBits(&reg_csd[0], 48, 22) + 1) >> 1);
+      // TODO: somehow detect if the card supports 50 MHz
+      if (card_megabytes > 8192)
+      {
+        csd_max_speed = 50000000;
+      }
       high_capacity = true;
     }
     else

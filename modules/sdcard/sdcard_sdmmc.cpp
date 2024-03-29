@@ -84,7 +84,8 @@ void TSdCardSdmmc::RunInitialization()
   case 0: // send init clocks
 
     // required low settings for the initialization
-    sdmmc->SetSpeed(initial_speed); // initial speed = 400 kHz
+    actual_clockspeed = initial_speed;
+    sdmmc->SetSpeed(actual_clockspeed); // initial speed = 400 kHz
     sdmmc->SetBusWidth(1);
 
     card_present = false;
@@ -292,7 +293,17 @@ void TSdCardSdmmc::RunInitialization()
     if (sdmmc->cmderror)   initstate = 100;
     else
     {
-      sdmmc->SetSpeed(clockspeed);
+      if (forced_clockspeed)
+      {
+        actual_clockspeed = forced_clockspeed;
+      }
+      else
+      {
+        actual_clockspeed = max_clockspeed;
+        if (actual_clockspeed > csd_max_speed)  actual_clockspeed = csd_max_speed;
+      }
+
+      sdmmc->SetSpeed(actual_clockspeed);
       sdmmc->SetBusWidth(bus_width);
       ++initstate;
     }
