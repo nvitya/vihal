@@ -457,7 +457,6 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 }
 
 #define SDMMC_STATIC_CMD_FLAGS  ((uint32_t)(SDMMC_STA_CCRCFAIL | SDMMC_STA_CTIMEOUT | SDMMC_STA_CMDREND | SDMMC_STA_CMDSENT))
-#define SDMMC_OCR_ERRORBITS     0xFDFFE008U
 
 void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
 {

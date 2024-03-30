@@ -40,6 +40,8 @@
 
 #define SDCMD_OPENDRAIN      0x0010
 
+#define SDMMC_OCR_ERRORBITS     0xFDFFE008U
+
 #define SD_SPECIAL_CMD_INIT       1
 
 class THwSdmmc_pre

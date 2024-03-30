@@ -19,43 +19,45 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwsdmmc_stm32.h
- *  brief:    STM32 Internal SD/SDIO/MMC driver
- *  created:  2022-11-16
+ *  file:     hwsdmmc_atsam.cpp
+ *  brief:    ATSAM internal SDCARD driver
+ *  created:  2018-06-07
  *  authors:  nvitya
 */
 
-#ifndef HWSDMMC_STM32_H_
-#define HWSDMMC_STM32_H_
+#ifndef HWSDMMC_ATSAM_H_
+#define HWSDMMC_ATSAM_H_
 
 #define HWSDMMC_PRE_ONLY
 #include "hwsdmmc.h"
 
-#ifdef SDIO
-	typedef SDIO_TypeDef  SDMMC_TypeDef;
-#endif
+#define HW_SDCARD_REGS  Hsmci
 
-class THwSdmmc_stm32 : public THwSdmmc_pre
+class THwSdmmc_atsam : public THwSdmmc_pre
 {
 public:
+  uint8_t       dma_channel = 9;
 
-	SDMMC_TypeDef *    regs = nullptr;
+public:
+  Hsmci *       regs = nullptr;
 
-	int                trstate = 0;
-	uint8_t            dma_stream = 6;  // default = 6, alternative = 3 (channel 4)
+	int           trstate = 0;
 
 	bool Init();
 
 	void SetSpeed(uint32_t speed);
 	void SetBusWidth(uint8_t abuswidth);
 
+	void SendSpecialCmd(uint32_t aspecialcmd);
 	void SendCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags);
 	bool CmdFinished();
-	bool CmdResult32Ok();
+  bool CmdResult32Ok();
 
 	void StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen);
-	void StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen);
-	void StartDataWriteTransmit(void * dataptr, uint32_t datalen);
+	//void StartBlockReadCmd();
+
+  void StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen);
+  void StartDataWriteTransmit(void * dataptr, uint32_t datalen);
 
 	//void RunTransfer(); // the internal state machine for managing multi block reads
 
@@ -67,6 +69,6 @@ public:
 
 };
 
-#define HWSDMMC_IMPL THwSdmmc_stm32
+#define HWSDMMC_IMPL THwSdmmc_atsam
 
-#endif // def HWSDMMC_STM32_H_
+#endif // def HWSDMMC_ATSAM_H_
