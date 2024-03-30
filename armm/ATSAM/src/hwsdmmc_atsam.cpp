@@ -175,7 +175,7 @@ void THwSdmmc_atsam::SetBusWidth(uint8_t abuswidth)
 	HSMCI->HSMCI_SDCR = hsmci_slot | hsmci_bus_width;
 }
 
-void THwSdmmc_atsam::SendSpecialCmd(uint32_t aspecialcmd)
+void THwSdmmc_atsam::SendSpecialCmd(uint32_t aspecialcmd) // not used so far
 {
 	uint32_t cmdr = HSMCI_CMDR_RSPTYP_NORESP | HSMCI_CMDR_OPDCMD_OPENDRAIN;
 
@@ -384,238 +384,73 @@ void THwSdmmc_atsam::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 
 void THwSdmmc_atsam::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
 {
-#if 0 // STM32 !!
-  // clear data control register
-  regs->DCTRL = 0;
+  // Enabling Read/Write Proof allows to stop the HSMCI Clock during
+  // read/write  access if the internal FIFO is full.
+  // This will guarantee data integrity, not bandwidth.
+  regs->HSMCI_MR |= HSMCI_MR_WRPROOF | HSMCI_MR_RDPROOF;
 
-  // 1. Issue the command first
+  if (datalen & 0x3)
+  {
+    regs->HSMCI_MR |= HSMCI_MR_FBYTE;
+  }
+  else
+  {
+    regs->HSMCI_MR &= ~HSMCI_MR_FBYTE;
+  }
 
-  curcmd = acmd;
-  curcmdarg = cmdarg;
-  curcmdflags = cmdflags;
+#ifdef HSMCI_DMA_DMAEN
+  regs->HSMCI_DMA = HSMCI_DMA_DMAEN;
+#else
+  regs->HSMCI_MR |= HSMCI_MR_PDCMODE;
+#endif
 
-  uint32_t waitresp = 0;
+  uint32_t cmdr = (acmd & 0x3F);
   uint8_t restype = (cmdflags & SDCMD_RES_MASK);
   if (restype)
   {
     // response present
-    if (restype == SDCMD_RES_48BIT)        waitresp = 1; // short response
-    else if (restype == SDCMD_RES_136BIT)  waitresp = 3; // long response
-    else if (restype == SDCMD_RES_R1B)     waitresp = 1; // short response
+    cmdr |= HSMCI_CMDR_MAXLAT; // increase latency for commands with response
+    if (restype == SDCMD_RES_48BIT)  cmdr |= HSMCI_CMDR_RSPTYP_48_BIT;
+    else if (restype == SDCMD_RES_136BIT)  cmdr |= HSMCI_CMDR_RSPTYP_136_BIT;
+    else if (restype == SDCMD_RES_R1B)  cmdr |= HSMCI_CMDR_RSPTYP_R1B;
+  }
+  if (cmdflags & SDCMD_OPENDRAIN)
+  {
+    cmdr |= HSMCI_CMDR_OPDCMD_OPENDRAIN;
   }
 
-  uint32_t cmdr = (0
-    | SDMMC_CMD_CPSMEN
-    | (waitresp << SDMMC_CMD_WAITRESP_Pos)
-    | (acmd <<  SDMMC_CMD_CMDINDEX_Pos)
-  );
+  // add data transfer flags
+  cmdr |= HSMCI_CMDR_TRCMD_START_DATA | HSMCI_CMDR_TRDIR_WRITE;
+  if (datalen <= 512)
+  {
+    cmdr |= HSMCI_CMDR_TRTYP_SINGLE;
+    regs->HSMCI_BLKR = (datalen << 16) | (1 << 0);
+  }
+  else
+  {
+    cmdr |= HSMCI_CMDR_TRTYP_MULTIPLE;
+    regs->HSMCI_BLKR = (512 << 16) | (datalen >> 9);  // fix 512 byte blocks
+  }
 
-  regs->ICR = 0xFFFFFFFF; // clear all flags
-
-  regs->ARG = cmdarg;
-  regs->CMD = cmdr; // start the execution
-
-  curcmdreg = cmdr;
   cmderror = false;
-  cmdrunning = true;
+
+  regs->HSMCI_ARGR = cmdarg;
+  regs->HSMCI_CMDR = cmdr; // start the execution
+
   lastcmdtime = CLOCKCNT;
-#endif
+  cmdrunning = true;
 }
 
 void THwSdmmc_atsam::StartDataWriteTransmit(void * dataptr, uint32_t datalen)
 {
-#if 0 // STM32
-  regs->ICR = SDMMC_STATIC_CMD_FLAGS;
-
-  // 2. setup data path
-
-  uint32_t bsizecode = 9; // 512 byte
-  if (datalen <= 512)
-  {
-    bsizecode = 31 - __CLZ(datalen);
-  }
-
-  #ifdef MCUSF_H7
-
-    // setup data control register
-    uint32_t dctrl = (0
-      | (1  << 13)  // FIFORST
-      | (0  << 12)  // BOOTACKEN
-      | (0  << 11)  // SDIOEN
-      | (0  << 10)  // RWMOD
-      | (0  <<  9)  // RWSTOP
-      | (0  <<  8)  // RWSTART
-      | (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
-      | (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks  ??? only single block works
-      | (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
-      | (1  <<  0)  // DTEN: 1 = start data without CPSM transfer command
-    );
-
-    // the DMA must be started before DCTRL (DTEN)
-
-    regs->IDMABASE0 = (uint32_t)dataptr;
-    regs->IDMABSIZE = datalen; // not really necessary for single buffer mode ?
-    regs->IDMACTRL = 1; // enable the internal DMA
-  #else
-
-    regs->DCTRL |= (1 << 3); // enable DMA
-
-    uint32_t dctrl = (regs->DCTRL & 0xFFFF0008);  // keep the bits above
-    dctrl |= (0
-      | (0  << 11)  // SDIOEN
-      | (0  << 10)  // RWMOD
-      | (0  <<  9)  // RWSTOP
-      | (0  <<  8)  // RWSTART
-      | (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
-      | (1  <<  3)  // DMAEN: 1 = enable DMA
-      | (0  <<  2)  // DTMODE: 0 = block mode, 1 = stream / multibyte
-      | (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
-      | (1  <<  0)  // DTEN: 1 = data enable
-    );
-
-    // start the DMA channel
-
-    dma.Prepare(true, (void *)&regs->FIFO, 0); // setup the DMA for transmit
-
-    dmaxfer.flags = 0; // use defaults
-    dmaxfer.bytewidth = 4;  // destination must be aligned !!!
-    dmaxfer.count = (datalen >> 2);
-    dmaxfer.srcaddr = dataptr;
-    dma.StartTransfer(&dmaxfer);
-
-  #endif
-
-  regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
-  regs->DLEN = datalen;
-  regs->DCTRL = dctrl;
-
-#ifdef MCUSF_H7
-  // this flag was set in the ST hal drivers, but seems to work without it
-  //regs->CMD |= SDMMC_CMD_CMDTRANS;
-#endif
-#endif
+  // start the DMA channel
+  dma.Prepare(true, (void *)&regs->HSMCI_FIFO[0], 0);
+  dmaxfer.flags = 0; // use defaults
+  dmaxfer.bytewidth = 4;  // destination must be aligned !!!
+  dmaxfer.count = (datalen >> 2);
+  dmaxfer.srcaddr = dataptr;
+  dma.StartTransfer(&dmaxfer);
 }
 
-#if 0
-void THwSdmmc_atsam::StartBlockReadCmd()
-{
-	// Enabling Read/Write Proof allows to stop the HSMCI Clock during
-	// read/write  access if the internal FIFO is full.
-	// This will guarantee data integrity, not bandwidth.
-	regs->HSMCI_MR |= HSMCI_MR_WRPROOF | HSMCI_MR_RDPROOF;
-	regs->HSMCI_MR &= ~HSMCI_MR_FBYTE; // fix 512 bytes
 
-#ifdef HSMCI_DMA_DMAEN
-	regs->HSMCI_DMA = HSMCI_DMA_DMAEN;
-#else
-	regs->HSMCI_MR |= HSMCI_MR_PDCMODE;
-#endif
-
-	uint32_t cmdr = 0
-	  | HSMCI_CMDR_RSPTYP_48_BIT
-	  | HSMCI_CMDR_MAXLAT   // increase latency for commands with response
-	;
-
-	uint32_t cmdarg = startblock;
-	if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
-
-	// add data transfer flags
-	cmdr |= HSMCI_CMDR_TRCMD_START_DATA | HSMCI_CMDR_TRDIR_READ;
-
-	if (blockcount <= 1)
-	{
-		cmdr |= 17; // single block read command (a little faster finish)
-		cmdr |= HSMCI_CMDR_TRTYP_SINGLE;
-		regs->HSMCI_BLKR = (512 << 16) | (1 << 0);
-	}
-	else
-	{
-		// always use multiple block read
-		cmdr |= 18; // multi block read command
-		cmdr |= HSMCI_CMDR_TRTYP_MULTIPLE;
-		regs->HSMCI_BLKR = (512 << 16) | (blockcount);  // fix 512 byte blocks, block count not really used
-	}
-
-	regs->HSMCI_ARGR = cmdarg;
-	regs->HSMCI_CMDR = cmdr; // start the execution
-
-	// start the DMA channel
-
-	dma.Prepare(false, (void *)&regs->HSMCI_FIFO[0], 0); // setup the DMA for receive
-	dmaxfer.flags = 0; // use defaults
-	dmaxfer.bytewidth = 4;  // destination must be aligned !!!
-	dmaxfer.count = (blockcount << 7);  // 512 * n / 4 == 128 * n
-	dmaxfer.dstaddr = dataptr;
-	dma.StartTransfer(&dmaxfer);
-
-	cmderror = false;
-	lastcmdtime = CLOCKCNT;
-	cmdrunning = true;
-}
-#endif
-
-#if 0
-
-void THwSdmmc_atsam::RunTransfer()
-{
-	if (cmdrunning && !CmdFinished())
-	{
-		return;
-	}
-
-	cmdrunning = false;
-
-	switch (trstate)
-	{
-	case 0: // idle
-		break;
-
-	case 1: // start read blocks
-		StartBlockReadCmd();
-		trstate = 101;
-		break;
-
-	case 101: // wait until the block transfer finishes
-
-		if (cmderror)
-		{
-			// transfer error
-			errorcode = 1;
-			completed = true;
-			trstate = 0; // transfer finished.
-		}
-		else
-		{
-			if (dma.Active())
-			{
-				return; // wait until DMA finishes.
-			}
-
-			if (blockcount > 1)
-			{
-				// send the stop transmission command
-				SendCmd(12, 0, SDCMD_RES_R1B);
-				trstate = 106;
-			}
-			else
-			{
-				trstate = 106; RunTransfer(); return; // jump directly to the last phase
-			}
-		}
-		break;
-
-	case 106: // wait until transfer done flag set
-
-		if (regs->HSMCI_SR & HSMCI_SR_XFRDONE)
-		{
-			errorcode = 0;
-			completed = true;
-			trstate = 0; // transfer finished.
-		}
-		break;
-	}
-}
-
-#endif
-
-#endif
+#endif // defined(HSMCI)

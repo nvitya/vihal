@@ -48,24 +48,22 @@ public:
 	void SetSpeed(uint32_t speed);
 	void SetBusWidth(uint8_t abuswidth);
 
-	void SendSpecialCmd(uint32_t aspecialcmd);
 	void SendCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags);
 	bool CmdFinished();
   bool CmdResult32Ok();
 
 	void StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen);
-	//void StartBlockReadCmd();
-
   void StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen);
   void StartDataWriteTransmit(void * dataptr, uint32_t datalen);
-
-	//void RunTransfer(); // the internal state machine for managing multi block reads
 
 	uint32_t GetCmdResult32();
 	void GetCmdResult128(void * adataptr);
 
   bool TransferFinished();
   void CloseTransfer();
+
+public:
+  void SendSpecialCmd(uint32_t aspecialcmd); // atsam specific, not used
 
 };
 
