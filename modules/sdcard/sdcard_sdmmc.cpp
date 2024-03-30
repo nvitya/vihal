@@ -443,9 +443,16 @@ void TSdCardSdmmc::RunTransfer()
     }
     else
     {
-      // go to status polling for writes
-      sdmmc->SendCmd(13, rca, SDCMD_RES_R1B);  // send query status cmd
-      trstate = 111;
+      if (iswrite)
+      {
+        // go to status polling for writes
+        sdmmc->SendCmd(13, rca, SDCMD_RES_R1B);  // send query status cmd
+        trstate = 111;
+      }
+      else
+      {
+        FinishTransfer(0);
+      }
     }
     break;
 

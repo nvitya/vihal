@@ -304,14 +304,6 @@ uint32_t THwSdmmc_atsam::GetCmdResult32()
 
 bool THwSdmmc_atsam::CmdResult32Ok()
 {
-#if 0
-  /* Check response received is of desired command */
-  if (regs->RESPCMD != curcmd)
-  {
-    return false;
-  }
-#endif
-
   uint32_t cmdres = GetCmdResult32();
   if ((cmdres & SDMMC_OCR_ERRORBITS) != 0)
   {
