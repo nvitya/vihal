@@ -486,10 +486,6 @@ void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t c
     | (acmd <<  SDMMC_CMD_CMDINDEX_Pos)
   );
 
-#ifdef MCUSF_H7
-  cmdr |= SDMMC_CMD_CMDTRANS;
-#endif
-
   regs->ICR = 0xFFFFFFFF; // clear all flags
 
   regs->ARG = cmdarg;
@@ -520,7 +516,7 @@ bool THwSdmmc_stm32::CmdResult32Ok()
   }
 }
 
-void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
+void THwSdmmc_stm32::StartDataWriteTransmit(void * dataptr, uint32_t datalen)
 {
   regs->ICR = SDMMC_STATIC_CMD_FLAGS;
 
@@ -533,6 +529,7 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
   }
 
   #ifdef MCUSF_H7
+
     // setup data control register
     uint32_t dctrl = (0
       | (1  << 13)  // FIFORST
@@ -542,9 +539,9 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
       | (0  <<  9)  // RWSTOP
       | (0  <<  8)  // RWSTART
       | (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
-      | (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks
+      | (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks  ??? only single block works
       | (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
-      | (0  <<  0)  // DTEN: 1 = start data without CPSM transfer command
+      | (1  <<  0)  // DTEN: 1 = start data without CPSM transfer command
     );
 
     // the DMA must be started before DCTRL (DTEN)
@@ -584,6 +581,11 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
   regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
   regs->DLEN = datalen;
   regs->DCTRL = dctrl;
+
+#ifdef MCUSF_H7
+  // this flag was set in the ST hal drivers, but seems to work without it
+  //regs->CMD |= SDMMC_CMD_CMDTRANS;
+#endif
 }
 
 #endif
