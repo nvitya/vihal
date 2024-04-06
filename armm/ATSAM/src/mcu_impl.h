@@ -21,6 +21,10 @@
   #include "hwuart_atsam.h"
 #endif
 
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_atsam.h"
+#endif
+
 #ifdef HWSPI_H_
   #include "hwspi_atsam.h"
 #endif

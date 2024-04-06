@@ -19,9 +19,10 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 // file:     hwuscounter.h
-// brief:    us (microseconds) counter using some internal timer hardware
+// brief:    32-bit us (microseconds) counter using some internal timer hardware
 // created:  2024-04-06
 // authors:  nvitya
+
 
 #ifndef HWUSCOUNTER_H_PRE_
 #define HWUSCOUNTER_H_PRE_
@@ -52,7 +53,7 @@ class THwUsCounter_noimpl : public THwUsCounter_pre
 public: // mandatory
   bool      Init();
   uint32_t  Get32();
-  uint64_t  Get64(); // must be called at least every half hour
+  uint64_t  Get64(); // SW extended to 64-bit, it must be called at least every half an hour
 protected:
   uint32_t  cnt32;
   uint32_t  last_clkcnt_ud; // last microseconds clock counter (without remainder)
