@@ -255,10 +255,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // set other clock domains
 
-  // PERCLK_CLK_ROOT: max 75 MHz
+  // PERCLK_CLK_ROOT: max 75 MHz, used by the GPT timers, set to 24 MHz
   tmp = CCM->CSCMR1;
-  tmp &= ~CCM_CSCMR1_PERCLK_PODF_MASK;
-  tmp |=  CCM_CSCMR1_PERCLK_PODF(1);  // set divide by two to have the maximal speed 75 MHz
+  tmp &= ~(CCM_CSCMR1_PERCLK_PODF_MASK | CCM_CSCMR1_PERCLK_CLK_SEL_MASK);
+  tmp |=  CCM_CSCMR1_PERCLK_CLK_SEL(1);  // select the 24 MHz oscillator clock
+  tmp |=  CCM_CSCMR1_PERCLK_PODF(0);     // do not divide
   CCM->CSCMR1 = tmp;
 
   // SEMC_CLK_ROOT: max 166 MHz
