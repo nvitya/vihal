@@ -30,12 +30,12 @@
 #define HWUSCOUNTER_PRE_ONLY
 #include "hwuscounter.h"
 
-#if defined(TIM2)
+#if defined(TIM2) && !defined(MCUSF_F0) && !defined(MCUSF_F1)
 
 class THwUsCounter_stm32 : public THwUsCounter_pre
 {
 public:
-  int             timerdev = 2;  // 2 = TIM2 by default, alternate: 5 = TIM5
+  int             timerdev = 5;  // 5 = TIM5 by default, fallback: 2 = TIM2
   TIM_TypeDef *   regs = nullptr;
 
   bool Init();

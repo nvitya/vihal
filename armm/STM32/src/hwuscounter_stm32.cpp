@@ -27,23 +27,27 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "hwuscounter.h"
-
-#if defined(TIM2)
-
+//#include "hwuscounter.h"
+#include "platform.h"
 #include "hwuscounter_stm32.h"
+
+#if defined(HWUSCOUNTER_IMPL)
 
 #include "stm32_utils.h"
 
 bool THwUsCounter_stm32::Init()
 {
-  // only TIM5 and TIM2 are 32-bit timers
+  // only TIM5 and TIM2 are 32-bit timers, but not on all STM32 HW
 
+#if defined(TIM5)
   if (5 == timerdev)
   {
     regs = TIM5;
     RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
   }
+#else
+  if (false)  { }
+#endif
   else
   {
     regs = TIM2;
