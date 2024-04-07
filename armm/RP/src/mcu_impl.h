@@ -13,6 +13,10 @@
   #include "hwuart_rp.h"
 #endif
 
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_rp.h"
+#endif
+
 #ifdef HWDMA_H_
   #include "hwdma_rp.h"
 #endif

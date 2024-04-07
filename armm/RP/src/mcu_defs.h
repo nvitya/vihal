@@ -23,10 +23,7 @@
 //#define HW_UART_REGS      SercomUsart
 
 #if __CORTEX_M < 3
-  extern uint32_t rp_watchdog_tick_mul;
-
-  #define CLOCKCNT_BITS  32
-	#define CLOCKCNT       (timer_hw->timelr * rp_watchdog_tick_mul)
+  #define CLOCKCNT16     (pwm_hw->slice[7].ctr)
 #endif
 
 

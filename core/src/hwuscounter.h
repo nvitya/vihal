@@ -79,6 +79,16 @@ class THwUsCounter : public HWUSCOUNTER_IMPL
 
 extern THwUsCounter  uscounter;
 
+ALWAYS_INLINE uint32_t micros()
+{
+  return uscounter.Get32();
+}
+
+ALWAYS_INLINE uint64_t micros64()
+{
+  return uscounter.Get64();
+}
+
 #endif /* HWUSCOUNTER_H_ */
 
 #else

@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -17,38 +18,37 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-/*
- *  file:     clockcnt_rp.cpp
- *  brief:    RP2040 Clock Counter using the PWM7
- *  date:     2018-02-10
- *  authors:  nvitya
-*/
+// file:     hwuscounter_rp.h
+// brief:    RP2040 implementation of the us (microseconds) counter
+// created:  2024-04-07
+// authors:  nvitya
 
-#include "platform.h"
-#include "rp_utils.h"
+#ifndef HWUSCOUNTER_RP_H_
+#define HWUSCOUNTER_RP_H_
 
-#if __CORTEX_M < 3
+#define HWUSCOUNTER_PRE_ONLY
+#include "hwuscounter.h"
 
-// clock timer initialization for Cortex-M0 processors
-
-void clockcnt_init()
+class THwUsCounter_rp : public THwUsCounter_pre
 {
-  rp_reset_control(RESETS_RESET_PWM_BITS, false); // remove reset
+public:
+  int             timerdev = 2;  // 2 = TIM2 by default, alternate: 5 = TIM5
+  timer_hw_t *    regs = nullptr;
 
-  pwm_slice_hw_t *  regs = &pwm_hw->slice[7];
+  bool Init();
 
-  regs->div = (1 << 4); // no division
-  regs->top = 0xFFFF;
-  regs->csr = (0
-    | (0  <<  7)  // PH_ADV: phase correction forwards
-    | (0  <<  6)  // PH_RET: phase correction downwards
-    | (0  <<  4)  // DIVMODE(2): 0 = normal free running mode, 1-3 = channel B input clock
-    | (0  <<  3)  // B_INV: 1 = invert output B
-    | (0  <<  2)  // A_INV: 1 = invert output A
-    | (0  <<  1)  // PH_CORRECT
-    | (1  <<  0)  // EN: 1 = enable
-  );
-}
+  inline uint32_t Get32()
+  {
+    return regs->timelr;
+  }
 
-#endif
+  inline uint64_t Get64()
+  {
+    uint32_t lowreg = regs->timelr;  // reading the low latches the high part
+    return (uint64_t(regs->timehr) << 32) | lowreg;
+  }
+};
 
+#define HWUSCOUNTER_IMPL THwUsCounter_rp
+
+#endif // def HWUSCOUNTER_RP_H_
