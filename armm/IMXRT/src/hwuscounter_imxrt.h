@@ -22,7 +22,8 @@
 // brief:    IMXRT implementation of the us (microseconds) counter
 // created:  2024-04-06
 // authors:  nvitya
-// notes:    uses the 32-bit GPT timer
+// notes:    uses the 32-bit GPT timer, reading the GPT counter is slow,
+//           takes about 80 CPU clocks !
 
 #ifndef HWUSCOUNTER_IMXRT_H_
 #define HWUSCOUNTER_IMXRT_H_
@@ -38,12 +39,12 @@ public:
 
   bool Init();
 
-  inline uint32_t Get32()
+  ALWAYS_INLINE uint32_t Get32()
   {
-    return regs->CNT;
+    return regs->CNT;  // takes about 80 CPU Clocks ! (the peripheral runs with 24 MHz)
   }
 
-  uint64_t        Get64(); // must be called at least every half hour
+  uint64_t        Get64(); // must be called at least every half an hour
 
 protected:
   uint64_t        cnt64_high = 0;
