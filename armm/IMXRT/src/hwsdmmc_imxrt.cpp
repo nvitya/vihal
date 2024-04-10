@@ -213,95 +213,84 @@ void THwSdmmc_imxrt::SetBusWidth(uint8_t abuswidth)
 
 void THwSdmmc_imxrt::SendCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags)
 {
-#if 0
-  regs->HSMCI_MR &= ~(HSMCI_MR_WRPROOF | HSMCI_MR_RDPROOF | HSMCI_MR_FBYTE);
-  regs->HSMCI_DMA = 0;
-  regs->HSMCI_BLKR = 0;
+  uint32_t xfrt = (0
+    | (acmd << 24)  // CMDINX(6)
+    | (0    << 22)  // CMDTYP(2): 0 = normal, 1 = suspend CMD52, 2 = resume CMD52, 3 = abort CMD12
+    | (0    << 21)  // DPSEL: 0 = no data, 1 = data present
+    | (0    << 20)  // CICEN: 0 = no index check
+    | (0    << 19)  // CCCEN: 0 = no CRC check, 1 = enable CRC check
+    | (0    << 16)  // RSPTYP(2): 0 = no response, 1 = 136-bit response, 2 = 48-bit response, 3 = 48-bit with busy
+  );
 
-  uint32_t cmdr = (acmd & 0x3F);
+  regs->PROT_CTRL = protctl_base;
+  regs->MIX_CTRL  = mixctl_base;
+
   uint8_t restype = (cmdflags & SDCMD_RES_MASK);
   if (restype)
   {
     // response present
-    cmdr |= HSMCI_CMDR_MAXLAT; // increase latency for commands with response
-    if (restype == SDCMD_RES_48BIT)  cmdr |= HSMCI_CMDR_RSPTYP_48_BIT;
-    else if (restype == SDCMD_RES_136BIT)  cmdr |= HSMCI_CMDR_RSPTYP_136_BIT;
-    else if (restype == SDCMD_RES_R1B)  cmdr |= HSMCI_CMDR_RSPTYP_R1B;
+    if      (restype == SDCMD_RES_48BIT)   xfrt |= (2 << 16);
+    else if (restype == SDCMD_RES_136BIT)  xfrt |= (1 << 16);
+    else if (restype == SDCMD_RES_R1B)     xfrt |= (3 << 16);
   }
-  if (cmdflags & SDCMD_OPENDRAIN)
-  {
-    cmdr |= HSMCI_CMDR_OPDCMD_OPENDRAIN;
-  }
+
+  regs->INT_STATUS = 0xFFFFFFFF;
+  regs->CMD_ARG = cmdarg;
+  regs->CMD_XFR_TYP = xfrt;
 
   cmderror = false;
 
-  regs->HSMCI_ARGR = cmdarg;
-  regs->HSMCI_CMDR = cmdr; // start the execution
-
   lastcmdtime = CLOCKCNT;
   cmdrunning = true;
-#endif
 }
 
 bool THwSdmmc_imxrt::CmdFinished()
 {
-#if 0
-  uint32_t sr = regs->HSMCI_SR;
+  uint32_t sr = regs->INT_STATUS;
 
-  if (sr & (HSMCI_SR_CSTOE | HSMCI_SR_RTOE | HSMCI_SR_RENDE | HSMCI_SR_RDIRE | HSMCI_SR_RINDE))
+  if (sr & (USDHC_INT_STATUS_CCE_MASK | USDHC_INT_STATUS_CEBE_MASK | USDHC_INT_STATUS_CIE_MASK
+            | USDHC_INT_STATUS_DTOE_MASK | USDHC_INT_STATUS_DCE_MASK | USDHC_INT_STATUS_DEBE_MASK
+           )
+     )
   {
     cmderror = true;
     return true;
   }
 
-  if (sr & HSMCI_SR_CMDRDY)
+  if (sr & USDHC_INT_STATUS_CC_MASK)
   {
     return true;
   }
-#endif
   return false;
 }
 
 bool THwSdmmc_imxrt::TransferFinished()
 {
-  if (dma.initialized && dma.Active())
+  uint32_t sr = regs->INT_STATUS;
+  if (sr & USDHC_INT_STATUS_TC_MASK)
   {
-    return false;
+    return true;
   }
-
-#if 0
-  if (0 == (regs->HSMCI_SR & HSMCI_SR_XFRDONE))
-  {
-    return false;
-  }
-#endif
-
-  return true;
+  return false;
 }
 
 void THwSdmmc_imxrt::CloseTransfer()
 {
-#if 0
-  regs->ICR = 0xFFFFFFFF;
-#endif
+
 }
 
 void THwSdmmc_imxrt::GetCmdResult128(void * adataptr)
 {
-#if 0
   uint32_t * dst = (uint32_t *)adataptr;
-  dst += 3;
-  for (int n = 0; n < 4; ++n)
-  {
-    *dst = regs->HSMCI_RSPR[0];
-    --dst;
-  }
-#endif
+  *dst++ = regs->CMD_RSP0;
+  *dst++ = regs->CMD_RSP1;
+  *dst++ = regs->CMD_RSP2;
+  *dst++ = regs->CMD_RSP3;
 }
 
 uint32_t THwSdmmc_imxrt::GetCmdResult32()
 {
-  return 0; //regs->HSMCI_RSPR[0];
+  return regs->CMD_RSP0;
 }
 
 bool THwSdmmc_imxrt::CmdResult32Ok()
