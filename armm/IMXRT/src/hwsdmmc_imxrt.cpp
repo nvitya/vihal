@@ -166,68 +166,49 @@ bool THwSdmmc_imxrt::Init(int adevnum)
 
 void THwSdmmc_imxrt::SetSpeed(uint32_t speed)
 {
-#if 0
-  uint32_t mck = atsam_peripheral_clock();
+  uint32_t  baseclock = 198000000;
+  uint32_t  prediv = 4;
+  uint32_t  pdcode = 2;
 
-  if (speed > 25000000)
+  // switch to 64 division
+  if (speed < 4000000)
   {
-    HSMCI->HSMCI_CFG |= HSMCI_CFG_HSMODE;
+    prediv = 64;
+    pdcode = 20;
   }
-  else
-  {
-    HSMCI->HSMCI_CFG &= ~HSMCI_CFG_HSMODE;
-  }
+  uint32_t  predivclk = baseclock / prediv;
 
-  uint32_t clkdiv = 0;
-  uint32_t rest = 0;
+  uint32_t  div = predivclk / speed;
+  if (div <  1)  div = 1;
+  if (div > 16)  div = 16;
 
-  // Speed = MCK clock / (2 * (CLKDIV + 1))
-  if ((speed * 2) < mck)
-  {
-    clkdiv = mck / (2 * speed);
-    rest = mck % (2 * speed);
-    if (rest > 0)
-    {
-      // Ensure that the card speed not be higher than expected.
-      clkdiv++;
-    }
-    if (clkdiv > 0)
-    {
-      clkdiv -= 1;
-    }
-  }
-  else
-  {
-    clkdiv = 0;
-  }
-  regs->HSMCI_MR &= ~HSMCI_MR_CLKDIV_Msk;
-  regs->HSMCI_MR |= HSMCI_MR_CLKDIV(clkdiv);
-#endif
+  uint32_t tmp = (regs->SYS_CTRL & ~(0x0000FFF0));
+  tmp |= (0
+    | (pdcode    <<  8)  // SDCLKFS(8): clock frequency select: 0 = /1, 1 = /2, 2 = /4, 4 = /8, 8 = /16, 32 = /64
+    | ((div - 1) <<  4)  // DVS(4): divisor: 0 = /1, 1 = /2, 2 = /3, 14 = /15, 15 = /16
+  );
+  regs->SYS_CTRL = tmp;
 }
 
 void THwSdmmc_imxrt::SetBusWidth(uint8_t abuswidth)
 {
-#if 0
-  uint32_t hsmci_slot = HSMCI_SDCR_SDCSEL_SLOTA;
-  uint32_t hsmci_bus_width;
+  // bit2-1: DTW(2): data transfer width: 0 = 1-bit, 1 = 4-bit, 2 = 8-bit
+  protctl_base &= ~(3 << 1);
 
-  switch (abuswidth)
+  if (8 == abuswidth)
   {
-  case 4:
-    hsmci_bus_width = HSMCI_SDCR_SDCBUS_4;
-    break;
-
-  case 8:
-    hsmci_bus_width = HSMCI_SDCR_SDCBUS_8;
-    break;
-
-  default:
-  case 1:
-    hsmci_bus_width = HSMCI_SDCR_SDCBUS_1;
-    break;
+    protctl_base |= (2 << 1);
   }
-  HSMCI->HSMCI_SDCR = hsmci_slot | hsmci_bus_width;
-#endif
+  else if (4 == abuswidth)
+  {
+    protctl_base |= (1 << 1);
+  }
+  else
+  {
+    protctl_base |= (0 << 1);
+  }
+
+  regs->PROT_CTRL = protctl_base;
 }
 
 void THwSdmmc_imxrt::SendCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags)
