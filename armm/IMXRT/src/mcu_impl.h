@@ -52,3 +52,7 @@
 #ifdef HWPWM_H_
   #include "hwpwm_imxrt.h"
 #endif
+
+#if defined(HWSDMMC_H_)
+  #include "hwsdmmc_imxrt.h"
+#endif

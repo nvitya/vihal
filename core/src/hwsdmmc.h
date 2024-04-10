@@ -91,8 +91,10 @@ public: // mandatory
 
 	void StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen) { }
 	void StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen) { }
+  void StartDataWriteTransmit(void * dataptr, uint32_t datalen) { }
 
 	uint32_t GetCmdResult32() { return 0; }
+  bool CmdResult32Ok() { return false; }
 	void GetCmdResult128(void * adataptr) { }
 
 	bool TransferFinished() { return true; }

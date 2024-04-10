@@ -39,7 +39,6 @@ bool THwSpi_imxrt::Init(int adevnum)
 	tmp |=  CCM_CBCMR_LPSPI_CLK_SEL(1);  // 1 = PLL3.PFD0 = 720 MHz
 	tmp |=  CCM_CBCMR_LPSPI_PODF(5);     // 5 = divide by 6
 	CCM->CBCMR = tmp;
-	unsigned baseclock = 120000000;
 
 	regs = nullptr;
 	if (1 == devnum)
@@ -100,33 +99,13 @@ bool THwSpi_imxrt::Init(int adevnum)
 
 	if (inter_frame_pulse)  regs->CFGR1 |= (1 << 2);
 
-	// the minimal clock divisor is 2 !
-	unsigned sckdiv = baseclock / speed;
-	if (sckdiv * speed != baseclock)
-	{
-		++sckdiv;
-	}
-
-	if (sckdiv < 2)  sckdiv = 2;
-	if (sckdiv > 257)  sckdiv = 257;
-
-	// clock configuration register
-
-	// configure a delay which provides continous transfer at low frequencies:
-	unsigned csdelay = ((sckdiv + 1) >> 2);
-
-	regs->CCR = 0
-		| (csdelay << 24)	 // SCKPCS(8): 0 = 1 cycle delay after last clock to CS deactivation
-		| (csdelay << 16)	 // PCSSCK(8): 0 = 1 cycle delay after to first clock after CS activation
-		| (0 <<  8)	 			 // DBT(8): delay between transfers
-		| ((sckdiv - 2) <<  0)	 // SCKDIV(8):
-	;
-
 	// The watermarks must be 0, otherwise the last byte won't be reported to the DMA !
 	regs->FCR = 0
 		| (0 << 16)	 // RXWATER(4): 1 = 1 word
 		| (0 <<  0)	 // TXWATER(4): 1 = 1 word
 	;
+
+	SetSpeed(speed);
 
 	// do not set the Transmit Command Register, because it goes only into the FIFO too!
 
@@ -152,6 +131,33 @@ bool THwSpi_imxrt::Init(int adevnum)
 	regs->TCR = tcrbase; // set the transmit parameters
 
 	return true;
+}
+
+void THwSpi_imxrt::SetSpeed(unsigned aspeed)
+{
+  unsigned baseclock = 120000000;
+
+  // the minimal clock divisor is 2 !
+  unsigned sckdiv = baseclock / speed;
+  if (sckdiv * speed != baseclock)
+  {
+    ++sckdiv;
+  }
+
+  if (sckdiv < 2)  sckdiv = 2;
+  if (sckdiv > 257)  sckdiv = 257;
+
+  // clock configuration register
+
+  // configure a delay which provides continous transfer at low frequencies:
+  unsigned csdelay = ((sckdiv + 1) >> 2);
+
+  regs->CCR = 0
+    | (csdelay << 24)  // SCKPCS(8): 0 = 1 cycle delay after last clock to CS deactivation
+    | (csdelay << 16)  // PCSSCK(8): 0 = 1 cycle delay after to first clock after CS activation
+    | (0 <<  8)        // DBT(8): delay between transfers
+    | ((sckdiv - 2) <<  0)   // SCKDIV(8):
+  ;
 }
 
 bool THwSpi_imxrt::TrySendData(uint8_t adata)

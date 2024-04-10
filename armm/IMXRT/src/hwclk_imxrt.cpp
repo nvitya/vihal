@@ -137,6 +137,23 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     | (18 << 24)   // PFD3_FRAC(6): 18 = 480 MHz - dedicated to CPU clock source
   ;
 
+  // Set the System PLL (PLL2) to 528 MHz
+
+  //CLOCK_InitSysPll(&sysPllConfig); /* Configure SYS PLL to 528M */
+  CCM_ANALOG->PLL_SYS = CCM_ANALOG_PLL_SYS_ENABLE_MASK | CCM_ANALOG_PLL_SYS_DIV_SELECT(1);
+  while ((CCM_ANALOG->PLL_SYS & CCM_ANALOG_PLL_SYS_LOCK_MASK) == 0)
+  {
+  }
+
+  // set its fractional dividers
+  // resulting frequency f = 528 * 18 / PFDx_FRAC
+
+  CCM_ANALOG->PFD_528 = 0
+    | (27 <<  0)   // PFD0_FRAC(6): 27 = 352 MHz
+    | (16 <<  8)   // PFD1_FRAC(6): 16 = 594 MHz
+    | (24 << 16)   // PFD2_FRAC(6): 24 = 396 MHz - used by the SD-CARD
+    | (24 << 24)   // PFD3_FRAC(6): 24 = 396 MHz - dedicated to CPU clock source
+  ;
 
 #if defined(MCUSF_1020)
 
@@ -160,25 +177,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   /* Disable Bypass */
   CCM_ANALOG->PLL_ENET &= ~CCM_ANALOG_PLL_ENET_BYPASS_MASK;
-
-  // 3. Set System PLL (PLL2) to 528 MHz
-
-  //CLOCK_InitSysPll(&sysPllConfig); /* Configure SYS PLL to 528M */
-  CCM_ANALOG->PLL_SYS = CCM_ANALOG_PLL_SYS_ENABLE_MASK | CCM_ANALOG_PLL_SYS_DIV_SELECT(1);
-  while ((CCM_ANALOG->PLL_SYS & CCM_ANALOG_PLL_SYS_LOCK_MASK) == 0)
-  {
-  }
-
-  // set its fractional dividers
-  // resulting frequency f = 528 * 18 / PFDx_FRAC
-
-  CCM_ANALOG->PFD_528 = 0
-  	| (27 <<  0)   // PFD0_FRAC(6): 27 = 352 MHz
-  	| (16 <<  8)   // PFD1_FRAC(6): 16 = 594 MHz
-  	| (24 << 16)   // PFD2_FRAC(6): 24 = 396 MHz
-  	| (24 << 24)   // PFD3_FRAC(6): 24 = 396 MHz - dedicated to CPU clock source
-  ;
-
 
   // 5. Setup the audio PLL (PLL4)
 
@@ -222,12 +220,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   {
   }
 
-  //CLOCK_InitSysPll(&sysPllConfig); /* Configure SYS PLL to 528M */
-  CCM_ANALOG->PLL_SYS = CCM_ANALOG_PLL_SYS_ENABLE_MASK | CCM_ANALOG_PLL_SYS_DIV_SELECT(1);
-  while ((CCM_ANALOG->PLL_SYS & CCM_ANALOG_PLL_SYS_LOCK_MASK) == 0)
-  {
-  }
-
   // set the clock
 
   if (528000000 == target_speed_hz)
@@ -255,11 +247,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // set other clock domains
 
-  // PERCLK_CLK_ROOT: max 75 MHz, used by the GPT timers, set to 24 MHz
   tmp = CCM->CSCMR1;
-  tmp &= ~(CCM_CSCMR1_PERCLK_PODF_MASK | CCM_CSCMR1_PERCLK_CLK_SEL_MASK);
+  tmp &= ~(CCM_CSCMR1_PERCLK_PODF_MASK | CCM_CSCMR1_PERCLK_CLK_SEL_MASK
+           | CCM_CSCMR1_USDHC1_CLK_SEL_MASK | CCM_CSCMR1_USDHC2_CLK_SEL_MASK);
+  // PERCLK_CLK_ROOT: max 75 MHz, used by the GPT timers, set to 24 MHz
   tmp |=  CCM_CSCMR1_PERCLK_CLK_SEL(1);  // select the 24 MHz oscillator clock
   tmp |=  CCM_CSCMR1_PERCLK_PODF(0);     // do not divide
+  // SD Card clocks
+  tmp |=  CCM_CSCMR1_USDHC1_CLK_SEL(0);  // select PFD2 = 198 MHz
+  tmp |=  CCM_CSCMR1_USDHC2_CLK_SEL(0);  // select PFD2 = 198 MHz
   CCM->CSCMR1 = tmp;
 
   // SEMC_CLK_ROOT: max 166 MHz
@@ -270,6 +266,12 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   tmp |=  CCM_CBCDR_SEMC_PODF(3);       // select main clock / 4 for SEMC = 125 MHz
   CCM->CBCDR = tmp;
 
+  // USDHC1 + USDHC2: max 198 MHz
+  tmp = CCM->CSCDR1;
+  tmp &= ~(CCM_CSCDR1_USDHC1_PODF_MASK | CCM_CSCDR1_USDHC2_PODF_MASK);
+  tmp |=  CCM_CSCDR1_USDHC1_PODF(1);   // divide by two
+  tmp |=  CCM_CSCDR1_USDHC2_PODF(1);   // divide by two
+  CCM->CSCDR1 = tmp;
 
   //CLOCK_SetMux(kCLOCK_PeriphMux, 0x0);    /* Set PERIPH_CLK MUX to PRE_PERIPH_CLK */
   tmp = CCM->CBCDR;
