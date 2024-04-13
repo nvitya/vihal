@@ -31,6 +31,25 @@
 #define HWSDMMC_PRE_ONLY
 #include "hwsdmmc.h"
 
+typedef struct
+{
+  uint8_t     attr;
+  uint8_t     _reserved;  // should be filled with zeroes
+  uint16_t    length;
+  uint32_t    address;
+//
+} TAdma2Desc;
+
+#define ADMA2_ACT_NOP      (0 << 4)
+#define ADMA2_ACT_TRAN     (2 << 4)
+#define ADMA2_ACT_LINK     (3 << 4)
+
+#define ADMA2_ATTR_VALID   (1 << 0)
+#define ADMA2_ATTR_END     (1 << 1)
+#define ADMA2_ATTR_INT     (1 << 2)
+
+#define MAX_ADMA2_DESC     8
+
 class THwSdmmc_imxrt : public THwSdmmc_pre
 {
 public:
@@ -62,8 +81,13 @@ public:
   void CloseTransfer();
 
 protected:
-  uint32_t   protctl_base = 0;
-  uint32_t   mixctl_base = 0;
+  uint32_t     protctl_base = 0;
+  uint32_t     mixctl_base = 0;
+
+  TAdma2Desc   adma2desc[MAX_ADMA2_DESC] __attribute__((aligned(8)));
+
+  void         PrepareAdma2(void * aaddr, uint32_t alen);
+
 };
 
 #define HWSDMMC_IMPL THwSdmmc_imxrt

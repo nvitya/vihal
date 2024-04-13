@@ -26,6 +26,7 @@
 */
 
 #include "platform.h"
+#include "string.h"
 #include "hwsdmmc.h"
 #include "imxrt_utils.h"
 #include "clockcnt.h"
@@ -79,10 +80,11 @@ bool THwSdmmc_imxrt::Init(int adevnum)
 
   regs->WTMK_LVL = (0
     | (8    << 24)  // WR_BRST_LEN(5)
-    | (0x80 << 16)  // WR_WML(8): write watermark level (words)
+    | (0x40 << 16)  // WR_WML(8): write watermark level (words)
     | (8    <<  8)  // RD_BRST_LEN(5)
-    | (0x80 <<  0)  // RD_WML(8): read watermark level (words)
+    | (0x40 <<  0)  // RD_WML(8): read watermark level (words)
   );
+
 
   protctl_base = (0
     | (0    << 30)  // NON_EXACT_BLK_RD
@@ -122,7 +124,6 @@ bool THwSdmmc_imxrt::Init(int adevnum)
     | (0    <<  0)  // DMAEN: 1 = enable DMA
   );
   regs->MIX_CTRL = mixctl_base;
-
   /* disable interrupt, enable all the interrupt status, clear status. */
   regs->INT_STATUS_EN = 0xFFFFFFFF;
   regs->INT_SIGNAL_EN = 0;
@@ -168,17 +169,19 @@ void THwSdmmc_imxrt::SetSpeed(uint32_t speed)
 {
   uint32_t  baseclock = 198000000;
   uint32_t  prediv = 4;
-  uint32_t  pdcode = 2;
+  uint32_t  pdcode = 0x02;
 
   // switch to 64 division
   if (speed < 4000000)
   {
     prediv = 64;
-    pdcode = 20;
+    pdcode = 0x20;
   }
   uint32_t  predivclk = baseclock / prediv;
 
   uint32_t  div = predivclk / speed;
+  if ((div < 16) && (predivclk > speed * div))  ++div;
+  //if (div * speed
   if (div <  1)  div = 1;
   if (div > 16)  div = 16;
 
@@ -282,10 +285,11 @@ void THwSdmmc_imxrt::CloseTransfer()
 void THwSdmmc_imxrt::GetCmdResult128(void * adataptr)
 {
   uint32_t * dst = (uint32_t *)adataptr;
-  *dst++ = regs->CMD_RSP0;
-  *dst++ = regs->CMD_RSP1;
-  *dst++ = regs->CMD_RSP2;
-  *dst++ = regs->CMD_RSP3;
+
+  *dst++ = (regs->CMD_RSP0 << 8);
+  *dst++ = (regs->CMD_RSP1 << 8) | ((regs->CMD_RSP0 >> 24) & 0xFF);
+  *dst++ = (regs->CMD_RSP2 << 8) | ((regs->CMD_RSP1 >> 24) & 0xFF);
+  *dst++ = (regs->CMD_RSP3 << 8) | ((regs->CMD_RSP2 >> 24) & 0xFF);
 }
 
 uint32_t THwSdmmc_imxrt::GetCmdResult32()
@@ -306,69 +310,108 @@ bool THwSdmmc_imxrt::CmdResult32Ok()
   }
 }
 
+#define ADMA2_MAX_CHUNK  65532
+
+void THwSdmmc_imxrt::PrepareAdma2(void * aaddr, uint32_t alen)
+{
+  if (alen > MAX_ADMA2_DESC * ADMA2_MAX_CHUNK)
+  {
+    alen = MAX_ADMA2_DESC * ADMA2_MAX_CHUNK;
+  }
+
+  memset(&adma2desc[0], 0, sizeof(adma2desc)); // clear all descriptors
+
+  uint32_t      remaining = alen;
+  uint32_t      addr = uint32_t(aaddr);
+  TAdma2Desc *  pdesc = &adma2desc[0];
+
+  while (remaining > 0)
+  {
+    uint32_t chunklen = remaining;
+    if (chunklen > ADMA2_MAX_CHUNK)  chunklen = ADMA2_MAX_CHUNK;
+
+    //memset(pdesc, 0, sizeof(TAdma2Desc));
+    pdesc->length  = chunklen;
+    pdesc->address = addr;
+    pdesc->attr    = (ADMA2_ACT_TRAN | ADMA2_ATTR_VALID);
+    if (chunklen >= remaining)
+    {
+      pdesc->attr |= ADMA2_ATTR_END;
+    }
+
+    remaining -= chunklen;
+    addr += chunklen;
+    ++pdesc;
+  }
+
+  __DSB();
+
+  regs->ADMA_SYS_ADDR = uint32_t(&adma2desc[0]);
+}
+
 void THwSdmmc_imxrt::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
 {
-#if 0
-  // Enabling Read/Write Proof allows to stop the HSMCI Clock during
-  // read/write  access if the internal FIFO is full.
-  // This will guarantee data integrity, not bandwidth.
-  regs->HSMCI_MR |= HSMCI_MR_WRPROOF | HSMCI_MR_RDPROOF;
-
-  if (datalen & 0x3)
-  {
-    regs->HSMCI_MR |= HSMCI_MR_FBYTE;
-  }
-  else
-  {
-    regs->HSMCI_MR &= ~HSMCI_MR_FBYTE;
-  }
-
-  regs->HSMCI_DMA = HSMCI_DMA_DMAEN;
-
-  uint32_t cmdr = (acmd & 0x3F);
+  uint32_t xfrt = (0
+    | (acmd << 24)  // CMDINX(6)
+    | (0    << 22)  // CMDTYP(2): 0 = normal, 1 = suspend CMD52, 2 = resume CMD52, 3 = abort CMD12
+    | (1    << 21)  // DPSEL: 0 = no data, 1 = data present
+    | (0    << 20)  // CICEN: 0 = no index check
+    | (0    << 19)  // CCCEN: 0 = no CRC check, 1 = enable CRC check
+    | (0    << 16)  // RSPTYP(2): 0 = no response, 1 = 136-bit response, 2 = 48-bit response, 3 = 48-bit with busy
+  );
   uint8_t restype = (cmdflags & SDCMD_RES_MASK);
   if (restype)
   {
     // response present
-    cmdr |= HSMCI_CMDR_MAXLAT; // increase latency for commands with response
-    if (restype == SDCMD_RES_48BIT)  cmdr |= HSMCI_CMDR_RSPTYP_48_BIT;
-    else if (restype == SDCMD_RES_136BIT)  cmdr |= HSMCI_CMDR_RSPTYP_136_BIT;
-    else if (restype == SDCMD_RES_R1B)  cmdr |= HSMCI_CMDR_RSPTYP_R1B;
-  }
-  if (cmdflags & SDCMD_OPENDRAIN)
-  {
-    cmdr |= HSMCI_CMDR_OPDCMD_OPENDRAIN;
+    if      (restype == SDCMD_RES_48BIT)   xfrt |= (2 << 16);
+    else if (restype == SDCMD_RES_136BIT)  xfrt |= (1 << 16);
+    else if (restype == SDCMD_RES_R1B)     xfrt |= (3 << 16);
   }
 
-  // add data transfer flags
-  cmdr |= HSMCI_CMDR_TRCMD_START_DATA | HSMCI_CMDR_TRDIR_READ;
-  if (datalen <= 512)
+  regs->PROT_CTRL = (protctl_base
+    | (2    <<  8)  // DMASEL(2): 0 = no DMA, 1 = ADMA1, 2 = ADMA2
+  );
+
+  uint32_t mixctl = (mixctl_base
+    | (0    <<  5)  // MSBSEL: 0 = single block, 1 = multi block
+    | (1    <<  4)  // DTDSEL: data direction: 0 = write (host to card), 1 = read (card to host)
+    | (0    <<  3)  // DDR_EN
+    | (0    <<  2)  // AC12EN: auto CMD12 enable
+    | (0    <<  1)  // BCEN: block count enable
+    | (1    <<  0)  // DMAEN: 1 = enable DMA
+  );
+  if (datalen >= 512)
   {
-    cmdr |= HSMCI_CMDR_TRTYP_SINGLE;
-    regs->HSMCI_BLKR = (datalen << 16) | (1 << 0);
+    mixctl |= (1 << 1);  // BCEN: block count enable
+    if (datalen > 512)
+    {
+      mixctl |= (1 <<  5);   // MSBSEL: 0 = single block, 1 = multi block
+    }
+    regs->BLK_ATT = (0
+      | ((datalen >> 9)  << 16) // BLKCNT(16): (datalen >> 9  =  datalen / 512)
+      | (512             <<  0) // BLKSIZE(13):
+    );
   }
   else
   {
-    cmdr |= HSMCI_CMDR_TRTYP_MULTIPLE;
-    regs->HSMCI_BLKR = (512 << 16) | (datalen >> 9);  // fix 512 byte blocks
+    regs->BLK_ATT = (0
+      | (1       << 16) // BLKCNT(16):
+      | (datalen <<  0) // BLKSIZE(13):
+    );
+    mixctl |= (1 << 1);  // BCEN: block count enable
+    mixctl |= (0 << 5);  // MSBSEL: 0 = single block, 1 = multi block
   }
+  regs->MIX_CTRL  = mixctl;
+
+  PrepareAdma2(dataptr, datalen);
+
+  regs->INT_STATUS = 0xFFFFFFFF;
+  regs->CMD_ARG = cmdarg;
+  regs->CMD_XFR_TYP = xfrt;
 
   cmderror = false;
-
-  // start the DMA channel
-  dma.Prepare(false, (void *)&regs->HSMCI_FIFO[0], 0);
-  dmaxfer.flags = 0; // use defaults
-  dmaxfer.bytewidth = 4;  // destination must be aligned !!!
-  dmaxfer.count = (datalen >> 2);
-  dmaxfer.dstaddr = dataptr;
-  dma.StartTransfer(&dmaxfer);
-
-  regs->HSMCI_ARGR = cmdarg;
-  regs->HSMCI_CMDR = cmdr; // start the execution
-
   lastcmdtime = CLOCKCNT;
   cmdrunning = true;
-#endif
 }
 
 void THwSdmmc_imxrt::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
