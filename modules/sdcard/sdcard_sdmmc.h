@@ -53,13 +53,7 @@ protected:
 
   uint32_t      cmd_start_time = 0;
   uint8_t       cmdlen = 0;
-
-  uint32_t      remainingbytes = 0;
-
-  //uint8_t       curcmd = 0;
-  //uint32_t      curcmdflags = 0;
-  //uint32_t      curcmdarg = 0;
-
+  uint32_t      chunk_blocks = 0;
   uint32_t      after_error_delay_clocks = 1;
 
   void          RunInitialization();  // initialization state machine

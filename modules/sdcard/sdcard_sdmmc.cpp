@@ -350,6 +350,8 @@ void TSdCardSdmmc::RunTransfer()
 
     //TRACE("s.r. STA=%08X\r\n", regs->STA);
 
+    chunk_blocks = remainingblocks;
+    if (chunk_blocks > 128)  chunk_blocks = 128;  // 64k maximal chunks
     StartCmdReadBlocks();
 
     cmd_start_time = CLOCKCNT;
@@ -386,6 +388,8 @@ void TSdCardSdmmc::RunTransfer()
   case 11: // start write blocks
     //TRACE("s.w. STA=%08X\r\n", regs->STA);
 
+    chunk_blocks = remainingblocks;
+    if (chunk_blocks > 128)  chunk_blocks = 128;  // 64k maximal chunks
     StartCmdWriteBlocks();
 
     wr_errors = 0;
@@ -416,7 +420,7 @@ void TSdCardSdmmc::RunTransfer()
       //return;
     }
 
-    sdmmc->StartDataWriteTransmit(dataptr, blockcount * 512);
+    sdmmc->StartDataWriteTransmit(dataptr, chunk_blocks * 512);
 
     cmd_start_time = CLOCKCNT;
     trstate = 101;
@@ -434,7 +438,11 @@ void TSdCardSdmmc::RunTransfer()
       return;
     }
 
-    if (blockcount > 1)
+    remainingblocks -= chunk_blocks;
+    curblock        += chunk_blocks;
+    dataptr         += chunk_blocks * 512;
+
+    if (chunk_blocks > 1)
     {
       // send the stop transmission command
       sdmmc->SendCmd(12, 0, SDCMD_RES_R1B);
@@ -479,6 +487,12 @@ void TSdCardSdmmc::RunTransfer()
 
     if (!iswrite)
     {
+      if (remainingblocks > 0)
+      {
+        trstate = 1;
+        RunTransfer();
+        return;
+      }
       FinishTransfer(0);
       return;
     }
@@ -531,6 +545,13 @@ void TSdCardSdmmc::RunTransfer()
       }
       else
       {
+        if (remainingblocks > 0)
+        {
+          trstate = 11;
+          RunTransfer();
+          return;
+        }
+
         FinishTransfer(0);
       }
       return;
@@ -561,11 +582,11 @@ void TSdCardSdmmc::StartCmdReadBlocks()
   uint8_t  cmd;
   uint32_t cmdarg;
 
-  cmdarg = startblock;
+  cmdarg = curblock;
   if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
-  cmd = (blockcount > 1 ? 18 : 17);
+  cmd = (chunk_blocks > 1 ? 18 : 17);
 
-  sdmmc->StartDataReadCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
+  sdmmc->StartDataReadCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, chunk_blocks * 512);
 }
 
 void TSdCardSdmmc::StartCmdWriteBlocks()
@@ -573,9 +594,9 @@ void TSdCardSdmmc::StartCmdWriteBlocks()
   uint8_t  cmd;
   uint32_t cmdarg;
 
-  cmdarg = startblock;
+  cmdarg = curblock;
   if (!high_capacity)  cmdarg <<= 9; // byte addressing for low capacity cards
-  cmd = (blockcount > 1 ? 25 : 24);
+  cmd = (chunk_blocks > 1 ? 25 : 24);
 
-  sdmmc->StartDataWriteCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, blockcount * 512);
+  sdmmc->StartDataWriteCmd(cmd, cmdarg, SDCMD_RES_48BIT, dataptr, chunk_blocks * 512);
 }
