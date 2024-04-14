@@ -385,6 +385,12 @@ void THwSdmmc_imxrt::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
   regs->CMD_ARG = cmdarg;
   regs->CMD_XFR_TYP = xfrt;
 
+  if ((uint32_t(dataptr) >= 0x20200000))  // especially for the SDRAM
+  {
+    // a bit early, the application should not read this memory until the read finishes
+    SCB_InvalidateDCache_by_Addr((uint32_t *)dataptr, datalen);
+  }
+
   cmderror = false;
   lastcmdtime = CLOCKCNT;
   cmdrunning = true;
@@ -443,6 +449,12 @@ void THwSdmmc_imxrt::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t c
     mixctl |= (0 << 5);  // MSBSEL: 0 = single block, 1 = multi block
   }
   regs->MIX_CTRL  = mixctl;
+
+  if ((uint32_t(dataptr) >= 0x20200000))  // especially for the SDRAM
+  {
+    // flush the cache to the DMA
+    SCB_CleanDCache_by_Addr((uint32_t *)dataptr, datalen);
+  }
 
   PrepareAdma2(dataptr, datalen);
 
