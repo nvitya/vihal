@@ -55,6 +55,7 @@ protected:
   uint8_t       cmdlen = 0;
   uint32_t      chunk_blocks = 0;
   uint32_t      after_error_delay_clocks = 1;
+  uint32_t      repeatcnt = 0;
 
   void          RunInitialization();  // initialization state machine
   void          RunTransfer();

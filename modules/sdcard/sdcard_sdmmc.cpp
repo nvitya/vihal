@@ -112,6 +112,7 @@ void TSdCardSdmmc::RunInitialization()
       card_v2 = true;
     }
     initstate = 5;
+    repeatcnt = 0;
     break;
 
   // Wait until the card is ready
@@ -154,7 +155,15 @@ void TSdCardSdmmc::RunInitialization()
       else
       {
         // repeat OCR register read
-        initstate = 5;
+        ++repeatcnt;
+        if (repeatcnt < 10)
+        {
+          initstate = 5;
+        }
+        else
+        {
+          initstate = 0;
+        }
       }
     }
     break;

@@ -132,32 +132,6 @@ bool THwSdmmc_imxrt::Init(int adevnum)
   SetSpeed(400000);
   SetBusWidth(1);
 
-
-#if 0
-
-  // DMA channel is an user setting
-  dma.Init(dma_channel, 0); // 0 = HSMCI DMA Peripheral Id (Transmit and Receive)
-
-  // Set the Data Timeout Register to 2 Mega Cycles
-  regs->HSMCI_DTOR = HSMCI_DTOR_DTOMUL_1048576 | HSMCI_DTOR_DTOCYC(2);
-  // Set Completion Signal Timeout to 2 Mega Cycles
-  regs->HSMCI_CSTOR = HSMCI_CSTOR_CSTOMUL_1048576 | HSMCI_CSTOR_CSTOCYC(2);
-  // Set Configuration Register
-  regs->HSMCI_CFG = HSMCI_CFG_FIFOMODE | HSMCI_CFG_FERRCTRL; // | HSMCI_CFG_LSYNC;
-
-  // Set power saving to maximum value
-  regs->HSMCI_MR = HSMCI_MR_PWSDIV_Msk;
-
-  SetSpeed(400000);
-  SetBusWidth(1);
-
-  // Enable the HSMCI and the Power Saving
-  regs->HSMCI_CR = HSMCI_CR_MCIEN | HSMCI_CR_PWSEN;
-
-  regs->HSMCI_DMA = 0;
-
-#endif
-
   // wait 74 SD clycles
 
   delay_us(200);
@@ -251,8 +225,10 @@ bool THwSdmmc_imxrt::CmdFinished()
 {
   uint32_t sr = regs->INT_STATUS;
 
-  if (sr & (USDHC_INT_STATUS_CCE_MASK | USDHC_INT_STATUS_CEBE_MASK | USDHC_INT_STATUS_CIE_MASK
-            | USDHC_INT_STATUS_DTOE_MASK | USDHC_INT_STATUS_DCE_MASK | USDHC_INT_STATUS_DEBE_MASK
+  if (sr & (USDHC_INT_STATUS_CCE_MASK | USDHC_INT_STATUS_CTOE_MASK
+            | USDHC_INT_STATUS_CEBE_MASK | USDHC_INT_STATUS_CIE_MASK
+            | USDHC_INT_STATUS_DTOE_MASK | USDHC_INT_STATUS_DCE_MASK
+            | USDHC_INT_STATUS_DEBE_MASK
            )
      )
   {
@@ -310,7 +286,7 @@ bool THwSdmmc_imxrt::CmdResult32Ok()
   }
 }
 
-#define ADMA2_MAX_CHUNK  65532
+#define ADMA2_MAX_CHUNK  (65536 - 16)
 
 void THwSdmmc_imxrt::PrepareAdma2(void * aaddr, uint32_t alen)
 {
