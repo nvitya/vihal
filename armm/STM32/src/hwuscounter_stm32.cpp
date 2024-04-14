@@ -33,6 +33,14 @@
 
 #if defined(HWUSCOUNTER_IMPL)
 
+#ifdef RCC_APB1ENR1_TIM5EN
+  #define RCC_APB1ENR_TIM5EN   RCC_APB1ENR1_TIM5EN
+  #define RCC_APB1ENR_TIM2EN   RCC_APB1ENR1_TIM2EN
+#elif defined(RCC_APB1LENR_TIM5EN)
+  #define RCC_APB1ENR_TIM5EN   RCC_APB1LENR_TIM5EN
+  #define RCC_APB1ENR_TIM2EN   RCC_APB1LENR_TIM2EN
+#endif
+
 #include "stm32_utils.h"
 
 bool THwUsCounter_stm32::Init()
@@ -43,11 +51,7 @@ bool THwUsCounter_stm32::Init()
   if (5 == timerdev)
   {
     regs = TIM5;
-#if defined(RCC_APB1ENR1_TIM5EN)
-    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN;
-#else
-    RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
-#endif
+    APB1ENR_REGISTER |= RCC_APB1ENR_TIM5EN;
   }
 #else
   if (false)  { }
@@ -55,14 +59,15 @@ bool THwUsCounter_stm32::Init()
   else
   {
     regs = TIM2;
-#if defined(RCC_APB1ENR1_TIM2EN)
-    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
-#else
-    RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-#endif
+    APB1ENR_REGISTER |= RCC_APB1ENR_TIM2EN;
   }
 
-  uint32_t periphclock = stm32_bus_speed(STM32_BUSID_APB1) * 2;   // usually CPUCLOCK / 2
+  uint32_t periphclock;
+  #if defined(MCUSF_F7)
+    periphclock = stm32_bus_speed(STM32_BUSID_APB1) * 2;
+  #else
+    periphclock = stm32_bus_speed(STM32_BUSID_APB1);
+  #endif
 
   cnt64_high = 0;
   cnt32_prev = 0;

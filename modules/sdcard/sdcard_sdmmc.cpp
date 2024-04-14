@@ -22,6 +22,8 @@
 // brief:    SDCARD access over SD/MMC controller
 // created:  2022-11-16
 // authors:  nvitya
+// warning:
+//   TODO: very low speed with -O2 !
 
 #include "sdcard_sdmmc.h"
 #include "clockcnt.h"

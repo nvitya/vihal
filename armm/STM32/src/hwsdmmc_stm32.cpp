@@ -451,6 +451,11 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 	regs->ARG = cmdarg;
 	regs->CMD = cmdr; // start the execution
 
+  #if __CORTEX_M == 7
+    // a bit early, the application should not read this memory until the read finishes
+    SCB_InvalidateDCache_by_Addr((uint32_t *)dataptr, datalen);
+  #endif
+
 	curcmdreg = cmdr;
 	cmderror = false;
 	cmdrunning = true;
@@ -577,6 +582,11 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void * dataptr, uint32_t datalen)
     dma.StartTransfer(&dmaxfer);
 
   #endif
+
+#if __CORTEX_M == 7
+  // flush the cache to the DMA
+  SCB_CleanDCache_by_Addr((uint32_t *)dataptr, datalen);
+#endif
 
   regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
   regs->DLEN = datalen;

@@ -42,7 +42,8 @@
          0    0    0    0    0    1  = Device (non-cacheable)
 
  cache:  1    B    B    S    A    A  = BB = outer cache policy, AA = inner cache policy, S = shared (for DMA)
-         1    0    1    1    0    1  = Cacheable, write+read allocate
+         1    0    1    1    0    1  = Cacheable, write+read allocate + shared = 0x2D
+         1    0    1    0    0    1  = Cacheable, write+read allocate + not shared = 0x29
          1    0    0    1    0    0  = Non-cacheable memory
 
 Cacheable policies:
@@ -57,7 +58,9 @@ Cacheable policies:
 #define MEMPROT_ATTR_ORDERED       0x00
 #define MEMPROT_ATTR_DEVICE        0x01
 #define MEMPROT_ATTR_MEM_NOCACHE   0x24
-#define MEMPROT_ATTR_MEM_CACHED    0x2D
+#define MEMPROT_ATTR_MEM_CACHED_SHARED  0x2D
+#define MEMPROT_ATTR_MEM_CACHED_NOSHARE 0x29
+#define MEMPROT_ATTR_MEM_CACHED    MEMPROT_ATTR_MEM_CACHED_NOSHARE
 
 // base bit-offset: 24
 #define MEMPROT_PERM_NOACC   0
