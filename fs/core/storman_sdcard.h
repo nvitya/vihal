@@ -18,25 +18,48 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-// file:     hwerrors.h
-// brief:    Some standardised VIHAL error codes
-// created:  2021-10-02
-// authors:  nvitya
+/*
+ *  file:     storman_sdcard.h
+ *  brief:    Storage Manager for SDCARDs
+ *  date:     2024-04-17
+ *  authors:  nvitya
+*/
 
-#ifndef HWERRORS_H_
-#define HWERRORS_H_
+#ifndef STORMAN_SDCARD_H_
+#define STORMAN_SDCARD_H_
 
-#define HWERR_OK  0
+#include "stormanager.h"
+#include "sdcard.h"
 
-#define HWERR_INVALID   1   // invalid / not existing hardware
-#define HWERR_NOTINIT   2   // the device is not initialized
-#define HWERR_TIMEOUT   3   // operation timed out
-#define HWERR_NOTIMPL   4   // not implemented
-#define HWERR_BUSY      5   // unit busy
-#define HWERR_UNKNOWN   6   // unknown hardware error
-#define HWERR_READ      7   // read error
-#define HWERR_WRITE     8   // write error
-#define HWERR_ERASE     9   // erase error
-#define HWERR_PARAMS   10   // invalid parameters
+class TStorManSdcard : public TStorManager
+{
+private:
+	typedef TStorManager super;
 
-#endif /* HWERRORS_H_ */
+public:
+  TSdCard *      sdcard = nullptr;
+
+  virtual        ~TStorManSdcard() { }
+
+  bool              Init(TSdCard * asdcard);
+  virtual void      Run();
+  virtual uint64_t  ByteSize();
+
+protected:
+	uint32_t       remaining = 0;
+	uint8_t *      dataptr = nullptr;
+	uint64_t       curaddr = 0;
+	uint32_t       chunksize = 0;
+
+  uint64_t       sdbufaddr = 1;  // address of the buffered sector, 1 = invalid
+  uint8_t        sdbuf[512] __attribute__((aligned(16)));  // buffer for the partial reads/writes
+
+	void           StartPartialRead();
+	void           ProcessPartialRead();
+
+	void           PreparePartialWrite();
+	void           StartPartialWrite();
+	void           FinishPartialWrite();
+};
+
+#endif /* STORMAN_SDCARD_H_ */
