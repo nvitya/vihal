@@ -68,6 +68,7 @@ struct TStorTrans
 class TStorManager
 {
 public:
+  uint8_t           devid = 0;
 	unsigned          erase_unit = 4096;
 	unsigned          smallest_block = 1;  // must be power of two !
 
@@ -110,6 +111,8 @@ public:
 
   int               AddManager(TStorManager * amanager);  // returns the storage manager index / id
   void              Run();
+
+  TStorManager *    ManagerById(uint8_t devid);
 
   void              AddTransaction(uint8_t devid, TStorTrans * atra);
   void              AddTransaction(uint8_t devid, TStorTrans * atra, TStorTransType atype, uint64_t aaddr,

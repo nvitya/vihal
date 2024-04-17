@@ -126,10 +126,10 @@ int TGlobalStorMan::AddManager(TStorManager * amanager)
     return -1;
   }
 
-  int r = smcount;
+  amanager->devid = smcount;
   smlist[smcount] = amanager;
   ++smcount;
-  return r;
+  return amanager->devid;
 }
 
 void TGlobalStorMan::Run()
@@ -167,6 +167,15 @@ void TGlobalStorMan::AddTransaction(uint8_t devid, TStorTrans * atra,
 
   TStorManager * pman = smlist[devid];
   pman->AddTransaction(atra, atype, aaddr, adataptr, adatalen);
+}
+
+TStorManager * TGlobalStorMan::ManagerById(uint8_t devid)
+{
+  if (devid >= smcount)
+  {
+    return nullptr;
+  }
+  return smlist[devid];
 }
 
 void TGlobalStorMan::WaitTransaction(TStorTrans * atra)
