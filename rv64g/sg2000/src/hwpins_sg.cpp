@@ -50,11 +50,25 @@ void THwPinCtrl_sg::GpioIrqSetup(int aportnum, int apinnum, int amode)
   // todo: implement
 }
 
+gpio_regs_t * sg_gpio_regs(int aportnum)
+{
+  if ((aportnum < 0) or (aportnum > 3))
+  {
+    return nullptr;
+  }
+
+  return (gpio_regs_t *)(uint64_t(GPIO0_BASE_ADDR) + 0x1000 * aportnum);
+}
+
 // GPIO Port
 
 void TGpioPort_sg::Assign(int aportnum)
 {
-  *portptr = GPIOHS->OUTPUT_VAL;
+  gpio_regs_t * regs = sg_gpio_regs(aportnum);
+  if (regs)
+  {
+    portptr = &regs->SWPORTA_DR;
+  }
 }
 
 void TGpioPort_sg::Set(unsigned value)
@@ -80,13 +94,17 @@ void TGpioPin_sg::Assign(int aportnum, int apinnum, bool ainvert)
   pinmask = (1u << apinnum);
   negpinmask = ~pinmask;
 
-  //setbitptr = (uint32_t *)&GPIOHS->OUTPUT_VAL;
-  //getbitptr = (uint32_t *)&GPIOHS->INPUT_VAL;
-
-
-  setbitptr = &g_dummy_u32;
-  getbitptr = &g_dummy_u32;
-
+  regs = sg_gpio_regs(aportnum);
+  if (regs)
+  {
+    setbitptr = (uint32_t *)&regs->SWPORTA_DR;
+    getbitptr = (uint32_t *)&regs->EXT_PORTA;
+  }
+  else
+  {
+    setbitptr = &g_dummy_u32;
+    getbitptr = &g_dummy_u32;
+  }
 
   // todo: prepare the output invert at the Setup()
 }

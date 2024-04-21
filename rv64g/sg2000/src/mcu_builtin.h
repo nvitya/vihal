@@ -35,7 +35,7 @@
   #define MCUSF_1800
   #define MAX_CLOCK_SPEED  700000000
 
-  #include "sg2000_vihal.h"
+  #include "cv1800_vihal.h"
 
 #elif defined(MCU_SG2002)
 

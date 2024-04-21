@@ -77,6 +77,7 @@ public:
 	void SwitchDirection(int adirection);
 
 public:
+	gpio_regs_t *       regs;
 	uint32_t            pinmask = 0;
 	uint32_t            negpinmask = 0;
 	uint32_t *          setbitptr = nullptr;
