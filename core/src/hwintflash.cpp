@@ -119,7 +119,7 @@ bool THwIntFlash::StartWriteMem(uint32_t aaddr, void * asrcptr, uint32_t alen)
 	address = (aaddr & 0xFFFFFFFC); // ensure 4 byte boundary !
 	length = ((alen + 3) & 0xFFFFFFFC); // ensure that it is rounded to the minimum
 	srcaddr = (uint32_t *)asrcptr;
-	dstaddr = (uint32_t *)address;
+	dstaddr = (uint32_t *)intptr_t(address);
 
 	state = INTFLASH_STATE_WRITEMEM;
 	phase = 0;
@@ -157,8 +157,8 @@ bool THwIntFlash::StartCopyMem(uint32_t aaddr, void * asrcptr, uint32_t alen)
 
 	address = aaddr; // alignment checked before
 	length = ((alen + 3) & 0xFFFFFFFC); // ensure that it is rounded to the minimum
-	srcaddr = (uint32_t *)asrcptr;
-	dstaddr = (uint32_t *)address;
+  srcaddr = (uint32_t *)asrcptr;
+  dstaddr = (uint32_t *)intptr_t(address);
 
 	state = INTFLASH_STATE_COPY;
 	phase = 0;
@@ -301,7 +301,7 @@ void THwIntFlash::Run()
 					uint32_t sv = *sptr++;
 					uint32_t dv = *dptr++;
 
-					if (sv != dv)  
+					if (sv != dv)
 					{
 						match = false;
 						if ((sv & dv) != sv)  // if the flash content has elsewhere zeroes as the source
