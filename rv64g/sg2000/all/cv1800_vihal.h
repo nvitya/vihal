@@ -41,71 +41,115 @@
 // PAD Definitions
 //-----------------------------------------------------------------------------
 
-// pad numbering based on the IOMUX register index
-
-//                        IOMUX     QFN-68
-#define PAD_SD0_CLK        0x00  //  3
-#define PAD_SD0_CMD        0x04  //  4
-#define PAD_SD0_D0         0x08  //  5
-#define PAD_SD0_D1         0x0C  //  7
-#define PAD_SD0_D2         0x10  //  8
-#define PAD_SD0_D3         0x14  //  9
-#define PAD_SD0_CD         0x18  // 11
-#define PAD_SD0_PWR_EN     0x1C  // 12
-#define PAD_SPK_EN         0x20  // 14
-#define PAD_UART0_TX       0x24  // 15
-#define PAD_UART0_RX       0x28  // 16
-#define PAD_SPINOR_HOLD_X  0x2C  // 17
-#define PAD_SPINOR_SCK     0x30  // 18
-#define PAD_SPINOR_MOSI    0x34  // 19
-#define PAD_SPINOR_WP_X    0x38  // 20
-#define PAD_SPINOR_MISO    0x3C  // 21
-#define PAD_SPINOR_CS_X    0x40  // 22
-#define PAD_JTAG_CPU_TMS   0x44  // -
-#define PAD_JTAG_CPU_TCK   0x48  // -
-#define PAD_IIC0_SCL       0x4C  // 23
-#define PAD_IIC0_SDA       0x50  // 24
-#define PAD_AUX0           0x54  // 25
-#define PAD_GPIO_ZQ        0x58  // -
-#define PAD_PWR_VBAT_DET   0x5C  // 30
-#define PAD_PWR_RSTN       0x58  // -
-#define PAD_PWR_SEQ1       0x5C  // -
-#define PAD_PWR_SEQ2       0x68  // 31
-#define PAD_PWR_WAKEUP0    0x6C  // -
-#define PAD_PWR_BUTTON1    0x70  // -
-#define PAD_XTAL_XIN       0x74  // 33
-#define PAD_PWR_GPIO0      0x78  // -
-#define PAD_PWR_GPIO1      0x7C  // -
-#define PAD_PWR_GPIO2      0x80  // -
-#define PAD_SD1_GPIO1      0x84  // 36
-#define PAD_SD1_GPIO0      0x88  // 35
-#define PAD_SD1_D3         0x8C  // 38
-#define PAD_SD1_D2         0x90  // 39
-#define PAD_SD1_D1         0x94  // 40
-#define PAD_SD1_D0         0x98  // 41
-#define PAD_SD1_CMD        0x9C  // 42
-#define PAD_SD1_CLK        0xA0  // 43
-#define PAD_PWM0_BUCK      0xA4  // -
-#define PAD_ADC1           0xA8  // 44
-#define PAD_USB_VBUS_DET   0xAC  // 45
-#define PAD_ETH_TXP        0xC0  // 47
-#define PAD_ETH_TXM        0xC4  // 48
-#define PAD_ETH_RXP        0xC8  // 49
-#define PAD_ETH_RXM        0xCC  // 50
-#define PAD_GPIO_RTX       0xD0  // -
-#define PAD_MIPIRX4N       0xD4  // 56
-#define PAD_MIPIRX4P       0xD8  // 57
-#define PAD_MIPIRX3N       0xDC  // 58
-#define PAD_MIPIRX3P       0xE0  // 59
-#define PAD_MIPIRX2N       0xE4  // 60
-#define PAD_MIPIRX2P       0xE8  // 61
-#define PAD_MIPIRX1N       0xEC  // 62
-#define PAD_MIPIRX1P       0xF0  // 63
-#define PAD_MIPIRX0N       0xF4  // 64
-#define PAD_MIPIRX0P       0xF8  // 65
+//                          FMUX      IOBLK     GPIO           QFN-68
+#define PAD_SD0_CLK        0x000,  0x03001A00,  (0x000 +  7)   //  3
+#define PAD_SD0_CMD        0x004,  0x03001A04,  (0x000 +  8)   //  4
+#define PAD_SD0_D0         0x008,  0x03001A08,  (0x000 +  9)   //  5
+#define PAD_SD0_D1         0x00C,  0x03001A0C,  (0x000 + 10)   //  7
+#define PAD_SD0_D2         0x010,  0x03001A10,  (0x000 + 11)   //  8
+#define PAD_SD0_D3         0x014,  0x03001A14,  (0x000 + 12)   //  9
+#define PAD_SD0_CD         0x018,  0x03001900,  (0x000 + 13)   // 11
+#define PAD_SD0_PWR_EN     0x01C,  0x03001904,  (0x000 + 14)   // 12
+#define PAD_SPK_EN         0x020,  0x03001908,  (0x000 + 15)   // 14
+#define PAD_UART0_TX       0x024,  0x0300190C,  (0x000 + 16)   // 15
+#define PAD_UART0_RX       0x028,  0x03001910,  (0x000 + 17)   // 16
+#define PAD_SPINOR_HOLD_X  0x02C,  0x03001914,  (0x000 + 26)   // 17
+#define PAD_SPINOR_SCK     0x030,  0x03001918,  (0x000 + 22)   // 18
+#define PAD_SPINOR_MOSI    0x034,  0x0300191C,  (0x000 + 25)   // 19
+#define PAD_SPINOR_WP_X    0x038,  0x03001920,  (0x000 + 27)   // 20
+#define PAD_SPINOR_MISO    0x03C,  0x03001924,  (0x000 + 23)   // 21
+#define PAD_SPINOR_CS_X    0x040,  0x03001928,  (0x000 + 24)   // 22
+#define PAD_JTAG_CPU_TMS   0x044,  0,           0              // -
+#define PAD_JTAG_CPU_TCK   0x048,  0,           0              // -
+#define PAD_IIC0_SCL       0x04C,  0x03001934,  (0x000 + 28)   // 23
+#define PAD_IIC0_SDA       0x050,  0x03001938,  (0x000 + 29)   // 24
+#define PAD_AUX0           0x054,  0x0300193C,  (0x000 + 30)   // 25
+#define PAD_GPIO_ZQ        0x058,  0,           0              // -
+#define PAD_PWR_VBAT_DET   0x05C,  0x05027004,  0              // 30
+#define PAD_PWR_RSTN       0x058,  0,           0              // -
+#define PAD_PWR_SEQ1       0x05C,  0,           0              // -
+#define PAD_PWR_SEQ2       0x068,  0x05027010,  (0x400 +  4)   // 31
+#define PAD_PWR_WAKEUP0    0x06C,  0,           0              // -
+#define PAD_PWR_BUTTON1    0x070,  0,           0              // -
+#define PAD_XTAL_XIN       0x074,  0x05027020,  0              // 33
+#define PAD_PWR_GPIO0      0x078,  0,           0              // -
+#define PAD_PWR_GPIO1      0x07C,  0,           0              // -
+#define PAD_PWR_GPIO2      0x080,  0,           0              // -
+#define PAD_SD1_GPIO1      0x084,  0x05027030,  (0x400 + 26)   // 36
+#define PAD_SD1_GPIO0      0x088,  0x05027034,  (0x400 + 25)   // 35
+#define PAD_SD1_D3         0x08C,  0x05027038,  (0x400 + 18)   // 38
+#define PAD_SD1_D2         0x090,  0x0502703C,  (0x400 + 19)   // 39
+#define PAD_SD1_D1         0x094,  0x05027040,  (0x400 + 20)   // 40
+#define PAD_SD1_D0         0x098,  0x05027044,  (0x400 + 21)   // 41
+#define PAD_SD1_CMD        0x09C,  0x05027048,  (0x400 + 22)   // 42
+#define PAD_SD1_CLK        0x0A0,  0x0502704C,  (0x400 + 23)   // 43
+#define PAD_PWM0_BUCK      0x0A4,  0,           0              // -
+#define PAD_ADC1           0x0A8,  0x03001804,  (0x100 +  3)   // 44
+#define PAD_USB_VBUS_DET   0x0AC,  0x03001808,  (0x100 +  6)   // 45
+#define PAD_ETH_TXP        0x0C0,  0,           0              // 47
+#define PAD_ETH_TXM        0x0C4,  0,           0              // 48
+#define PAD_ETH_RXP        0x0C8,  0,           0              // 49
+#define PAD_ETH_RXM        0x0CC,  0,           0              // 50
+#define PAD_GPIO_RTX       0x0D0,  0,           0              // -
+#define PAD_MIPIRX4N       0x0D4,  0x03001C04,  (0x200 +  2)   // 56
+#define PAD_MIPIRX4P       0x0D8,  0x03001C08,  (0x200 +  3)   // 57
+#define PAD_MIPIRX3N       0x0DC,  0x03001C0C,  (0x200 +  4)   // 58
+#define PAD_MIPIRX3P       0x0E0,  0x03001C10,  (0x200 +  5)   // 59
+#define PAD_MIPIRX2N       0x0E4,  0x03001C14,  (0x200 +  6)   // 60
+#define PAD_MIPIRX2P       0x0E8,  0x03001C18,  (0x200 +  7)   // 61
+#define PAD_MIPIRX1N       0x0EC,  0x03001C1C,  (0x200 +  8)   // 62
+#define PAD_MIPIRX1P       0x0F0,  0x03001C20,  (0x200 +  9)   // 63
+#define PAD_MIPIRX0N       0x0F4,  0x03001C24,  (0x200 + 10)   // 64
+#define PAD_MIPIRX0P       0x0F8,  0x03001C28,  (0x200 + 11)   // 65
 // (multiple missing codes here)
-#define PAD_AUD_AINL_MIC  0x120  // 67
-#define PAD_AUD_AOUTR     0x12C  // 1
+#define PAD_AUD_AINL_MIC   0x120,  0,           (0x200 + 23)   // 67
+#define PAD_AUD_AOUTR      0x12C,  0,           (0x200 + 24)   //  1
+
+#define PAD_TABLE           \
+  { PAD_SD0_CLK    },       \
+  { PAD_SD0_CMD    },       \
+  { PAD_SD0_D0     },       \
+  { PAD_SD0_D1     },       \
+  { PAD_SD0_D2     },       \
+  { PAD_SD0_D3     },       \
+  { PAD_SD0_CD     },       \
+  { PAD_SD0_PWR_EN },       \
+  { PAD_SPK_EN     },       \
+  { PAD_UART0_TX   },       \
+  { PAD_UART0_RX   },       \
+  { PAD_SPINOR_HOLD_X },    \
+  { PAD_SPINOR_SCK    },    \
+  { PAD_SPINOR_MOSI   },    \
+  { PAD_SPINOR_WP_X   },    \
+  { PAD_SPINOR_MISO   },    \
+  { PAD_SPINOR_CS_X   },    \
+  { PAD_IIC0_SCL   },       \
+  { PAD_IIC0_SDA   },       \
+  { PAD_AUX0       },       \
+  { PAD_PWR_SEQ2   },       \
+  { PAD_SD1_GPIO1  },       \
+  { PAD_SD1_GPIO0  },       \
+  { PAD_SD1_D3     },       \
+  { PAD_SD1_D2     },       \
+  { PAD_SD1_D1     },       \
+  { PAD_SD1_D0     },       \
+  { PAD_SD1_CMD    },       \
+  { PAD_SD1_CLK    },       \
+  { PAD_ADC1       },       \
+  { PAD_USB_VBUS_DET },     \
+  { PAD_MIPIRX4N   },       \
+  { PAD_MIPIRX4P   },       \
+  { PAD_MIPIRX3N   },       \
+  { PAD_MIPIRX3P   },       \
+  { PAD_MIPIRX2N   },       \
+  { PAD_MIPIRX2P   },       \
+  { PAD_MIPIRX1N   },       \
+  { PAD_MIPIRX1P   },       \
+  { PAD_MIPIRX0N   },       \
+  { PAD_MIPIRX0P   },       \
+  { PAD_AUD_AINL_MIC },     \
+  { PAD_AUD_AOUTR }
+
 
 //-----------------------------------------------------------------------------
 // all pinmuxes

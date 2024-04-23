@@ -44,11 +44,12 @@
 #define PLIC_BASE_ADDR      (0x0C000000)
 
 #define UARTHS_BASE_ADDR    (0x38000000)
+
 #define GPIO0_BASE_ADDR     (0x03020000)
 #define GPIO1_BASE_ADDR     (0x03021000)
 #define GPIO2_BASE_ADDR     (0x03022000)
 #define GPIO3_BASE_ADDR     (0x03023000)
-
+#define GPIOPWR_BASE_ADDR      (0x05021000)
 #define RTCSYS_GPIO_BASE_ADDR  (0x05021000)
 
 //------------------------------------------------------------------------------

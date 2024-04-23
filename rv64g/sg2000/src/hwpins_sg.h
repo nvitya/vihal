@@ -32,11 +32,13 @@
 #include "hwpins.h"
 #include "platform.h"
 
+#define PORTNUM_PWR     4
+
 class THwPinCtrl_sg : public THwPinCtrl_pre
 {
 public: // platform specific
 
-  bool PadSetup(int apadnum, int afuncnum, unsigned flags);  // Kendrytye specific FPIOA routing / configuration
+  bool PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio, unsigned flags);  // CV1800/SG200x specific PAD setup
 
 public: //
 	bool PinSetup(int aportnum, int apinnum, unsigned flags);  // this does only GPIO setup
@@ -82,6 +84,7 @@ public:
 	uint32_t            negpinmask = 0;
 	uint32_t *          setbitptr = nullptr;
 	uint32_t *          getbitptr = nullptr;
+	uint32_t *          pindirptr = nullptr;
 };
 
 #define HWPINCTRL_IMPL   THwPinCtrl_sg
