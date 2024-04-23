@@ -368,7 +368,9 @@ void THwSdmmc_atsam::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 	cmderror = false;
 
   // a bit early, the application should not read this memory until the read finishes
+#if __CORTEX_M >= 7
   SCB_InvalidateDCache_by_Addr((uint32_t *)dataptr, datalen);
+#endif
 
 	// start the DMA channel
 	dma.Prepare(false, (void *)&regs->HSMCI_FIFO[0], 0);
@@ -447,7 +449,9 @@ void THwSdmmc_atsam::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t c
 void THwSdmmc_atsam::StartDataWriteTransmit(void * dataptr, uint32_t datalen)
 {
   // flush the cache to the DMA
+#if __CORTEX_M >= 7
   SCB_CleanDCache_by_Addr((uint32_t *)dataptr, datalen);
+#endif
 
   // start the DMA channel
   dma.Prepare(true, (void *)&regs->HSMCI_FIFO[0], 0);

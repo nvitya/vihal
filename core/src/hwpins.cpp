@@ -57,11 +57,6 @@ bool TGpioPin::Setup(unsigned flags)
 	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
 }
 
-void TGpioPin::IrqSetup(int amode)
-{
-	hwpinctrl.GpioIrqSetup(portnum, pinnum, amode);
-}
-
 void TGpioPin_common::InitDummy()
 {
   // Initialize the pointers with harmless target

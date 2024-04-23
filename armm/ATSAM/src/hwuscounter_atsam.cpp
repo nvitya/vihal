@@ -46,6 +46,7 @@ bool THwUsCounter_atsam::Init()
     atsam_enable_peripheral(ID_TC10);
     atsam_enable_peripheral(ID_TC11);
   }
+#if defined(TC2)
   else if (2 == timerdev)
   {
     commonregs = (Tc *)TC2;
@@ -53,6 +54,8 @@ bool THwUsCounter_atsam::Init()
     atsam_enable_peripheral(ID_TC7);
     atsam_enable_peripheral(ID_TC8);
   }
+#endif
+#if defined(TC1)
   else if (1 == timerdev)
   {
     commonregs = (Tc *)TC1;
@@ -60,6 +63,7 @@ bool THwUsCounter_atsam::Init()
     atsam_enable_peripheral(ID_TC4);
     atsam_enable_peripheral(ID_TC5);
   }
+#endif
   else
   {
     commonregs = (Tc *)TC0;
