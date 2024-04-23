@@ -33,6 +33,7 @@
 
 #ifdef RCC_APB1ENR1_SPI2EN
   #define RCC_APB1ENR_SPI2EN   RCC_APB1ENR1_SPI2EN
+  #define RCC_APB1ENR_SPI3EN   RCC_APB1ENR1_SPI3EN
 #elif defined(RCC_APBENR1_SPI2EN)
   #define RCC_APB1ENR_SPI2EN   RCC_APBENR1_SPI2EN
   #define RCC_APB2ENR_SPI1EN   RCC_APBENR2_SPI1EN
@@ -40,6 +41,7 @@
   #define RCC_APB1ENR_SPI2EN   RCC_APB1LENR_SPI2EN
   #define RCC_APB1ENR_SPI3EN   RCC_APB1LENR_SPI3EN
 #endif
+
 
 bool THwSpi_stm32::Init(int adevnum)
 {
@@ -69,11 +71,11 @@ bool THwSpi_stm32::Init(int adevnum)
 		busid = STM32_BUSID_APB1;
 	}
 #endif
-#if defined(SPI3_BASE) && defined(RCC_APB1ENR_SPI3EN)
+#if defined(SPI3_BASE)
 	else if (3 == devnum)
 	{
 		regs = (SPI_TypeDef *)SPI3_BASE;
-		APB1ENR_REGISTER |= RCC_APB1ENR_SPI3EN;
+	  APB1ENR_REGISTER |= RCC_APB1ENR_SPI3EN;
 		busid = STM32_BUSID_APB1;
 	}
 #endif
