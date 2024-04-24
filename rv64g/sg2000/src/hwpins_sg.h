@@ -64,8 +64,24 @@ class TGpioPin_sg : public TGpioPin_pre
 public:
   void InitDummy(); // for unassigned ports
 
-  inline void Set1()                 { *setbitptr |= pinmask; }
-  inline void Set0()                 { *setbitptr &= negpinmask; }
+  // WARNING: the atomic extension does not work here on the DR register
+  // the solution is not perfect, because the linux core can access
+  // the same gpio register parallel to these !
+
+  inline void Set1() // irq-safe read-modify-write
+  {
+    unsigned intstatus = mcu_interrupts_save_and_disable();
+    *setbitptr |= pinmask;
+    mcu_interrupts_restore(intstatus);
+  }
+
+  inline void Set0() // irq-safe read-modify-write
+  {
+    unsigned intstatus = mcu_interrupts_save_and_disable();
+    *setbitptr &= negpinmask;
+    mcu_interrupts_restore(intstatus);
+  }
+
   inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
 
   inline unsigned char Value()       { return ((*getbitptr >> pinnum) & 1); }

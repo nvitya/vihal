@@ -206,7 +206,7 @@ void TGpioPort_sg::Set(unsigned value)
 
 // GPIO Pin
 
-// TODO: use the atomic bit set/reset for IRQ safety !
+// WARNING: no atomic bit set support on peripherals (causes trap)
 
 void TGpioPin_sg::InitDummy()
 {

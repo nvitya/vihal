@@ -61,6 +61,81 @@ inline void __attribute__ ((always_inline)) cpu_csr_clrbits(const int csr_id, ui
   asm volatile ("csrrc %[result], %[input_i], %[input_j]" : [result] "=r" (__tmp) : [input_i] "i" (csr_id), [input_j] "r" (csr_data));
 }
 
+// atomic extension
+
+inline uint32_t __attribute__ ((always_inline)) cpu_atomic_swap32(void * aaddr, uint32_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoswap.w %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint32_t __attribute__ ((always_inline)) cpu_atomic_add32(void * aaddr, uint32_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoadd.w %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint32_t __attribute__ ((always_inline)) cpu_atomic_or32(void * aaddr, uint32_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoor.w %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint32_t __attribute__ ((always_inline)) cpu_atomic_and32(void * aaddr, uint32_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoand.w %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint32_t __attribute__ ((always_inline)) cpu_atomic_xor32(void * aaddr, uint32_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoxor.w %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+// 64-bit versions
+
+inline uint64_t __attribute__ ((always_inline)) cpu_atomic_swap64(void * aaddr, uint64_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoswap.d %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint64_t __attribute__ ((always_inline)) cpu_atomic_add64(void * aaddr, uint64_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoadd.d %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint64_t __attribute__ ((always_inline)) cpu_atomic_or64(void * aaddr, uint64_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoor.d %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint64_t __attribute__ ((always_inline)) cpu_atomic_and64(void * aaddr, uint64_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoand.d %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+inline uint64_t __attribute__ ((always_inline)) cpu_atomic_xor64(void * aaddr, uint64_t abits)
+{
+  register uint64_t __res;
+  asm volatile ("amoxor.d %[result], %[input_j], (%[input_i])" : [result] "=r" (__res) : [input_i] "r" (aaddr), [input_j] "r" (abits));
+  return __res;
+}
+
+
 inline void __attribute__ ((always_inline)) __ISB(void)
 {
   //asm volatile ("isb 0xF":::"memory");

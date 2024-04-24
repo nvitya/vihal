@@ -105,6 +105,7 @@
 #define PAD_AUD_AINL_MIC   0x120,  0,           (0x200 + 23)   // 67
 #define PAD_AUD_AOUTR      0x12C,  0,           (0x200 + 24)   //  1
 
+// PAD table is required for pad addressing by GPIO numbering
 #define PAD_TABLE           \
   { PAD_SD0_CLK    },       \
   { PAD_SD0_CMD    },       \
