@@ -129,6 +129,13 @@ bool THwPinCtrl_sg::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio
   return true;
 }
 
+bool THwPinCtrl_sg::PadFuncSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio, uint32_t afunc, unsigned flags)  // CV1800/SG200x specific PAD setup with FMUX
+{
+  flags &= ~PINCFG_AF_MASK;
+  flags |= (afunc << PINCFG_AF_SHIFT);
+  return PadSetup(afmuxoffs, aioblk, agpio, flags);
+}
+
 typedef struct
 {
   uint32_t  fmux_offs;
@@ -147,7 +154,7 @@ bool THwPinCtrl_sg::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
   const gpio_pad_table_item_t * pitem = &gpio_pad_table[0];
   uint32_t gpio_code = aportnum * 0x100 + apinnum;
-  while (pitem->fmux_offs)
+  while (pitem->fmux_offs | pitem->gpio | pitem->ioblk_reg)
   {
     if (pitem->gpio == gpio_code)
     {
