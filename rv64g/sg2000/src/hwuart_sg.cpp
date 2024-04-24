@@ -22,6 +22,8 @@
 // brief:    SG2000 UART driver
 // created:  2024-04-21
 // authors:  nvitya
+// notes:
+//   the UART FIFO size is 32-bytes on CV1800, 64 bytes on SG200x
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -96,22 +98,25 @@ bool THwUart_sg::Init(int adevnum)
 	return true;
 }
 
+//volatile uint8_t g_uart_fifo_level = 0;
+
 bool THwUart_sg::TrySendChar(char ach)
 {
-  if (regs->LSR & (1 << 5)) // transmitter holding register empty ? (tx fifo not full)
+  if (regs->USR & (1 << 1)) // transmitter FIFO not full?
   {
     regs->RBR_THR_DLL = ach;
     return true;
   }
   else
   {
+    // g_uart_fifo_level = regs->TFL; // to check the maximal fifo size (lack of proper documentation...)
     return false;
   }
 }
 
 bool THwUart_sg::TryRecvChar(char * ach)
 {
-  if (regs->LSR & (1 << 0)) // FIFO not empty?
+  if (regs->USR & (1 << 3)) // Receive FIFO not empty?
   {
     *ach = regs->RBR_THR_DLL;
     return true;
