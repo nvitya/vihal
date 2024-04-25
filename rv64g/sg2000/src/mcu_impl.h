@@ -7,6 +7,10 @@
   #include "hwpins_sg.h"
 #endif
 
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_sg.h"
+#endif
+
 #ifdef HWUART_H_
   #include "hwuart_sg.h"
 #endif

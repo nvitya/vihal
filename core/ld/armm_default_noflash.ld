@@ -95,6 +95,12 @@ SECTIONS
   } > TEXT
   PROVIDE_HIDDEN (__exidx_end = .);
 
+  /* Resource table for remote processors */
+  .resource_table :
+  {
+    KEEP(*(.resource_table));
+  } > TEXT
+
   . = ALIGN(4);
   _etext = .;
   __etext = .;

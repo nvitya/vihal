@@ -77,6 +77,12 @@ SECTIONS
 
   } > TEXT
 
+  /* Resource table for remote processors */
+  .resource_table :
+  {
+    KEEP(*(.resource_table));
+  } > TEXT
+
   . = ALIGN(4);
   _etext = .;
   __etext = .;

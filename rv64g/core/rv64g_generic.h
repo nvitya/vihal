@@ -40,8 +40,10 @@
 #define CSR_MEPC            0x341
 #define CSR_MCAUSE          0x342
 
+#define CSR_MCYCLE          0xB00
+
 // read mtime:
-#define CLOCKCNT  (cpu_csr_read(0xB00))
+#define CLOCKCNT  (cpu_csr_read(0xB00))  // = 0xB00 = mcycle
 
 
 inline void __attribute__((always_inline)) mcu_interrupts_disable()
