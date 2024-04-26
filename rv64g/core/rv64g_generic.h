@@ -78,20 +78,45 @@ inline void __attribute__((always_inline)) mcu_enable_fpu()
 {
 }
 
+// this is valid for C906
+
+#define CSR_MHCR      0x7C1
+#define CSR_MCOR      0x7C2
+
 inline void __attribute__((always_inline)) mcu_enable_icache()
 {
+  // invalidate the I-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x11);
+  // Enable the I-Cache
+  cpu_csr_setbits(CSR_MHCR, 0x01);
 }
 
 inline void __attribute__((always_inline)) mcu_enable_dcache()
 {
+  // invalidate the D-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x12);
+  // Enable the D-Cache
+  cpu_csr_setbits(CSR_MHCR, 0x02);
 }
 
 inline void __attribute__((always_inline)) mcu_disable_icache()
 {
+  // clear (flush) the I-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x21);
+  // Disable the I-Cache
+  cpu_csr_clrbits(CSR_MHCR, 0x01);
 }
 
 inline void __attribute__((always_inline)) mcu_disable_dcache()
 {
+  // clear (flush) the D-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x22);
+  // Disable the D-Cache
+  cpu_csr_clrbits(CSR_MHCR, 0x02);
 }
 
 inline unsigned __get_PRIMASK()
