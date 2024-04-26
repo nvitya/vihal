@@ -28,13 +28,58 @@
 #ifndef _MCU_DEFS_H
 #define _MCU_DEFS_H
 
+#include "rv64g_cpu.h"
+
 #define MCUF_SG2000
 #define HW_DMA_MAX_COUNT             32764
 
 #define MCU_INTERNAL_RC_SPEED      8000000  // not used
 
+// this is valid for C906
+
+#define CSR_MHCR      0x7C1
+#define CSR_MCOR      0x7C2
+
+inline void __attribute__((always_inline)) mcu_enable_icache()
+{
+  // invalidate the I-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x11);
+  // Enable the I-Cache
+  cpu_csr_setbits(CSR_MHCR, 0x01);
+}
+
+inline void __attribute__((always_inline)) mcu_enable_dcache()
+{
+  // invalidate the D-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x12);
+  // Enable the D-Cache
+  cpu_csr_setbits(CSR_MHCR, 0x02);
+}
+
+inline void __attribute__((always_inline)) mcu_disable_icache()
+{
+  // clear (flush) the I-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x21);
+  // Disable the I-Cache
+  cpu_csr_clrbits(CSR_MHCR, 0x01);
+}
+
+inline void __attribute__((always_inline)) mcu_disable_dcache()
+{
+  // clear (flush) the D-Cache
+  cpu_csr_clrbits(CSR_MCOR, 0x33);
+  cpu_csr_setbits(CSR_MCOR, 0x22);
+  // Disable the D-Cache
+  cpu_csr_clrbits(CSR_MHCR, 0x02);
+}
+
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
+  mcu_enable_icache(); // enable instruction cache otherwise it will be very slow
+  mcu_enable_dcache(); // enable data cache
 }
 
 #endif

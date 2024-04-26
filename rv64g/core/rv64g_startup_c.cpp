@@ -18,43 +18,29 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
-/*
- *  file:     mcu_defs.h (Kendryte)
- *  brief:    Kendryte special MCU definitions
- *  created:  2022-02-01
- *  authors:  nvitya
-*/
+// file:     rv64g_startup_c.cpp
+// brief:    VIHAL RV64G C startup code, heavily tied to the linker script
+// created:  2024-04-26
+// authors:  nvitya
 
-#ifndef _MCU_DEFS_H
-#define _MCU_DEFS_H
+#include "platform.h"
+#include "cppinit.h"
 
-#define MCUF_KENDRYTE
-#define SELF_FLASHING_RAM_ADDR  0x80000000
-#define SELF_FLASHING_SPI_ADDR  0x00000000
-#define HW_DMA_MAX_COUNT             32764
+extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
-#define MCU_INTERNAL_RC_SPEED      8000000
-
-
-inline void __attribute__((always_inline)) mcu_enable_icache()
+extern "C" __attribute__((section(".startup"), used, noreturn))
+void startup_c_entry(unsigned self_flashing)
 {
+  // early entry, stack is working, GP is working, IRQs disabled
+
+  // setup interrupt controller, device specific
+  mcu_interrupt_controller_init();
+
+  mcu_preinit_code();
+
+  // setup memory regions
+  memory_region_setup();
+
+  _start(self_flashing);
 }
 
-inline void __attribute__((always_inline)) mcu_enable_dcache()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_disable_icache()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_disable_dcache()
-{
-}
-
-
-inline void __attribute__((always_inline)) mcu_preinit_code()
-{
-}
-
-#endif

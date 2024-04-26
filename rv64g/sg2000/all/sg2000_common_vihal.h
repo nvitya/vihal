@@ -37,10 +37,45 @@
 #include "stdint.h"
 #include "stdint.h"
 
-/* Register base address */
+//------------------------------------------------------------------------------
+// CLINT
+//------------------------------------------------------------------------------
 
-#define CLINT_BASE_ADDR     (0x02000000)
-#define PLIC_BASE_ADDR      (0x0C000000)
+typedef struct
+{
+  volatile uint32_t     MSIP0;
+  volatile uint32_t     MSIP1;
+  volatile uint32_t     MSIP2;
+  volatile uint32_t     MSIP3;
+           uint32_t     RESERVED0[(0x4004000 - 0x400000C) / 4 - 1];
+  volatile uint32_t     MTIMECMPL0;
+  volatile uint32_t     MTIMECMPH0;
+  volatile uint32_t     MTIMECMPL1;
+  volatile uint32_t     MTIMECMPH1;
+  volatile uint32_t     MTIMECMPL2;
+  volatile uint32_t     MTIMECMPH2;
+  volatile uint32_t     MTIMECMPL3;
+  volatile uint32_t     MTIMECMPH3;
+           uint32_t     RESERVED1[(0x400C000 - 0x400401C) / 4 - 1];
+  volatile uint32_t     SSIP0;
+  volatile uint32_t     SSIP1;
+  volatile uint32_t     SSIP2;
+  volatile uint32_t     SSIP3;
+           uint32_t     RESERVED2[(0x400D000 - 0x400C00C) / 4 - 1];
+  volatile uint32_t     STIMECMPL0;
+  volatile uint32_t     STIMECMPH0;
+  volatile uint32_t     STIMECMPL1;
+  volatile uint32_t     STIMECMPH1;
+  volatile uint32_t     STIMECMPL2;
+  volatile uint32_t     STIMECMPH2;
+  volatile uint32_t     STIMECMPL3;
+  volatile uint32_t     STIMECMPH3;
+//
+} clint_regs_t;
+
+#define PLIC_BASE_ADDR      0x70000000
+#define CLINT_BASE_ADDR     0x74000000
+#define CLINT               ((clint_regs_t *)CLINT_BASE_ADDR)
 
 //------------------------------------------------------------------------------
 // GPIO

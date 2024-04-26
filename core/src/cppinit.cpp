@@ -41,7 +41,7 @@ inline void __attribute__((always_inline)) __initialize_data(unsigned * from, un
 {
   // Iterate and copy word by word.
   // It is assumed that the pointers are word aligned.
-  unsigned int *p = region_begin;
+  unsigned int * p = region_begin;
   while (p < region_end)
   {
     *p++ = *from++;
@@ -62,23 +62,23 @@ inline void __attribute__((always_inline)) __initialize_bss(unsigned * region_be
 __attribute__((section(".startup")))
 void memory_region_setup(void)
 {
-  unsigned * recp;
-  unsigned * loadaddr;
-  unsigned * destaddrbegin;
-  unsigned * destaddrend;
+  uint32_t * recp;
+  uint32_t * loadaddr;
+  uint32_t * destaddrbegin;
+  uint32_t * destaddrend;
 
   // section initialization based on the .init section tables
 
   // 1. Copy preinitialized data sections
 
-  recp =  (unsigned *)&__data_regions_array_start;
+  recp =  (uint32_t *)&__data_regions_array_start;
   while (recp < &__data_regions_array_end)
   {
-    loadaddr = (unsigned *)(*recp);
+    loadaddr = (uint32_t *)(intptr_t(*recp));
     ++recp;
-    destaddrbegin = (unsigned *)(*recp);
+    destaddrbegin = (unsigned *)(intptr_t(*recp));
     ++recp;
-    destaddrend = (unsigned *)(*recp);
+    destaddrend = (unsigned *)(intptr_t(*recp));
     ++recp;
     __initialize_data(loadaddr, destaddrbegin, destaddrend);
   }
@@ -87,9 +87,9 @@ void memory_region_setup(void)
   recp =  (unsigned *)&__bss_regions_array_start;
   while (recp < &__bss_regions_array_end)
   {
-    destaddrbegin = (unsigned *)(*recp);
+    destaddrbegin = (unsigned *)(intptr_t(*recp));
     ++recp;
-    destaddrend = (unsigned *)(*recp);
+    destaddrend = (unsigned *)(intptr_t(*recp));
     ++recp;
     __initialize_bss(destaddrbegin, destaddrend);
   }
