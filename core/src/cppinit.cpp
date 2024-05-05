@@ -29,30 +29,30 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-extern unsigned __data_regions_array_start;
-extern unsigned __data_regions_array_end;
+extern uint32_t __data_regions_array_start;
+extern uint32_t __data_regions_array_end;
 
-extern unsigned __bss_regions_array_start;
-extern unsigned __bss_regions_array_end;
+extern uint32_t __bss_regions_array_start;
+extern uint32_t __bss_regions_array_end;
 
 // ----------------------------------------------------------------------------
 
-inline void __attribute__((always_inline)) __initialize_data(unsigned * from, unsigned * region_begin, unsigned * region_end)
+inline void __attribute__((always_inline)) __initialize_data(uint32_t * from, uint32_t * region_begin, uint32_t * region_end)
 {
   // Iterate and copy word by word.
   // It is assumed that the pointers are word aligned.
-  unsigned int * p = region_begin;
+  uint32_t * p = region_begin;
   while (p < region_end)
   {
     *p++ = *from++;
   }
 }
 
-inline void __attribute__((always_inline)) __initialize_bss(unsigned * region_begin, unsigned * region_end)
+inline void __attribute__((always_inline)) __initialize_bss(uint32_t * region_begin, uint32_t * region_end)
 {
   // Iterate and clear word by word.
   // It is assumed that the pointers are word aligned.
-  unsigned int *p = region_begin;
+  uint32_t * p = region_begin;
   while (p < region_end)
   {
     *p++ = 0;
@@ -76,20 +76,20 @@ void memory_region_setup(void)
   {
     loadaddr = (uint32_t *)(intptr_t(*recp));
     ++recp;
-    destaddrbegin = (unsigned *)(intptr_t(*recp));
+    destaddrbegin = (uint32_t *)(intptr_t(*recp));
     ++recp;
-    destaddrend = (unsigned *)(intptr_t(*recp));
+    destaddrend = (uint32_t *)(intptr_t(*recp));
     ++recp;
     __initialize_data(loadaddr, destaddrbegin, destaddrend);
   }
 
   // 2. Zero BSS data sections
-  recp =  (unsigned *)&__bss_regions_array_start;
+  recp =  (uint32_t *)&__bss_regions_array_start;
   while (recp < &__bss_regions_array_end)
   {
-    destaddrbegin = (unsigned *)(intptr_t(*recp));
+    destaddrbegin = (uint32_t *)(intptr_t(*recp));
     ++recp;
-    destaddrend = (unsigned *)(intptr_t(*recp));
+    destaddrend = (uint32_t *)(intptr_t(*recp));
     ++recp;
     __initialize_bss(destaddrbegin, destaddrend);
   }
