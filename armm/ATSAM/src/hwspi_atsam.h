@@ -38,6 +38,7 @@ class THwSpi_atsam : public THwSpi_pre
 {
 public:
 	bool Init(int adevnum);
+  void SetSpeed(unsigned aspeed);
 
 	bool TrySendData(uint8_t adata);
 	bool TryRecvData(uint8_t * dstptr);

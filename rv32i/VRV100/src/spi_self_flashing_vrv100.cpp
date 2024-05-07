@@ -19,7 +19,7 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     self_flashing_vrv100.cpp
- *  brief:    RP2040 SPI Self Flashing
+ *  brief:    VRV100 (FPGA) SPI Self Flashing
  *  date:     2021-10-11
  *  authors:  nvitya
 */

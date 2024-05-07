@@ -168,8 +168,6 @@ public: // mandatory
 	// for independent GPIO systems:
 	bool GpioSetup(int aportnum, int apinnum, unsigned flags)  { return false; }
 
-	void GpioIrqSetup(int aportnum, int apinnum, int amode) { }
-
 public: // optional
 	// pin matrix setup for LPC8xx
 	bool PinFuncConnect(int afuncid, int aportnum, int apinnum)  { return false; }
@@ -228,7 +226,6 @@ public:
 	bool Assigned() { return pinnum != 0xFF; }
 
 	bool Setup(unsigned flags);
-	void IrqSetup(int amode);
 };
 
 // the global variable to handle the pins

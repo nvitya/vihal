@@ -1,0 +1,13 @@
+MEMORY
+{
+  CODERAM (xrw) :  ORIGIN = 0x83f40000, LENGTH = 0x40000
+  RAM (xrw)     :  ORIGIN = 0x83f80000, LENGTH = 0x40000
+  RAM2 (xrw)    :  ORIGIN = 0x83fC0000, LENGTH = 0x40000  /* shared memory */
+}
+
+REGION_ALIAS("TEXT",   CODERAM);
+REGION_ALIAS("ITCRAM", CODERAM);
+REGION_ALIAS("DTCRAM", RAM);
+
+INCLUDE rv64g_default_noflash.ld
+

@@ -439,7 +439,8 @@ void TSdCardSpi::RunInitialization()
   {
   case 0: // initialize variables, prepare 2ms wait
 
-    spi->SetSpeed(initial_speed);
+    actual_clockspeed = initial_speed;
+    spi->SetSpeed(actual_clockspeed);
     pin_cs->Set1();
 
     //SetBusWidth(1);
@@ -575,18 +576,16 @@ void TSdCardSpi::RunInitialization()
 
   case 9:
   {
-    uint32_t highspeed;
     if (forced_clockspeed)
     {
-      highspeed = forced_clockspeed;
+      actual_clockspeed = forced_clockspeed;
     }
     else
     {
-      if (clockspeed > csd_max_speed)  highspeed = csd_max_speed;
-      else                             highspeed = clockspeed;
+      actual_clockspeed = max_clockspeed;
+      if (actual_clockspeed > csd_max_speed)  actual_clockspeed = csd_max_speed;
     }
-
-    spi->SetSpeed(highspeed); // switch to high speed
+    spi->SetSpeed(actual_clockspeed); // switch to high speed
 
     card_initialized = true; // turn off this state machine
     initstate = 50;

@@ -10,7 +10,7 @@
 
 #include "stdint.h"
 
-typedef struct
+typedef struct  // 14 bytes
 {
   uint8_t   dest_mac[6];  /**< Destination node */
   uint8_t   src_mac[6];   /**< Source node */

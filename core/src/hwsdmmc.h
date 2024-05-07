@@ -40,6 +40,8 @@
 
 #define SDCMD_OPENDRAIN      0x0010
 
+#define SDMMC_OCR_ERRORBITS     0xFDFFE008U
+
 #define SD_SPECIAL_CMD_INIT       1
 
 class THwSdmmc_pre
@@ -89,8 +91,10 @@ public: // mandatory
 
 	void StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen) { }
 	void StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen) { }
+  void StartDataWriteTransmit(void * dataptr, uint32_t datalen) { }
 
 	uint32_t GetCmdResult32() { return 0; }
+  bool CmdResult32Ok() { return false; }
 	void GetCmdResult128(void * adataptr) { }
 
 	bool TransferFinished() { return true; }

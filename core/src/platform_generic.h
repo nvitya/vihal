@@ -44,7 +44,15 @@
 #endif
 
 #if !defined(SPI_SELF_FLASHING)
-  #define SPI_SELF_FLASHING 0
+  #define SPI_SELF_FLASHING  0
+#endif
+
+#if !defined(MCU_NO_DMA)
+  #define MCU_NO_DMA   0
+#endif
+
+#if !defined(MCU_NO_UNALIGNED)
+  #define MCU_NO_UNALIGNED  0
 #endif
 
 #endif

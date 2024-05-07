@@ -35,7 +35,8 @@
 class TSdCard
 {
 public:
-  uint32_t      clockspeed  = 20000000; //  20 MHz by default
+  uint32_t      max_clockspeed  = 50000000; //  50 MHz = maximum
+  uint32_t      actual_clockspeed = 0;  //
   uint32_t      forced_clockspeed = 0;  //  0 = no forced high-speed
   uint32_t      initial_speed = 400000; // 400 kHz for the first initialization
 
@@ -70,6 +71,7 @@ public:
 protected:
   int           trstate = 0; // transfer state machine control, 1 = start read,
 
+  bool          iswrite = false;
   uint32_t      startblock = 0;
   uint32_t      curblock = 0;
   uint32_t      blockcount = 0;

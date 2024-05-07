@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -21,8 +21,7 @@
 /*
  *  file:     hweth.cpp
  *  brief:    Ethernet vendor-independent implementations
- *  version:  1.00
- *  date:     2018-05-30
+ *  created:  2018-05-30
  *  authors:  nvitya
 */
 
@@ -94,6 +93,11 @@ bool THwEth::PhyInit()
 	{
 		TRACE("Unknown ETH PHY!, id1=%04x, id2=%04x!\r\n", id1, id2);
 		TRACE_FLUSH();
+
+    #if 0
+	    if (!MiiRead(HWETH_PHY_BSR_REG, &bsr))  return false;
+	    return true;
+    #endif
 
 		force_reset = true;
 	}

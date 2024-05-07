@@ -146,7 +146,10 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   {
     // no external crystal, the PLL does not supports it !
     SystemCoreClock = MCU_INTERNAL_RC_SPEED;
-    rp_watchdog_tick_mul = 1;
+    watchdog_hw->tick = (0
+        | ((MCU_INTERNAL_RC_SPEED / 1000000) << 0)
+        | (1 << 9)
+    );
     return true;
   }
 
@@ -160,6 +163,12 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
 
   hwclk_prepare_hispeed(target_speed_hz);
+
+  // prepare the 1 us timer, it uses always the crystal reference
+  watchdog_hw->tick = (0
+      | ((basespeed / 1000000) << 0)
+      | (1 << 9)
+  );
 
   rp_reset_control(RESETS_RESET_PLL_SYS_BITS, true);
   rp_reset_control(RESETS_RESET_PLL_SYS_BITS, false);
@@ -213,7 +222,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // inform the system of the clock speeds
 
-  rp_watchdog_tick_mul = target_speed_hz / basespeed;
   SystemCoreClock = target_speed_hz;
 
   return true;

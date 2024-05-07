@@ -37,6 +37,7 @@
 #ifdef SDIO
   #define SDMMC_CLKCR_CLKEN       SDIO_CLKCR_CLKEN
   #define SDMMC_CLKCR_WIDBUS_Pos  SDIO_CLKCR_WIDBUS_Pos
+  #define SDMMC_CLKCR_BYPASS      SDIO_CLKCR_BYPASS
 
   #define SDMMC_STA_CMDSENT       SDIO_STA_CMDSENT
   #define SDMMC_STA_CCRCFAIL      SDIO_STA_CCRCFAIL
@@ -162,32 +163,38 @@ bool THwSdmmc_stm32::Init()
 
 void THwSdmmc_stm32::SetSpeed(uint32_t speed)
 {
-#ifdef MCUSF_H7
-	uint32_t periphclock = stm32_bus_speed(0); // get AHB bus speed
-#else
-	uint32_t periphclock = stm32_bus_speed(2); // get APB2 bus speed
-#endif
-
-	uint32_t clkdiv = 0;
-	while ((periphclock >> clkdiv) > speed)
-	{
-		++clkdiv;
-	}
+  uint32_t periphclock = 50000000; // SDMMCCK = 50 MHz
 
 	uint32_t tmp = regs->CLKCR;
 
 #ifdef MCUSF_H7
-	uint32_t hsbus = 0;
-	if (speed > 25000000)
-	{
-		hsbus = 1;
-	}
-	tmp &= ~(0x3FF | (1 << 19));
-	tmp |= ((hsbus << 19) | (clkdiv << 0));
+
+  uint32_t clkdiv = 1;
+  while ((periphclock / (1 << (clkdiv - 1))) > speed)
+  {
+    clkdiv = (clkdiv << 1);
+  }
+	tmp &= ~(0x3FF);
+	tmp |= ((clkdiv - 1) << 0);
+
 #else
-	tmp &= ~0xFF;
-	tmp |= (clkdiv << 0);
+
+  uint32_t clkdiv = 1;
+  while ((periphclock / clkdiv) > speed)
+  {
+    ++clkdiv;
+  }
+
+	tmp &= ~0x3FF;
 	tmp |= SDMMC_CLKCR_CLKEN;
+	if (clkdiv < 2)
+	{
+	  tmp |= SDMMC_CLKCR_BYPASS;
+	}
+	else
+	{
+    tmp |= ((clkdiv - 2) << 0);
+	}
 #endif
 
 	regs->CLKCR = tmp;
@@ -444,6 +451,11 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 	regs->ARG = cmdarg;
 	regs->CMD = cmdr; // start the execution
 
+  #if __CORTEX_M == 7
+    // a bit early, the application should not read this memory until the read finishes
+    SCB_InvalidateDCache_by_Addr((uint32_t *)dataptr, datalen);
+  #endif
+
 	curcmdreg = cmdr;
 	cmderror = false;
 	cmdrunning = true;
@@ -451,7 +463,6 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 }
 
 #define SDMMC_STATIC_CMD_FLAGS  ((uint32_t)(SDMMC_STA_CCRCFAIL | SDMMC_STA_CTIMEOUT | SDMMC_STA_CMDREND | SDMMC_STA_CMDSENT))
-#define SDMMC_OCR_ERRORBITS     0xFDFFE008U
 
 void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen)
 {
@@ -479,10 +490,6 @@ void THwSdmmc_stm32::StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t c
     | (waitresp << SDMMC_CMD_WAITRESP_Pos)
     | (acmd <<  SDMMC_CMD_CMDINDEX_Pos)
   );
-
-#ifdef MCUSF_H7
-  cmdr |= SDMMC_CMD_CMDTRANS;
-#endif
 
   regs->ICR = 0xFFFFFFFF; // clear all flags
 
@@ -514,7 +521,7 @@ bool THwSdmmc_stm32::CmdResult32Ok()
   }
 }
 
-void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
+void THwSdmmc_stm32::StartDataWriteTransmit(void * dataptr, uint32_t datalen)
 {
   regs->ICR = SDMMC_STATIC_CMD_FLAGS;
 
@@ -527,6 +534,7 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
   }
 
   #ifdef MCUSF_H7
+
     // setup data control register
     uint32_t dctrl = (0
       | (1  << 13)  // FIFORST
@@ -536,9 +544,9 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
       | (0  <<  9)  // RWSTOP
       | (0  <<  8)  // RWSTART
       | (bsizecode <<  4)  // DBLOCKSIZE(4): 0 = 1 byte, 9 = 512
-      | (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks
+      | (0  <<  2)  // DTMODE(2): 0 = single block, 3 = multiple blocks  ??? only single block works
       | (0  <<  1)  // DTDIR: 0 = host to card, 1 = card to host
-      | (0  <<  0)  // DTEN: 1 = start data without CPSM transfer command
+      | (1  <<  0)  // DTEN: 1 = start data without CPSM transfer command
     );
 
     // the DMA must be started before DCTRL (DTEN)
@@ -575,9 +583,19 @@ void THwSdmmc_stm32::StartDataWriteTransmit(void *dataptr, uint32_t datalen)
 
   #endif
 
+#if __CORTEX_M == 7
+  // flush the cache to the DMA
+  SCB_CleanDCache_by_Addr((uint32_t *)dataptr, datalen);
+#endif
+
   regs->DTIMER = 0xFFFFFF; // todo: adjust data timeout
   regs->DLEN = datalen;
   regs->DCTRL = dctrl;
+
+#ifdef MCUSF_H7
+  // this flag was set in the ST hal drivers, but seems to work without it
+  //regs->CMD |= SDMMC_CMD_CMDTRANS;
+#endif
 }
 
 #endif

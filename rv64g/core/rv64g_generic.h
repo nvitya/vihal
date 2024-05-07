@@ -40,9 +40,12 @@
 #define CSR_MEPC            0x341
 #define CSR_MCAUSE          0x342
 
-// read mtime:
-#define CLOCKCNT  (cpu_csr_read(0xB00))
+#define CSR_MCYCLE          0xB00
 
+// read mtime:
+#define CLOCKCNT  (cpu_csr_read(0xB00))  // = 0xB00 = mcycle
+
+extern "C" void mcu_interrupt_controller_init();
 
 inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
@@ -73,22 +76,6 @@ inline void __attribute__((always_inline)) mcu_init_vector_table()
 }
 
 inline void __attribute__((always_inline)) mcu_enable_fpu()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_enable_icache()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_enable_dcache()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_disable_icache()
-{
-}
-
-inline void __attribute__((always_inline)) mcu_disable_dcache()
 {
 }
 

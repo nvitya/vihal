@@ -1,7 +1,6 @@
 /*
  *  file:     mcu_impl.h (ATSAM)
  *  brief:    ATSAM list of implemented VIHAL core peripherals
- *  version:  1.00
  *  date:     2021-10-27
  *  authors:  nvitya
 */
@@ -20,6 +19,10 @@
 
 #ifdef HWUART_H_
   #include "hwuart_atsam.h"
+#endif
+
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_atsam.h"
 #endif
 
 #ifdef HWSPI_H_
@@ -73,11 +76,6 @@
   #include "hwusbctrl_atsam_hs.h"
 #endif
 
-/*  not yet migrated from NVCM
-
-#if defined(HSMCI) && defined(HWSDCARD_H_)
-  #include "hwsdcard_atsam.h"
+#if defined(HWSDMMC_H_) && defined(HSMCI)
+  #include "hwsdmmc_atsam.h"
 #endif
-
-
-*/

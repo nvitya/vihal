@@ -36,6 +36,23 @@
 #define MCU_INTERNAL_RC_SPEED      8000000
 
 
+inline void __attribute__((always_inline)) mcu_enable_icache()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_enable_dcache()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_disable_icache()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_disable_dcache()
+{
+}
+
+
 inline void __attribute__((always_inline)) mcu_preinit_code()
 {
 }

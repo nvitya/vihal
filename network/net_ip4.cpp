@@ -18,10 +18,10 @@ uint16_t calc_ip4_header_checksum(TIp4Header * piph)
 
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
-  sum -= __REV16(piph->csum);  // remove the csum
+  sum -= __builtin_bswap16(piph->csum);  // remove the csum
 
   //  Fold 32-bit sum to 16 bits
   while (sum >> 16)
@@ -29,7 +29,7 @@ uint16_t calc_ip4_header_checksum(TIp4Header * piph)
     sum = (sum & 0xffff) + (sum >> 16);
   }
 
-  return __REV16(~sum);
+  return __builtin_bswap16(~sum);
 }
 
 uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
@@ -45,18 +45,18 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
   pd16_end = pd16 + 4;
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   sum += piph->protocol; // add the protocol as well (8-bit only)
-  sum += __REV16(pudp->len); // add the UDP length
+  sum += __builtin_bswap16(pudp->len); // add the UDP length
 
   // add the UDP header parts exlusive the checksum
   pd16 = (uint16_t *)pudp;
   pd16_end = pd16 + 3;
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   // and then the data
@@ -64,7 +64,7 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
   pd16_end = pd16 + (datalen >> 1);
   while (pd16 < pd16_end)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   if (datalen & 1)  // one byte remained
@@ -78,7 +78,7 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
     sum = (sum & 0xffff) + (sum >> 16);
   }
 
-  return __REV16(~sum);
+  return __builtin_bswap16(~sum);
 }
 
 //--------------------------------------------------------------
@@ -160,7 +160,7 @@ void TArp4Table::Update(TIp4Addr * aipaddr, uint8_t * amacaddr)
     item = CreateNewItem(amacaddr);
   }
 
-  item->ipaddr = *aipaddr;
+  item->ipaddr.CopyFrom16(aipaddr);
 
   // add as first
 
@@ -179,10 +179,13 @@ void TArp4Table::Update(TIp4Addr * aipaddr, uint8_t * amacaddr)
 
 TArp4TableItem * TArp4Table::FindByIp(PIp4Addr paddr)
 {
+  // copy the IP address locally for handling unaligned
+  TIp4Addr  laddr;
+  laddr.CopyFrom16(paddr);
   TArp4TableItem *  item = firstitem;
   while (item)
   {
-    if (item->ipaddr.u32 == paddr->u32)
+    if (item->ipaddr.u32 == laddr.u32)
     {
       return item;
     }
@@ -196,7 +199,8 @@ TArp4TableItem * TArp4Table::FindByMac(uint8_t * amacaddr)
   TArp4TableItem *  item = firstitem;
   while (item)
   {
-    if (    (*(uint32_t *)&item->macaddr[0] == *(uint32_t *)&amacaddr[0])
+    if (    (*(uint16_t *)&item->macaddr[0] == *(uint16_t *)&amacaddr[0])
+         && (*(uint16_t *)&item->macaddr[2] == *(uint16_t *)&amacaddr[2])
          && (*(uint16_t *)&item->macaddr[4] == *(uint16_t *)&amacaddr[4]) )
     {
       return item;
@@ -218,8 +222,11 @@ bool TArp4Table::SendWithArp(TPacketMem * pmem, PIp4Addr paddr)
   }
 
   // add to the jobs
+
+  // copy the IP in an unaligned safe way (the source IP might be unaligned):
+  *(uint32_t *)&pmem->extra[0] = (paddr->u16[0] | (paddr->u16[1] << 16));
+
   pmem->next = nullptr;
-  *(PIp4Addr)&pmem->extra[0] = *paddr; // copy the required address to the extra field
 
   if (lastjob)
   {
@@ -310,7 +317,7 @@ void TArp4Table::Run()
     else if (adapter->mscounter - start_ms > response_timeout_ms)
     {
       // something is very wrong!
-      //TRACE("Timeout sending ARP request!\r\n");
+      //TRACE("%u Timeout sending ARP request!\r\n", adapter->mscounter);
       phase = 9; // re-sending
     }
   }
@@ -388,6 +395,39 @@ void TUdp4Socket::Init(TIp4Handler * ahandler, uint16_t alistenport)
   phandler->AddUdpSocket(this);
 }
 
+void mem_copy_8(void * adst, void * asrc, unsigned acount)
+{
+  uint8_t * src = (uint8_t *)asrc;
+  uint8_t * dst = (uint8_t *)adst;
+  uint8_t * endptr = dst + acount;
+  while (dst < endptr)
+  {
+    *dst++ = *src++;
+  }
+}
+
+void mem_copy_16(void * adst, void * asrc, unsigned acount)
+{
+  uint16_t * src = (uint16_t *)asrc;
+  uint16_t * dst = (uint16_t *)adst;
+  uint16_t * endptr = dst + acount;
+  while (dst < endptr)
+  {
+    *dst++ = *src++;
+  }
+}
+
+void mem_copy_32(void * adst, void * asrc, unsigned acount)
+{
+  uint32_t * src = (uint32_t *)asrc;
+  uint32_t * dst = (uint32_t *)adst;
+  uint32_t * endptr = dst + acount;
+  while (dst < endptr)
+  {
+    *dst++ = *src++;
+  }
+}
+
 int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 {
   TPacketMem * pmem;
@@ -404,46 +444,61 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   }
 
   // assemble the UDP packet
-  PEthernetHeader eh    = PEthernetHeader(&pmem->data[0]);
-  PIp4Header      iph   = PIp4Header(eh + 1);
-  PUdp4Header     udph  = PUdp4Header(iph + 1);
-  uint8_t *       pdata = (uint8_t *)(udph + 1);
+  PEthernetHeader eh    = PEthernetHeader(&pmem->data[0]);  // 14 bytes
+  PIp4Header      iph   = PIp4Header(eh + 1);               // 20 bytes
+  PUdp4Header     udph  = PUdp4Header(iph + 1);             //  8 bytes
+  uint8_t *       pdata = (uint8_t *)(udph + 1);            // pdata is only 2-bytes aligned !
 
   eh->ethertype = 0x0008; // ether type: 0x0800 = IPV4 (byte swapped)
 
-  *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
-  *PIp4Addr(&iph->dstaddr[0]) = destaddr;
+  #if MCU_NO_UNALIGNED
 
-  // COPY the buffer
+    mem_copy_16(&iph->srcaddr[0], &phandler->ipaddress, 2);
+    mem_copy_16(&iph->dstaddr[0], &destaddr, 2);
 
-  // memcpy is slow:
-  //memcpy(pdata, adataptr, adatalen);
+    if (0 == (unsigned(adataptr) & 1)) // src is 16-bit aligned ?
+    {
+      mem_copy_16(pdata, adataptr, (adatalen + 1) >> 1);
+    }
+    else
+    {
+      mem_copy_8(pdata, adataptr, adatalen);
+    }
 
-  // fast copy using 4-byte moves
-  unsigned dwcnt = ((adatalen + 3) >> 2);
-  uint32_t * pdst = (uint32_t *)pdata;
-  uint32_t * pdst_end = pdst + dwcnt;
-  uint32_t * psrc = (uint32_t *)adataptr;
-  while (pdst < pdst_end)
-  {
-    *pdst++ = *psrc++;
-  }
+  #else
+
+    *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
+    *PIp4Addr(&iph->dstaddr[0]) = destaddr;
+
+    // COPY the buffer
+
+    // fast copy using 4-byte moves (memcpy is slow)
+    unsigned dwcnt = ((adatalen + 3) >> 2);
+    uint32_t * pdst = (uint32_t *)pdata;
+    uint32_t * pdst_end = pdst + dwcnt;
+    uint32_t * psrc = (uint32_t *)adataptr;
+    while (pdst < pdst_end)
+    {
+      *pdst++ = *psrc++;
+    }
+
+  #endif
 
   ++idcounter;
 
   iph->hl_v = 0x45;
   iph->tos = 0;
-  iph->len = __REV16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
-  iph->id = __REV16(idcounter);
-  iph->fl_offs = __REV16(0x4000);
+  iph->len = __builtin_bswap16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
+  iph->id = __builtin_bswap16(idcounter);
+  iph->fl_offs = __builtin_bswap16(0x4000);
   iph->ttl = 64;
   iph->protocol = 17;
   iph->csum = 0;
   iph->csum = calc_ip4_header_checksum(iph);
 
-  udph->sport = __REV16(listenport);
-  udph->dport = __REV16(destport);
-  udph->len   = __REV16(adatalen + sizeof(TUdp4Header));
+  udph->sport = __builtin_bswap16(listenport);
+  udph->dport = __builtin_bswap16(destport);
+  udph->len   = __builtin_bswap16(adatalen + sizeof(TUdp4Header));
   udph->csum  = 0;
 
   // UDP checksum is optional, this takes a long time so it is turned off now
@@ -475,7 +530,7 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
   PUdp4Header     udph  = PUdp4Header(iph + 1);
   uint8_t *       pdata = (uint8_t *)(udph + 1);
 
-  uint16_t dlen = __REV16(udph->len) - sizeof(TUdp4Header);
+  uint16_t dlen = __builtin_bswap16(udph->len) - sizeof(TUdp4Header);
   if (dlen > adatalen)
   {
     err = -1;
@@ -483,11 +538,24 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
   else
   {
     err = dlen;
-    memcpy(adataptr, pdata, dlen); // copy the data
+
+    // copy the data
+    #if MCU_NO_UNALIGNED
+      if (0 == (unsigned(adataptr) & 1)) // dst is 16-bit aligned ?
+      {
+        mem_copy_16(adataptr, pdata, (adatalen + 1) >> 1);
+      }
+      else
+      {
+        mem_copy_8(adataptr, pdata, adatalen);
+      }
+    #else
+      mem_copy_32(adataptr, pdata, (adatalen + 3) >> 2);
+    #endif
   }
 
-  srcaddr = *PIp4Addr(&iph->srcaddr[0]);
-  srcport = __REV16(udph->sport);
+  srcaddr.CopyFrom16(&iph->srcaddr[0]);
+  srcport = __builtin_bswap16(udph->sport);
 
   // unchain the pmem first
   rxpkt_first = rxpkt_first->next;
@@ -557,7 +625,7 @@ bool TIp4Handler::HandleRxPacket(TPacketMem * pmem)  // return true, if the pack
   rxpkt = pmem;
   rxeh = PEthernetHeader(&pmem->data[0]);
 
-  uint16_t etype = __REV16(rxeh->ethertype);
+  uint16_t etype = __builtin_bswap16(rxeh->ethertype);
 
   if (0x0806 == etype) // ARP ?
   {
@@ -589,7 +657,7 @@ bool TIp4Handler::HandleArp()
 
   if (0x0100 == parp->oper) // ARP request ?
   {
-    if (*(uint32_t *)&(parp->tpa) == ipaddress.u32)  // someone want to know my IP
+    if (ipaddress.Matches(parp->tpa))  // someone want to know my IP
     {
       //TRACE("ARP request from %u.%u.%u.%u\r\n", parp->spa[0], parp->spa[1], parp->spa[2], parp->spa[3] );
 
@@ -685,8 +753,8 @@ bool TIp4Handler::HandleIcmp()
     txich->cksum = 0;
 
     // the ICMP message can contain arbitrary length data, we need to calculate its size first
-    uint16_t icmp_len = __REV16(txiph->len) - sizeof(TIp4Header);
-    txich->cksum = __REV16(calc_icmp_checksum(txich, icmp_len));
+    uint16_t icmp_len = __builtin_bswap16(txiph->len) - sizeof(TIp4Header);
+    txich->cksum = __builtin_bswap16(calc_icmp_checksum(txich, icmp_len));
 
     // send the packet
     adapter->SendTxPacket(pmem);  // the tx packet will be released automatically
@@ -700,7 +768,7 @@ bool TIp4Handler::HandleUdp()
   // rxeh, rxiph is already set
   TUdp4Header * udph = (TUdp4Header *)(rxiph + 1);
 
-  uint16_t dport = __REV16(udph->dport);
+  uint16_t dport = __builtin_bswap16(udph->dport);
 
   // search for listeners
   TUdp4Socket * udp = udp_first;
@@ -718,7 +786,7 @@ bool TIp4Handler::HandleUdp()
   return true;
 }
 
-bool TIp4Handler::LocalAddress(TIp4Addr * aaddr)
+bool TIp4Handler::LocalAddress(TIp4Addr * aaddr)  // the argument must be aligned !
 {
   if ((aaddr->u32 ^ ipaddress.u32) & netmask.u32)
   {
@@ -735,12 +803,13 @@ bool TIp4Handler::SendWithRouting(TPacketMem * pmem)
   mac_address_copy(&txeh->src_mac[0], &adapter->peth->mac_address[0]);
 
   PIp4Header  txiph  = PIp4Header(&pmem->data[sizeof(TEthernetHeader)]);
-  PIp4Addr    pdstip = PIp4Addr(&txiph->dstaddr[0]);
+  TIp4Addr    dstip;
+  dstip.CopyFrom16(&txiph->dstaddr[0]);  // make it aligned
 
   // 1. is it a local network packet or it must be sent to the gateway?
-  if (LocalAddress(pdstip))
+  if (LocalAddress(&dstip))
   {
-    return arptable.SendWithArp(pmem, pdstip);
+    return arptable.SendWithArp(pmem, &dstip);
   }
   else  // send to the gateway
   {

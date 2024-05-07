@@ -19,7 +19,7 @@ uint16_t calc_icmp_checksum(void * pdata, uint32_t datalen)
 
   for (n = 0; n < clen; ++n)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   sum = (sum & 0xffff) + (sum >> 16);

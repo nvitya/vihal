@@ -29,6 +29,11 @@
 #include "stdint.h"
 #include "rv32i_cpu.h"
 
+#if !defined(MCU_NO_UNALIGNED)
+  #define MCU_NO_UNALIGNED  1
+#endif
+
+
 extern "C" void mcu_interrupt_controller_init();
 
 inline void __attribute__((always_inline)) mcu_interrupts_disable()

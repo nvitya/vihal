@@ -18,25 +18,36 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     clockcnt_stm32.cpp
- *  brief:    STM32 Clock Counter for M0 MCUs
- *  version:  1.00
+ *  file:     clockcnt_rp.cpp
+ *  brief:    RP2040 Clock Counter using the PWM7
  *  date:     2018-02-10
  *  authors:  nvitya
 */
 
 #include "platform.h"
+#include "rp_utils.h"
 
 #if __CORTEX_M < 3
-
-__attribute__((section(".noinit")))
-uint32_t  rp_watchdog_tick_mul;
 
 // clock timer initialization for Cortex-M0 processors
 
 void clockcnt_init()
 {
-  watchdog_hw->tick = (1 | (1 << 9));  // generate the tick at the clk_ref speed !
+  rp_reset_control(RESETS_RESET_PWM_BITS, false); // remove reset
+
+  pwm_slice_hw_t *  regs = &pwm_hw->slice[7];
+
+  regs->div = (1 << 4); // no division
+  regs->top = 0xFFFF;
+  regs->csr = (0
+    | (0  <<  7)  // PH_ADV: phase correction forwards
+    | (0  <<  6)  // PH_RET: phase correction downwards
+    | (0  <<  4)  // DIVMODE(2): 0 = normal free running mode, 1-3 = channel B input clock
+    | (0  <<  3)  // B_INV: 1 = invert output B
+    | (0  <<  2)  // A_INV: 1 = invert output A
+    | (0  <<  1)  // PH_CORRECT
+    | (1  <<  0)  // EN: 1 = enable
+  );
 }
 
 #endif

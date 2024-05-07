@@ -36,5 +36,7 @@
 #define HWERR_UNKNOWN   6   // unknown hardware error
 #define HWERR_READ      7   // read error
 #define HWERR_WRITE     8   // write error
+#define HWERR_ERASE     9   // erase error
+#define HWERR_PARAMS   10   // invalid parameters
 
 #endif /* HWERRORS_H_ */

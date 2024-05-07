@@ -13,6 +13,10 @@
   #include "hwuart_stm32.h"
 #endif
 
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_stm32.h"
+#endif
+
 #ifdef HWSPI_H_
   #include "hwspi_stm32.h"
 #endif

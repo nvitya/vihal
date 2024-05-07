@@ -28,15 +28,14 @@
 
 #include "platform.h"
 #include "hwspi.h"
+#include "atsam_utils.h"
 
 bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0..3
 {
 	devnum = adevnum;
 	unsigned code;
 	unsigned perid;
-	unsigned periphclock = SystemCoreClock;
-
-	if (periphclock > 150000000)  periphclock = periphclock / 2;
+	unsigned periphclock = atsam_peripheral_clock();
 
 	regs = nullptr;
 	usartregs = nullptr;
@@ -129,16 +128,13 @@ bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0
 			| (100 << 24)  // Delay between chip selects
 		;
 
-		unsigned divider = ((((periphclock << 1) / speed) + 1) >> 1);  // round up the result
-		if (divider < 1)  divider = 1;
-
 		code = 0
 			| (0 << 0)   // CPOL: Clock Polarity
 			| (0 << 1)   // NCPHA: Data/Sampling edge
 			| (0 << 2)   // CSNAAT: no chip selects between the transfers
 			| (0 << 3)   // CSAAT: do not pull back CS when no data to transfer
 			| ((databits - 8) << 4)   // BITS: 8 bits
-			| (divider << 8)  // SCBR: baud rate
+			| (0 << 8)  // SCBR(8): baud rate (will be set later)
 			| (100 << 16)  // DLYBS: CS to CLK delay
 			| (0 << 24)  // DLYBCT: no delay between the transfers
  		;
@@ -147,6 +143,8 @@ bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0
 		if (!datasample_late)  code |= (1 << 1);
 
 		regs->SPI_CSR[0] = code;
+
+    SetSpeed(speed);
 
 		regs->SPI_CR = SPI_CR_SPIEN;  // SPI Enable
 	}
@@ -182,11 +180,7 @@ bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0
 
 		usartregs->US_MR = code;
 
-		// setup baud rate
-		unsigned divider = ((((periphclock << 1) / speed) + 1) >> 1);  // round up the result
-		if (divider < 1)  divider = 1;
-
-		usartregs->US_BRGR = divider;
+		SetSpeed(speed);
 
 		usartregs->US_TTGR = 0; // disable timeguard
 
@@ -198,6 +192,37 @@ bool THwSpi_atsam::Init(int adevnum)  // 0..1 = SPI0..1, 0x100 .. 0x103 = USART0
 	return true;
 }
 
+void THwSpi_atsam::SetSpeed(unsigned aspeed)
+{
+  unsigned periphclock = atsam_peripheral_clock();
+  uint32_t tmp;
+
+  speed = aspeed;
+
+  if (regs)
+  {
+    // Advanced SPI
+    //regs->SPI_CR = SPI_CR_SPIDIS;
+
+    tmp = (regs->SPI_CSR[0] & 0xFFFF00FF);  // mask out the divider
+
+    unsigned divider = ((((periphclock << 1) / speed) + 1) >> 1);  // round up the result
+    if (divider < 1)  divider = 1;
+
+    tmp |= (divider << 8);
+    regs->SPI_CSR[0] = tmp;
+
+    //regs->SPI_CR = SPI_CR_SPIEN;  // SPI Enable
+  }
+  else
+  {
+    // USART
+    unsigned divider = ((((periphclock << 1) / speed) + 1) >> 1);  // round up the result
+    if (divider < 1)  divider = 1;
+
+    usartregs->US_BRGR = divider;
+  }
+}
 
 bool THwSpi_atsam::TrySendData(uint8_t adata)
 {

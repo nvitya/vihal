@@ -17,6 +17,10 @@
   #include "hwuart_imxrt.h"
 #endif
 
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_imxrt.h"
+#endif
+
 #ifdef HWSPI_H_
   #include "hwspi_imxrt.h"
 #endif
@@ -47,4 +51,8 @@
 
 #ifdef HWPWM_H_
   #include "hwpwm_imxrt.h"
+#endif
+
+#if defined(HWSDMMC_H_)
+  #include "hwsdmmc_imxrt.h"
 #endif

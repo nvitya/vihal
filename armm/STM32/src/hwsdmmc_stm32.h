@@ -57,7 +57,7 @@ public:
 	void StartDataWriteCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cmdflags, void * dataptr, uint32_t datalen);
 	void StartDataWriteTransmit(void * dataptr, uint32_t datalen);
 
-	void RunTransfer(); // the internal state machine for managing multi block reads
+	//void RunTransfer(); // the internal state machine for managing multi block reads
 
 	uint32_t GetCmdResult32();
 	void GetCmdResult128(void * adataptr);
