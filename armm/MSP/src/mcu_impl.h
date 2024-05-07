@@ -33,4 +33,8 @@
   #include "hwintflash_msp.h"
 #endif
 
+#ifdef HWPWM_H_
+  #include "hwpwm_msp.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING
