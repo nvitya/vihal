@@ -50,6 +50,7 @@ public:
 	bool DmaStartRecv(THwDmaTransfer * axfer);
 
 public:
+
 	HW_UART_REGS *      regs = nullptr;
 };
 

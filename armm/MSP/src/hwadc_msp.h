@@ -30,11 +30,19 @@
 #define HWADC_PRE_ONLY
 #include "hwadc.h"
 
-#define HWADC_MAX_CHANNELS  12
-#define HWADC_DATA_LSHIFT    4
+#define HWADC_MAX_CHANNELS  16
+#define HWADC_DATA_LSHIFT    4  // minus hw averaging
 
 class THwAdc_msp : public THwAdc_pre
 {
+public: // settings
+	uint8_t         reference = 0;  // 0 = VDDA, 1 = EXTREF, 2 = internal reference
+	uint8_t         averaging = 0;  // 0 = no averaging, 1 = 2x, 2 = 4x ... 7 = 128x
+	uint8_t         avg_denom = 0;  // averaging denominator (right shift count)
+
+protected:
+	int8_t          data_lshift = HWADC_DATA_LSHIFT;
+
 public:
 	uint32_t        channel_map = 0;  // by default convert only ch 0
 
@@ -55,7 +63,7 @@ public:
 
 
 	bool            Init(int adevnum, uint32_t achannel_map);
-	inline uint16_t ChValue(uint8_t ach) { return (*databyid[ach] << HWADC_DATA_LSHIFT); }
+	inline uint16_t ChValue(uint8_t ach) { return (*databyid[ach] << data_lshift); }
 
 	void StartFreeRun(uint32_t achsel);
 	void StopFreeRun();

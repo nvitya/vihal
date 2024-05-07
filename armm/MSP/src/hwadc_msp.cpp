@@ -163,16 +163,17 @@ void THwAdc_msp::StartFreeRun(uint32_t achsel)
 			// setup the control reg
 
 			uint32_t creg = (0
-			  | (0  << 28)  // WINCOMP: 1 = enable window comparator
-			  | (0  << 24)  // TRIG: 0 = automatic trigger, 1 = requires a trigger event
-			  | (0  << 20)  // BCSEN: 1 = enable burn out current source
-			  | (0  << 16)  // AVGEN: 1 = averaging enabled
-			  | (0  << 12)  // STIME: sampling time select, 0 = SCOMP0, 1 = SCOMP1
-			  | (0  <<  8)  // VRSEL: 0 = VDDA, 1 = EXTREF, 2 = Internal reference
-			  | (ch <<  0)  // CHANSEL(5): channel
+			  | (0         << 28)  // WINCOMP: 1 = enable window comparator
+			  | (0         << 24)  // TRIG: 0 = automatic trigger, 1 = requires a trigger event
+			  | (0         << 20)  // BCSEN: 1 = enable burn out current source
+			  | (0         << 16)  // AVGEN: 1 = averaging enabled
+			  | (0         << 12)  // STIME: sampling time select, 0 = SCOMP0, 1 = SCOMP1
+			  | (reference <<  8) // VRSEL: 0 = VDDA, 1 = EXTREF, 2 = Internal reference
+			  | (ch        <<  0)  // CHANSEL(5): channel
 			);
-			regs->MEMCTL[chcnt] = creg;
+			if (averaging)	creg |= (1 << 16);
 
+			regs->MEMCTL[chcnt] = creg;
 			++chcnt;
 		}
 		else
@@ -186,28 +187,29 @@ void THwAdc_msp::StartFreeRun(uint32_t achsel)
 	{
 		regs->CTL2 = (0
 			| ((chcnt - 1)  << 24)  // ENDADD(5)
-			| (0  << 16)  // STARTADD(5)
-			| (0  << 11)  // SAMPCNT(5)
-			| (0  << 10)  // FIFOEN: 1 = enable FIFO based operation
-			| (0  <<  8)  // DMAEN: 1 = enable DMA trigger
-			| (0  <<  1)  // RES(2): resolution, 0 = 12-bit, 1 = 10-bit, 2 = 8-bit
-			| (0  <<  0)  // DF: 0 = unsigned right aligned, 1 = signed left aligned
+			| (0            << 16)  // STARTADD(5)
+			| (0            << 11)  // SAMPCNT(5)
+			| (0            << 10)  // FIFOEN: 1 = enable FIFO based operation
+			| (0            <<  8)  // DMAEN: 1 = enable DMA trigger
+			| (0            <<  1)  // RES(2): resolution, 0 = 12-bit, 1 = 10-bit, 2 = 8-bit
+			| (0            <<  0)  // DF: 0 = unsigned right aligned, 1 = signed left aligned
 		);
 
 		regs->CTL1 = (0
-		  | (0  << 28)  // AVGD(3): HW avg denominator (right shift count)
-		  | (0  << 24)  // AVGN(3): 0 = disable HW AVG, 1 = 2x, 2 = 4x .. 7 = 128x
-		  | (0  << 20)  // SAMPMODE: sampling mode (only, not the conversion): 0 = AUTO: sample timer is the trigger, 1 = MANUAL: SW trigger
-		  | (3  << 16)  // CONSEQ(2): 0 = simple ch, 1 = simple sequence, 2 = repeated ch, 3 = repeated sequence
-		  | (1  <<  8)  // SC: 1 = start sampling
-		  | (0  <<  0)  // TRIGSRC: sample trigger source, 0 = SW, 1 = HW event trigger
+		  | (avg_denom    << 28)  // AVGD(3): HW avg denominator (right shift count)
+		  | (averaging    << 24)  // AVGN(3): 0 = disable HW AVG, 1 = 2x, 2 = 4x .. 7 = 128x
+		  | (0            << 20)  // SAMPMODE: sampling mode (only, not the conversion): 0 = AUTO: sample timer is the trigger, 1 = MANUAL: SW trigger
+		  | (3            << 16)  // CONSEQ(2): 0 = simple ch, 1 = simple sequence, 2 = repeated ch, 3 = repeated sequence
+		  | (1            <<  8)  // SC: 1 = start sampling
+		  | (0            <<  0)  // TRIGSRC: sample trigger source, 0 = SW, 1 = HW event trigger
 		);
 
 		// start the conversions
 		regs->CTL0 |= ADC12_CTL0_ENC_MASK;
-
 		//regs->CTL1 |= ADC12_CTL1_SC_MASK;  // start the conversion
 	}
+
+	data_lshift = 16 - 12 - averaging;
 }
 
 void THwAdc_msp::StopFreeRun()

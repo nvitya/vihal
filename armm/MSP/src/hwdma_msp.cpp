@@ -26,13 +26,13 @@
  *    Only the DMA channels 0-2 are advanced DMAs which are capable for circular (repeated) operation !
 */
 
-#include <hwdma_msp.h>
 #include <stdio.h>
 #include <stdarg.h>
 
 #include "platform.h"
 
-//#include "hwdma.h"
+#include "hwdma.h"
+#include "hwdma_msp.h"
 #include "msp_utils.h"
 
 bool THwDmaChannel_msp::Init(int achannel, uint8_t atrigger)  // achannel = 0..6, atrigger = 0..FF
