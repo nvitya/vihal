@@ -110,7 +110,7 @@ bool THwPwmChannel_msp::Init(int atimernum, int achnum)
 	timer_base_speed = msp_bus_speed(busid);
 	SetFrequency(frequency);
 
-	*valreg = 123;
+	*valreg = 0;
 
 	uint32_t ccctl = 0
 		| (0  << 29)  // CC2SELD(3)
@@ -118,7 +118,7 @@ bool THwPwmChannel_msp::Init(int atimernum, int achnum)
 		| (0  << 25)  // SCERCNEZ
 		| (0  << 22)  // CC2SELU(3)
 		| (0  << 18)  // CCUPD(3): 0 = new CC value takes effect immediately, 4 = new CC value effective in the next cycle only
-		| (1  << 17)  // COC: 0 = capture, 1 = compare (output) mode
+		| (0  << 17)  // COC: 0 = compare (output) mode, 1 = capture
 		| (1  << 12)  // ZCOND(3)
 		| (1  <<  8)  // LCOND(3)
 		| (0  <<  4)  // ACOND(3)
