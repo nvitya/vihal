@@ -53,6 +53,8 @@ public:
 	uint32_t						    outenbit = 0;
 	uint32_t                timer_base_speed = 0;
 	volatile uint32_t *     valreg = nullptr;
+
+	inline uint16_t GetOnClocks() { return *valreg; }
 };
 
 #define HWPWM_IMPL THwPwmChannel_msp
