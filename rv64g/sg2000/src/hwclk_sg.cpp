@@ -31,7 +31,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   // This is set fixed by the Linux
 
+#if defined(MCU_CV1800)
+
   SystemCoreClock = 594000000;
+
+#else
+
+  SystemCoreClock = 786000000;
+
+#endif
 
   // finally set the global variable for the other system parts
   //SystemCoreClock = target_speed_hz; // defined as .noinit, so it won't be cleared at section setup
