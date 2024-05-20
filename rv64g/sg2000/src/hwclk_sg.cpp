@@ -37,7 +37,9 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 #else
 
-  SystemCoreClock = 786000000;
+  SystemCoreClock = 786431995;  // measured using the 25 MHz reference clock
+  //SystemCoreClock = 786000000;
+  //SystemCoreClock = 750000000;
 
 #endif
 
