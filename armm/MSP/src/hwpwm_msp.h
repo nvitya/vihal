@@ -37,7 +37,7 @@
 class THwPwmChannel_msp : public THwPwmChannel_pre
 {
 public:
-	bool          Init(int atimernum, int achnum);
+	bool          Init(int atimernum, int achnum);  // atimernum 0-11: TIMGx, 0x80-0x81: TIMAx
 
 	void          SetOnClocks(uint16_t aclocks);
 	void          Enable();

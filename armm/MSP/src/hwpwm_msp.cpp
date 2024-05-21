@@ -76,6 +76,22 @@ bool THwPwmChannel_msp::Init(int atimernum, int achnum)
 		busid = 0;
 	}
 #endif
+#ifdef TIMA0_BASE
+	if (0x80 == devnum)
+	{
+		regs = TIMA0;
+		busid = 1;
+		advanced_timer = true;
+	}
+#endif
+#ifdef TIMA1_BASE
+	if (0x81 == devnum)
+	{
+		regs = TIMA1;
+		busid = 1;
+		advanced_timer = true;
+	}
+#endif
 
 	if (!regs)
 	{
@@ -89,6 +105,14 @@ bool THwPwmChannel_msp::Init(int atimernum, int achnum)
 	else if (1 == chnum)
 	{
 		valreg = (volatile uint32_t *)&(regs->COUNTERREGS.CC_01[1]);
+	}
+	else if (2 == chnum)
+	{
+		valreg = (volatile uint32_t *)&(regs->COUNTERREGS.CC_23[0]);
+	}
+	else if (3 == chnum)
+	{
+		valreg = (volatile uint32_t *)&(regs->COUNTERREGS.CC_23[1]);
 	}
 	else
 	{
