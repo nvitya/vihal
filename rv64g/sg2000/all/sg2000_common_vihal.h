@@ -170,5 +170,50 @@ typedef struct
 #define UART5        ((uart_regs_t *)RTCSYS_UART_BASE_ADDR)
 #define RTCSYS_UART  ((uart_regs_t *)RTCSYS_UART_BASE_ADDR)
 
+//------------------------------------------------------------------------------
+// SPI
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t CTRLR0;    // 0x000 (R/W)  Control register 0
+  volatile uint32_t CTRLR1;    // 0x004 (R/W)  Control register 1
+  volatile uint32_t SPIENR;    // 0x008 (R/W)  SPI enable regiseter
+  volatile uint32_t MWCR;      // 0x00C (R/W)  Microwire Control Register
+  volatile uint32_t SER;       // 0x010 (R/W)  Slave enable register
+  volatile uint32_t BAUDR;     // 0x014 (R/W)  Baud rate select
+  volatile uint32_t TXFTLR;    // 0x018 (R/W)  Transmit FIFO Threshold Level
+  volatile uint32_t RXFTLR;    // 0x01c (R/W)  Receive FIFO Threshold Level
+  volatile uint32_t TXFLR;     // 0x020 (R/W)  Transmit FIFO Level register
+  volatile uint32_t RXFLR;     // 0x024 (R/W)  Receive FIFO Level Register
+  volatile uint32_t SR;        // 0x028 (R/W)  status register
+  volatile uint32_t IMR;       // 0x02C (R/W)  Interrupt Mask Register
+  volatile uint32_t ISR;       // 0x030 (R/W)  interrupt status register
+  volatile uint32_t RISR;      // 0x034 (R/W)  Raw Interrupt Status Register
+  volatile uint32_t TXOICR;    // 0x038 (R/W)  Transmit FIFO Overflow Interrupt Clear Register
+  volatile uint32_t RXOICR;    // 0x03C (R/W)  Receive FIFO Overflow Interrupt Clear Register
+  volatile uint32_t RXUICR;    // 0x040 (R/W)  Receive FIFO Underflow Interrupt Clear Register
+  volatile uint32_t MSTICR;    // 0x044 (R/W)  Multi-Master Interrupt Clear Register
+  volatile uint32_t ICR;       // 0x048 (R/W)  Interrupt Clear Register
+  volatile uint32_t DMACR;     // 0x04C (R/W)  DMA Control Register
+  volatile uint32_t DMATDLR;   // 0x050 (R/W)  DMA Transmoit Data Level
+  volatile uint32_t DMARDLR;   // 0x054 (R/W)  DMA Receive Data Level
+  volatile uint32_t IDR;       // 0x058 (R/W)  identification register
+  volatile uint32_t SSI_COMP_VERSION;
+  volatile uint32_t DR;        // 0x060 (R/W)  Data Register
+  uint32_t          _pad_64[15];
+  volatile uint32_t SPIMSSEL;  // 0x0A0 (R/W)  SPI is Master or Slave Select Register
+//
+} spi_regs_t;
+
+#define SPI0_BASE_ADDR     (0x04180000)
+#define SPI1_BASE_ADDR     (0x04190000)
+#define SPI2_BASE_ADDR     (0x041A0000)
+#define SPI3_BASE_ADDR     (0x041B0000)
+
+#define SPI0  ((spi_regs_t *)SPI0_BASE_ADDR)
+#define SPI1  ((spi_regs_t *)SPI1_BASE_ADDR)
+#define SPI2  ((spi_regs_t *)SPI2_BASE_ADDR)
+#define SPI3  ((spi_regs_t *)SPI3_BASE_ADDR)
 
 #endif
