@@ -55,6 +55,12 @@ public:
 	bool DmaRecvCompleted();
 
 public:
+	inline void SetFrameNum(unsigned afnum)
+	{
+	  regs->CTRLR1 = (afnum - 1);
+	}
+
+public:
 	unsigned  					basespeed;
 	spi_regs_t * 			  regs;
 

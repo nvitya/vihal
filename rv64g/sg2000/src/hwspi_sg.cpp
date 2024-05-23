@@ -45,7 +45,7 @@ bool THwSpi_sg::Init(int adevnum)
 
 	initialized = false;
 
-  basespeed = 100000000;
+  basespeed = 187500000;
 
 	//SYSCTL->CLK_EN_CENT |= SYSCTL_CLK_EN_CENT_APB0;
 
@@ -75,8 +75,7 @@ bool THwSpi_sg::Init(int adevnum)
   if (regs->ICR) { } // reading this register clears the interrupts
   regs->SER = 1; // enable slave select
 
-
-  regs->CTRLR0 = (0
+  uint32_t ctrl0 = (0
     | (0  << 12)  // MWCFS(4): microwire control frame size
     | (0  << 11)  // LOOPBACK: 1 = loopback output to input
     | (0  << 10)  // ?SLAVE? (only for slave mode)
@@ -84,8 +83,12 @@ bool THwSpi_sg::Init(int adevnum)
     | (0  <<  7)  // CPOL: 0 = clock is low when inactive, 1 = clock is high when inactive
     | (0  <<  6)  // SCPH: 0 = serial clock toggles in middle of first data bit, 1 = serial clock toggles at start of first bit
     | (0  <<  4)  // FRF: frame format, 0 = Motorola, 1 = TI, 2 = Microwire
-    | (0  <<  0)  // FSIZE(4): 3 = 4-bit, 7 = 8-bit, 15 = 16-bit
+    | ((databits-1) <<  0)  // FSIZE(4): 3 = 4-bit, 7 = 8-bit, 15 = 16-bit
   );
+  if (idleclk_high)      ctrl0 |= (1 << 7);
+  if (datasample_late)   ctrl0 |= (1 << 6);
+  regs->CTRLR0 = ctrl0;
+
 
   regs->CTRLR1 = (0
     | (0  <<  0)  // DFNUM(16): number of data frames
