@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------------------------
  * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+ * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -19,42 +19,44 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     mcu_builtin.h (SG2000)
- *  brief:    Built-in CV1800/SG200x MCU definitions
- *  date:     2024-04-21
+ *  file:     hwpwm_msp.h
+ *  brief:    MSPM0G PWM Driver
+ *  date:     2024-05-07
  *  authors:  nvitya
+ *  note:
+ *    only the TIMG units are supported
 */
 
-#ifndef _MCU_BUILTIN_H_
-#define _MCU_BUILTIN_H_
 
-#if 0
+#ifndef SRC_HWPWM_MSP_H_
+#define SRC_HWPWM_MSP_H_
 
-#elif defined(MCU_CV1800)
+#define HWPWM_PRE_ONLY
+#include "hwpwm.h"
 
-  #define MCUSF_1800
-  #define MAX_CLOCK_SPEED  700000000
+class THwPwmChannel_msp : public THwPwmChannel_pre
+{
+public:
+	bool          Init(int atimernum, int achnum);  // atimernum 0-11: TIMGx, 0x80-0x81: TIMAx
 
-  #include "cv1800_vihal.h"
+	void          SetOnClocks(uint16_t aclocks);
+	void          Enable();
+	void          Disable();
+	inline bool   Enabled() { return false; } //return ((regs->CCER & outenbit) != 0); }
 
-#elif defined(MCU_SG2002)
+	void          SetFrequency(uint32_t afrequency);
 
-  #define MCUSF_2002
-  #define MAX_CLOCK_SPEED  700000000
+public:
+	GPTIMER_Regs *          regs = nullptr;
+	bool                    advanced_timer = false;
 
-  #include "sg2002_vihal.h"
+	uint32_t						    outenbit = 0;
+	uint32_t                timer_base_speed = 0;
+	volatile uint32_t *     valreg = nullptr;
 
-#elif defined(MCU_SG2000)
+	inline uint16_t GetOnClocks() { return *valreg; }
+};
 
-  #define MCUSF_2000
-  #define MAX_CLOCK_SPEED  700000000
+#define HWPWM_IMPL THwPwmChannel_msp
 
-  #include "sg2000_vihal.h"
-
-#else
-
-  #error "Unknown SG2000 MCU"
-
-#endif
-
-#endif // _MCU_BUILTIN_H_
+#endif /* SRC_HWPWM_MSP_H_ */

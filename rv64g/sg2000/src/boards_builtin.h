@@ -16,6 +16,12 @@
   #define MCU_CV1800
   #define EXTERNAL_XTAL_HZ   25000000
 
+#elif defined(BOARD_LICHEERV_NANO)
+
+  #define BOARD_NAME "LicheeRV Nano"
+  #define MCU_SG2002
+  #define EXTERNAL_XTAL_HZ   25000000
+
 #else
 
   #error "Unknown board."
