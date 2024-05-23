@@ -411,7 +411,8 @@ bool TUsbDevice::Init()
 
 	// build up internal structures
 
-	epcount = 0;
+	epcount_htod = 0;
+	epcount_dtoh = 0;
 	ep_ctrl.Init(HWUSB_EP_TYPE_CONTROL, false, 64);  // this must be always the first endpoint (id = 0)
   AddEndpoint(&ep_ctrl);
 
@@ -572,16 +573,33 @@ uint8_t TUsbDevice::AddString(const char * astr)
 
 void TUsbDevice::AddEndpoint(TUsbEndpoint * aep)
 {
-	if (epcount >= USBDEV_MAX_ENDPOINTS)
+	if (aep->iscontrol || aep->dir_htod)
 	{
-		aep->index = 0xFF;
-		return;
+		if (epcount_htod >= USBDEV_MAX_ENDPOINTS)
+		{
+			TRACE("USBDEVICE: Error Adding HtoD endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
+			aep->index = 0xFF;
+			return;
+		}
+
+		aep->SetIndex(epcount_htod);
+		eplist_htod[epcount_htod] = aep;
+		++epcount_htod;
 	}
 
-	aep->SetIndex(epcount);
+	if (aep->iscontrol || !aep->dir_htod)
+	{
+		if (epcount_dtoh >= USBDEV_MAX_ENDPOINTS)
+		{
+			TRACE("USBDEVICE: Error Adding DtoH endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
+			aep->index = 0xFF;
+			return;
+		}
 
-	eplist[epcount] = aep;
-	++epcount;
+		aep->SetIndex(epcount_dtoh);
+		eplist_dtoh[epcount_dtoh] = aep;
+		++epcount_dtoh;
+	}
 }
 
 bool TUsbDevice::PrepareInterface(TUsbInterface * pif)
@@ -607,14 +625,25 @@ bool TUsbDevice::PrepareInterface(TUsbInterface * pif)
 
 void TUsbDevice::HandleReset()
 {
+	int i;
+
 	// (Re-)initialize endpoints
 
 	ResetEndpoints();
 
-	for (int i = 0; i < epcount; ++i)
+	for (int i = 0; i < epcount_htod; ++i)
 	{
-		eplist[i]->usbctrl = this;
-		eplist[i]->ConfigureHwEp();
+		eplist_htod[i]->usbctrl = this;
+		eplist_htod[i]->ConfigureHwEp();
+	}
+
+	for (int i = 0; i < epcount_dtoh; ++i)
+	{
+		if (!eplist_dtoh[i]->iscontrol)
+		{
+		  eplist_dtoh[i]->usbctrl = this;
+		  eplist_dtoh[i]->ConfigureHwEp();
+		}
 	}
 
 	ep_ctrl.EnableRecv(); // activate the EP0 to receive control requests
@@ -669,7 +698,15 @@ bool TUsbDevice::HandleEpTransferEvent(uint8_t epid, bool htod)
 		return false;
 	}
 
-	TUsbEndpoint * ep = eplist[epid];
+	TUsbEndpoint * ep;
+	if (htod)
+	{
+		ep = eplist_htod[epid];
+	}
+	else
+	{
+		ep = eplist_dtoh[epid];
+	}
 	if (!ep)
 	{
 		return false;
@@ -994,11 +1031,24 @@ void TUsbDevice::ProcessSetupRequest()
 	else if ((setuprq.rqtype & 0x1F) == 2) // endpoint requests
 	{
 		i = (setuprq.index & 0x0F);
-		if (i < epcount)
+		if (setuprq.index & 0x80)  // dtoh
 		{
-			if (eplist[i]->HandleSetupRequest(&setuprq))
+			if (i < epcount_dtoh)
 			{
-				return;
+				if (eplist_dtoh[i]->HandleSetupRequest(&setuprq))
+				{
+					return;
+				}
+			}
+		}
+		else
+		{
+			if (i < epcount_htod)
+			{
+				if (eplist_htod[i]->HandleSetupRequest(&setuprq))
+				{
+					return;
+				}
 			}
 		}
 		LTRACE("Unhandled endpoint request!\r\n");
@@ -1089,12 +1139,23 @@ void TUsbDevice::SendControlStatus(bool asuccess)
 	}
 }
 
-THwUsbEndpoint_pre * TUsbDevice::GetEndPoint(uint8_t epid)
+THwUsbEndpoint_pre * TUsbDevice::GetEndPoint(uint8_t fullepid)
 {
-  if (epid >= USBDEV_MAX_ENDPOINTS)
-  {
-    return nullptr;
-  }
-
-  return eplist[epid];
+	uint8_t epidx = fullepid & 0xF;
+	if (fullepid & 80) // DTOH
+	{
+	  if (epidx >= USBDEV_MAX_ENDPOINTS)
+	  {
+	    return nullptr;
+	  }
+	  return eplist_dtoh[epidx];
+	}
+	else
+	{
+	  if (epidx >= USBDEV_MAX_ENDPOINTS)
+	  {
+	    return nullptr;
+	  }
+	  return eplist_htod[epidx];
+	}
 }

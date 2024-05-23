@@ -242,7 +242,7 @@ public:
 public:
   virtual ~TUsbInterface() {} // to avoid warnings
 
-	virtual bool         InitInterface(); // should be overridden
+	virtual bool         InitInterface();   // should be overridden
 
 	bool                 AddDesc(uint16_t atype, void * adataptr, uint8_t alen, uint8_t aflags);
 	bool                 AddConfigDesc(void * adataptr, bool asubtype);
@@ -296,7 +296,8 @@ class TUsbDevice : public THwUsbCtrl
 {
 public:  // quick variables (the first 32 variables are accessed faster on ARM, because they can be addressed with 16 bit instructions)
 	uint8_t               ctrlstage = 0;
-	uint8_t               epcount = 0;
+	uint8_t               epcount_htod = 0;
+	uint8_t               epcount_dtoh = 0;
 	uint8_t               interface_count = 0;
 	uint8_t               function_count = 0;
 	uint8_t               string_count = 0;
@@ -315,7 +316,9 @@ public:
 
 	TUsbEndpoint          ep_ctrl;  // The Endpoint 0 provided here
 
-	TUsbEndpoint *        eplist[USBDEV_MAX_ENDPOINTS];
+	TUsbEndpoint *        eplist_htod[USBDEV_MAX_ENDPOINTS];
+	TUsbEndpoint *        eplist_dtoh[USBDEV_MAX_ENDPOINTS];
+
 	TUsbFunction *        functions[USBDEV_MAX_FUNCTIONS];
 	TUsbInterface *       interfaces[USBDEV_MAX_INTERFACES];
 	char *          			stringtable[USBDEV_MAX_STRINGS] = {0};
@@ -407,7 +410,7 @@ public: // virtual methods
   virtual bool          InitDevice();
   void                  Run();  // execute Run() of the added functions
 	virtual void          HandleReset();
-  virtual THwUsbEndpoint_pre *  GetEndPoint(uint8_t epid);
+  virtual THwUsbEndpoint_pre *  GetEndPoint(uint8_t fullepid);
 
 	virtual bool          HandleSpecialSetupRequest() { return false; }  // returns true when handled
 	virtual bool          HandleSpecialSetupData()    { return false; }  // returns true when handled

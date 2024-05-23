@@ -83,6 +83,9 @@ public:
     .data_interface = 0       // will be set automatically
   };
 
+public:
+  /* constructor */ TUifCdcUartControl();
+
 public: // interface specific
 	bool              InitCdcUart(TUifCdcUartData * adataif, THwUart * auart);
 	void              Run(); // must be called periodically
@@ -128,6 +131,8 @@ public:
 	uint8_t               usb_rxlen = 0;
 
 public:
+  /* constructor */     TUifCdcUartData();
+
 	bool                  AddTxByte(uint8_t abyte);
 	bool                  SendTxBytes();
 	void                  Reset();

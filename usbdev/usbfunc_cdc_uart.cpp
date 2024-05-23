@@ -33,6 +33,15 @@
 
 //----------------------------------------------------
 
+TUifCdcUartControl::TUifCdcUartControl()
+{
+	intfdesc.interface_class = 2; // CDC
+	intfdesc.interface_subclass = 2; // Abstract Control Model
+	intfdesc.interface_protocol = 0; // 0 = no class specitic control
+
+	interface_name = "USB-UART Control";
+}
+
 bool TUifCdcUartControl::InitCdcUart(TUifCdcUartData * adataif, THwUart * auart)
 {
   initialized = false;
@@ -61,12 +70,6 @@ bool TUifCdcUartControl::InitCdcUart(TUifCdcUartData * adataif, THwUart * auart)
 
 bool TUifCdcUartControl::InitInterface()
 {
-	intfdesc.interface_class = 2; // CDC
-	intfdesc.interface_subclass = 2; // Abstract Control Model
-	intfdesc.interface_protocol = 0; // 0 = no class specitic control
-
-	interface_name = "USB-UART Control";
-
 	// some other descriptors are required
 
   desc_cdc_callmgmt.data_interface = index + 1;  // the following interface must be the data interface
@@ -301,14 +304,17 @@ void TUifCdcUartControl::Run()
 
 //------------------------------------------------
 
-bool TUifCdcUartData::InitInterface()
+TUifCdcUartData::TUifCdcUartData()
 {
 	intfdesc.interface_class = 0x0A; // CDC Data
 	intfdesc.interface_subclass = 0;
 	intfdesc.interface_protocol = 0; // no specific protocol
 
 	interface_name = "USB-UART Data";
+}
 
+bool TUifCdcUartData::InitInterface()
+{
 	// endpoints
 
 	ep_input.Init(HWUSB_EP_TYPE_BULK, true, 64);
