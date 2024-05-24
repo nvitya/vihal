@@ -111,8 +111,14 @@ class THwUsbCtrl_stm32 : public THwUsbCtrl_pre
 {
 public:
 	HWUSBCTRL_REGS *    regs = nullptr;
-	uint32_t            irq_mask;
-	uint16_t       			pma_mem_end;
+	uint32_t            irq_mask = 0;
+	uint16_t       			pma_mem_end = 0;
+
+	THwUsbCtrl_stm32()
+	{
+		epalloc_bidir = true;
+		epalloc_bidir_commontype = true;
+	}
 
 	bool InitHw();
 
