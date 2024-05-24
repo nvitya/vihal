@@ -22,3 +22,11 @@
 #ifdef HWDMA_H_
   #define SKIP_UNIMPLEMENTED_WARNING
 #endif
+
+#ifdef HWPWM_H_
+  #include "hwpwm_sg.h"
+#endif
+
+#ifdef HWEXTIRQ_H_
+  #include "hwextirq_sg.h"
+#endif

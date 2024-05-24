@@ -216,4 +216,59 @@ typedef struct
 #define SPI2  ((spi_regs_t *)SPI2_BASE_ADDR)
 #define SPI3  ((spi_regs_t *)SPI3_BASE_ADDR)
 
+//------------------------------------------------------------------------------
+// PWM
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  HLPERIOD0;        // 00
+  volatile uint32_t  PERIOD0;          // 04
+  volatile uint32_t  HLPERIOD1;        // 08
+  volatile uint32_t  PERIOD1;          // 0C
+  volatile uint32_t  HLPERIOD2;        // 10
+  volatile uint32_t  PERIOD2;          // 14
+  volatile uint32_t  HLPERIOD3;        // 18
+  volatile uint32_t  PERIOD3;          // 1C
+  volatile uint32_t  CAP_FREQNUM;      // 20
+  volatile uint32_t  CAP_FREQDATA;     // 24
+  uint32_t _pad_28[(0x40-0x28)/4];
+  volatile uint32_t  POLARITY;         // 40
+  volatile uint32_t  PWMSTART;         // 44
+  volatile uint32_t  PWMDONE;          // 48
+  volatile uint32_t  PWMUPDATE;        // 4C
+  volatile uint32_t  PCOUNT0;          // 50
+  volatile uint32_t  PCOUNT1;          // 54
+  volatile uint32_t  PCOUNT2;          // 58
+  volatile uint32_t  PCOUNT3;          // 5C
+  volatile uint32_t  PULSECOUNT0;      // 60
+  volatile uint32_t  PULSECOUNT1;      // 64
+  volatile uint32_t  PULSECOUNT2;      // 68
+  volatile uint32_t  PULSECOUNT3;      // 6C
+  uint32_t _pad_70[(0x80-0x70)/4];
+  volatile uint32_t  SHIFTCOUNT0;      // 80
+  volatile uint32_t  SHIFTCOUNT1;      // 84
+  volatile uint32_t  SHIFTCOUNT2;      // 88
+  volatile uint32_t  SHIFTCOUNT3;      // 8C
+  volatile uint32_t  SHIFTSTART;       // 90
+  uint32_t _pad_94[(0x9C-0x94)/4];
+  volatile uint32_t  CAP_FREQEN;       // 9C
+  uint32_t _pad_A0[(0xC0-0xA0)/4];
+  volatile uint32_t  CAP_FREQDONE_NUM; // C0
+  uint32_t _pad_C4[(0xD0-0xC4)/4];
+  volatile uint32_t  PWM_OE;           // D0
+  //
+} pwm_regs_t;
+
+#define PWM0_BASE_ADDR     (0x03060000)
+#define PWM1_BASE_ADDR     (0x03061000)
+#define PWM2_BASE_ADDR     (0x03062000)
+#define PWM3_BASE_ADDR     (0x03063000)
+
+#define PWM0  ((pwm_regs_t *)PWM0_BASE_ADDR)
+#define PWM1  ((pwm_regs_t *)PWM1_BASE_ADDR)
+#define PWM2  ((pwm_regs_t *)PWM2_BASE_ADDR)
+#define PWM3  ((pwm_regs_t *)PWM3_BASE_ADDR)
+
+
 #endif
