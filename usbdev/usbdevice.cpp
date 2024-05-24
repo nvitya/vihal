@@ -573,31 +573,96 @@ uint8_t TUsbDevice::AddString(const char * astr)
 
 void TUsbDevice::AddEndpoint(TUsbEndpoint * aep)
 {
-	if (aep->iscontrol || aep->dir_htod)
+	if (epalloc_bidir)
+	{
+		if (aep->iscontrol || aep->dir_htod)
+		{
+			if (epalloc_bidir_commontype) // do the separate endpoint directions a common type field ? (STM32F0, F1, G4 etc.)
+			{
+				while (epcount_dtoh > epcount_htod)
+				{
+					// has the other direction the same type ?
+					if ( !eplist_dtoh[epcount_htod]  // (this should not be true)
+							 || ( (eplist_dtoh[epcount_htod]->attr & HWUSB_EP_TYPE_MASK) == (aep->attr & HWUSB_EP_TYPE_MASK) )
+						 )
+					{
+						break;
+					}
+					eplist_htod[epcount_htod] = nullptr;  // different type, skip
+					++epcount_htod;
+				}
+			}
+
+			if (epcount_htod >= USBDEV_MAX_ENDPOINTS)
+			{
+				TRACE("USBDEVICE: Error Adding HtoD endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
+				aep->index = 0xFF;
+				return;
+			}
+
+			aep->SetIndex(epcount_htod);
+			eplist_htod[epcount_htod] = aep;
+			++epcount_htod;
+		}
+
+		if (aep->iscontrol || !aep->dir_htod)
+		{
+			if (epalloc_bidir_commontype) // do the separate endpoint directions a common type field ? (STM32F0, F1, G4 etc.)
+			{
+				while (epcount_htod > epcount_dtoh)
+				{
+					// has the other direction the same type ?
+					if ( !eplist_dtoh[epcount_dtoh]  // (this should not be true)
+							 || ( (eplist_dtoh[epcount_dtoh]->attr & HWUSB_EP_TYPE_MASK) == (aep->attr & HWUSB_EP_TYPE_MASK) )
+						 )
+					{
+						break;
+					}
+					eplist_dtoh[epcount_dtoh] = nullptr;  // different type, skip
+					++epcount_dtoh;
+				}
+			}
+
+			if (epcount_dtoh >= USBDEV_MAX_ENDPOINTS)
+			{
+				TRACE("USBDEVICE: Error Adding DtoH endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
+				aep->index = 0xFF;
+				return;
+			}
+
+			aep->SetIndex(epcount_dtoh);
+			eplist_dtoh[epcount_dtoh] = aep;
+			++epcount_dtoh;
+		}
+	}
+	else
 	{
 		if (epcount_htod >= USBDEV_MAX_ENDPOINTS)
 		{
-			TRACE("USBDEVICE: Error Adding HtoD endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
+			TRACE("USBDEVICE: Error Adding endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
 			aep->index = 0xFF;
 			return;
 		}
 
 		aep->SetIndex(epcount_htod);
-		eplist_htod[epcount_htod] = aep;
-		++epcount_htod;
-	}
-
-	if (aep->iscontrol || !aep->dir_htod)
-	{
-		if (epcount_dtoh >= USBDEV_MAX_ENDPOINTS)
+		if (aep->iscontrol || aep->dir_htod)
 		{
-			TRACE("USBDEVICE: Error Adding DtoH endpint, maximum of %u reached!\r\n", USBDEV_MAX_ENDPOINTS);
-			aep->index = 0xFF;
-			return;
+			eplist_htod[epcount_htod] = aep;
+		}
+		else
+		{
+			eplist_htod[epcount_htod] = nullptr;
 		}
 
-		aep->SetIndex(epcount_dtoh);
-		eplist_dtoh[epcount_dtoh] = aep;
+		if (aep->iscontrol || !aep->dir_htod)
+		{
+			eplist_dtoh[epcount_htod] = aep;
+		}
+		else
+		{
+			eplist_dtoh[epcount_htod] = nullptr;
+		}
+		++epcount_htod;
 		++epcount_dtoh;
 	}
 }

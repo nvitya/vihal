@@ -34,7 +34,7 @@
 
 #include "hwusbctrl.h"
 
-#define USBDEV_CTRL_BUF_SIZE   192  // every decriptor must fit into this, some are bigger than 64 byte !
+#define USBDEV_CTRL_BUF_SIZE   256  // every decriptor must fit into this, some are bigger than 64 byte !
 #define USBDEV_MAX_STRINGS      16
 #define USBDEV_MAX_INTERFACES    8
 #define USBDEV_MAX_FUNCTIONS     4

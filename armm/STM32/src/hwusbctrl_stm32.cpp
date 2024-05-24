@@ -176,18 +176,24 @@ bool THwUsbEndpoint_stm32::ConfigureHwEp()
 
 	// setup the descriptor table
 
-	pdesc->ADDR_TX   = txbufoffs;
-	pdesc->COUNT_TX  = 0;
-
-	// set the buffer size:
-	pdesc->ADDR_RX   = rxbufoffs;
-	if (maxlen >= 32)
+	if (dtoh_len)
 	{
-		pdesc->COUNT_RX = ((maxlen >> 5) << 10) | 0x8000;  // the size is presented in 32 byte blocks
+		pdesc->ADDR_TX   = txbufoffs;
+		pdesc->COUNT_TX  = 0;
 	}
-	else
+
+	if (htod_len)
 	{
-		pdesc->COUNT_RX = ((maxlen >> 1) << 10);  // the size is presented in 2 byte blocks
+		// set the buffer size:
+		pdesc->ADDR_RX   = rxbufoffs;
+		if (maxlen >= 32)
+		{
+			pdesc->COUNT_RX = ((maxlen >> 5) << 10) | 0x8000;  // the size is presented in 32 byte blocks
+		}
+		else
+		{
+			pdesc->COUNT_RX = ((maxlen >> 1) << 10);  // the size is presented in 2 byte blocks
+		}
 	}
 
 	// set EPxR base configuration
@@ -216,8 +222,8 @@ bool THwUsbEndpoint_stm32::ConfigureHwEp()
 	set_epreg_static_content(preg, epconf);
 
 	// set the default state to NAK, otherwise it stays disabled
-	set_epreg_tx_status(preg, 2);  // NAK
-	set_epreg_rx_status(preg, 2);  // NAK
+	if (dtoh_len) 	set_epreg_tx_status(preg, 2);  // NAK
+	if (htod_len) 	set_epreg_rx_status(preg, 2);  // NAK
 
 	return true;
 }
