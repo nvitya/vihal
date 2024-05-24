@@ -71,6 +71,8 @@ class THwUsbCtrl_pre
 public:  // parameters
 	int             devnum = 0;  // on stm32 0 = OTG_HS, 1 = OTG_FS
 	bool            highspeed = false;
+	bool            epalloc_bidir = false;
+	bool            epalloc_bidir_commontype = false;
 
 public:
 	bool            initialized = false;
