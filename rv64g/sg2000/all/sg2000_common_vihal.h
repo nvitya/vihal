@@ -38,6 +38,65 @@
 #include "stdint.h"
 
 //------------------------------------------------------------------------------
+// PLIC
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t     PRIO[1024];  // 000000: The priority configuration registers
+  volatile uint32_t     IP[32];      // 001000: The interrupt pending registers
+  uint32_t _pad_001080[(0x2000-0x1080)/4];
+  volatile uint32_t     H0_MIE[32];  // 002000: The M-mode interrupt enable registers
+  volatile uint32_t     H0_SIE[32];  // 002080: The S-mode interrupt enable registers
+  uint32_t _pad_002100[(0x1FFFFC-0x2100)/4];
+  volatile uint32_t     PER;         // 1FFFFC: Permission control register
+  volatile uint32_t     H0_MTH;      // 200000: M-mode interrupt threshold register
+  volatile uint32_t     H0_MCLAIM;   // 200004: M-mode interrupt claim/complete register
+  uint32_t _pad_200008[(0x201000-0x200008)/4];
+  volatile uint32_t     H0_STH;      // 201000: S-mode interrupt threshold register
+  volatile uint32_t     H0_SCLAIM;   // 201004  S-mode interrupt claim/complete register
+//
+} plic_regs_t;
+
+#define PLIC_BASE_ADDR      0x70000000
+#define PLIC                ((plic_regs_t *)PLIC_BASE_ADDR)
+
+inline void mcu_irq_priority_set(unsigned intnum, unsigned priority)
+{
+  PLIC->PRIO[intnum] = priority;
+}
+
+inline bool mcu_irq_pending(unsigned intnum)
+{
+  return 0 != (PLIC->IP[intnum >> 5] & (1 << (intnum & 0x1F)));
+}
+
+inline void mcu_irq_pending_clear(unsigned intnum)
+{
+  PLIC->IP[intnum >> 5] &= ~(1 << (intnum & 0x1F));
+}
+
+inline void mcu_irq_pending_set(unsigned intnum)
+{
+  PLIC->IP[intnum >> 5] |= (1 << (intnum & 0x1F));
+}
+
+inline void mcu_irq_enable(unsigned intnum)
+{
+  PLIC->H0_MIE[intnum >> 5] |= (1 << (intnum & 0x1F));
+}
+
+inline void mcu_irq_disable(unsigned intnum)
+{
+  PLIC->H0_MIE[intnum >> 5] &= ~(1 << (intnum & 0x1F));
+}
+
+inline bool mcu_irq_enabled(unsigned intnum)
+{
+  return 0 != (PLIC->H0_MIE[intnum >> 5] & (1 << (intnum & 0x1F)));
+}
+
+//------------------------------------------------------------------------------
 // CLINT
 //------------------------------------------------------------------------------
 
@@ -73,7 +132,6 @@ typedef struct
 //
 } clint_regs_t;
 
-#define PLIC_BASE_ADDR      0x70000000
 #define CLINT_BASE_ADDR     0x74000000
 #define CLINT               ((clint_regs_t *)CLINT_BASE_ADDR)
 
