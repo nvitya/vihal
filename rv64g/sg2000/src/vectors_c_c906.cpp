@@ -218,6 +218,10 @@ void mcu_interrupt_controller_init()
   PLIC->H0_MTH = 0;  // M-Mode interrupt threshold, 0 = all interrupts
   PLIC->H0_STH = 0;  // S-Mode interrupt threshold, 0 = all interrupts
 
+  PLIC->H0_MCLAIM = PLIC->H0_MCLAIM;
+  PLIC->IP[0] = 0;   // clear all pending interrupts
+  PLIC->IP[1] = 0;
+
   // Enable all interrupt sources (the interrupts are still disabled)
   uint32_t mie = (0
     | (0 <<  1)  // SSIE
@@ -227,7 +231,9 @@ void mcu_interrupt_controller_init()
     | (0 <<  9)  // SEIE
     | (1 << 11)  // MEIE: machine external interrupt
   );
+
   cpu_csr_setbits(CSR_MIE, mie);
+  cpu_csr_clrbits(CSR_MIP, mie);  // clear pending interrupts
 }
 
 // Processor ends up here if an unexpected interrupt occurs or a

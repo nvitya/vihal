@@ -39,6 +39,7 @@
 #define CSR_MTVT            0x307
 #define CSR_MEPC            0x341
 #define CSR_MCAUSE          0x342
+#define CSR_MIP             0x344
 
 #define CSR_MCYCLE          0xB00
 

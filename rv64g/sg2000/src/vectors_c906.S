@@ -43,7 +43,7 @@
 
   .macro SAVE_CONTEXT
 
-    addi   sp, sp, -20 * 8  // allocate stack space
+    addi   sp, sp, -22 * 8  // allocate stack space
 
     sd     x1,  0*8(sp)
     sd     x4,  1*8(sp)
@@ -64,7 +64,11 @@
     sd    x30, 15*8(sp)
     sd    x31, 16*8(sp)
 
-    // locations 17,18,19 are used differently
+    // location 17: MEPC
+    // location 18: MSTATUS
+    // location 19: - (MSUBM)
+    // location 20: PLIC EXTI number (32-bit)
+    // location 21: -
   .endm
 
   .macro RESTORE_CONTEXT
@@ -87,7 +91,7 @@
     ld    x30, 15*8(sp)
     ld    x31, 16*8(sp)
 
-    addi   sp, sp, 20 * 8  // De-allocate the stack space
+    addi   sp, sp, 22 * 8  // De-allocate the stack space
   .endm
 
   .macro SAVE_EPC_STATUS     // Save the mepc and mstatus
@@ -165,13 +169,19 @@ riscv_trapcause_irq:
   jalr   t0            // jump (and link) to the handler
 
 riscv_trap_extirq:
-  lui    t0, 0x70200    // PLIC claim register - 4 = 0x70200_000
-  lw     t0, 4(t0)      // +4 offset = PLIC claim register
+  lui    t1, 0x70200    // PLIC claim register - 4 = 0x70200_000
+  lw     t0, 4(t1)      // +4 offset = PLIC claim register
+  sw     t0, 20*8(sp)   // save PLIC EXTI number
+
   slli   t0, t0, 3      // shift left by 3 = * 8
   la     t1, __isr_irq_vectors
   add    t0, t0, t1    // add to the vector table address
   ld     t0, 0(t0)     // get the address
   jalr   t0            // jump (and link) to the handler
+
+  lw     t0, 20*8(sp)   // load the PLIC EXTI number
+  lui    t1, 0x70200    // PLIC claim register - 4 = 0x70200_000
+  sw     t0, 4(t1)      // +4 offset = PLIC claim register
 
 riscv_trap_end:
 
