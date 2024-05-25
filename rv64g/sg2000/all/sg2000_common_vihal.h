@@ -141,6 +141,79 @@ typedef struct
 #define CLINT               ((clint_regs_t *)CLINT_BASE_ADDR)
 
 //------------------------------------------------------------------------------
+// DMA
+//------------------------------------------------------------------------------
+
+
+typedef struct
+{
+  volatile uint64_t  SAR;         /* Source Address Register */
+  volatile uint64_t  DAR;         /* Destination Address Register */
+  volatile uint64_t  BLOCK_TS;    /* Block transfer size */
+  volatile uint64_t  CTL;         /* Contorl dma transer */
+  volatile uint64_t  CFG;         /* Configure dma transer */
+  volatile uint64_t  LLP;         /* Linked List Pointer */
+  volatile uint64_t  STATUS;      /* Status of dma transer */
+  volatile uint64_t  SWHSSRCREG;  /* SW handshake source register */
+  volatile uint64_t  SWHSDSTREG;  /* SW handshake Destination register */
+  volatile uint64_t  BLK_TFR_RESUMEREQREG;    /* Block transfer resume request */
+  volatile uint64_t  AXI_IDREG;   /* AXI ID register */
+  volatile uint64_t  AXI_QOSREG;  /* AXI QoS register */
+  volatile uint64_t  SSTAT;
+  volatile uint64_t  DSTAT;
+  volatile uint64_t  SSTATAR;
+  volatile uint64_t  DSTATAR;
+  volatile uint64_t  INTSTATUS_ENABLEREG;
+  volatile uint64_t  INTSTATUS;
+  volatile uint64_t  INTSIGNAL_ENABLEREG;
+  volatile uint64_t  INTCLEARREG;
+
+  uint64_t __reserved1[12];
+//
+} dma_chregs_t;
+
+#define HWDMA_MAX_CHANNELS  8
+
+typedef struct
+{
+  volatile uint64_t  ID;
+  volatile uint64_t  COMPVER;
+  volatile uint64_t  CFG;
+  volatile uint64_t  CH_EN;
+  uint64_t _pad_020[2];
+  volatile uint64_t  INTSTATUS;          // 030
+  volatile uint64_t  COMM_INTCLEAR;      // 038
+  volatile uint64_t  COMM_INTSTATUS_EN;  // 040
+  volatile uint64_t  COMM_INTSIGNAL_EN;  // 048
+  volatile uint64_t  COMM_INTSTATUS;     // 050
+  volatile uint64_t  RESET;              // 058
+  uint64_t _pad_060[20];                 // 060
+  dma_chregs_t       CHAN[HWDMA_MAX_CHANNELS];  // 100
+//
+} dma_regs_t;
+
+typedef struct
+{
+  volatile uint32_t  CH_REMAP[2];
+//
+} dma_ch_remap_regs_t;
+
+#define DMA_BASE_ADDR         0x04330000
+#define DMA                   ((dma_regs_t *)DMA_BASE_ADDR)
+
+#define DMA_CH_REMAP_ADDR     0x03000154
+#define DMA_CH_REMAP          ((dma_ch_remap_regs_t *)DMA_CH_REMAP_ADDR)
+
+#define DMA_INT_MUX_REG_ADDR  0x03000298
+#define DMA_INT_MUX_REG       (*(volatile uint32_t *)DMA_INT_MUX_REG_ADDR)
+
+// this is not documented in the reference manual 2024-02-26:
+#define DMA_CLK_EN_REG_ADDR    0x03002004
+#define DMA_CLK_EN_REG         (*(volatile uint32_t *)DMA_CLK_EN_REG_ADDR)
+#define DMA_CLK_EN_BIT_ENABLE  (1 << 0)
+
+
+//------------------------------------------------------------------------------
 // GPIO
 //------------------------------------------------------------------------------
 

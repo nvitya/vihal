@@ -20,7 +20,7 @@
 #endif
 
 #ifdef HWDMA_H_
-  #define SKIP_UNIMPLEMENTED_WARNING
+  #include "hwdma_sg.h"
 #endif
 
 #ifdef HWPWM_H_
