@@ -154,8 +154,20 @@ riscv_trapcause_exception:
   j riscv_trap_end
 
 riscv_trapcause_irq:
-  andi   t0, t0, 0x3F  // only 64 IRQs supported by this code
+  andi   t0, t0, 0x0F
+  li     t1, 11
+  beq    t0, t1, riscv_trap_extirq
+
   slli   t0, t0, 3     // shift left by 3 = * 8
+  la     t1, __isr_irq_vectors
+  add    t0, t0, t1    // add to the vector table address
+  ld     t0, 0(t0)     // get the address
+  jalr   t0            // jump (and link) to the handler
+
+riscv_trap_extirq:
+  lui    t0, 0x70200    // PLIC claim register - 4 = 0x70200_000
+  lw     t0, 4(t0)      // +4 offset = PLIC claim register
+  slli   t0, t0, 3      // shift left by 3 = * 8
   la     t1, __isr_irq_vectors
   add    t0, t0, t1    // add to the vector table address
   ld     t0, 0(t0)     // get the address

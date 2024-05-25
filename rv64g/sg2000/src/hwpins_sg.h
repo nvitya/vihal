@@ -106,4 +106,7 @@ public:
 #define HWGPIOPORT_IMPL  TGpioPort_sg
 #define HWGPIOPIN_IMPL   TGpioPin_sg
 
+extern gpio_regs_t * sg_gpio_regs(int aportnum);
+
+
 #endif

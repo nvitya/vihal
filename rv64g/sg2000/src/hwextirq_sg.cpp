@@ -26,52 +26,48 @@
 */
 
 #include "platform.h"
+#include "hwpins.h"
 #include "hwextirq.h"
 
 bool THwExtIrq_sg::Init(int aportnum, int apinnum, unsigned flags)
 {
-#if 0
-	apinnum = (apinnum & 0x1F);
+  portnum = aportnum;
+  pinnum = apinnum & 0x1F;
 
-	regidx = (apinnum >> 3);  // 8 pins / register
-	bitpos = ((apinnum & 7) << 2);  // 4 bits / pin
+  gpio_regs = sg_gpio_regs(aportnum);
+  if (!gpio_regs)
+  {
+    return false;
+  }
 
-	io_irq_ctrl_hw_t * pirqctrl = &iobank0_hw->proc0_irq_ctrl;
+	bitmask = (1 << pinnum);
 
-	irqpend_reg = &pirqctrl->ints[regidx];
-	irqack_reg  = &iobank0_hw->intr[regidx];
-  irqen_reg   = &pirqctrl->inte[regidx];
+	irqpend_reg  = &gpio_regs->RAW_INTSTATUS;
+	irqack_reg  = &gpio_regs->PORTA_EOI;
 
-	ack_mask = 0;
+  gpio_regs->INTTYPE_LEVEL |=  bitmask;  // select EDGE interrupts
 	if (flags & HWEXTIRQ_FALLING)
 	{
-		ack_mask |= (1 << (bitpos + 2));
+	  gpio_regs->INT_POLARITY  &= ~bitmask;  // select falling edge
 	}
-
-	if (flags & HWEXTIRQ_RISING)
+	else
 	{
-    ack_mask |= (1 << (bitpos + 3));
+    gpio_regs->INT_POLARITY  |=  bitmask;  // select rising edge
 	}
+  gpio_regs->INTMASK &= ~bitmask;
 
 	IrqAck();
 	Enable();
-
-#endif
 
   return true;
 }
 
 void THwExtIrq_sg::Enable()
 {
-  uint32_t ier = *irqen_reg;
-  ier &= ~(15 << bitpos);
-  ier |= ack_mask;
-  *irqen_reg = ier;
+  gpio_regs->INTEN |= bitmask;
 }
 
 void THwExtIrq_sg::Disable()
 {
-  uint32_t ier = *irqen_reg;
-  ier &= ~(15 << bitpos);
-  *irqen_reg = ier;
+  gpio_regs->INTEN &= ~bitmask;
 }

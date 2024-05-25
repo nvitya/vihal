@@ -139,7 +139,7 @@ const pHandler __isr_irq_vectors[] =
   (pHandler) IRQ_Handler_08,  // irq 08:
   (pHandler) IRQ_Handler_09,  // irq 09:
   (pHandler) IRQ_Handler_10,  // irq 10:
-  (pHandler) IRQ_Handler_11,  // irq 11: Machine external interrupt
+  (pHandler) IRQ_Handler_11,  // irq 11: Machine external interrupt, catched and converted to 16-63
   (pHandler) IRQ_Handler_12,  // irq 12:
   (pHandler) IRQ_Handler_13,  // irq 13:
   (pHandler) IRQ_Handler_14,  // irq 14:
@@ -217,6 +217,17 @@ void mcu_interrupt_controller_init()
   PLIC->PER = 1;     // enable S-Mode access to PLIC
   PLIC->H0_MTH = 0;  // M-Mode interrupt threshold, 0 = all interrupts
   PLIC->H0_STH = 0;  // S-Mode interrupt threshold, 0 = all interrupts
+
+  // Enable all interrupt sources (the interrupts are still disabled)
+  uint32_t mie = (0
+    | (0 <<  1)  // SSIE
+    | (1 <<  3)  // MSIE: machine software interrupt
+    | (0 <<  5)  // STIE
+    | (1 <<  7)  // MTIE: macthine timer interrupt
+    | (0 <<  9)  // SEIE
+    | (1 << 11)  // MEIE: machine external interrupt
+  );
+  cpu_csr_setbits(CSR_MIE, mie);
 }
 
 // Processor ends up here if an unexpected interrupt occurs or a

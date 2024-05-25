@@ -28,18 +28,22 @@
 #ifndef _HWEXTIRQ_SG_H
 #define _HWEXTIRQ_SG_H
 
+#include "platform.h"
+
 #define HWEXTIRQ_PRE_ONLY
 #include "hwextirq.h"
 
 class THwExtIrq_sg : public THwExtIrq_pre
 {
 public:
-  volatile uint32_t *   irqpend_reg = nullptr;
+  gpio_regs_t *         gpio_regs = nullptr;
+
 	volatile uint32_t *   irqack_reg = nullptr;
-	volatile uint32_t *   irqen_reg = nullptr;
-	uint32_t              ack_mask = 0;
-	uint32_t              bitpos = 0;
-	uint32_t              regidx = 0;
+	volatile uint32_t *   irqpend_reg = nullptr;
+
+	uint8_t               portnum = 0;
+	uint8_t               pinnum = 0;
+  uint32_t              bitmask = 0;
 
 	// platform specific
 	bool Init(int aportnum, int apinnum, unsigned flags);
@@ -48,8 +52,8 @@ public:
 	void Disable();
 
 	ALWAYS_INLINE void IrqBegin()   {  } // not reqired for this MCU
-	ALWAYS_INLINE bool IrqPending() { return (*irqpend_reg & ack_mask); }
-	ALWAYS_INLINE void IrqAck()     { *irqack_reg = ack_mask; }
+	ALWAYS_INLINE bool IrqPending() { return (*irqpend_reg & bitmask); }
+	ALWAYS_INLINE void IrqAck()     { *irqack_reg = bitmask; }
 
 };
 
