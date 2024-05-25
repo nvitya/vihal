@@ -206,21 +206,19 @@ const pHandler __isr_irq_vectors[] =
 __attribute__ ((section(".after_vectors"),weak))
 void mcu_interrupt_controller_init()
 {
+  cpu_csr_write(CSR_MIP, 0);  // clear pending interrupts
+
   // disable all interrupts
   PLIC->H0_MIE[0] = 0;
   PLIC->H0_MIE[1] = 0;
-  PLIC->H0_MIE[2] = 0;
-  PLIC->H0_SIE[0] = 0;
-  PLIC->H0_SIE[1] = 0;
-  PLIC->H0_SIE[2] = 0;
+
+  PLIC->IP[0] = 0;   // clear all pending interrupts
+  PLIC->IP[1] = 0;
 
   PLIC->PER = 1;     // enable S-Mode access to PLIC
   PLIC->H0_MTH = 0;  // M-Mode interrupt threshold, 0 = all interrupts
-  PLIC->H0_STH = 0;  // S-Mode interrupt threshold, 0 = all interrupts
 
-  PLIC->H0_MCLAIM = PLIC->H0_MCLAIM;
-  PLIC->IP[0] = 0;   // clear all pending interrupts
-  PLIC->IP[1] = 0;
+  //PLIC->H0_MCLAIM = PLIC->H0_MCLAIM;
 
   // Enable all interrupt sources (the interrupts are still disabled)
   uint32_t mie = (0
@@ -233,7 +231,6 @@ void mcu_interrupt_controller_init()
   );
 
   cpu_csr_setbits(CSR_MIE, mie);
-  cpu_csr_clrbits(CSR_MIP, mie);  // clear pending interrupts
 }
 
 // Processor ends up here if an unexpected interrupt occurs or a
