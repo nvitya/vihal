@@ -68,6 +68,7 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   tmp = DMA_CH_REMAP->CH_REMAP[reg_idx];
   tmp &= ~(0x3F << reg_shift);
   tmp |= (perid << reg_shift);
+  tmp |= (1 << 31); // set the update bit
   DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
 
   // global DMA init
@@ -94,14 +95,12 @@ void THwDmaChannel_sg::Prepare(bool aistx, void * aperiphaddr, unsigned aflags)
 
 void THwDmaChannel_sg::Disable()
 {
-  // WARNING: not IRQ and multi-core safe !!!
-  dmaregs->CH_EN &= ~chbit;
+  dmaregs->CH_EN = (0xFF | (chbit << 8));
 }
 
 void THwDmaChannel_sg::Enable()
 {
-  // WARNING: not IRQ and multi-core safe !!!
-  dmaregs->CH_EN |= chbit;
+  dmaregs->CH_EN = (0x00 | (chbit << 8));
 }
 
 void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
@@ -109,23 +108,62 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
   Disable();  // this is important here
 	ClearIrqFlag();
 
-#if 0
+  uint64_t tr_width;
+  if      (1  == axfer->bytewidth)  tr_width = 0;  // this is here too because it is the most probable
+  else if (4  == axfer->bytewidth)  tr_width = 2;
+  else if (2  == axfer->bytewidth)  tr_width = 1;
+	else if (8  == axfer->bytewidth)  tr_width = 3;
+	else if (16 == axfer->bytewidth)  tr_width = 4;
+	else if (32 == axfer->bytewidth)  tr_width = 5;
+	else                              tr_width = 0;
 
-	// this register layout is fully STM32F1 compatible
-	uint32_t ctl = (0
-    | (0  << 14)  // MEM2MEM: 1 = memory to memory mode
-    | (0  << 12)  // PL(2): priority level
-    | (0  << 10)  // MSIZE(2): Memory data size, 0 = 8-bit, 1 = 16-bit
-    | (0  <<  8)  // PSIZE(2): Periph data size, 0 = 8-bit, 1 = 16-bit
-    | (0  <<  7)  // MINC: Memory increment mode, 1 = increment memory address
-    | (0  <<  6)  // PINC: Peripheral increment mode, 1 = increment peripheral address
-    | (0  <<  5)  // CIRC: 1 = Circular mode
-    | (0  <<  4)  // DIR: Data transfer direction, 0 = RX (per -> mem), 1 = TX (mem -> per)
-    | (0  <<  3)  // TEIE: Transfer error interrupt enable
-    | (0  <<  2)  // HTIE: Half transfer interrupt enable
-    | (0  <<  1)  // TCIE: TCIE: Transfer complete interrupt enable
-    | (0  <<  0)  // EN: keep not enabled yet
+  uint64_t msize = 0; // burst size: 0 = 1x, 1 = 4x, 2 = 8x, 3 = 16x, 4 = 32x .. 7 = 256x
+
+	uint64_t ctl = (0ull
+	  | (0         <<  0)  // SMS: src master select: 0 = AXI master 1, 1 = AXI master 2
+	  | (0         <<  2)  // DMS: dst master select: 0 = AXI master 1, 1 = AXI master 2
+	  | (0         <<  4)  // SINC: ! 0 = Increment src address, 1 = fix !
+	  | (0         <<  6)  // DINC: ! 0 = Increment dst address, 1 = fix !
+	  | (tr_width  <<  8)  // SRC_TR_WIDTH(3): src transfer width: 0 = 1 byte, 1 = 2 byte, 2 = 4 byte, 3 = 8 byte, 4 = 16 byte ?
+	  | (tr_width  << 11)  // DST_TR_WIDTH(3): dst transfer width: 0 = 1 byte, 1 = 2 byte, 2 = 4 byte, 3 = 8 byte, 4 = 16 byte ?
+	  | (msize     << 14)  // SRC_MSIZE(4): src burst transaction length: 0 = 1x, 1 = 4x, 2 = 8x, 3 = 16x, 4 = 32x .. 7 = 256x
+	  | (msize     << 18)  // DST_MSIZE(4): dst burst transaction length: 0 = 1x, 1 = 4x, 2 = 8x, 3 = 16x, 4 = 32x .. 7 = 256x
+	  | (0         << 22)  // AR_CACHE(4)
+	  | (0         << 26)  // AW_CACHE(4)
+	  | (0         << 30)  // NonPosted_LastWrite_En
+	  | (0ull      << 32)  // AR_PROT(3)
+	  | (0ull      << 35)  // AW_PROT(3)
+	  | (0ull      << 38)  // ARLEN_EN
+	  | (0ull      << 39)  // ARLEN(8)
+	  | (0ull      << 47)  // AWLEN_EN
+	  | (0ull      << 48)  // ARLEN(8)
+	  | (0ull      << 56)  // SRC_STAT_EN
+	  | (0ull      << 57)  // DST_STAT_EN
+	  | (0ull      << 58)  // IOC_BlkTfr
+	  | (0ull      << 62)  // SHADOWREG_OR_LLI_LAST
+	  | (0ull      << 63)  // SHADOWREG_OR_LLI_VALID
+	);
+
+  uint64_t cfg = (0
+    | (0     <<  0)  // SRC_MULTBLK_TYPE(2)
+    | (0     <<  2)  // DST_MULTBLK_TYPE(2)
+    | (0ull  << 32)  // TT_FC(3)
+    | (0ull  << 35)  // HS_SEL_SRC
+    | (0ull  << 36)  // HS_SEL_DST
+    | (0ull  << 37)  // SRC_HWHS_POL
+    | (0ull  << 38)  // DST_HWHS_POL
+    | (0ull  << 39)  // SRC_PER
+    | (0ull  << 44)  // DST_PER
+    | (0ull  << 49)  // CH_PRIOR(3)
+    | (0ull  << 52)  // LOCK_CH
+    | (0ull  << 53)  // LOCK_CH_L(2)
+    | (0ull  << 55)  // SRC_OSR_LMT(4)
+    | (0ull  << 59)  // DST_OSR_LMT(4)
   );
+
+
+
+#if 0
 
   if (axfer->flags & DMATR_MEM_TO_MEM)
   {
