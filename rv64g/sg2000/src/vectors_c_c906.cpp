@@ -211,9 +211,11 @@ void mcu_interrupt_controller_init()
   // disable all interrupts
   PLIC->H0_MIE[0] = 0;
   PLIC->H0_MIE[1] = 0;
+  PLIC->H0_MIE[2] = 0;
 
   PLIC->IP[0] = 0;   // clear all pending interrupts
   PLIC->IP[1] = 0;
+  PLIC->IP[2] = 0;
 
   PLIC->PER = 1;     // enable S-Mode access to PLIC
   PLIC->H0_MTH = 0;  // M-Mode interrupt threshold, 0 = all interrupts

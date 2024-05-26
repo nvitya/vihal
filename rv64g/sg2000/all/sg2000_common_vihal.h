@@ -170,7 +170,7 @@ typedef struct
 
   uint64_t __reserved1[12];
 //
-} dma_chregs_t;
+} sdma_chregs_t;
 
 #define HWDMA_MAX_CHANNELS  8
 
@@ -188,9 +188,9 @@ typedef struct
   volatile uint64_t  COMM_INTSTATUS;     // 050
   volatile uint64_t  RESET;              // 058
   uint64_t _pad_060[20];                 // 060
-  dma_chregs_t       CHAN[HWDMA_MAX_CHANNELS];  // 100
+  sdma_chregs_t      CHAN[HWDMA_MAX_CHANNELS];  // 100
 //
-} dma_regs_t;
+} sdma_regs_t;
 
 typedef struct
 {
@@ -198,8 +198,8 @@ typedef struct
 //
 } dma_ch_remap_regs_t;
 
-#define DMA_BASE_ADDR         0x04330000
-#define DMA                   ((dma_regs_t *)DMA_BASE_ADDR)
+#define SDMA_BASE_ADDR        0x04330000
+#define SDMA                  ((sdma_regs_t *)SDMA_BASE_ADDR)
 
 #define DMA_CH_REMAP_ADDR     0x03000154
 #define DMA_CH_REMAP          ((dma_ch_remap_regs_t *)DMA_CH_REMAP_ADDR)

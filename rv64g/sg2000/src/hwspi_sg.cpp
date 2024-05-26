@@ -151,27 +151,62 @@ void THwSpi_sg::SetCs(unsigned avalue)
 {
 }
 
-void THwSpi_sg::DmaAssign(bool istx, THwDmaChannel *admach)
+void THwSpi_sg::DmaAssign(bool istx, THwDmaChannel * admach)
 {
+  if (istx)
+  {
+    txdma = admach;
+  }
+  else
+  {
+    rxdma = admach;
+  }
+  admach->Prepare(istx, (void *)&regs->DR, 0);
 }
 
 bool THwSpi_sg::DmaStartSend(THwDmaTransfer * axfer)
 {
+  if (!txdma)
+  {
+    return false;
+  }
+
+  regs->DMACR |= (1 << 1); // enable the TX DMA
+  txdma->StartTransfer(axfer);
   return true;
 }
 
 bool THwSpi_sg::DmaStartRecv(THwDmaTransfer *axfer)
 {
+  if (!rxdma)
+  {
+    return false;
+  }
+
+  regs->DMACR |= (1 << 0); // enable the RX DMA
+  rxdma->StartTransfer(axfer);
   return true;
 }
 
 bool THwSpi_sg::DmaSendCompleted()
 {
-  return true;
+  if (txdma && txdma->Active())
+  {
+    // Send DMA is still active
+    return false;
+  }
+
+  return SendFinished();
 }
 
 bool THwSpi_sg::DmaRecvCompleted()
 {
+  if (rxdma && rxdma->Active())
+  {
+    // Send DMA is still active
+    return false;
+  }
+
   return true;
 }
 

@@ -37,10 +37,9 @@ class THwDmaChannel_sg : public THwDmaChannel_pre
 {
 public:
 	unsigned          perid = 0;
-	dma_chregs_t *    regs = nullptr;
-	dma_regs_t *      dmaregs = nullptr;
+	sdma_chregs_t *   regs = nullptr;
+	sdma_regs_t *     dmaregs = nullptr;
 	uint32_t          chbit = 0;
-
 
 	bool Init(int achnum, int aperid);
 
@@ -48,11 +47,9 @@ public:
 	void Disable();
 	void Enable();
 
-	inline bool Enabled()        { return false; } //return ((regs->CTL & 1) != 0); }
-
-  inline bool Active()         { return false; } //((regs->CTL & 1) && (regs->CNT)); }  // combined termination check
-
-	inline uint16_t Remaining()  { return 0; } //regs->CNT; }
+	inline bool Enabled()        { return ((dmaregs->CH_EN & chbit) != 0); }
+  inline bool Active()         { return Enabled(); }
+	inline uint16_t Remaining()  { return regs->BLOCK_TS - (regs->STATUS & 0x3FFFFF); }
 
 	bool StartTransfer(THwDmaTransfer * axfer);
 	bool StartMemToMem(THwDmaTransfer * axfer);
@@ -62,14 +59,8 @@ public:
 
 	inline void ClearIrqFlag()
 	{
-			//dmaregs->INTC = (0x0F << irqstshift);
+	  regs->INTCLEARREG = 0xFFFFFFFF;
 	}
-
-public:
-
-  volatile uint32_t *  reg_int_cpu_mux = nullptr;
-  volatile uint32_t *  reg_dma_ch_mux = nullptr;
-
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_sg

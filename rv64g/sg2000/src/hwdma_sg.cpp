@@ -50,7 +50,7 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   chnum = (achnum & 0x07);
   chbit = (1 << chnum);
   perid = aperid;
-  dmaregs = DMA;
+  dmaregs = SDMA;
 	regs = &dmaregs->CHAN[chnum];
 
 	// remove the DMA channel interrupt from the other CPUS
@@ -70,6 +70,15 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   tmp |= (perid << reg_shift);
   DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
 
+  // global DMA init
+
+  dmaregs->CFG = (0
+    | (1 << 0) // DMAC_EN: 1 = enable DMA
+    | (1 << 1) // INT_EN:  1 = enable interrupts
+  );
+
+  Disable();
+
 	Prepare(true, nullptr, 0); // set some defaults
 
 	initialized = true;
@@ -85,21 +94,14 @@ void THwDmaChannel_sg::Prepare(bool aistx, void * aperiphaddr, unsigned aflags)
 
 void THwDmaChannel_sg::Disable()
 {
-	regs->CTL &= ~1;
-
-	// wait until it is disabled
-	while (regs->CTL & 1)
-	{
-		// wait
-	}
-
-	//regs->CNT = 0; // this is required (at least on the F303) to properly stop the channel after broken transaction
+  // WARNING: not IRQ and multi-core safe !!!
+  dmaregs->CH_EN &= ~chbit;
 }
 
 void THwDmaChannel_sg::Enable()
 {
-	// start the channel
-	regs->CTL |= 1;
+  // WARNING: not IRQ and multi-core safe !!!
+  dmaregs->CH_EN |= chbit;
 }
 
 void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)

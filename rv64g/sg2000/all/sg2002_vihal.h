@@ -37,6 +37,91 @@
 #include "stdint.h"
 #include "stdint.h"
 
+//------------------------------------------------------------------------------
+// IRQ MAP
+//------------------------------------------------------------------------------
+#define IRQNUM_SDMA      25
+#define IRQNUM_I2S0      26
+#define IRQNUM_I2S1      27
+#define IRQNUM_I2S2      28
+#define IRQNUM_I2S3      29
+#define IRQNUM_UART0     30
+#define IRQNUM_UART1     31
+#define IRQNUM_I2C0      32
+#define IRQNUM_I2C1      33
+#define IRQNUM_I2C2      34
+#define IRQNUM_I2C3      35
+#define IRQNUM_I2C4      36
+#define IRQNUM_SPI1      37
+#define IRQNUM_SPI2      38
+#define IRQNUM_WDG2      39
+#define IRQNUM_KEYSCAN   40
+#define IRQNUM_GPIO0     41
+#define IRQNUM_GPIO1     42
+#define IRQNUM_GPIO2     43
+#define IRQNUM_GPIO3     44
+#define IRQNUM_WIEGAND0  45
+#define IRQNUM_PWR_MBOX  46
+#define IRQNUM_PWR_IRRX  47
+#define IRQNUM_PWR_GPIO  48
+#define IRQNUM_PWR_UART  49
+#define IRQNUM_PWR_I2C   50
+#define IRQNUM_PWR_WDG   51
+#define IRQNUM_TDMA      52
+#define IRQNUM_TIMER4    55
+#define IRQNUM_TIMER5    56
+#define IRQNUM_TIMER6    57
+#define IRQNUM_TIMER7    58
+#define IRQNUM_MBOX      61
+
+//------------------------------------------------------------------------------
+// DMA REQUEST MAP
+//------------------------------------------------------------------------------
+
+#define DMARQ_I2S0_RX     0
+#define DMARQ_I2S0_TX     1
+#define DMARQ_I2S1_RX     2
+#define DMARQ_I2S1_TX     3
+#define DMARQ_I2S2_RX     4
+#define DMARQ_I2S2_TX     5
+#define DMARQ_I2S3_RX     6
+#define DMARQ_I2S3_TX     7
+#define DMARQ_UART0_TX    8
+#define DMARQ_UART0_RX    9
+#define DMARQ_UART1_TX   10
+#define DMARQ_UART1_RX   11
+#define DMARQ_UART2_TX   12
+#define DMARQ_UART2_RX   13
+#define DMARQ_UART3_TX   14
+#define DMARQ_UART3_RX   15
+#define DMARQ_SPI0_RX    16
+#define DMARQ_SPI0_TX    17
+#define DMARQ_SPI1_RX    18
+#define DMARQ_SPI1_TX    19
+#define DMARQ_SPI2_RX    20
+#define DMARQ_SPI2_TX    21
+#define DMARQ_SPI3_RX    22
+#define DMARQ_SPI3_TX    23
+#define DMARQ_I2C0_RX    24
+#define DMARQ_I2C0_TX    25
+#define DMARQ_I2C1_RX    26
+#define DMARQ_I2C1_TX    27
+#define DMARQ_I2C2_RX    28
+#define DMARQ_I2C2_TX    29
+#define DMARQ_I2C3_RX    30
+#define DMARQ_I2C3_TX    31
+#define DMARQ_I2C4_RX    32
+#define DMARQ_I2C4_TX    33
+#define DMARQ_TDM0_RX    34
+#define DMARQ_TDM0_TX    35
+#define DMARQ_TDM1_RX    36
+#define DMARQ_AUDSRC     37
+#define DMARQ_SPI_NAND   38
+#define DMARQ_SPI_NOR    39
+#define DMARQ_UART4_TX   40
+#define DMARQ_UART4_RX   41
+#define DMARQ_SPI_NOR1   42
+
 //-----------------------------------------------------------------------------
 // PAD Definitions
 //-----------------------------------------------------------------------------

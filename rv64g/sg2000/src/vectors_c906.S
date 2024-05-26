@@ -171,8 +171,9 @@ riscv_trapcause_irq:
 riscv_trap_extirq:
   lui    t1, 0x70200    // PLIC claim register - 4 = 0x70200_000
   lw     t0, 4(t1)      // +4 offset = PLIC claim register
-  sw     t0, 20*8(sp)   // save PLIC EXTI number
+  beq    t0, x0, riscv_trap_end
 
+  sw     t0, 20*8(sp)   // save PLIC EXTI number
   slli   t0, t0, 3      // shift left by 3 = * 8
   la     t1, __isr_irq_vectors
   add    t0, t0, t1    // add to the vector table address
@@ -182,6 +183,7 @@ riscv_trap_extirq:
   lw     t0, 20*8(sp)   // load the PLIC EXTI number
   lui    t1, 0x70200    // PLIC claim register - 4 = 0x70200_000
   sw     t0, 4(t1)      // +4 offset = PLIC claim register
+  j riscv_trap_extirq   // check for the next pending EXT IRQ
 
 riscv_trap_end:
 
