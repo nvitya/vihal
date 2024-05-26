@@ -119,7 +119,7 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 
   uint64_t msize = 0; // burst size: 0 = 1x, 1 = 4x, 2 = 8x, 3 = 16x, 4 = 32x .. 7 = 256x
 
-	uint64_t ctl = (0ull
+	uint64_t ctl = (0
 	  | (0         <<  0)  // SMS: src master select: 0 = AXI master 1, 1 = AXI master 2
 	  | (0         <<  2)  // DMS: dst master select: 0 = AXI master 1, 1 = AXI master 2
 	  | (0         <<  4)  // SINC: ! 0 = Increment src address, 1 = fix !
@@ -144,16 +144,23 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 	  | (0ull      << 63)  // SHADOWREG_OR_LLI_VALID
 	);
 
+	uint64_t multblk = 1; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+  if (axfer->flags & DMATR_CIRCULAR)
+  {
+    multblk = 2; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+    ctl |= (0ull << 63);  // SHADOWREG_OR_LLI_VALID
+  }
+
   uint64_t cfg = (0
-    | (0     <<  0)  // SRC_MULTBLK_TYPE(2)
-    | (0     <<  2)  // DST_MULTBLK_TYPE(2)
-    | (0ull  << 32)  // TT_FC(3)
-    | (0ull  << 35)  // HS_SEL_SRC
-    | (0ull  << 36)  // HS_SEL_DST
+    | (0     <<  0)  // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+    | (0     <<  2)  // DST_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+    | (0ull  << 32)  // TT_FC(3): transfer type + flow control: 0 = mem2mem, 4 = per->mem srcfc, 6 = mem->per dstfc
+    | (0ull  << 35)  // HS_SEL_SRC: 1 = SW handshaking
+    | (0ull  << 36)  // HS_SEL_DST: 1 = SW handshaking
     | (0ull  << 37)  // SRC_HWHS_POL
     | (0ull  << 38)  // DST_HWHS_POL
-    | (0ull  << 39)  // SRC_PER
-    | (0ull  << 44)  // DST_PER
+    | (0ull  << 39)  // SRC_PER: hw handshaking interface
+    | (0ull  << 44)  // DST_PER: hw handshaking interface
     | (0ull  << 49)  // CH_PRIOR(3)
     | (0ull  << 52)  // LOCK_CH
     | (0ull  << 53)  // LOCK_CH_L(2)
@@ -161,57 +168,48 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     | (0ull  << 59)  // DST_OSR_LMT(4)
   );
 
-
-
-#if 0
-
   if (axfer->flags & DMATR_MEM_TO_MEM)
   {
-    ctl |= (1 << 14); // MEM2MEM
+    regs->DAR = (intptr_t)axfer->dstaddr;
+    regs->SAR = (intptr_t)axfer->srcaddr;
   }
-  else if (istx)
+  else if (istx)  // MEM -> PER
   {
-    ctl |= (1 << 4); // DIR: 1 = TX
+    ctl |= (1 << 6); // DINC: 1 = do not incrmement the DST address
+    if (0 == (axfer->flags & DMATR_NO_ADDR_INC))
+    {
+      ctl |= (1 << 4); // SINC: 1 = do not incrmement the SRC address
+    }
+    cfg |= (0
+      | (multblk <<  0) // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+      | (6ull    << 32) // TT_FC(3): 6 = MEM_TO_PER_DST: Transfer Type is memory to peripheral and Flow Controller is Destination peripheral
+    );
+    regs->DAR = (intptr_t)periphaddr;
+    regs->SAR = (intptr_t)axfer->srcaddr;
   }
-
-  if      (axfer->bytewidth == 2)  { ctl |= ((1 << 10) | (1 << 8)); }
-  else if (axfer->bytewidth == 4)  { ctl |= ((2 << 10) | (2 << 8)); }
-
-  if (0 == (axfer->flags & DMATR_NO_ADDR_INC))
+  else // PER -> MEM
   {
-    ctl |= (1 << 7);
-  }
-
-  if (axfer->flags & DMATR_CIRCULAR)
-  {
-    ctl |= (1 << 5);
+    ctl |= (1 << 4); // SINC: 1 = do not incrmement the SRC address
+    if (0 == (axfer->flags & DMATR_NO_ADDR_INC))
+    {
+      ctl |= (1 << 6); // DINC: 1 = do not incrmement the DST address
+    }
+    cfg |= (0
+      | (multblk <<  2) // DST_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+      | (4ull    << 32) // TT_FC(3): 4 = MEM_TO_PER_DST: Transfer Type is memory to peripheral and Flow Controller is Destination peripheral
+    );
+    regs->SAR = (intptr_t)periphaddr;
+    regs->DAR = (intptr_t)axfer->dstaddr;
   }
 
   if (axfer->flags & DMATR_IRQ)
   {
-    ctl |= (1 << 1);
+    ctl |= (1ull << 58);  // IOC_BlkTfr
   }
 
+  regs->CFG = cfg;
   regs->CTL = ctl;
-
-	if (axfer->flags & DMATR_MEM_TO_MEM)
-	{
-		regs->PADDR = (uint32_t)axfer->srcaddr;
-		regs->MADDR = (uint32_t)axfer->dstaddr;
-	}
-	else if (istx)
-	{
-		regs->PADDR = (uint32_t)periphaddr;
-		regs->MADDR = (uint32_t)axfer->srcaddr;
-	}
-	else
-	{
-		regs->PADDR = (uint32_t)periphaddr;
-		regs->MADDR = (uint32_t)axfer->dstaddr;
-	}
-
-	regs->CNT = (uint32_t)axfer->count;
-#endif
+  regs->BLOCK_TS = axfer->count - 1;
 }
 
 
