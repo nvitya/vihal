@@ -43,15 +43,24 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
 	{
 		return false;
 	}
-
 	// enable the DMA clock (not documented in the reference manual 2024-02-26)
 	DMA_CLK_EN_REG |= DMA_CLK_EN_BIT_ENABLE;
 
   chnum = (achnum & 0x07);
   chbit = (1 << chnum);
   perid = aperid;
+
   dmaregs = SDMA;
+  dmaregs->CFG = (0
+    | (1 << 0) // DMAC_EN: 1 = enable DMA
+    | (1 << 1) // INT_EN:  1 = enable interrupts
+  );
+
 	regs = &dmaregs->CHAN[chnum];
+
+  dbg_dma_en = dmaregs->CH_EN;
+  dbg_dma_remap[0] = DMA_CH_REMAP->CH_REMAP[0];
+  dbg_dma_remap[1] = DMA_CH_REMAP->CH_REMAP[1];
 
 	// remove the DMA channel interrupt from the other CPUS
 	// bits 0-8: CPU0 (arm)
@@ -73,10 +82,6 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
 
   // global DMA init
 
-  dmaregs->CFG = (0
-    | (1 << 0) // DMAC_EN: 1 = enable DMA
-    | (1 << 1) // INT_EN:  1 = enable interrupts
-  );
 
   Disable();
 
@@ -95,12 +100,12 @@ void THwDmaChannel_sg::Prepare(bool aistx, void * aperiphaddr, unsigned aflags)
 
 void THwDmaChannel_sg::Disable()
 {
-  dmaregs->CH_EN = (0xFF | (chbit << 8));
+  dmaregs->CH_EN = (0x00 | (chbit << 8));
 }
 
 void THwDmaChannel_sg::Enable()
 {
-  dmaregs->CH_EN = (0x00 | (chbit << 8));
+  dmaregs->CH_EN = (0xFF | (chbit << 8));
 }
 
 void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
@@ -144,11 +149,15 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 	  | (0ull      << 63)  // SHADOWREG_OR_LLI_VALID
 	);
 
-	uint64_t multblk = 1; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+	uint64_t multblk = 0; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
   if (axfer->flags & DMATR_CIRCULAR)
   {
     multblk = 2; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
     ctl |= (0ull << 63);  // SHADOWREG_OR_LLI_VALID
+  }
+  else
+  {
+    ctl |= (1ull << 62);  // SHADOWREG_OR_LLI_LAST
   }
 
   uint64_t cfg = (0
@@ -176,7 +185,7 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
   else if (istx)  // MEM -> PER
   {
     ctl |= (1 << 6); // DINC: 1 = do not incrmement the DST address
-    if (0 == (axfer->flags & DMATR_NO_ADDR_INC))
+    if (axfer->flags & DMATR_NO_ADDR_INC)
     {
       ctl |= (1 << 4); // SINC: 1 = do not incrmement the SRC address
     }
@@ -190,13 +199,14 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
   else // PER -> MEM
   {
     ctl |= (1 << 4); // SINC: 1 = do not incrmement the SRC address
-    if (0 == (axfer->flags & DMATR_NO_ADDR_INC))
+    if (axfer->flags & DMATR_NO_ADDR_INC)
     {
       ctl |= (1 << 6); // DINC: 1 = do not incrmement the DST address
     }
     cfg |= (0
       | (multblk <<  2) // DST_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
-      | (4ull    << 32) // TT_FC(3): 4 = MEM_TO_PER_DST: Transfer Type is memory to peripheral and Flow Controller is Destination peripheral
+      | (4ull    << 32) // TT_FC(3): 4 = PER_TO_MEM_SRC: Transfer Type is peripheral to Memory and Flow Controller is Source peripheral
+      //| (2ull    << 32) // TT_FC(3): 2 = PER_TO_MEM_DMAC
     );
     regs->SAR = (intptr_t)periphaddr;
     regs->DAR = (intptr_t)axfer->dstaddr;

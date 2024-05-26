@@ -61,6 +61,12 @@ public:
 	{
 	  regs->INTCLEARREG = 0xFFFFFFFF;
 	}
+
+public:  // for debugging
+
+	uint64_t  dbg_dma_en;
+	uint32_t  dbg_dma_remap[2];
+
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_sg

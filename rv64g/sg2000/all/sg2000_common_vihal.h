@@ -210,7 +210,7 @@ typedef struct
 // this is not documented in the reference manual 2024-02-26:
 #define DMA_CLK_EN_REG_ADDR    0x03002004
 #define DMA_CLK_EN_REG         (*(volatile uint32_t *)DMA_CLK_EN_REG_ADDR)
-#define DMA_CLK_EN_BIT_ENABLE  (1 << 0)
+#define DMA_CLK_EN_BIT_ENABLE  (1 << 1)
 
 
 //------------------------------------------------------------------------------
