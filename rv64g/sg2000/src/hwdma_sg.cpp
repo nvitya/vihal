@@ -24,6 +24,7 @@
  *  authors:  nvitya
 */
 
+#include "string.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -32,6 +33,8 @@
 //#include "hwdma.h"
 #include "hwdma_sg.h"
 #include "sg_utils.h"
+
+dma_lli_t  g_dma_lli[8]  __attribute__((aligned(64)));
 
 bool THwDmaChannel_sg::Init(int achnum, int aperid)
 {
@@ -57,6 +60,11 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   );
 
 	regs = &dmaregs->CHAN[chnum];
+	lli = &g_dma_lli[chnum];
+
+	memset(lli, 0, sizeof(dma_lli_t));
+  lli->LLP = (intptr_t)lli; // link it back
+	regs->LLP = (intptr_t)lli;
 
   dbg_dma_en = dmaregs->CH_EN;
   dbg_dma_remap[0] = DMA_CH_REMAP->CH_REMAP[0];
@@ -80,10 +88,9 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   tmp |= (1 << 31); // set the update bit
   DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
 
-  // global DMA init
-
 
   Disable();
+  ClearIrqFlag();
 
 	Prepare(true, nullptr, 0); // set some defaults
 
@@ -110,7 +117,7 @@ void THwDmaChannel_sg::Enable()
 
 void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 {
-  Disable();  // this is important here
+  //Disable();  // should not be running
 	ClearIrqFlag();
 
   uint64_t tr_width;
@@ -146,23 +153,16 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 	  | (0ull      << 57)  // DST_STAT_EN
 	  | (0ull      << 58)  // IOC_BlkTfr
 	  | (0ull      << 62)  // SHADOWREG_OR_LLI_LAST
-	  | (0ull      << 63)  // SHADOWREG_OR_LLI_VALID
+	  | (1ull      << 63)  // SHADOWREG_OR_LLI_VALID
 	);
-
-	uint64_t multblk = 0; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
-  if (axfer->flags & DMATR_CIRCULAR)
-  {
-    multblk = 2; // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
-    ctl |= (0ull << 63);  // SHADOWREG_OR_LLI_VALID
-  }
-  else
+  if (0 == (axfer->flags & DMATR_CIRCULAR))
   {
     ctl |= (1ull << 62);  // SHADOWREG_OR_LLI_LAST
   }
 
   uint64_t cfg = (0
-    | (0     <<  0)  // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
-    | (0     <<  2)  // DST_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+    | (3     <<  0)  // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
+    | (3     <<  2)  // DST_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
     | (0ull  << 32)  // TT_FC(3): transfer type + flow control: 0 = mem2mem, 4 = per->mem srcfc, 6 = mem->per dstfc
     | (0ull  << 35)  // HS_SEL_SRC: 1 = SW handshaking
     | (0ull  << 36)  // HS_SEL_DST: 1 = SW handshaking
@@ -179,8 +179,8 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 
   if (axfer->flags & DMATR_MEM_TO_MEM)
   {
-    regs->DAR = (intptr_t)axfer->dstaddr;
-    regs->SAR = (intptr_t)axfer->srcaddr;
+    lli->DAR = (intptr_t)axfer->dstaddr;
+    lli->SAR = (intptr_t)axfer->srcaddr;
   }
   else if (istx)  // MEM -> PER
   {
@@ -189,12 +189,9 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     {
       ctl |= (1 << 4); // SINC: 1 = do not incrmement the SRC address
     }
-    cfg |= (0
-      | (multblk <<  0) // SRC_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
-      | (6ull    << 32) // TT_FC(3): 6 = MEM_TO_PER_DST: Transfer Type is memory to peripheral and Flow Controller is Destination peripheral
-    );
-    regs->DAR = (intptr_t)periphaddr;
-    regs->SAR = (intptr_t)axfer->srcaddr;
+    cfg |= (1ull << 32); // TT_FC(3): 1 = MEM_TO_PER_DMAC: Transfer Type is memory to peripheral and Flow Controller is DMA
+    lli->DAR = (intptr_t)periphaddr;
+    lli->SAR = (intptr_t)axfer->srcaddr;
   }
   else // PER -> MEM
   {
@@ -203,13 +200,9 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     {
       ctl |= (1 << 6); // DINC: 1 = do not incrmement the DST address
     }
-    cfg |= (0
-      | (multblk <<  2) // DST_MULTBLK_TYPE(2): 0 = keep address, 1 = reload address, 2 = shadow reg, 3 = linked list
-      | (4ull    << 32) // TT_FC(3): 4 = PER_TO_MEM_SRC: Transfer Type is peripheral to Memory and Flow Controller is Source peripheral
-      //| (2ull    << 32) // TT_FC(3): 2 = PER_TO_MEM_DMAC
-    );
-    regs->SAR = (intptr_t)periphaddr;
-    regs->DAR = (intptr_t)axfer->dstaddr;
+    cfg |= (2ull << 32); // TT_FC(3): 2 = PER_TO_MEM_DMAC Transfer Type is peripheral to Memory and Flow Controller is DMA
+    lli->SAR = (intptr_t)periphaddr;
+    lli->DAR = (intptr_t)axfer->dstaddr;
   }
 
   if (axfer->flags & DMATR_IRQ)
@@ -217,9 +210,13 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     ctl |= (1ull << 58);  // IOC_BlkTfr
   }
 
+  lli->CTL = ctl;
+  lli->BLOCK_TS = axfer->count - 1;
+
   regs->CFG = cfg;
-  regs->CTL = ctl;
-  regs->BLOCK_TS = axfer->count - 1;
+  //regs->LLP = (intptr_t)lli;  // already set at the channel initialization
+
+  cpu_dcache_cpa((intptr_t)lli);  // flush cache, to make the updates available to the DMA
 }
 
 

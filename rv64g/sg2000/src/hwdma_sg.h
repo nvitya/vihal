@@ -32,6 +32,23 @@
 #define HWDMA_PRE_ONLY
 #include "hwdma.h"
 
+// LLI == Linked List Item; a.k.a. DMA block descriptor
+typedef struct
+{
+  // values that are not changed by hardware
+  uint64_t  SAR;
+  uint64_t  DAR;
+  uint64_t  BLOCK_TS;
+  uint64_t  LLP;      // chain to next LLI
+  uint64_t  CTL;
+
+  // sstat and dstat can snapshot peripheral register state. silicon config may discard either or both...
+  uint32_t  sstat;
+  uint32_t  dstat;
+  uint64_t  llp_status;
+  uint64_t  reserved;
+//
+} dma_lli_t;  // 8 * 8 = 64 bytes
 
 class THwDmaChannel_sg : public THwDmaChannel_pre
 {
@@ -39,6 +56,7 @@ public:
 	unsigned          perid = 0;
 	sdma_chregs_t *   regs = nullptr;
 	sdma_regs_t *     dmaregs = nullptr;
+	dma_lli_t *       lli = nullptr;
 	uint32_t          chbit = 0;
 
 	bool Init(int achnum, int aperid);
