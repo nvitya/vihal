@@ -35,6 +35,8 @@
 
 #define MCU_INTERNAL_RC_SPEED      8000000  // not used
 
+#define L1_CACHE_BYTES  64
+
 // this is valid for C906
 
 #define CSR_MHCR      0x7C1
@@ -80,6 +82,44 @@ inline void __attribute__((always_inline)) mcu_preinit_code()
 {
   mcu_enable_icache(); // enable instruction cache otherwise it will be very slow
   mcu_enable_dcache(); // enable data cache
+}
+
+// Cache handling extensions (e.g. XuanTie C906)
+
+inline void __attribute__ ((always_inline)) cpu_dcache_clear(void * addr)
+{
+  asm volatile ("dcache.cpa %[input_i]" : : [input_i] "r" (addr));
+  asm volatile ("sync.s"); // ensure completion of clean operation.
+}
+
+inline void __attribute__ ((always_inline)) cpu_dcache_clear(void * addr, uintptr_t len)
+{
+  register uintptr_t raddr asm("a0") = intptr_t(addr) & ~(L1_CACHE_BYTES - 1);
+  register uintptr_t rend  asm("a1") = raddr + len;
+  while (raddr < rend)
+  {
+    asm volatile ("dcache.cpa a0");
+    raddr += L1_CACHE_BYTES;
+  }
+  asm volatile ("sync.s"); // ensure completion of clean operation.
+}
+
+
+inline void __attribute__ ((always_inline)) cpu_dcache_invalidate(void * addr)
+{
+  asm volatile ("dcache.ipa %[input_i]" : : [input_i] "r" (addr));
+}
+
+inline void __attribute__ ((always_inline)) cpu_dcache_invalidate(void * addr, uintptr_t len)
+{
+  register uintptr_t raddr asm("a0") = intptr_t(addr) & ~(L1_CACHE_BYTES - 1);
+  register uintptr_t rend  asm("a1") = raddr + len;
+  while (raddr < rend)
+  {
+    asm volatile ("dcache.ipa a0");
+    raddr += L1_CACHE_BYTES;
+  }
+  //asm volatile ("sync.s"); // ensure completion of clean operation.
 }
 
 

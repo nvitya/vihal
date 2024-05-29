@@ -216,7 +216,7 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
   regs->CFG = cfg;
   //regs->LLP = (intptr_t)lli;  // already set at the channel initialization
 
-  cpu_dcache_cpa((intptr_t)lli);  // flush cache, to make the updates available to the DMA
+  cpu_dcache_clear(lli);  // flush cache, to make the updates available to the DMA
 }
 
 

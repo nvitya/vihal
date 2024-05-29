@@ -145,17 +145,4 @@ inline void __attribute__ ((always_inline)) __DSB(void)
   //asm volatile ("dsb 0xF":::"memory");
 }
 
-// Cache handling extensions (e.g. XuanTie C906)
-
-inline void __attribute__ ((always_inline)) cpu_dcache_cpa(intptr_t addr)
-{
-  asm volatile ("dcache.cpa %[input_i]" : : [input_i] "r" (addr));
-}
-
-inline void __attribute__ ((always_inline)) cpu_dcache_ipa(intptr_t addr)
-{
-  asm volatile ("dcache.ipa %[input_i]" : : [input_i] "r" (addr));
-}
-
-
 #endif // _RV64G_CPU_H
