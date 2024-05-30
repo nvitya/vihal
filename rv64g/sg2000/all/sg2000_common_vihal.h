@@ -353,6 +353,31 @@ typedef struct
 #define SPI3  ((spi_regs_t *)SPI3_BASE_ADDR)
 
 //------------------------------------------------------------------------------
+// SPINOR
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t SPI_CTRL;  // 0x000
+  volatile uint32_t CE_CTRL;   // 0x004
+  volatile uint32_t DLY_CTRL;  // 0x008
+  volatile uint32_t DMMR_CTRL; // 0x00C
+  volatile uint32_t TRAN_CSR;  // 0x010
+  volatile uint32_t TRAN_NUM;  // 0x014
+  volatile uint32_t FF_PORT;   // 0x018
+  uint32_t _pad_1C;
+  volatile uint32_t FF_PT;     // 0x020
+  uint32_t _pad_24;
+  volatile uint32_t INT_STS;   // 0x028
+  volatile uint32_t INT_EN;    // 0x02c
+//
+} spinor_regs_t;
+
+#define SPINOR_BASE_ADDR     (0x10000000)
+
+#define SPINOR ((spinor_regs_t *)SPINOR_BASE_ADDR)
+
+//------------------------------------------------------------------------------
 // PWM
 //------------------------------------------------------------------------------
 
