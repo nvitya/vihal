@@ -1099,25 +1099,10 @@ void TUsbDevice::ProcessSetupRequest()
 	else if ((setuprq.rqtype & 0x1F) == 2) // endpoint requests
 	{
 		i = (setuprq.index & 0x0F);
-		if (setuprq.index & 0x80)  // dtoh
+		TUsbEndpoint * ep = (TUsbEndpoint *)GetEndPoint(setuprq.index & 0xFF);
+		if (ep && ep->HandleSetupRequest(&setuprq))
 		{
-			if (i < epcount_dtoh)
-			{
-				if (eplist_dtoh[i]->HandleSetupRequest(&setuprq))
-				{
-					return;
-				}
-			}
-		}
-		else
-		{
-			if (i < epcount_htod)
-			{
-				if (eplist_htod[i]->HandleSetupRequest(&setuprq))
-				{
-					return;
-				}
-			}
+			return;
 		}
 		LTRACE("Unhandled endpoint request!\r\n");
 		SendControlStatus(false);
