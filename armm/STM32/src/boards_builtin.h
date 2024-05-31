@@ -42,7 +42,9 @@
 
   #define BOARD_NAME "STM32G473Cx 48-pin Develompent Board by nvitya"
   #define MCU_STM32G473CB
-  #define EXTERNAL_XTAL_HZ  25000000
+	#ifndef EXTERNAL_XTAL_HZ
+		#define EXTERNAL_XTAL_HZ  25000000
+	#endif
 
 #elif defined(BOARD_MIBO20_STM32F070)
 

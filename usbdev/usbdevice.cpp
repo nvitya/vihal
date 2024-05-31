@@ -698,13 +698,16 @@ void TUsbDevice::HandleReset()
 
 	for (int i = 0; i < epcount_htod; ++i)
 	{
-		eplist_htod[i]->usbctrl = this;
-		eplist_htod[i]->ConfigureHwEp();
+		if (eplist_htod[i])
+		{
+			eplist_htod[i]->usbctrl = this;
+			eplist_htod[i]->ConfigureHwEp();
+		}
 	}
 
 	for (int i = 0; i < epcount_dtoh; ++i)
 	{
-		if (!eplist_dtoh[i]->iscontrol)
+		if (eplist_dtoh[i] && !eplist_dtoh[i]->iscontrol)
 		{
 		  eplist_dtoh[i]->usbctrl = this;
 		  eplist_dtoh[i]->ConfigureHwEp();
