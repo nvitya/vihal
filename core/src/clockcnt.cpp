@@ -40,9 +40,9 @@
 
 void delay_clocks(unsigned aclocks)
 {
-	unsigned remaining = aclocks;
+	uintptr_t remaining = aclocks;
 
-	unsigned t0 = CLOCKCNT;
+	uintptr_t t0 = CLOCKCNT;
 	while (CLOCKCNT - t0 < remaining)
 	{
 		// wait

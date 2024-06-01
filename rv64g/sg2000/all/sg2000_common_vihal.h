@@ -337,8 +337,8 @@ typedef struct
   volatile uint32_t IDR;       // 0x058 (R/W)  identification register
   volatile uint32_t SSI_COMP_VERSION;
   volatile uint32_t DR;        // 0x060 (R/W)  Data Register
-  uint32_t          _pad_64[15];
-  volatile uint32_t SPIMSSEL;  // 0x0A0 (R/W)  SPI is Master or Slave Select Register
+  uint32_t          _pad_64[(0xF0-0x64)/4];
+  volatile uint32_t RX_SAMPLE_DLY;  // 0x0F0: RX Sample Delay
 //
 } spi_regs_t;
 

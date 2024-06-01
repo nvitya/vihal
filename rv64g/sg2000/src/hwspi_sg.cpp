@@ -26,6 +26,7 @@
 */
 
 #include "platform.h"
+#include "hwspi.h"
 #include "hwspi_sg.h"
 
 #include "sg_utils.h"
@@ -89,6 +90,7 @@ bool THwSpi_sg::Init(int adevnum)
   if (datasample_late)   ctrl0 |= (1 << 6);
   regs->CTRLR0 = ctrl0;
 
+  regs->RX_SAMPLE_DLY = 0;
 
   regs->CTRLR1 = (0
     | (0  <<  0)  // DFNUM(16): number of data frames
@@ -104,9 +106,13 @@ bool THwSpi_sg::Init(int adevnum)
 
 void THwSpi_sg::SetSpeed(unsigned aspeed)
 {
+  regs->SPIENR = 0;
+  if (regs->SPIENR) {}
+  speed = aspeed;
   unsigned baudr = ((basespeed / speed) + 1) & 0xFFFE; // round up to two
   if (baudr < 2)  baudr = 2;
   regs->BAUDR = baudr;
+  regs->SPIENR = 1;
 }
 
 bool THwSpi_sg::TrySendData(uint8_t adata)
