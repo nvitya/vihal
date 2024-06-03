@@ -698,13 +698,16 @@ void TUsbDevice::HandleReset()
 
 	for (int i = 0; i < epcount_htod; ++i)
 	{
-		eplist_htod[i]->usbctrl = this;
-		eplist_htod[i]->ConfigureHwEp();
+		if (eplist_htod[i])
+		{
+			eplist_htod[i]->usbctrl = this;
+			eplist_htod[i]->ConfigureHwEp();
+		}
 	}
 
 	for (int i = 0; i < epcount_dtoh; ++i)
 	{
-		if (!eplist_dtoh[i]->iscontrol)
+		if (eplist_dtoh[i] && !eplist_dtoh[i]->iscontrol)
 		{
 		  eplist_dtoh[i]->usbctrl = this;
 		  eplist_dtoh[i]->ConfigureHwEp();
@@ -1096,25 +1099,10 @@ void TUsbDevice::ProcessSetupRequest()
 	else if ((setuprq.rqtype & 0x1F) == 2) // endpoint requests
 	{
 		i = (setuprq.index & 0x0F);
-		if (setuprq.index & 0x80)  // dtoh
+		TUsbEndpoint * ep = (TUsbEndpoint *)GetEndPoint(setuprq.index & 0xFF);
+		if (ep && ep->HandleSetupRequest(&setuprq))
 		{
-			if (i < epcount_dtoh)
-			{
-				if (eplist_dtoh[i]->HandleSetupRequest(&setuprq))
-				{
-					return;
-				}
-			}
-		}
-		else
-		{
-			if (i < epcount_htod)
-			{
-				if (eplist_htod[i]->HandleSetupRequest(&setuprq))
-				{
-					return;
-				}
-			}
+			return;
 		}
 		LTRACE("Unhandled endpoint request!\r\n");
 		SendControlStatus(false);
