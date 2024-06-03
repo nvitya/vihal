@@ -54,12 +54,13 @@ class THwDmaChannel_sg : public THwDmaChannel_pre
 {
 public:
 	unsigned          perid = 0;
+	unsigned          hsnum = 0;  // handshake number
 	sdma_chregs_t *   regs = nullptr;
 	sdma_regs_t *     dmaregs = nullptr;
 	dma_lli_t *       lli = nullptr;
 	uint32_t          chbit = 0;
 
-	bool Init(int achnum, int aperid);
+	bool Init(int achnum, int aperid, int ahsnum);
 
 	void Prepare(bool aistx, void * aperiphaddr, unsigned aflags);
 	void Disable();

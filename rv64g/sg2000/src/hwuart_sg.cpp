@@ -139,19 +139,17 @@ bool THwUart_sg::SendFinished()
   }
 }
 
-#if 0
-
 void THwUart_sg::DmaAssign(bool istx, THwDmaChannel * admach)
 {
 	if (istx)
 	{
 		txdma = admach;
-  	admach->Prepare(istx, (void *)&regs->DR, 0);
+  	admach->Prepare(istx, (void *)&regs->RBR_THR_DLL, 0);
 	}
 	else
 	{
 		rxdma = admach;
-		admach->Prepare(istx, (void *)&regs->DR, 0);
+		admach->Prepare(istx, (void *)&regs->RBR_THR_DLL, 0);
 	}
 }
 
@@ -162,10 +160,7 @@ bool THwUart_sg::DmaStartSend(THwDmaTransfer * axfer)
 		return false;
 	}
 
-	regs->CR3 |= (1 << 7); // enable the TX DMA
-
 	txdma->StartTransfer(axfer);
-
 	return true;
 }
 
@@ -176,11 +171,6 @@ bool THwUart_sg::DmaStartRecv(THwDmaTransfer * axfer)
 		return false;
 	}
 
-	regs->CR3 |= (1 << 6); // enable the RX DMA
-
 	rxdma->StartTransfer(axfer);
-
 	return true;
 }
-
-#endif

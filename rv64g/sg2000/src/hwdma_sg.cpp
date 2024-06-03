@@ -30,13 +30,13 @@
 
 #include "platform.h"
 
-//#include "hwdma.h"
+#include "hwdma.h"
 #include "hwdma_sg.h"
 #include "sg_utils.h"
 
 dma_lli_t  g_dma_lli[8]  __attribute__((aligned(64)));
 
-bool THwDmaChannel_sg::Init(int achnum, int aperid)
+bool THwDmaChannel_sg::Init(int achnum, int aperid, int ahsnum)
 {
   uint32_t tmp;
 
@@ -52,6 +52,7 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   chnum = (achnum & 0x07);
   chbit = (1 << chnum);
   perid = aperid;
+  hsnum = ahsnum;
 
   dmaregs = SDMA;
   dmaregs->CFG = (0
@@ -85,11 +86,22 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   tmp = DMA_CH_REMAP->CH_REMAP[reg_idx];
   tmp &= ~(0x3F << reg_shift);
   tmp |= (perid << reg_shift);
+  DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
+  if (DMA_CH_REMAP->CH_REMAP[reg_idx])  { }
   tmp |= (1 << 31); // set the update bit
   DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
+  if (DMA_CH_REMAP->CH_REMAP[reg_idx])  { }
 
+  while (dmaregs->CH_EN & chbit)
+  {
+    dmaregs->CH_EN = (0
+      | (0x00            <<  0)
+      | (chbit           <<  8)  // disable en
+      | (uint64_t(0xFF)  << 32)  // abort
+      | (uint64_t(chbit) << 40)  // abort en
+    );
+  }
 
-  Disable();
   ClearIrqFlag();
 
 	Prepare(true, nullptr, 0); // set some defaults
@@ -117,7 +129,7 @@ void THwDmaChannel_sg::Enable()
 
 void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 {
-  //Disable();  // should not be running
+  Disable();  // should not be running
 	ClearIrqFlag();
 
   uint64_t tr_width;
@@ -132,8 +144,8 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
   uint64_t msize = 0; // burst size: 0 = 1x, 1 = 4x, 2 = 8x, 3 = 16x, 4 = 32x .. 7 = 256x
 
 	uint64_t ctl = (0
-	  | (0         <<  0)  // SMS: src master select: 0 = AXI master 1, 1 = AXI master 2
-	  | (0         <<  2)  // DMS: dst master select: 0 = AXI master 1, 1 = AXI master 2
+	  | (1         <<  0)  // SMS: src master select: 0 = AXI master 1, 1 = AXI master 2
+	  | (1         <<  2)  // DMS: dst master select: 0 = AXI master 1, 1 = AXI master 2
 	  | (0         <<  4)  // SINC: ! 0 = Increment src address, 1 = fix !
 	  | (0         <<  6)  // DINC: ! 0 = Increment dst address, 1 = fix !
 	  | (tr_width  <<  8)  // SRC_TR_WIDTH(3): src transfer width: 0 = 1 byte, 1 = 2 byte, 2 = 4 byte, 3 = 8 byte, 4 = 16 byte ?
@@ -189,7 +201,10 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     {
       ctl |= (1 << 4); // SINC: 1 = do not incrmement the SRC address
     }
-    cfg |= (1ull << 32); // TT_FC(3): 1 = MEM_TO_PER_DMAC: Transfer Type is memory to peripheral and Flow Controller is DMA
+    cfg |= (0
+      | (1ull << 32)  // TT_FC(3): 1 = MEM_TO_PER_DMAC: Transfer Type is memory to peripheral and Flow Controller is DMA
+      | (uint64_t(hsnum) << 44)  // DST_PER: hw handshaking interface
+    );
     lli->DAR = (intptr_t)periphaddr;
     lli->SAR = (intptr_t)axfer->srcaddr;
   }
@@ -200,7 +215,10 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     {
       ctl |= (1 << 6); // DINC: 1 = do not incrmement the DST address
     }
-    cfg |= (2ull << 32); // TT_FC(3): 2 = PER_TO_MEM_DMAC Transfer Type is peripheral to Memory and Flow Controller is DMA
+    cfg |= (0
+      | (2ull << 32)  // TT_FC(3): 2 = PER_TO_MEM_DMAC Transfer Type is peripheral to Memory and Flow Controller is DMA
+      | (uint64_t(hsnum) << 39)  // SRC_PER: hw handshaking interface
+    );
     lli->SAR = (intptr_t)periphaddr;
     lli->DAR = (intptr_t)axfer->dstaddr;
   }

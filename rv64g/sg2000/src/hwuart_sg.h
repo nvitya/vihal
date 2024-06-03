@@ -39,10 +39,10 @@ public:
 
 	bool SendFinished();
 
-	//void DmaAssign(bool istx, THwDmaChannel * admach);
+	void DmaAssign(bool istx, THwDmaChannel * admach);
 
-	//bool DmaStartSend(THwDmaTransfer * axfer);
-	//bool DmaStartRecv(THwDmaTransfer * axfer);
+	bool DmaStartSend(THwDmaTransfer * axfer);
+	bool DmaStartRecv(THwDmaTransfer * axfer);
 
 public:
 	uart_regs_t *    regs = nullptr;

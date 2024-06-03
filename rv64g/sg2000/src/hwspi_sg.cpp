@@ -96,6 +96,8 @@ bool THwSpi_sg::Init(int adevnum)
     | (0  <<  0)  // DFNUM(16): number of data frames
   );
 
+  regs->DMACR = 3; // enable the RX+TX DMA
+
   SetSpeed(speed);
 
   regs->SPIENR = 1;
@@ -177,7 +179,7 @@ bool THwSpi_sg::DmaStartSend(THwDmaTransfer * axfer)
     return false;
   }
 
-  regs->DMACR |= (1 << 1); // enable the TX DMA
+  //regs->DMACR |= (1 << 1); // enable the TX DMA
   txdma->StartTransfer(axfer);
   return true;
 }
@@ -189,7 +191,7 @@ bool THwSpi_sg::DmaStartRecv(THwDmaTransfer *axfer)
     return false;
   }
 
-  regs->DMACR |= (1 << 0); // enable the RX DMA
+  //regs->DMACR |= (1 << 0); // enable the RX DMA
   rxdma->StartTransfer(axfer);
   return true;
 }
