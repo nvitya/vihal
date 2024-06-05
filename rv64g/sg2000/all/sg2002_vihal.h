@@ -77,50 +77,51 @@
 //------------------------------------------------------------------------------
 // DMA REQUEST MAP
 //------------------------------------------------------------------------------
-//                       RQ, HS
-#define DMARQ_I2S0_RX     0,  8  // ?
-#define DMARQ_I2S0_TX     1,  9  // ?
-#define DMARQ_I2S1_RX     2,  8  // ?
-#define DMARQ_I2S1_TX     3,  9  // ?
-#define DMARQ_I2S2_RX     4,  8  // ?
-#define DMARQ_I2S2_TX     5,  9  // ?
-#define DMARQ_I2S3_RX     6,  8  // ?
-#define DMARQ_I2S3_TX     7,  9  // ?
-#define DMARQ_UART0_TX    8, 19
-#define DMARQ_UART0_RX    9, 18
-#define DMARQ_UART1_TX   10, 19
-#define DMARQ_UART1_RX   11, 18
-#define DMARQ_UART2_TX   12, 19
-#define DMARQ_UART2_RX   13, 18
-#define DMARQ_UART3_TX   14, 19  // ok, tested
-#define DMARQ_UART3_RX   15, 18  // ok, tested
-#define DMARQ_SPI0_RX    16,  4
-#define DMARQ_SPI0_TX    17,  5
-#define DMARQ_SPI1_RX    18,  4
-#define DMARQ_SPI1_TX    19,  5
-#define DMARQ_SPI2_RX    20,  4
-#define DMARQ_SPI2_TX    21,  5
-#define DMARQ_SPI3_RX    22,  4
-#define DMARQ_SPI3_TX    23,  5
-#define DMARQ_I2C0_RX    24, 20
-#define DMARQ_I2C0_TX    25, 21
-#define DMARQ_I2C1_RX    26, 20
-#define DMARQ_I2C1_TX    27, 21
-#define DMARQ_I2C2_RX    28, 20
-#define DMARQ_I2C2_TX    29, 21
-#define DMARQ_I2C3_RX    30, 20
-#define DMARQ_I2C3_TX    31, 21
-#define DMARQ_I2C4_RX    32, 20
-#define DMARQ_I2C4_TX    33, 21
-#define DMARQ_TDM0_RX    34,  0  // ?
-#define DMARQ_TDM0_TX    35,  0  // ?
-#define DMARQ_TDM1_RX    36,  0  // ?
-#define DMARQ_AUDSRC     37,  0  // ?
-#define DMARQ_SPI_NAND   38,  0  // ?
-#define DMARQ_SPI_NOR    39,  0  // ?
-#define DMARQ_UART4_TX   40, 19
-#define DMARQ_UART4_RX   41, 18
-#define DMARQ_SPI_NOR1   42,  0  // ?
+
+//                       RQ
+#define DMARQ_I2S0_RX     0
+#define DMARQ_I2S0_TX     1
+#define DMARQ_I2S1_RX     2
+#define DMARQ_I2S1_TX     3
+#define DMARQ_I2S2_RX     4
+#define DMARQ_I2S2_TX     5
+#define DMARQ_I2S3_RX     6
+#define DMARQ_I2S3_TX     7
+#define DMARQ_UART0_TX    8
+#define DMARQ_UART0_RX    9
+#define DMARQ_UART1_TX   10
+#define DMARQ_UART1_RX   11
+#define DMARQ_UART2_TX   12
+#define DMARQ_UART2_RX   13
+#define DMARQ_UART3_TX   14
+#define DMARQ_UART3_RX   15
+#define DMARQ_SPI0_RX    16
+#define DMARQ_SPI0_TX    17
+#define DMARQ_SPI1_RX    18
+#define DMARQ_SPI1_TX    19
+#define DMARQ_SPI2_RX    20
+#define DMARQ_SPI2_TX    21
+#define DMARQ_SPI3_RX    22
+#define DMARQ_SPI3_TX    23
+#define DMARQ_I2C0_RX    24
+#define DMARQ_I2C0_TX    25
+#define DMARQ_I2C1_RX    26
+#define DMARQ_I2C1_TX    27
+#define DMARQ_I2C2_RX    28
+#define DMARQ_I2C2_TX    29
+#define DMARQ_I2C3_RX    30
+#define DMARQ_I2C3_TX    31
+#define DMARQ_I2C4_RX    32
+#define DMARQ_I2C4_TX    33
+#define DMARQ_TDM0_RX    34
+#define DMARQ_TDM0_TX    35
+#define DMARQ_TDM1_RX    36
+#define DMARQ_AUDSRC     37
+#define DMARQ_SPI_NAND   38
+#define DMARQ_SPI_NOR    39
+#define DMARQ_UART4_TX   40
+#define DMARQ_UART4_RX   41
+#define DMARQ_SPI_NOR1   42
 
 //-----------------------------------------------------------------------------
 // PAD Definitions

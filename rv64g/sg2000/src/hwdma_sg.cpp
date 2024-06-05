@@ -36,7 +36,7 @@
 
 dma_lli_t  g_dma_lli[8]  __attribute__((aligned(64)));
 
-bool THwDmaChannel_sg::Init(int achnum, int aperid, int ahsnum)
+bool THwDmaChannel_sg::Init(int achnum, int aperid)
 {
   uint32_t tmp;
 
@@ -52,7 +52,6 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid, int ahsnum)
   chnum = (achnum & 0x07);
   chbit = (1 << chnum);
   perid = aperid;
-  hsnum = ahsnum;
 
   dmaregs = SDMA;
   dmaregs->CFG = (0
@@ -92,15 +91,7 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid, int ahsnum)
   DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
   if (DMA_CH_REMAP->CH_REMAP[reg_idx])  { }
 
-  while (dmaregs->CH_EN & chbit)
-  {
-    dmaregs->CH_EN = (0
-      | (0x00            <<  0)
-      | (chbit           <<  8)  // disable en
-      | (uint64_t(0xFF)  << 32)  // abort
-      | (uint64_t(chbit) << 40)  // abort en
-    );
-  }
+  Abort();
 
   ClearIrqFlag();
 
@@ -125,6 +116,19 @@ void THwDmaChannel_sg::Disable()
 void THwDmaChannel_sg::Enable()
 {
   dmaregs->CH_EN = (0xFF | (chbit << 8));
+}
+
+void THwDmaChannel_sg::Abort()
+{
+  while (dmaregs->CH_EN & chbit)
+  {
+    dmaregs->CH_EN = (0
+      | (0x00            <<  0)
+      | (chbit           <<  8)  // disable en
+      | (uint64_t(0xFF)  << 32)  // abort
+      | (uint64_t(chbit) << 40)  // abort en
+    );
+  }
 }
 
 void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
@@ -203,7 +207,7 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     }
     cfg |= (0
       | (1ull << 32)  // TT_FC(3): 1 = MEM_TO_PER_DMAC: Transfer Type is memory to peripheral and Flow Controller is DMA
-      | (uint64_t(hsnum) << 44)  // DST_PER: hw handshaking interface
+      | (uint64_t(chnum) << 44)  // DST_PER: hw handshaking interface = chnum ?
     );
     lli->DAR = (intptr_t)periphaddr;
     lli->SAR = (intptr_t)axfer->srcaddr;
@@ -217,7 +221,7 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     }
     cfg |= (0
       | (2ull << 32)  // TT_FC(3): 2 = PER_TO_MEM_DMAC Transfer Type is peripheral to Memory and Flow Controller is DMA
-      | (uint64_t(hsnum) << 39)  // SRC_PER: hw handshaking interface
+      | (uint64_t(chnum) << 39)  // SRC_PER: hw handshaking interface = chnum ?
     );
     lli->SAR = (intptr_t)periphaddr;
     lli->DAR = (intptr_t)axfer->dstaddr;
