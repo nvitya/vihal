@@ -29,6 +29,8 @@
 //#include "hwpins.h"
 #include "hwpins_sg.h"
 
+uint32_t sg_gpio_shadow_regs[5];
+
 gpio_regs_t * sg_gpio_regs(int aportnum)
 {
   if ((aportnum < 0) or (aportnum > 4))
@@ -123,6 +125,8 @@ bool THwPinCtrl_sg::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio
         regs->SWPORTA_DDR &= ~pinmask;
       }
       *reg_fmux = 3; // GPIO
+
+      sg_gpio_shadow_regs[agpio >> 8] = regs->SWPORTA_DR; // update the shadow reg
     }
   }
 
@@ -179,6 +183,7 @@ void THwPinCtrl_sg::GpioSet(int aportnum, int apinnum, int value)
     {
       regs->SWPORTA_DR &= ~(1 << apinnum);
     }
+    sg_gpio_shadow_regs[aportnum] = regs->SWPORTA_DR; // update the shadow reg
   }
 }
 
@@ -188,19 +193,23 @@ static uint32_t g_dummy_u32 = 0;
 
 void TGpioPort_sg::Assign(int aportnum)
 {
+  portnum = aportnum;
   gpio_regs_t * regs = sg_gpio_regs(aportnum);
   if (regs)
   {
     portptr = &regs->SWPORTA_DR;
+    sg_gpio_shadow_regs[portnum] = regs->SWPORTA_DR; // update the shadow regs
   }
   else
   {
     portptr = &g_dummy_u32;
   }
+
 }
 
 void TGpioPort_sg::Set(unsigned value)
 {
+  sg_gpio_shadow_regs[portnum] = value; // update the shadow regs
   *portptr = value;
 }
 
@@ -213,6 +222,7 @@ void TGpioPin_sg::InitDummy()
   setbitptr = &g_dummy_u32;
   getbitptr = &g_dummy_u32;
   pindirptr = &g_dummy_u32;
+  outshadowptr = &g_dummy_u32;
 }
 
 void TGpioPin_sg::Assign(int aportnum, int apinnum, bool ainvert)
@@ -229,12 +239,15 @@ void TGpioPin_sg::Assign(int aportnum, int apinnum, bool ainvert)
     setbitptr = (uint32_t *)&regs->SWPORTA_DR;
     getbitptr = (uint32_t *)&regs->EXT_PORTA;
     pindirptr = (uint32_t *)&regs->SWPORTA_DDR;
+    outshadowptr = &sg_gpio_shadow_regs[aportnum];
+    *outshadowptr = regs->SWPORTA_DR; // update the shadow reg
   }
   else
   {
     setbitptr = &g_dummy_u32;
     getbitptr = &g_dummy_u32;
     pindirptr = &g_dummy_u32;
+    outshadowptr = &g_dummy_u32;
   }
 }
 
