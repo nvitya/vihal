@@ -36,12 +36,14 @@
 
 // The register accesses are very slow on this platform!
 
+#ifndef GPIO_OUT_USE_SHADOW_REG
 // using the shadow registers make the GPIO outputs much faster,
 // as they don't have SET and CLEAR registers and the atomic extension
 // does not work on the GPIO DR register (lands in an exception)
 // but it will cause problems, when the Linux core drives the same GPIO port
-#define GPIO_OUT_USE_SHADOW_REG  0 // does not work reliably, unfortunately
-
+  #define GPIO_OUT_USE_SHADOW_REG  0     // 340 ns GPIO set time
+  // #define GPIO_OUT_USE_SHADOW_REG  1  // 170 ns GPIO set time
+#endif
 
 class THwPinCtrl_sg : public THwPinCtrl_pre
 {
@@ -80,7 +82,8 @@ public:
   inline void Set1() // irq-safe read-modify-write
   {
     #if GPIO_OUT_USE_SHADOW_REG
-      *setbitptr = cpu_atomic_or32(outshadowptr, pinmask);
+      cpu_atomic_or32(outshadowptr, pinmask);  // (returns the previous value)
+      *setbitptr = *outshadowptr;
     #else
       unsigned intstatus = mcu_interrupts_save_and_disable();
       *setbitptr |= pinmask;  // this read-modify-write takes about 340 ns, and not multi-core safe !
@@ -91,7 +94,8 @@ public:
   inline void Set0() // irq-safe read-modify-write
   {
     #if GPIO_OUT_USE_SHADOW_REG
-      *setbitptr = cpu_atomic_and32(outshadowptr, negpinmask);
+      cpu_atomic_and32(outshadowptr, negpinmask);  // (returns the previous value)
+      *setbitptr = *outshadowptr;
     #else
       unsigned intstatus = mcu_interrupts_save_and_disable();
       *setbitptr &= negpinmask; // this read-modify-write takes about 340 ns, and not multi-core safe !
