@@ -79,6 +79,9 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   tmp |=  ((chbit << 20));
   DMA_INT_MUX_REG = tmp;
 
+  dmaregs->COMM_INTSTATUS_EN = 0;
+  dmaregs->COMM_INTSIGNAL_EN = 0;
+
   // set the peripheral mapping
   uint32_t reg_idx   = (chnum >> 2);
   uint32_t reg_shift = (chnum & 3) << 3;
@@ -90,6 +93,9 @@ bool THwDmaChannel_sg::Init(int achnum, int aperid)
   tmp |= (1 << 31); // set the update bit
   DMA_CH_REMAP->CH_REMAP[reg_idx] = tmp;
   if (DMA_CH_REMAP->CH_REMAP[reg_idx])  { }
+
+  regs->INTSIGNAL_ENABLEREG = 0x00; //(1 << 1); //((1 << 3) | (1 << 4)); // enable
+  regs->INTSTATUS_ENABLEREG = 0x1F; //(1 << 1); // enable transfer done
 
   Abort();
 
@@ -229,7 +235,13 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
 
   if (axfer->flags & DMATR_IRQ)
   {
-    ctl |= (1ull << 58);  // IOC_BlkTfr
+    //ctl |= (1ull << 58);  // IOC_BlkTfr
+    //regs->INTSIGNAL_ENABLEREG = (1 << 0); // ((1 << 0) | (1 << 1));
+    regs->INTSIGNAL_ENABLEREG = (1 << 1); // enable the transfer done interrupt
+  }
+  else
+  {
+    regs->INTSIGNAL_ENABLEREG = 0;
   }
 
   lli->CTL = ctl;

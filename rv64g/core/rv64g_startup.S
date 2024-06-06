@@ -71,7 +71,7 @@ init_start:
 // reset and need to be explicitly initialized)
 //-------------------------------------------------
 
-  csrc  mstatus, 0xC                     // disable machine interrupts
+  csrw  mstatus, zero                    // disable machine interrupts
   csrw  mie, zero                        // no machine interrupt sources
 
   li    t0, 0x00006000U // = MSTATUS_FS
