@@ -36,6 +36,9 @@
 class THwSpi_sg : public THwSpi_pre
 {
 public:
+  uint8_t     rx_sample_delay = 0;
+
+public:
 	bool Init(int adevnum);
 
 	bool TrySendData(uint8_t adata);

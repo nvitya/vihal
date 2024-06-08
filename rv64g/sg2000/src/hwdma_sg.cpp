@@ -154,8 +154,8 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
   uint64_t msize = 0; // burst size: 0 = 1x, 1 = 4x, 2 = 8x, 3 = 16x, 4 = 32x .. 7 = 256x
 
 	uint64_t ctl = (0
-	  | (1         <<  0)  // SMS: src master select: 0 = AXI master 1, 1 = AXI master 2
-	  | (1         <<  2)  // DMS: dst master select: 0 = AXI master 1, 1 = AXI master 2
+	  | (0         <<  0)  // SMS: src master select: 0 = AXI master 1, 1 = AXI master 2
+	  | (0         <<  2)  // DMS: dst master select: 0 = AXI master 1, 1 = AXI master 2
 	  | (0         <<  4)  // SINC: ! 0 = Increment src address, 1 = fix !
 	  | (0         <<  6)  // DINC: ! 0 = Increment dst address, 1 = fix !
 	  | (tr_width  <<  8)  // SRC_TR_WIDTH(3): src transfer width: 0 = 1 byte, 1 = 2 byte, 2 = 4 byte, 3 = 8 byte, 4 = 16 byte ?
@@ -195,8 +195,8 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     | (0ull  << 49)  // CH_PRIOR(3)
     | (0ull  << 52)  // LOCK_CH
     | (0ull  << 53)  // LOCK_CH_L(2)
-    | (0ull  << 55)  // SRC_OSR_LMT(4)
-    | (0ull  << 59)  // DST_OSR_LMT(4)
+    | (15ull  << 55)  // SRC_OSR_LMT(4)
+    | (15ull  << 59)  // DST_OSR_LMT(4)
   );
 
   if (axfer->flags & DMATR_MEM_TO_MEM)
@@ -213,7 +213,8 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     }
     cfg |= (0
       | (1ull << 32)  // TT_FC(3): 1 = MEM_TO_PER_DMAC: Transfer Type is memory to peripheral and Flow Controller is DMA
-      | (uint64_t(chnum) << 44)  // DST_PER: hw handshaking interface = chnum ?
+      | (uint64_t(hwhspol) << 38)  // DST_HWHS_POL
+      | (uint64_t(chnum)   << 44)  // DST_PER: hw handshaking interface = chnum ?
     );
     lli->DAR = (intptr_t)periphaddr;
     lli->SAR = (intptr_t)axfer->srcaddr;
@@ -227,7 +228,9 @@ void THwDmaChannel_sg::PrepareTransfer(THwDmaTransfer * axfer)
     }
     cfg |= (0
       | (2ull << 32)  // TT_FC(3): 2 = PER_TO_MEM_DMAC Transfer Type is peripheral to Memory and Flow Controller is DMA
-      | (uint64_t(chnum) << 39)  // SRC_PER: hw handshaking interface = chnum ?
+      //| (4ull << 32)  // TT_FC(3): 2 = PER_TO_MEM_SRCFC
+      | (uint64_t(hwhspol) << 37)  // SRC_HWHS_POL
+      | (uint64_t(chnum)   << 39)  // SRC_PER: hw handshaking interface = chnum ?
     );
     lli->SAR = (intptr_t)periphaddr;
     lli->DAR = (intptr_t)axfer->dstaddr;

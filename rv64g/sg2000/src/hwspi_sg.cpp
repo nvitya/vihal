@@ -90,7 +90,13 @@ bool THwSpi_sg::Init(int adevnum)
   if (datasample_late)   ctrl0 |= (1 << 6);
   regs->CTRLR0 = ctrl0;
 
-  regs->RX_SAMPLE_DLY = 0;
+  regs->DMATDLR = 0;
+  regs->DMARDLR = 0;
+
+  regs->TXFTLR = 0;
+  regs->RXFTLR = 0;
+
+  regs->RX_SAMPLE_DLY = rx_sample_delay;
 
   regs->CTRLR1 = (0
     | (0  <<  0)  // DFNUM(16): number of data frames

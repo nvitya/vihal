@@ -59,6 +59,8 @@ public:
 	dma_lli_t *       lli = nullptr;
 	uint32_t          chbit = 0;
 
+	uint8_t           hwhspol = 0;
+
 	bool Init(int achnum, int aperid);
 
 	void Prepare(bool aistx, void * aperiphaddr, unsigned aflags);
