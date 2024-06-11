@@ -1,8 +1,8 @@
 MEMORY
 {
   CODERAM (xrw) :  ORIGIN = 0x8fe00000, LENGTH = 0x080000
-  RAM (xrw)     :  ORIGIN = 0x8fe80000, LENGTH = 0x140000
-  RAM2(xrw)     :  ORIGIN = 0x8ffc0000, LENGTH = 0x040000  /* shared memory */
+  RAM (xrw)     :  ORIGIN = 0x8fe80000, LENGTH = 0x100000
+  RAM2(xrw)     :  ORIGIN = 0x8ff80000, LENGTH = 0x080000  /* shared memory */
 }
 
 REGION_ALIAS("TEXT",   CODERAM);
