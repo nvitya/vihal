@@ -86,10 +86,14 @@ inline void __attribute__((always_inline)) mcu_preinit_code()
 
 // Cache handling extensions (e.g. XuanTie C906)
 
+#define DCACHE_CLEAR_WITH_SYNC  1
+
 inline void __attribute__ ((always_inline)) cpu_dcache_clear(void * addr)
 {
   asm volatile ("dcache.cpa %[input_i]" : : [input_i] "r" (addr));
+#if DCACHE_CLEAR_WITH_SYNC
   asm volatile ("sync.s"); // ensure completion of clean operation.
+#endif
 }
 
 inline void __attribute__ ((always_inline)) cpu_dcache_clear(void * addr, uintptr_t len)
@@ -101,7 +105,9 @@ inline void __attribute__ ((always_inline)) cpu_dcache_clear(void * addr, uintpt
     asm volatile ("dcache.cpa a0");
     raddr += L1_CACHE_BYTES;
   }
+#if DCACHE_CLEAR_WITH_SYNC
   asm volatile ("sync.s"); // ensure completion of clean operation.
+#endif
 }
 
 
