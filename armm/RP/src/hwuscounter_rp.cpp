@@ -31,8 +31,8 @@
 
 bool THwUsCounter_rp::Init()
 {
-
   regs = timer_hw;
+  regs->dbgpause = 0;  // do not stop for multi-core debugging
   initialized = true;
   return true;
 }
