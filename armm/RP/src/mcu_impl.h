@@ -48,3 +48,7 @@
 #if defined(HWUSBCTRL_H_)
   #include "hwusbctrl_rp.h"
 #endif
+
+#if defined(HWMULTICORE_H_)
+  #include "hwmulticore_rp.h"
+#endif
