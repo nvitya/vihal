@@ -58,6 +58,7 @@ public: // mandatory
   bool      TryIpcRecv(uint32_t * data) { return false; }
   bool      IpcSend(uint32_t * data, uint32_t timeout_us) { return false; }
   bool      IpcRecv(uint32_t * data, uint32_t timeout_us) { return false; }
+  void      IpcIrqAck() {}
 
   void      ResetCore(uint8_t acoreid) { }
   bool      StartCore(uint8_t acoreid, uint32_t aentry, uint32_t astack, uint32_t avectors) { return false; }

@@ -55,9 +55,11 @@ public:
   bool      TryIpcRecv(uint32_t * data);
   bool      IpcSend(uint32_t * data, uint32_t timeout_us);
   bool      IpcRecv(uint32_t * data, uint32_t timeout_us);
+  inline void  IpcIrqAck() { mbregs->ST = 0xFF; } // required to clear interrupts that was caused by the ROE or WOF flags
 
   void      ResetCore(uint8_t acoreid);
   bool      StartCore(uint8_t acoreid, uint32_t aentry, uint32_t astack, uint32_t avectors);
+
 };
 
 #define HWMULTICORE_IMPL THwMultiCore_rp

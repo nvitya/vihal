@@ -32,8 +32,6 @@ void THwMultiCore_rp::Init(uint8_t acoreid)
   coreid = acoreid;
 
   mbregs     = (TRpMailBoxRegs *)(SIO_BASE + RP_FIFO_REGS_OFFSET);
-  //regs_set = (TRpMailBoxRegs *)(SIO_BASE + RP_FIFO_REGS_OFFSET + 0x2000);
-  //regs_clr = (TRpMailBoxRegs *)(SIO_BASE + RP_FIFO_REGS_OFFSET + 0x3000);
 
   if (!uscounter.initialized)  uscounter.Init();
 }
