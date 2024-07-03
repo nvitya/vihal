@@ -147,7 +147,7 @@ public:
 class THwEth_noimpl : public THwEth_pre
 {
 public: // mandatory
-	bool               InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32_t txcnt);
+	bool               InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32_t txcnt) { return false; }
 
 	void               Start()  { }
 	void               Stop()   { }

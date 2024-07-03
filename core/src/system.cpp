@@ -26,6 +26,10 @@
  *  authors:  nvitya
 */
 
+#include "platform.h"
+
+#ifndef LINUX
+
 #include <errno.h>
 #include "stdint.h"
 
@@ -168,3 +172,5 @@ __attribute__((weak)) int _isatty_r(int file)
 }
 
 } // extern "C"
+
+#endif

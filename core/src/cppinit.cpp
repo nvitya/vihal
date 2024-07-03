@@ -26,8 +26,11 @@
  *  authors:  nvitya
 */
 
+#include "platform.h"
 #include <stdint.h>
 #include <sys/types.h>
+
+#ifndef LINUX
 
 extern uint32_t __data_regions_array_start;
 extern uint32_t __data_regions_array_end;
@@ -136,5 +139,7 @@ void cppinit(void)
   // execute the constructors for the static objects).
   __run_init_array();
 }
+
+#endif
 
 // ----------------------------------------------------------------------------

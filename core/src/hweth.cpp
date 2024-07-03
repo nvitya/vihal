@@ -58,7 +58,6 @@ bool THwEth::Init(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32
 
 bool THwEth::PhyInit()
 {
-	uint16_t reg;
 	uint16_t bsr;
 
 	// we don't reset the PHY always in order to keep the link active and achive a fast device start

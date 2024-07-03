@@ -211,12 +211,6 @@ class THwPinCtrl : public HWPINCTRL_IMPL
 {
 };
 
-class TGpioPort : public HWGPIOPORT_IMPL
-{
-public:
-	TGpioPort(int aportnum)  { Assign(aportnum); }
-};
-
 class TGpioPin : public HWGPIOPIN_IMPL
 {
 public:
