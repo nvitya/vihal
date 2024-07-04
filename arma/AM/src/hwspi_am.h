@@ -8,8 +8,8 @@
 #ifndef HWSPI_AM_H_
 #define HWSPI_AM_H_
 
-#include "platform.h"
-#include "stdint.h"
+#define HWSPI_PRE_ONLY
+#include "hwspi.h"
 
 typedef struct
 {
@@ -41,21 +41,11 @@ typedef struct
 //
 } THwSpiRegs;
 
-class THwSpi_am
+class THwSpi_am : public THwSpi_pre
 {
-public:
-	uint32_t           speed = 4000000;
-	unsigned char      databits = 8; // frame length
-	bool               tx_only = false;
-	bool               lsb_first = false;
-	bool               idleclk_high = false;
-	bool               datasample_late = true;
-
 public:
 	THwSpiChRegs *     regs  = nullptr;
 	THwSpiRegs *       mregs = nullptr;
-	int                devnum = -1;
-	bool               initialized = false;
 
 	bool Init(int adevnum);
 	void SetSpeed(uint32_t aspeed);
@@ -64,8 +54,16 @@ public:
 	bool TryRecvData(uint8_t * dstptr);
 	bool SendFinished();
 
+	void DmaAssign(bool istx, THwDmaChannel * admach);
 
+	bool DmaStartSend(THwDmaTransfer * axfer);
+	bool DmaStartRecv(THwDmaTransfer * axfer);
+	bool DmaSendCompleted();
+	bool DmaRecvCompleted();
+
+	void SetCs(unsigned value);
 };
 
+#define HWSPI_IMPL THwSpi_am
 
 #endif /* HWSPI_AM_H_ */

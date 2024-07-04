@@ -171,3 +171,77 @@ bool THwSpi_am::SendFinished()
   }
 }
 
+void THwSpi_am::SetCs(unsigned value)
+{
+  if (manualcspin)
+  {
+    manualcspin->SetTo(value);
+  }
+  else
+  {
+  	// todo: implement
+  }
+}
+
+void THwSpi_am::DmaAssign(bool istx, THwDmaChannel * admach)
+{
+	if (istx)
+	{
+		txdma = admach;
+		admach->Prepare(istx, (void *)&regs->TX, 0);
+	}
+	else
+	{
+		rxdma = admach;
+		admach->Prepare(istx, (void *)&regs->RX, 0);
+	}
+}
+
+bool THwSpi_am::DmaStartSend(THwDmaTransfer * axfer)
+{
+	if (!txdma)
+	{
+		return false;
+	}
+
+  regs->CONF |= (1 << 14); // DMAW: 1 = enable TX DMA
+
+	txdma->StartTransfer(axfer);
+	return true;
+}
+
+bool THwSpi_am::DmaStartRecv(THwDmaTransfer * axfer)
+{
+	if (!rxdma)
+	{
+		return false;
+	}
+
+  regs->CONF |= (1 << 15); // DMAR: 1 = enable RX DMA
+
+	rxdma->StartTransfer(axfer);
+	return true;
+}
+
+bool THwSpi_am::DmaSendCompleted()
+{
+	if (txdma && txdma->Active())
+	{
+		// Send DMA is still active
+		return false;
+	}
+
+	return SendFinished();
+}
+
+bool THwSpi_am::DmaRecvCompleted()
+{
+	if (rxdma && rxdma->Active())
+	{
+		// Send DMA is still active
+		return false;
+	}
+
+	return true;
+}
+

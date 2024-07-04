@@ -9,4 +9,8 @@
   #include "hwpins_am.h"
 #endif
 
+#ifdef HWSPI_H_
+  #include "hwspi_am.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING

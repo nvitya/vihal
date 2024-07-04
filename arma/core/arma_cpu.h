@@ -33,6 +33,8 @@
 #define MCU_ARMA
 #define CPU_ARMA
 
+#define __DSB()
+
 inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
 }

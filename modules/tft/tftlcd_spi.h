@@ -39,6 +39,7 @@ class TTftLcd_spi: public TTftLcd
 {
 public:
 	typedef TTftLcd super;
+	virtual ~TTftLcd_spi() {}
 
 	// required hw resources:
 	THwSpi     spi;
