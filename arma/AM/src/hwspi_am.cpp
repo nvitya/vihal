@@ -12,21 +12,27 @@
 bool THwSpi_am::Init(int adevnum)
 {
 	initialized = false;
+	mregs = nullptr;
 	if (0 == adevnum)
 	{
-		mregs = (THwSpiRegs *)hw_memmap(HW_MCSPI0_BASE, 0x1000);
+		mregs = (THwSpiRegs *)hw_memmap(HW_MCSPI0_BASE, sizeof(THwSpiRegs));
 		am_enable_per(CM_PER_REG_OFFS_MCSPI0, true);
 	}
 	else if (1 == adevnum)
 	{
-		mregs = (THwSpiRegs *)hw_memmap(HW_MCSPI1_BASE, 0x1000);
+		mregs = (THwSpiRegs *)hw_memmap(HW_MCSPI1_BASE, sizeof(THwSpiRegs));
 		am_enable_per(CM_PER_REG_OFFS_MCSPI1, true);
 	}
 	else
 	{
 		mregs = nullptr;
+	}
+
+	if (!mregs)
+	{
 		return false;
 	}
+
 	devnum = adevnum;
 	regs = &mregs->CH[0];
 
