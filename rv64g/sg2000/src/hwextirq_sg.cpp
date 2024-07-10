@@ -34,7 +34,7 @@ bool THwExtIrq_sg::Init(int aportnum, int apinnum, unsigned flags)
   portnum = aportnum;
   pinnum = apinnum & 0x1F;
 
-  gpio_regs = sg_gpio_regs(aportnum);
+  gpio_regs = hwpinctrl.GetGpioRegs(aportnum);
   if (!gpio_regs)
   {
     return false;

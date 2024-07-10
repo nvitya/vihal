@@ -26,6 +26,8 @@
  *  description:
  */
 
+#ifndef LINUX
+
 #define MSTATUS_MIE         0x00000008
 #define CSR_MSTATUS         0x300
 #define CSR_MEPC            0x341
@@ -192,6 +194,7 @@ riscv_trap_end:
   mret                // Return to regular code
   .cfi_endproc
 
+#endif
 
 //-----------------------------------------------------------------------------------
 // END OF FILE

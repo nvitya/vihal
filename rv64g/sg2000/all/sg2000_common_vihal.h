@@ -96,9 +96,9 @@ inline bool mcu_irq_enabled(unsigned intnum)
   return 0 != (PLIC->H0_MIE[intnum >> 5] & (1 << (intnum & 0x1F)));
 }
 
-inline bool mcu_irq_ack(unsigned intnum)
+inline void mcu_irq_ack(unsigned intnum)
 {
-  return PLIC->H0_MCLAIM = intnum;
+  PLIC->H0_MCLAIM = intnum;
 }
 
 //------------------------------------------------------------------------------

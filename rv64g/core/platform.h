@@ -32,13 +32,12 @@
 
 #include "mcu_defs.h"
 
+#include "rv64g_generic.h"
 
 #ifndef CLOCKCNT
   // read mtime by default:
   #define CLOCKCNT  (cpu_csr_read(0xB00))
 #endif
-
-#include "rv64g_generic.h"
 
 #include "platform_generic.h"
 

@@ -26,32 +26,61 @@
 */
 
 #include "platform.h"
-//#include "hwpins.h"
 #include "hwpins_sg.h"
+#include "hwpins.h"
+#include "sg_utils.h"
 
 uint32_t sg_gpio_shadow_regs[5];
 
-gpio_regs_t * sg_gpio_regs(int aportnum)
+gpio_regs_t * THwPinCtrl_sg::GetGpioRegs(int aportnum)
 {
-  if ((aportnum < 0) or (aportnum > 4))
-  {
-    return nullptr;
-  }
+	if ((aportnum < 0) || (aportnum > 4))
+	{
+		return nullptr;
+	}
 
-  if (PORTNUM_PWR == aportnum)
-  {
-    return (gpio_regs_t *)intptr_t(GPIOPWR_BASE_ADDR);
-  }
-  else
-  {
-    return (gpio_regs_t *)(intptr_t(GPIO0_BASE_ADDR) + 0x1000 * aportnum);
-  }
+	gpio_regs_t * regs = mapped_gpio_regs[aportnum];
+	if (!regs)
+	{
+		uint32_t addr;
+
+	  if (PORTNUM_PWR == aportnum)
+	  {
+	    addr = GPIOPWR_BASE_ADDR;
+	  }
+	  else
+	  {
+	    addr = GPIO0_BASE_ADDR + 0x1000 * aportnum;
+	  }
+
+		regs = (gpio_regs_t *)map_hw_addr(addr, sizeof(gpio_regs_t), (void * *)&mapped_gpio_regs[aportnum]);
+	}
+
+	return regs;
 }
+
 
 bool THwPinCtrl_sg::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio, unsigned flags)
 {
-  volatile uint32_t * reg_fmux  = (volatile uint32_t *)intptr_t(0x03001000 + afmuxoffs);
-  volatile uint32_t * reg_ioblk = (volatile uint32_t *)intptr_t(aioblk);
+	if (!mapped_fmux_regs)
+	{
+		mapped_fmux_regs = (uint8_t *)map_hw_addr(0x03001000, 0x1000, (void * *)&mapped_fmux_regs);
+		mapped_pwr_ioblk = (uint8_t *)map_hw_addr(0x05027000, 0x1000, (void * *)&mapped_pwr_ioblk);
+	}
+  volatile uint32_t * reg_fmux  = (volatile uint32_t *)(mapped_fmux_regs + afmuxoffs);
+
+  volatile uint32_t * reg_ioblk = nullptr;
+  if (aioblk)
+  {
+  	if (((aioblk >> 24) & 0x0F) == 0x05)
+  	{
+  		reg_ioblk = (volatile uint32_t *)(mapped_pwr_ioblk + (aioblk & 0xFFF));
+  	}
+  	else
+  	{
+  		reg_ioblk = (volatile uint32_t *)(mapped_fmux_regs + (aioblk & 0xFFF));
+  	}
+  }
 
   if (reg_ioblk)  // not always present!
   {
@@ -96,6 +125,8 @@ bool THwPinCtrl_sg::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio
     {
       ioblk |= (1 << 8);  // activate the Schmitt trigger
     }
+
+    *reg_ioblk = ioblk;
   }
 
   if (flags & PINCFG_AF_MASK)
@@ -104,7 +135,7 @@ bool THwPinCtrl_sg::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio
   }
   else // GPIO
   {
-    gpio_regs_t * regs = sg_gpio_regs(agpio >> 8);
+    gpio_regs_t * regs = GetGpioRegs(agpio >> 8);
     if (agpio && regs)
     {
       uint32_t pinmask = (1 << (agpio & 0x1F));
@@ -172,7 +203,7 @@ bool THwPinCtrl_sg::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 void THwPinCtrl_sg::GpioSet(int aportnum, int apinnum, int value)
 {
-  gpio_regs_t * regs = sg_gpio_regs(aportnum);
+  gpio_regs_t * regs = GetGpioRegs(aportnum);
   if (regs)
   {
     if (value)
@@ -189,29 +220,6 @@ void THwPinCtrl_sg::GpioSet(int aportnum, int apinnum, int value)
 
 static uint32_t g_dummy_u32 = 0;
 
-// GPIO Port
-
-void TGpioPort_sg::Assign(int aportnum)
-{
-  portnum = aportnum;
-  gpio_regs_t * regs = sg_gpio_regs(aportnum);
-  if (regs)
-  {
-    portptr = &regs->SWPORTA_DR;
-    sg_gpio_shadow_regs[portnum] = regs->SWPORTA_DR; // update the shadow regs
-  }
-  else
-  {
-    portptr = &g_dummy_u32;
-  }
-
-}
-
-void TGpioPort_sg::Set(unsigned value)
-{
-  sg_gpio_shadow_regs[portnum] = value; // update the shadow regs
-  *portptr = value;
-}
 
 // GPIO Pin
 
@@ -233,7 +241,7 @@ void TGpioPin_sg::Assign(int aportnum, int apinnum, bool ainvert)
   pinmask = (1u << apinnum);
   negpinmask = ~pinmask;
 
-  regs = sg_gpio_regs(aportnum);
+  regs = hwpinctrl.GetGpioRegs(aportnum);
   if (regs)
   {
     setbitptr = (uint32_t *)&regs->SWPORTA_DR;

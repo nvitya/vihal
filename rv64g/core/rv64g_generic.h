@@ -44,9 +44,15 @@
 #define CSR_MCYCLE          0xB00
 
 // read mtime:
-#define CLOCKCNT  (cpu_csr_read(0xB00))  // = 0xB00 = mcycle
+#ifdef LINUX
+  #define CLOCKCNT  (cpu_csr_read(0xC00))  // UCYLE
+#else
+  #define CLOCKCNT  (cpu_csr_read(0xB00))  // = 0xB00 = mcycle
+#endif
 
 extern "C" void mcu_interrupt_controller_init();
+
+#ifndef LINUX
 
 inline void __attribute__((always_inline)) mcu_interrupts_disable()
 {
@@ -69,6 +75,27 @@ inline void __attribute__((always_inline)) mcu_interrupts_restore(unsigned prevs
 {
   cpu_csr_write(CSR_MSTATUS, prevstate);
 }
+
+#else
+
+inline void __attribute__((always_inline)) mcu_interrupts_disable()
+{
+}
+
+inline unsigned __attribute__((always_inline)) mcu_interrupts_save_and_disable()
+{
+  return 0;
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_enable()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_interrupts_restore(unsigned prevstate)
+{
+}
+
+#endif
 
 //extern "C" void (* __isr_vectors [])();
 

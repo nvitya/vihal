@@ -58,16 +58,13 @@ public: //
 	void GpioSet(int aportnum, int apinnum, int value);
 
 	inline bool GpioSetup(int aportnum, int apinnum, unsigned flags)  { return PinSetup(aportnum, apinnum, flags); }
-};
 
-class TGpioPort_sg : public TGpioPort_pre
-{
-public:
-	void Assign(int aportnum);
-	void Set(unsigned value);
+	gpio_regs_t *  GetGpioRegs(int aportnum);
 
 public:
-	volatile uint32_t *  portptr = nullptr;
+	gpio_regs_t *        mapped_gpio_regs[5] = {0};
+	uint8_t *            mapped_fmux_regs = nullptr;
+	uint8_t *            mapped_pwr_ioblk = nullptr;
 };
 
 class TGpioPin_sg : public TGpioPin_pre

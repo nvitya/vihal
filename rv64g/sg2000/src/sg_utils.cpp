@@ -31,3 +31,42 @@ uint32_t sg_bus_speed(uint8_t abusid)
 	return (SystemCoreClock >> 2);
 }
 
+#ifdef LINUX
+
+#include "hw_utils.h"
+
+void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar)
+{
+  if (!aptrvar)
+  {
+  	return hw_memmap(aaddr, asize);
+  }
+
+  if (*aptrvar) // is already set ?
+  {
+  	return *aptrvar;
+  }
+
+  *aptrvar = hw_memmap(aaddr, asize);
+	return *aptrvar;
+}
+
+#else
+
+void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar)
+{
+  if (!aptrvar)
+  {
+  	return (void *)aaddr;
+  }
+
+  if (*aptrvar) // is already set ?
+  {
+  	return *aptrvar;
+  }
+
+  *aptrvar = (void *)aaddr;
+	return *aptrvar;
+}
+
+#endif

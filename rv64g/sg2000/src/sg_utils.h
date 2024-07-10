@@ -31,4 +31,6 @@
 
 uint32_t sg_bus_speed(uint8_t abusid);
 
+void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar);
+
 #endif // _SG_UTILS_H_

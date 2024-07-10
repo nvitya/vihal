@@ -42,7 +42,7 @@
 bool THwSpi_sg::Init(int adevnum)
 {
 	devnum = adevnum;
-  unsigned resetmask;
+  //unsigned resetmask;
 
 	initialized = false;
 

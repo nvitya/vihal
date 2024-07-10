@@ -26,6 +26,8 @@
 #include "platform.h"
 #include "cppinit.h"
 
+#ifndef LINUX
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
 extern "C" __attribute__((section(".startup"), used, noreturn))
@@ -44,3 +46,4 @@ void startup_c_entry(unsigned self_flashing)
   _start(self_flashing);
 }
 
+#endif
