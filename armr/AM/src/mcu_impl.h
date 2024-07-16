@@ -13,6 +13,10 @@
   #include "hwuart_am.h"
 #endif
 
+#ifdef HWUSCOUNTER_H_
+  #include "hwuscounter_am.h"
+#endif
+
 #ifdef HWSPI_H_
   //#include "hwspi_am.h"
 #endif
