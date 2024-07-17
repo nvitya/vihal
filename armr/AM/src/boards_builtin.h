@@ -20,6 +20,8 @@
   #define MCU_AM2434
   #define EXTERNAL_XTAL_HZ     48000000
 
+  #define MCU_FIXED_SPEED     800000000
+
 #else
 
   #error "Unknown board."

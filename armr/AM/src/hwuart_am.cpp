@@ -76,7 +76,8 @@ bool THwUart_am::Init(int adevnum)
 
   periphclock = 48000000;
 
-  regs->MCR = 0; // disable auto-flow
+  // note: writing 0xBF to LCR activates the Configuration B, see the chapter "12.1.5.4.7.1.1 Operational Mode and Configuration Modes"
+
   regs->LCR = (0
     | (3  <<  0)  // DATALEN(2): 0 = 5-bit, 1 = 6-bit, 2 = 7-bit, 3 = 8-bit
     | (0  <<  2)  // STOPLEN: 0 = 1 stop bit, 1 = 2 stop bits
@@ -87,13 +88,15 @@ bool THwUart_am::Init(int adevnum)
     | (1  <<  7)  // DIVISOR_LATCH_ACCESS: 1 = access the divisor latches
   );
 
-  regs->FCR_IIR = (0
+  regs->MCR = 0; // disable auto-flow
+
+  regs->FCR_IIR_EFR = (0
     | (1  <<  0)  // FIFO_EN
     | (1  <<  1)  // RCVR_FIFO_RST
     | (1  <<  2)  // XMIT_FIFO_RST
     | (0  <<  3)  // DMA_MODE: 0 = single DMA transfers, 1 = multi DMA transfers
-    | (0  <<  4)  // TX_EMPTY(2): 0 = FIFO empty, 1 = 2 chars, 2 = 1/4, 3 = 1/2
-    | (0  <<  6)  // RCVR_TRIGGER(2): 0 = 1 char, 1 = 1/4, 2 = 1/2, 3 = 2 char less full
+    | (0  <<  4)  // TX_FIFO_TRIG(2): 0 = 8 bytes
+    | (0  <<  6)  // RX_FIFO_TRIG(2): 0 = 8 bytes
   );
 
   SetBaudRate(baudrate);
@@ -122,6 +125,9 @@ bool THwUart_am::SetBaudRate(int abaudrate)
 
 bool THwUart_am::TrySendChar(char ach)
 {
+  if (regs->SSR) {}  // at higher optimization level, the fifo full flag seems to be delayed
+                     // this extra read causes enough delay
+
   if (regs->SSR & (1 << 0)) // transmitter FIFO full?
   {
     return false;

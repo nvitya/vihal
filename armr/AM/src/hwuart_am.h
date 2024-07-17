@@ -36,7 +36,7 @@ typedef struct
 {
   volatile uint32_t     RBR_THR_DLL;     // 0x00  Receive Buffer,Transmit Holding or Divisor Latch Low byte Register
   volatile uint32_t     IER_DLH;         // 0x04  Interrupt Enable or Divisor Latch high byte Register
-  volatile uint32_t     FCR_IIR;         // 0x08  FIFO Control or Interrupt Identification Register
+  volatile uint32_t     FCR_IIR_EFR;     // 0x08  FIFO Control or Interrupt Identification Register
   volatile uint32_t     LCR;             // 0x0C  Line Control Register
   volatile uint32_t     MCR;             // 0x10  Modem control register
   volatile uint32_t     LSR;             // 0x14  line status register

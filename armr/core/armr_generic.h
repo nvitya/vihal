@@ -62,6 +62,22 @@ inline void __attribute__((always_inline)) mcu_enable_fpu()
 {
 }
 
+inline void __attribute__((always_inline)) mcu_enable_icache()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_enable_dcache()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_disable_icache()
+{
+}
+
+inline void __attribute__((always_inline)) mcu_disable_dcache()
+{
+}
+
 inline unsigned __get_PRIMASK()
 {
   return 0;
