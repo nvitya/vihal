@@ -13,6 +13,10 @@
   #include "hwuscounter_bcm.h"
 #endif
 
+#ifdef HWUART_H_
+  #include "hwuart_bcm.h"
+#endif
+
 #ifdef HWSPI_H_
   //#include "hwspi_am.h"
 #endif

@@ -180,15 +180,7 @@ void TGpioPin_bcm::Toggle()
 
 void TGpioPin_bcm::SwitchDirection(int adirection)
 {
-  uint32_t func;
-	if (adirection)
-	{
-		func = 1;
-	}
-	else
-	{
-		func = 0;
-	}
+  uint32_t func = (adirection & 1);
 	uint32_t ridx   = (pinnum / 10);
 	uint32_t bshift = (pinnum % 10) * 3;
 	uint32_t tmp = regs->FSEL[ridx];

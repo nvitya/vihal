@@ -27,6 +27,9 @@ struct systimer_regs_t
 #define HW_GPIO_BASE          0x7E200000
 #define HW_GPIO_MAX_PINS      58
 
+#define HWUART_BASE_ADDRESS   0x7E201000
+#define HWDMA_BASE_ADDRESS    0x7E007000
+
 // clocks
 
 #define CLOCKCNT_SPEED           1000000
