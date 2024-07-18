@@ -1,7 +1,7 @@
 /*
- *  file:     am355x.h
- *  brief:    AM355x definitions
- *  date:     2024-06-29
+ *  file:     bcm2711_vihal.h
+ *  brief:    BCM2711 VIHAL definitions
+ *  date:     2024-07-18
  *  authors:  nvitya
 */
 
@@ -22,9 +22,10 @@ struct systimer_regs_t
 
 // TODO: handle legacy / normal addresses  (0x7E.. / 0xFE..)
 
-#define HW_SYSTIMER_BASE      0xFE003000
+#define HW_SYSTIMER_BASE      0x7E003000
 
-#define HW_GPIO_BASE          0xFE215000
+#define HW_GPIO_BASE          0x7E200000
+#define HW_GPIO_MAX_PINS      58
 
 // clocks
 

@@ -1,7 +1,7 @@
 /*
  *  file:     hwpins_bcm.h
  *  brief:    Broadcom Pin/Pad and GPIO configuration
- *  date:     2024-07-17
+ *  date:     2024-07-18
  *  authors:  nvitya
 */
 
@@ -15,31 +15,21 @@
 
 struct gpio_regs_t  // gpio register definition for the BCM2711
 {
-	volatile uint32_t   REVISION;           // 000
-	uint32_t   _pad_004[(0x010-0x004)/4];   // 004
-	volatile uint32_t   SYSCONFIG;          // 010
-	uint32_t   _pad_014[(0x020-0x014)/4];   // 014
-	volatile uint32_t   EOI;                // 020
-	volatile uint32_t   IRQSTATUS_RAW[2];   // 024
-	volatile uint32_t   IRQSTATUS[2];       // 02C
-	volatile uint32_t   IRQSTATUS_SET[2];   // 034
-	volatile uint32_t   IRQSTATUS_CLR[2];   // 03C
-	volatile uint32_t   IRQWAKEN[2];        // 044
-	uint32_t   _pad_04C[(0x114-0x04C)/4];   // 04C
-	volatile uint32_t   SYSSTATUS;          // 114
-	uint32_t   _pad_118[(0x130-0x118)/4];   // 118
-	volatile uint32_t   CTRL;               // 130
-	volatile uint32_t   OE;                 // 134
-	volatile uint32_t   DATAIN;             // 138
-	volatile uint32_t   DATAOUT;            // 13C
-	volatile uint32_t   LEVELDETECT[2];     // 140
-	volatile uint32_t   RISINGDETECT;       // 148
-	volatile uint32_t   FALLINGDETECT;      // 14C
-	volatile uint32_t   DEBOUNCENABLE;      // 150
-	volatile uint32_t   DEBOUNCINGTIME;     // 154
-	uint32_t   _pad_158[(0x190-0x158)/4];   // 158
-	volatile uint32_t   CLEARDATAOUT;       // 190
-	volatile uint32_t   SETDATAOUT;         // 194
+	//  here the +1 are for padding only, they do not belong to the registers actually
+
+	volatile uint32_t   FSEL[6+1];        // 00  Function select
+	volatile uint32_t   SET[2+1];         // 1C  Pin output set
+	volatile uint32_t   CLR[2+1];         // 28  Pin output clear
+	volatile uint32_t   LEV[2+1];         // 34  Pin level
+	volatile uint32_t   EDS[2+1];         // 40  Event detect status
+	volatile uint32_t   REN[2+1];         // 4C  Rising Edge Detect Enable
+	volatile uint32_t   FEN[2+1];         // 58  Falling Edge Detect Enable
+	volatile uint32_t   HEN[2+1];         // 64  High Detect Enable
+	volatile uint32_t   LEN[2+1];         // 70  Low Detect Enable
+	volatile uint32_t   AREN[2+1];        // 7C  Async. Rising Edge Detect Enable
+	volatile uint32_t   AFEN[2+1];        // 88  Async. Falling Edge Detect Enable
+	uint32_t   _pad_8C[(0xE4-0x8C)/4];    // 8C
+	volatile uint32_t   PUP_PDN_CNTRL[4]; // E4  Pull-up / Pull-down control register
 };
 
 class THwPinCtrl_bcm : public THwPinCtrl_pre

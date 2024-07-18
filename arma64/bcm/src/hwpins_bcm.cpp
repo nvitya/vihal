@@ -20,82 +20,69 @@ gpio_regs_t * THwPinCtrl_bcm::GetGpioRegs()
 
 bool THwPinCtrl_bcm::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
-#if 0
-	if ((aportnum < 0) || (aportnum >= HW_GPIO_COUNT))
+	if ((apinnum < 0) || (apinnum >= HW_GPIO_MAX_PINS))
 	{
 		return false;
 	}
 
-	uint32_t * confreg = GetConfReg(aconfreg_offs);
-	if (!confreg)
+	gpio_regs_t *  regs = GetGpioRegs();
+	if (!regs)
 	{
 		return false;
 	}
 
-  uint32_t padcfg = (0
-    | (0  <<  6)  // SLEWCTRL: 0 = Fast, 1 = Slow
-    | (0  <<  5)  // RX_ACTIVE: 0 = receiver disabled, 1 = receiver enabled
-    | (0  <<  4)  // PUTYPESEL: 0 = pulldown, 1 = pullup
-    | (0  <<  3)  // PUDEN: 0 = enable pullup/pulldown, 1 = disable pullup/pulldown
-    | (0  <<  0)  // MMODE(3): af function select
-  );
+  uint32_t tmp, ridx, bshift;
 
+  // 1. pull-up/down setup
+
+  uint32_t pudcode = 0;
   if (flags & PINCFG_PULLUP)
   {
-    padcfg |= (1 << 4);
+    pudcode = 1;
   }
-
-  if (flags & PINCFG_PULLDOWN)
+  else if (flags & PINCFG_PULLDOWN)
   {
-    // leave it as is
+    pudcode = 2;
   }
+  ridx   = (apinnum >> 4);
+  bshift = (apinnum & 0xF) << 1;
+  tmp = regs->PUP_PDN_CNTRL[ridx];
+  tmp &= ~(3 << bshift);
+  tmp |= (pudcode << bshift);
+  regs->PUP_PDN_CNTRL[ridx] = tmp;
 
-  if (0 == (flags & (PINCFG_PULLDOWN | PINCFG_PULLUP)))
-  {
-    padcfg |= (1 << 3);  // disable pulldown
-  }
+  // 2. Function Setup
 
-  padcfg |= (1 << 5); // activate RX (input)
-
-  if (flags & PINCFG_SPEED_SLOW)
-  {
-    padcfg |= (1 << 6);
-  }
-
+  uint32_t func = 0;
   if (flags & PINCFG_AF_MASK)
   {
-    padcfg |= ((flags >> PINCFG_AF_SHIFT) & 0x7);
+    func = ( (2 + (flags >> PINCFG_AF_SHIFT)) & 0x7 );
   }
   else // GPIO
   {
-  	THwGpioRegs * regs = GetGpioRegs(agpio >> 8);
-    if (regs)
-    {
-      uint32_t pinmask = (1 << (agpio & 0x1F));
-      if (flags & PINCFG_OUTPUT)
-      {
-        if (flags & PINCFG_GPIO_INIT_1)
-        {
-          regs->SETDATAOUT = pinmask;
-        }
-        else
-        {
-          regs->CLEARDATAOUT = pinmask;
-        }
-        regs->OE &= ~pinmask;
-      }
-      else
-      {
-        regs->OE |= pinmask;
-      }
-
-      padcfg |= 7; // AF7 = GPIO
-    }
+		if (flags & PINCFG_OUTPUT)
+		{
+			func = 1;
+			if (flags & PINCFG_GPIO_INIT_1)
+			{
+				regs->SET[apinnum >> 5] = (1 << (apinnum & 0x1F));
+			}
+			else
+			{
+				regs->CLR[apinnum >> 5] = (1 << (apinnum & 0x1F));
+			}
+		}
+		else
+		{
+			func = 0;
+		}
   }
-
-  *confreg = padcfg;
-
-#endif
+	ridx   = (apinnum / 10);
+	bshift = (apinnum % 10) * 3;
+	tmp = regs->FSEL[ridx];
+	tmp &= ~(7 << bshift);
+	tmp |= (func << bshift);
+	regs->FSEL[ridx] = tmp;
 
   return true;
 }
@@ -113,24 +100,27 @@ void THwPinCtrl_bcm::GpioSet(int aportnum, int apinnum, int value)
 		return;
 	}
 
+	uint32_t regidx  = (apinnum >> 5);
+	uint32_t bitmask = (1 << (apinnum & 0x1F));
+
   if (1 == value)
   {
-  	regs->SETDATAOUT = (1 << apinnum);
+		regs->SET[regidx] = bitmask;
   }
   else if (value & 2) // toggle
   {
-  	if (regs->DATAOUT & (1 << apinnum))
+  	if (regs->LEV[regidx] & bitmask)
   	{
-  		regs->CLEARDATAOUT = (1 << apinnum);
+  		regs->CLR[regidx] = bitmask;
   	}
   	else
   	{
-    	regs->SETDATAOUT = (1 << apinnum);
+  		regs->SET[regidx] = bitmask;
   	}
   }
   else
   {
-  	regs->CLEARDATAOUT = (1 << apinnum);
+		regs->CLR[regidx] = bitmask;
   }
 }
 
@@ -155,22 +145,23 @@ void TGpioPin_bcm::Assign(int aportnum, int apinnum, bool ainvert)
 		return;
 	}
 
-  getbitshift = apinnum;
-	setbitvalue = (1 << apinnum);
+	uint32_t regidx  = (apinnum >> 5);
+  getbitshift = (apinnum & 0x1F);
+	setbitvalue = (1 << getbitshift);
 	clrbitvalue = setbitvalue;
 
-  getbitptr = (unsigned *)&(regs->DATAIN);
-  getoutbitptr = (unsigned *)&(regs->DATAOUT);
+  getbitptr = (unsigned *)&(regs->LEV[regidx]);
+  getoutbitptr = (unsigned *)&(regs->LEV[regidx]);
 
   if (ainvert)
   {
-    setbitptr = (unsigned *)&(regs->CLEARDATAOUT);
-    clrbitptr = (unsigned *)&(regs->SETDATAOUT);
+    setbitptr = (unsigned *)&(regs->CLR[regidx]);
+    clrbitptr = (unsigned *)&(regs->SET[regidx]);
   }
   else
   {
-    setbitptr = (unsigned *)&(regs->SETDATAOUT);
-    clrbitptr = (unsigned *)&(regs->CLEARDATAOUT);
+    setbitptr = (unsigned *)&(regs->SET[regidx]);
+    clrbitptr = (unsigned *)&(regs->CLR[regidx]);
   }
 }
 
@@ -189,12 +180,19 @@ void TGpioPin_bcm::Toggle()
 
 void TGpioPin_bcm::SwitchDirection(int adirection)
 {
+  uint32_t func;
 	if (adirection)
 	{
-		regs->OE &= ~setbitvalue;
+		func = 1;
 	}
 	else
 	{
-		regs->OE |= setbitvalue;
+		func = 0;
 	}
+	uint32_t ridx   = (pinnum / 10);
+	uint32_t bshift = (pinnum % 10) * 3;
+	uint32_t tmp = regs->FSEL[ridx];
+	tmp &= ~(7 << bshift);
+	tmp |= (func << bshift);
+	regs->FSEL[ridx] = tmp;
 }
