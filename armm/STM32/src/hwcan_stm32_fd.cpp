@@ -488,6 +488,14 @@ uint32_t THwCan_stm32::ReadPsr()  // updates the CAN error counters
 	{
 		++errcnt_crc;
 	}
+	else if (4 == lec)
+	{
+		++errcnt_bit1;
+	}
+	else if (5 == lec)
+	{
+		++errcnt_bit0;
+	}
 
 	return psr;
 }
