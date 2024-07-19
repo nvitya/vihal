@@ -41,6 +41,7 @@
 class THwI2cSlave_stm32 : public THwI2cSlave_pre
 {
 public:
+	uint8_t        runstate = 0;
 	I2C_TypeDef *  regs = nullptr;
 
 	bool InitHw(int adevnum);
@@ -49,12 +50,6 @@ public:
 
 	void Run();
 
-	unsigned       runstate = 0;
-	uint8_t        devaddr = 0;
-	uint8_t        extradata[4];
-	unsigned       extracnt = 0;
-	unsigned       extraremaining = 0;
-	bool           waitreload = false;
 };
 
 #define HWI2CSLAVE_IMPL THwI2cSlave_stm32

@@ -40,21 +40,12 @@ class THwI2cSlave_pre
 {
 public:	// settings
 	bool 					   initialized = false;
-
-	int      			   devnum = -1;
-
+	int8_t   			   devnum = -1;
 	uint8_t          address     = 0x7F;
 	uint8_t          addressmask = 0x00;   // 1 bits = ignore
 
 public: // run state
 	bool             istx = false;
-	bool             dmaused = false;
-	uint8_t *        dataptr = nullptr;
-	unsigned         datalen = 0;
-	unsigned         remainingbytes = 0;
-
-	bool             busy = false;
-	int              error = 0;
 
 public:
 	virtual          ~THwI2cSlave_pre() { };  // to avoid compiler warning
