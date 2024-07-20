@@ -33,7 +33,7 @@
 
 #define HWUART_MAX   6
 
-uint8_t *  g_hwuart_mapped_regs[6] = {0};
+uint8_t *  g_hwuart_mapped_regs = nullptr;
 
 const uintptr_t hwuart_dev_offsets[6] = {0x000, 0xFFFF, 0x400, 0x600, 0x800, 0xA00};
 
@@ -55,7 +55,9 @@ bool THwUart_bcm::Init(int adevnum)  // devnum: 0, 2, 3, 4, 5 , (UART1 is mini-u
 		return false;
 	}
 
-	regs = (uart_regs_t *)map_hw_addr(HWUART_BASE_ADDRESS + devoffs, sizeof(uart_regs_t), (void * *)&g_hwuart_mapped_regs);
+	uint8_t * uart_block = (uint8_t *)map_hw_addr(HWUART_BASE_ADDRESS, 0x1000, (void * *)&g_hwuart_mapped_regs);
+
+	regs = (uart_regs_t *)(uart_block + devoffs);
 
 	dr_dma_address = ((HWUART_BASE_ADDRESS + devoffs) & 0x7FFFFFFF);
 

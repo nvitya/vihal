@@ -56,7 +56,10 @@ bool THwPinCtrl_bcm::PinSetup(int aportnum, int apinnum, unsigned flags)
   uint32_t func = 0;
   if (flags & PINCFG_AF_MASK)
   {
-    func = ( (2 + (flags >> PINCFG_AF_SHIFT)) & 0x7 );
+  	uint32_t afno = ((flags >> PINCFG_AF_SHIFT) & 0x7);
+  	uint32_t afcoding = 0x00237654;  // decoding table for the special function coding (the last two is invalid)
+
+    func = (afcoding >> (afno << 2)) & 0x7;
   }
   else // GPIO
   {
