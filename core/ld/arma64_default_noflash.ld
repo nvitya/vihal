@@ -18,11 +18,12 @@ if some regions missing they must be presented as alias like:
 
 */
 
-OUTPUT_ARCH(riscv)
+OUTPUT_FORMAT("elf64-littleaarch64", "elf64-bigaarch64", "elf64-littleaarch64")
+OUTPUT_ARCH(aarch64)
 
 INCLUDE vihal_stack_predef.ld
 
-ENTRY(_soft_entry)
+ENTRY(soft_entry)
 
 SECTIONS
 {

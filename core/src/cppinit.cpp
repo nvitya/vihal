@@ -32,30 +32,30 @@
 
 #ifndef LINUX
 
-extern uint32_t __data_regions_array_start;
-extern uint32_t __data_regions_array_end;
+extern uintptr_t __data_regions_array_start;
+extern uintptr_t __data_regions_array_end;
 
-extern uint32_t __bss_regions_array_start;
-extern uint32_t __bss_regions_array_end;
+extern uintptr_t __bss_regions_array_start;
+extern uintptr_t __bss_regions_array_end;
 
 // ----------------------------------------------------------------------------
 
-inline void __attribute__((always_inline)) __initialize_data(uint32_t * from, uint32_t * region_begin, uint32_t * region_end)
+inline void __attribute__((always_inline)) __initialize_data(uintptr_t * from, uintptr_t * region_begin, uintptr_t * region_end)
 {
   // Iterate and copy word by word.
   // It is assumed that the pointers are word aligned.
-  uint32_t * p = region_begin;
+  uintptr_t * p = region_begin;
   while (p < region_end)
   {
     *p++ = *from++;
   }
 }
 
-inline void __attribute__((always_inline)) __initialize_bss(uint32_t * region_begin, uint32_t * region_end)
+inline void __attribute__((always_inline)) __initialize_bss(uintptr_t * region_begin, uintptr_t * region_end)
 {
   // Iterate and clear word by word.
   // It is assumed that the pointers are word aligned.
-  uint32_t * p = region_begin;
+  uintptr_t * p = region_begin;
   while (p < region_end)
   {
     *p++ = 0;
@@ -65,34 +65,34 @@ inline void __attribute__((always_inline)) __initialize_bss(uint32_t * region_be
 __attribute__((section(".startup")))
 void memory_region_setup(void)
 {
-  uint32_t * recp;
-  uint32_t * loadaddr;
-  uint32_t * destaddrbegin;
-  uint32_t * destaddrend;
+  uintptr_t * recp;
+  uintptr_t * loadaddr;
+  uintptr_t * destaddrbegin;
+  uintptr_t * destaddrend;
 
   // section initialization based on the .init section tables
 
   // 1. Copy preinitialized data sections
 
-  recp =  (uint32_t *)&__data_regions_array_start;
+  recp =  (uintptr_t *)&__data_regions_array_start;
   while (recp < &__data_regions_array_end)
   {
-    loadaddr = (uint32_t *)(intptr_t(*recp));
+    loadaddr = (uintptr_t *)(*recp);
     ++recp;
-    destaddrbegin = (uint32_t *)(intptr_t(*recp));
+    destaddrbegin = (uintptr_t *)(*recp);
     ++recp;
-    destaddrend = (uint32_t *)(intptr_t(*recp));
+    destaddrend = (uintptr_t *)(*recp);
     ++recp;
     __initialize_data(loadaddr, destaddrbegin, destaddrend);
   }
 
   // 2. Zero BSS data sections
-  recp =  (uint32_t *)&__bss_regions_array_start;
+  recp =  (uintptr_t *)&__bss_regions_array_start;
   while (recp < &__bss_regions_array_end)
   {
-    destaddrbegin = (uint32_t *)(intptr_t(*recp));
+    destaddrbegin = (uintptr_t *)(*recp);
     ++recp;
-    destaddrend = (uint32_t *)(intptr_t(*recp));
+    destaddrend = (uintptr_t *)(*recp);
     ++recp;
     __initialize_bss(destaddrbegin, destaddrend);
   }
