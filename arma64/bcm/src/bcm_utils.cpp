@@ -2,7 +2,6 @@
 #include <bcm_utils.h>
 #include "platform.h"
 #include "stdint.h"
-#include "hw_utils.h"
 
 #if 0
 

@@ -14,9 +14,9 @@
 // TI AM
 //-------------------------------------------------------------------------------------------------
 
-#elif defined(BOARD_RPI_4)
+#elif defined(BOARD_RPI4_2G)
 
-  #define BOARD_NAME "Raspberry Pi 4 (BCM2711)"
+  #define BOARD_NAME "Raspberry Pi 4 (BCM2711) 2G"
   #define MCU_BCM2711
 
 #else
