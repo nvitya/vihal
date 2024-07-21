@@ -98,46 +98,35 @@ void memory_region_setup(void)
   }
 }
 
+// linker symbols, their value is invalid, only their addresses can be used !
 
-// These magic symbols are provided by the linker.
-extern void (*__preinit_array_start[]) (void) __attribute__((weak));
-extern void (*__preinit_array_end[]) (void) __attribute__((weak));
-extern void (*__init_array_start[]) (void) __attribute__((weak));
-extern void (*__init_array_end[]) (void) __attribute__((weak));
+extern uintptr_t __preinit_array_start;
+extern uintptr_t __preinit_array_end;
+extern uintptr_t __init_array_start;
+extern uintptr_t __init_array_end;
 
-// Iterate over all the preinit/init routines (mainly static constructors).
+typedef void (init_array_func_t)(void);
+
 __attribute__((section(".startup"), used))
-void __run_init_array (void)
+void __run_init_func_array(uintptr_t * pstart, uintptr_t * pend)
 {
-  int count;
-  int i;
-
-  count = __preinit_array_end - __preinit_array_start;
-  for (i = 0; i < count; i++)
-	{
-    __preinit_array_start[i] ();
-	}
-
-  // If you need to run the code in the .init section, please use
-  // the startup files, since this requires the code in crti.o and crtn.o
-  // to add the function prologue/epilogue.
-  //_init(); // DO NOT ENABE THIS!
-
-  count = __init_array_end - __init_array_start;
-  for (i = 0; i < count; i++)
-	{
-    __init_array_start[i]();
-	}
+  while (pstart < pend)
+  {
+    init_array_func_t * pfunc = (init_array_func_t *)(*pstart);
+    (*pfunc)();
+    ++pstart;
+  }
 }
 
 __attribute__((section(".startup"), used))
 void cppinit(void)
 {
-	// section initialization based on the .init section tables
+  // section initialization based on the .init section tables
 
   // Call the standard library initialisation (mandatory for C++ to
   // execute the constructors for the static objects).
-  __run_init_array();
+  __run_init_func_array(&__preinit_array_start, &__preinit_array_end);
+  __run_init_func_array(&__init_array_start,    &__init_array_end);
 }
 
 #endif

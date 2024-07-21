@@ -48,7 +48,6 @@ public:
 
 public:
 	gpio_regs_t *    mapped_gpio_regs = nullptr;
-	uint8_t *        mm_cmodule = nullptr;  // uint8_t because the offsets are specified in bytes
 };
 
 class TGpioPin_bcm : public TGpioPin_common
