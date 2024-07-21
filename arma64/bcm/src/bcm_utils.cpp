@@ -37,7 +37,7 @@ void am_enable_per(uint32_t acmregoffs, bool aenable)
 
 void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar)
 {
-	if (0x70000000 == (aaddr & 0xF0000000))  // convert to legacy address on linux
+	if (0x70000000 == (aaddr & 0xF0000000))  // convert to low peripheral address
 	{
 		aaddr |= 0x80000000;
 	}
@@ -68,6 +68,11 @@ void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar)
   if (*aptrvar) // is already set ?
   {
   	return *aptrvar;
+  }
+
+  if (0x70000000 == (aaddr & 0xF0000000))  // convert to low peripheral address
+  {
+    aaddr |= 0x80000000;
   }
 
   *aptrvar = (void *)aaddr;
