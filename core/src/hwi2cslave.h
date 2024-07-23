@@ -54,6 +54,7 @@ public:
 	virtual void     OnAddressRw(uint8_t aaddress)    { }; // must be overridden, warning: IRQ context !
 	virtual uint8_t  OnTransmitRequest()              { return 0; }; // must be overridden, warning: IRQ context !
 	virtual void     OnByteReceived(uint8_t adata)    { }; // must be overridden, warning: IRQ context !
+	virtual void     OnStopDetected()                 { }; // must be overridden, warning: IRQ context !
 };
 
 #endif // ndef HWI2CSLAVE_H_PRE_

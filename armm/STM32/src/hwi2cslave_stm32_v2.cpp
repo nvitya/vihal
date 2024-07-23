@@ -177,7 +177,12 @@ void THwI2cSlave_stm32::HandleIrq()
 	{
 		// this is normal
 		regs->ICR = I2C_ISR_NACKF;
-		//isr &= ~I2C_ISR_NACKF;
+	}
+
+	if (isr & I2C_ISR_ARLO) // arbitration lost?
+	{
+		// this is normal
+		regs->ICR = I2C_ISR_ARLO;
 	}
 
 	// other errors
@@ -253,6 +258,7 @@ void THwI2cSlave_stm32::HandleIrq()
 	{
 		//TRACE(" STOP DETECTED.\r\n");
 		regs->ICR = I2C_ISR_STOPF;
+		OnStopDetected();
 	}
 }
 
