@@ -63,6 +63,11 @@ inline void __attribute__((always_inline)) mcu_init_vector_table()
 
 inline void __attribute__((always_inline)) mcu_enable_fpu()
 {
+  // disable coprocessor traps:
+  asm volatile("mrs    x1, cpacr_el1");
+  asm volatile("mov    x0, #(3 << 20)");
+  asm volatile("orr    x0, x1, x0");
+  asm volatile("msr    cpacr_el1, x0");
 }
 
 inline void __attribute__((always_inline)) mcu_enable_icache()

@@ -41,6 +41,6 @@ uint64_t clockcnt_get(void);
 #define CLOCKCNT           clockcnt_get()
 #define CLOCKCNT_BITS      64
 
-#define PMUCLKCNT          clockcnt_pmu_get()
+#define PMUCLKCNT          clockcnt_pmu_get()  // speed varies with the frequency scaling of the linux cores!
 
 #endif /* CLOCKCNT_BCM_H_ */
