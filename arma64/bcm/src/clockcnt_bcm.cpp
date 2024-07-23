@@ -64,19 +64,25 @@ void clockcnt_pmu_init()
 {
 	uint64_t val;
 
-// these two must be done in kernel:
-	/* Disable cycle counter overflow interrupt */
-	//asm volatile("msr pmintenset_el1, %0" : : "r" ((uint64_t)(0 << 31)));
+  #ifndef LINUX
+    // these two must be done in kernel:
+    /* Disable cycle counter overflow interrupt */
+    asm volatile("msr pmintenset_el1, %0" : : "r" ((uint64_t)(0 << 31)));
 
-	/* Enable user-mode access to cycle counters. */
-	//asm volatile("msr pmuserenr_el0, %0" :: "r" ((1 << 0) | (1 << 2)));
+    /* Enable user-mode access to cycle counters. */
+    asm volatile("msr pmuserenr_el0, %0" :: "r" ((1 << 0) | (1 << 2)));
+  #endif
 
 	/* Enable cycle counter */
 	asm volatile("msr pmcntenset_el0, %0" :: "r" (1 << 31));
 
-	/* Start cycle counter, do not resetand start */
+	/* Start cycle counter, do not reset and start */
 	asm volatile("mrs %0, pmcr_el0" : "=r" (val));
-	val |= ((1 << 0)); // | (1 << 2));
+  #ifndef LINUX
+	  val |= ((1 << 0) | (1 << 2));  // with reset on Bare-Metal
+  #else
+	  val |= ((1 << 0)); // without reset on Linux
+  #endif
 	asm volatile("isb");
 	asm volatile("msr pmcr_el0, %0" :: "r" (val));
 

@@ -31,7 +31,11 @@
 
 #include "platform.h"
 
-#define clockcnt_t unsigned
+#if CLOCKCNT_BITS > 32
+  typedef uint64_t clockcnt_t;
+#else
+  typedef uint32_t clockcnt_t;
+#endif
 
 #ifndef CLOCKCNT
   #error "Define CLOCKCNT !"
