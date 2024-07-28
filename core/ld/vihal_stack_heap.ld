@@ -5,7 +5,7 @@ PROVIDE ( _end = _end_noinit );
 PROVIDE ( __end = _end_noinit );
 PROVIDE ( __end__ = _end_noinit );
 
-._check_stack : ALIGN(4)
+._check_stack : ALIGN(16)
 {
     . = . + _Minimum_Stack_Size ;
 } > RAM

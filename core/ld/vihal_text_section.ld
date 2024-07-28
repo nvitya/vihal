@@ -3,7 +3,7 @@
 KEEP(*(.init))
 KEEP(*(.fini))
 
-. = ALIGN(4);
+. = ALIGN(8);
 
 PROVIDE_HIDDEN (__preinit_array_start = .);
 KEEP(*(.preinit_array_sysinit .preinit_array_sysinit.*))
@@ -11,14 +11,14 @@ KEEP(*(.preinit_array_platform .preinit_array_platform.*))
 KEEP(*(.preinit_array .preinit_array.*))
 PROVIDE_HIDDEN (__preinit_array_end = .);
 
-. = ALIGN(4);
+. = ALIGN(8);
 
 PROVIDE_HIDDEN (__init_array_start = .);
 KEEP(*(SORT(.init_array.*)))
 KEEP(*(.init_array))
 PROVIDE_HIDDEN (__init_array_end = .);
 
-. = ALIGN(4);
+. = ALIGN(8);
 
 PROVIDE_HIDDEN (__fini_array_start = .);
 KEEP(*(SORT(.fini_array.*)))
@@ -49,7 +49,7 @@ KEEP(*(.eh_frame*))
 *(.glue_7) *(.glue_7t)
 *(.gcc_except_table)
 
-. = ALIGN(4);
+. = ALIGN(8);
 KEEP (*crtbegin.o(.ctors))
 KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
 KEEP (*(SORT(.ctors.*)))
