@@ -1,4 +1,6 @@
-__stack = ORIGIN(RAM) + LENGTH(RAM);
+__stack = ORIGIN(RAM) + LENGTH(RAM) ;
+PROVIDE( __stack = __stack );
+
 __Main_Stack_Size = 1024 ;
 
 PROVIDE ( _Main_Stack_Size = __Main_Stack_Size ) ;
