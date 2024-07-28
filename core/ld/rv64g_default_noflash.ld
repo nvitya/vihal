@@ -26,18 +26,18 @@ ENTRY(_soft_entry)
 
 SECTIONS
 {
-  .app_header : ALIGN(4)  /* application header (32 byte) for the bootloader, might not exist */
+  .app_header : ALIGN(8)  /* application header (32 byte) for the bootloader, might not exist */
   {
     KEEP(*(.application_header))
   } > TEXT
 
-  .resetentry : ALIGN(4)
+  .resetentry : ALIGN(8)
   {
     KEEP(*(.resetentry))
     KEEP(*(.startup))
   } > TEXT
 
-  .inits : ALIGN(4)
+  .inits : ALIGN(8)
   {
     /* DATA COPY REGIONS */
 
@@ -67,10 +67,10 @@ SECTIONS
 
   } > TEXT
 
-  .text_ITCRAM  : ALIGN(4)  { *(.text_ITCRAM) } > ITCRAM  AT > TEXT
-  .text_DTCRAM  : ALIGN(4)  { *(.text_DTCRAM) } > DTCRAM  AT > TEXT
-  .text_RAM2    : ALIGN(4)  { *(.text_RAM2) }   > RAM2    AT > TEXT
-  .text : ALIGN(4)
+  .text_ITCRAM  : ALIGN(8)  { *(.text_ITCRAM) } > ITCRAM  AT > TEXT
+  .text_DTCRAM  : ALIGN(8)  { *(.text_DTCRAM) } > DTCRAM  AT > TEXT
+  .text_RAM2    : ALIGN(8)  { *(.text_RAM2) }   > RAM2    AT > TEXT
+  .text : ALIGN(8)
   {
     INCLUDE vihal_text_section.ld
 
@@ -82,40 +82,40 @@ SECTIONS
     KEEP(*(.resource_table));
   } > TEXT
 
-  . = ALIGN(4);
+  . = ALIGN(8);
   _etext = .;
   __etext = .;
 
-  .data_DTCRAM  : ALIGN(4)  { *(.data_DTCRAM) } > DTCRAM  AT > TEXT
-  .data_ITCRAM  : ALIGN(4)  { *(.data_ITCRAM) } > ITCRAM  AT > TEXT
-  .data_RAM2    : ALIGN(4)  { *(.data_RAM2) }   > RAM2    AT > TEXT
-  .data : ALIGN(4)
+  .data_DTCRAM  : ALIGN(8)  { *(.data_DTCRAM) } > DTCRAM  AT > TEXT
+  .data_ITCRAM  : ALIGN(8)  { *(.data_ITCRAM) } > ITCRAM  AT > TEXT
+  .data_RAM2    : ALIGN(8)  { *(.data_RAM2) }   > RAM2    AT > TEXT
+  .data : ALIGN(8)
   {
     INCLUDE vihal_data_section.ld
-    . = ALIGN(4);
+    . = ALIGN(8);
   } > RAM AT > TEXT
 
   __app_image_end = LOADADDR(.data) + SIZEOF(.data);
 
   __global_pointer$ = ADDR(.data) + 0x800;
 
-  .bss_DTCRAM (NOLOAD) : ALIGN(4) { *(.bss_DTCRAM) } > DTCRAM
-  .bss_ITCRAM (NOLOAD) : ALIGN(4) { *(.bss_ITCRAM) } > ITCRAM
-  .bss_RAM2   (NOLOAD) : ALIGN(4) { *(.bss_RAM2) }   > RAM2
-  .bss (NOLOAD) : ALIGN(4)
+  .bss_DTCRAM (NOLOAD) : ALIGN(8) { *(.bss_DTCRAM) } > DTCRAM
+  .bss_ITCRAM (NOLOAD) : ALIGN(8) { *(.bss_ITCRAM) } > ITCRAM
+  .bss_RAM2   (NOLOAD) : ALIGN(8) { *(.bss_RAM2) }   > RAM2
+  .bss (NOLOAD) : ALIGN(8)
   {
     INCLUDE vihal_bss_section.ld
 
   } > RAM
 
-  .noinit_DTCRAM (NOLOAD) : ALIGN(4)  { *(.noinit_DTCRAM) } > DTCRAM
-  .noinit_ITCRAM (NOLOAD) : ALIGN(4)  { *(.noinit_ITCRAM) } > ITCRAM
-  .noinit_RAM2   (NOLOAD) : ALIGN(4)  { *(.noinit_RAM2) }   > RAM2
-  .noinit (NOLOAD) : ALIGN(4)
+  .noinit_DTCRAM (NOLOAD) : ALIGN(8)  { *(.noinit_DTCRAM) } > DTCRAM
+  .noinit_ITCRAM (NOLOAD) : ALIGN(8)  { *(.noinit_ITCRAM) } > ITCRAM
+  .noinit_RAM2   (NOLOAD) : ALIGN(8)  { *(.noinit_RAM2) }   > RAM2
+  .noinit (NOLOAD) : ALIGN(8)
   {
     _noinit = .;
     *(.noinit .noinit.*)
-    . = ALIGN(4) ;
+    . = ALIGN(8) ;
     _end_noinit = .;
   } > RAM
 
