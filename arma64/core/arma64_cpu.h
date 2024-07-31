@@ -33,6 +33,35 @@
 #define MCU_ARMA64
 #define CPU_ARMA64
 
+typedef struct
+{
+  uint64_t  fp;   //   0 = x29 = frame pointer
+  uint64_t  lr;   //   8 = x30 = link register
+  uint64_t  x0;   //  16
+  uint64_t  x1;
+  uint64_t  x2;   //  32
+  uint64_t  x3;
+  uint64_t  x4;   //  48
+  uint64_t  x5;
+  uint64_t  x6;   //  64
+  uint64_t  x7;
+  uint64_t  x8;   //  80
+  uint64_t  x9;
+  uint64_t  x10;  //  96
+  uint64_t  x11;
+  uint64_t  x12;  // 112
+  uint64_t  x13;
+  uint64_t  x14;  // 128
+  uint64_t  x15;
+  uint64_t  x16;  // 144
+  uint64_t  x17;
+  uint64_t  x18;  // 160
+  uint64_t  xzr;
+  uint64_t  esr;  // 176
+  uint64_t  far;
+//
+} TInterruptFrame; // 192 bytes
+
 #define __DSB()
 
 inline void __attribute__((always_inline)) mcu_interrupts_disable()
