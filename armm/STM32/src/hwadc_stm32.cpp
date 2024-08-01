@@ -775,8 +775,13 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 		return false;
 	}
 
-	// DMA (requires
-	dmach.Init(1, 1, 0); // it has a fixed channel
+	// DMA
+  #if defined(MCUSF_G0)
+		if (dmaalloc < 0)  dmaalloc = 0x103;
+	  dmach.Init((dmaalloc >> 8), dmaalloc & 15, 5);  // dma request 5 = ADC
+  #else
+  	dmach.Init(1, 1, 0); // it has a fixed channel
+  #endif
 	dmach.Prepare(false, (void *)&regs->DR, 0);
 
 	ADC1_COMMON->CCR = 0
@@ -785,12 +790,17 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 		| (1 << 22)  // VREFEN: internal reference enable
 	;
 
-	regs->CR = 0;
+	regs->CFGR2 = 0
+	  | (0 << 30)  // CLKMODE(2), 0 = ADCCLK (14 MHz), 1 = PCLK / 2, 2 = PCLK / 4
+	;
 
-	regs->CR = (1u << 31); // start calibration
-
+	regs->CR = 0; // disable the ADC
 	delay_us(10);
 
+	regs->CR |= (1 << 28);  // enable the internal voltage regulator first otherwise the calibration never finishes!
+	delay_us(10);
+	regs->CR |= (1u << 31); // start calibration
+	delay_us(10);
 	while (regs->CR & (1u << 31))
 	{
 		// wait until the calibration is ready
@@ -798,7 +808,7 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 
 	delay_us(10);
 
-	regs->CR = (1 << 0); // enable the ADC
+	regs->CR |= (1 << 0); // enable the ADC
 
 	delay_us(10);
 
@@ -827,10 +837,6 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 	  | (0 <<  2)  // SCANDIR: 0 = upward scan (ch. 0 -> 18), 1 = backward scan (ch. 18 -> 0)
 	  | (1 <<  1)  // DMACFG: 0 = one shot DMA mode, 1 = circular DMA mode
 	  | (1 <<  0)  // DMAEN: 1 = DMA enabled
-	;
-
-	regs->CFGR2 = 0
-	  | (0 << 30)  // CLKMODE(2), 0 = ADCCLK (14 MHz), 1 = PCLK / 2, 2 = PCLK / 4
 	;
 
 	adc_clock = 14000000; // dedicated internal clock

@@ -97,8 +97,17 @@ bool THwDmaChannel_stm32::Init(int admanum, int achannel, int arequest)  // adma
 	DMA1_CSELR->CSELR = csr;
 #endif
 
-#ifdef RCC_AHB1ENR_DMAMUX1EN
-  RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;
+
+
+#ifdef RCC_AHB1ENR_DMAMUXEN
+
+#endif
+
+#ifdef DMAMUX1_BASE
+	#ifdef RCC_AHB1ENR_DMAMUX1EN
+    RCC->AHB1ENR |= RCC_AHBENR_DMA1EN;
+  #endif
+  //RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;
   int muxch = (2 == dmanum ? 8 : 0) + chid;
   DMAMUX1[muxch].CCR = 0
     | ((arequest & 0x7F) <<  0)  // DMAREQ_ID(7): DMA request identification
