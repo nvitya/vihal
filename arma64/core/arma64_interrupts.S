@@ -71,9 +71,9 @@ sync_current_el_sp0:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 0
   bl exception_handler_c
@@ -93,9 +93,9 @@ irq_current_el_sp0:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 1
   bl irq_handler_c
@@ -115,9 +115,9 @@ fiq_current_el_sp0:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 2
   bl irq_handler_c
@@ -137,9 +137,9 @@ serror_current_el_sp0:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 3
   bl serror_handler_c
@@ -163,9 +163,9 @@ sync_current_el_spx:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 4
   bl exception_handler_c
@@ -185,9 +185,9 @@ irq_current_el_spx:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 5
   bl irq_handler_c
@@ -207,9 +207,9 @@ fiq_current_el_spx:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 6
   bl irq_handler_c
@@ -229,9 +229,9 @@ serror_current_el_spx:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 7
   bl serror_handler_c
@@ -255,9 +255,9 @@ sync_lower_el_aarch64:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 8
   bl exception_handler_c
@@ -277,9 +277,9 @@ irq_lower_el_aarch64:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 9
   bl irq_handler_c
@@ -299,9 +299,9 @@ fiq_lower_el_aarch64:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 10
   bl irq_handler_c
@@ -321,9 +321,9 @@ serror_lower_el_aarch64:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 11
   bl serror_handler_c
@@ -347,10 +347,9 @@ sync_lower_el_aarch32:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
-
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 12
   bl exception_handler_c
@@ -370,9 +369,9 @@ irq_lower_el_aarch32:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 13
   bl irq_handler_c
@@ -392,9 +391,9 @@ fiq_lower_el_aarch32:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 14
   bl irq_handler_c
@@ -414,9 +413,9 @@ serror_lower_el_aarch32:
   stp     x14, x15, [sp, #128]
   stp     x16, x17, [sp, #144]
   stp     x18, xzr, [sp, #160]
-  mrs     x0, ESR_EL1
-  mrs     x1, FAR_EL1
-  stp     x0, x1, [sp, #176]
+  mrs     x2, ESR_EL1
+  mrs     x3, FAR_EL1
+  stp     x2, x3, [sp, #176]
   mov     x0, sp
   mov     x1, 15
   bl serror_handler_c
