@@ -426,6 +426,7 @@ serror_lower_el_aarch32:
 // Common IRQ / Exception Return code
 // ------------------------------------------------------------
 
+  .balign 128
 exception_irq_return:
   ldp   x29, x30, [sp, #0]
   ldp   x0,  x1,  [sp, #16]

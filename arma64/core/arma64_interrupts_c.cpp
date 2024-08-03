@@ -72,6 +72,10 @@ void exception_handler_c(TInterruptFrame * pframe, intptr_t aindex, uint64_t esr
   {
     while (true) asm("nop");
   }
+  else if (0x22 == eclass)  // PC or SP Alignment Fault
+  {
+    while (true) asm("nop");
+  }
   else if (0x3D == eclass) // PMU exception
   {
     while (true) asm("nop");

@@ -179,6 +179,9 @@ void THwMmu::Activate()
   ptable[2] = ( (1 << 10) | (3 << 2) | (1 << 0) | 0x80000000); // normal
   ptable[3] = ( (1 << 10) | (3 << 2) | (1 << 0) | 0xC0000000); // normal
 
+  //asm volatile ("IC IALLUIS");
+  asm volatile ("IC IALLU"); // invalidate instruction cache
+
   // HCR register setup
   // bit[34]: E2H: disable
   //hcr &= ~(uint64_t(1) << 34);
@@ -188,15 +191,26 @@ void THwMmu::Activate()
   sctlr |= (1 << 0); // M_ENABLE: 1 = enable MMU
 #else
   sctlr = 0;
-  sctlr |= (1 << 0);  // enable stage 1 MMU
+  //sctlr |= (1 << 0);  // enable stage 1 MMU
   sctlr |= (1 << 2);  // enable data cache
   sctlr |= (1 << 12); // enable instruction cache
 #endif
   arma64_mmu_store_sctlr(sctlr);
 
-  asm volatile ("ISB");
-  asm volatile ("TLBI     VMALLE1");
-  asm volatile ("DSB      SY");
+  asm volatile ("NOP");
+  asm volatile ("NOP");
+  asm volatile ("NOP");
+
+  //asm volatile ("mov x0, sp");
+  //asm volatile ("DC IVAC, x0");
+
+
+  //asm volatile ("ISB");
+  //asm volatile ("TLBI     VMALLE1");
+  //asm volatile ("DSB      SY");
+
+  asm volatile ("IC IALLU"); // invalidate instruction cache
+  //asm volatile ("IC IALLUIS");
 
   asm volatile ("NOP");
   asm volatile ("NOP");
