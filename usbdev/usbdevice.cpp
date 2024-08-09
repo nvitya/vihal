@@ -931,6 +931,10 @@ void TUsbDevice::HandleControlEndpoint(bool htod)
 				ctrl_datastage_remaining -= r;
 				return;
 			}
+			else // no more data left
+			{
+		    ep_ctrl.SendAck(); // sends a zero length data packet
+			}
 
 			ctrlstage = USBCTRL_STAGE_STATUS;  // wait ACK from the host
 			ep_ctrl.EnableRecv();
