@@ -117,6 +117,19 @@ void THwMmu::MapRange(uintptr_t avaddr, uintptr_t apaddr, uintptr_t asize, uint3
 
 }
 
+#define L1_CACHE_BYTES  64
+
+inline void __attribute__ ((always_inline)) cpu_dcache_clear(void * addr, uintptr_t len)
+{
+  register uintptr_t raddr asm("x0") = intptr_t(addr) & ~(L1_CACHE_BYTES - 1);
+  register uintptr_t rend  asm("x11") = raddr + len;
+  while (raddr < rend)
+  {
+    asm volatile ("DC IVAC, x0");
+    raddr += L1_CACHE_BYTES;
+  }
+}
+
 void THwMmu::Activate()
 {
   arma64_mmu_store_ttbr0(uint64_t(ptable));
@@ -176,8 +189,8 @@ void THwMmu::Activate()
 
   ptable[0] = ( (1 << 10) | (0 << 2) | (1 << 0) | 0x00000000); // normal
   ptable[1] = ( (1 << 10) | (0 << 2) | (1 << 0) | 0x40000000); // normal
-  ptable[2] = ( (1 << 10) | (3 << 2) | (1 << 0) | 0x80000000); // normal
-  ptable[3] = ( (1 << 10) | (3 << 2) | (1 << 0) | 0xC0000000); // normal
+  ptable[2] = ( (1 << 10) | (3 << 2) | (1 << 0) | 0x80000000); // device
+  ptable[3] = ( (1 << 10) | (3 << 2) | (1 << 0) | 0xC0000000); // device
 
   //asm volatile ("IC IALLUIS");
   asm volatile ("IC IALLU"); // invalidate instruction cache
@@ -191,11 +204,13 @@ void THwMmu::Activate()
   sctlr |= (1 << 0); // M_ENABLE: 1 = enable MMU
 #else
   sctlr = 0;
-  //sctlr |= (1 << 0);  // enable stage 1 MMU
+  sctlr |= (1 << 0);  // enable stage 1 MMU
   sctlr |= (1 << 2);  // enable data cache
   sctlr |= (1 << 12); // enable instruction cache
 #endif
   arma64_mmu_store_sctlr(sctlr);
+
+  cpu_dcache_clear((void *)0x7F800000, 0x800000);
 
   asm volatile ("NOP");
   asm volatile ("NOP");
