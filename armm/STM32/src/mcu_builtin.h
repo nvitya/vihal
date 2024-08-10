@@ -200,6 +200,14 @@
 
   #include "stm32h723xx.h"
 
+#elif defined(MCU_STM32H7S3L8)
+
+  #define MCUF_STM32
+  #define MCUSF_H7RS
+  #define MAX_CLOCK_SPEED  600000000
+
+  #include "stm32h7s3xx.h"
+
 #else
 
   #error "Unknown STM32 MCU"

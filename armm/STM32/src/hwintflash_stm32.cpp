@@ -144,7 +144,7 @@ int THwIntFlash_stm32::BlockIdFromAddress(uint32_t aaddress)
 }
 
 
-#if !defined(MCUSF_H7)
+#if !defined(MCUSF_H7) && !defined(MCUSF_H7RS)
 
 bool THwIntFlash_stm32::HwInit()
 {

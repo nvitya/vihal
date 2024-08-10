@@ -37,7 +37,7 @@
 #include "traces.h"
 #include "clockcnt.h"
 
-#if defined(ETH_BASE) && !defined(MCUSF_H7)
+#if defined(ETH_BASE) && !defined(MCUSF_H7) && !defined(MCUSF_H7RS)
 
 bool THwEth_stm32::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclist, uint32_t txcnt)
 {

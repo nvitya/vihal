@@ -76,6 +76,10 @@ bool THwExtIrq_stm32::Init(int aportnum, int apinnum, unsigned flags)
 
 	volatile uint32_t * pcfgreg = &EXTI->EXTICR[cridx];
 
+#elif defined(SBS_EXTICR1_PC_EXTI0)
+
+  volatile uint32_t * pcfgreg = &SBS->EXTICR[cridx];
+
 #endif
 
 	uint32_t tmp = *pcfgreg;

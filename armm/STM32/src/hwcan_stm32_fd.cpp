@@ -62,7 +62,6 @@ bool THwCan_stm32::HwInit(int adevnum)
 		devnum = 1;
 		regs = FDCAN1;
 		canram_base = SRAMCAN_BASE;
-		RCC->APB1ENR1 |= RCC_APB1ENR1_FDCANEN;
 	}
 #endif
 #ifdef FDCAN2
@@ -71,7 +70,6 @@ bool THwCan_stm32::HwInit(int adevnum)
 		devnum = 2;
 		regs = FDCAN2;
 		canram_base = SRAMCAN_BASE + SRAMCAN_SIZE;
-		RCC->APB1ENR1 |= RCC_APB1ENR1_FDCANEN;
 	}
 #endif
 #ifdef FDCAN3
@@ -80,7 +78,6 @@ bool THwCan_stm32::HwInit(int adevnum)
 		devnum = 3;
 		regs = FDCAN3;
 		canram_base = SRAMCAN_BASE + (SRAMCAN_SIZE << 1);
-		RCC->APB1ENR1 |= RCC_APB1ENR1_FDCANEN;
 	}
 #endif
 	else
@@ -89,7 +86,13 @@ bool THwCan_stm32::HwInit(int adevnum)
 		devnum = -1;
 		return false;
 	}
-	
+
+  #if defined(RCC_APB1ENR2_FDCANEN)
+	  RCC->APB1ENR2 |= RCC_APB1ENR2_FDCANEN;
+  #else
+    RCC->APB1ENR1 |= RCC_APB1ENR1_FDCANEN;
+  #endif
+
 	instance_id = devnum - 1;
 
 	// reset sram
@@ -102,10 +105,17 @@ bool THwCan_stm32::HwInit(int adevnum)
 	txevfifo = (hwcan_txev_fifo_t *)(canram_base + SRAMCAN_TEFSA);
 
 	// select PCLK as the CANFD base clock (=SystemCoreClock)
-	tmp = RCC->CCIPR;
-	tmp &= ~RCC_CCIPR_FDCANSEL_Msk;
-	tmp |= RCC_CCIPR_FDCANSEL_1;
-	RCC->CCIPR = tmp;
+  #if defined(RCC_CCIPR2_FDCANSEL)
+    tmp = RCC->CCIPR2;
+    tmp &= ~RCC_CCIPR2_FDCANSEL_Msk;
+    tmp |= RCC_CCIPR2_FDCANSEL_1;
+    RCC->CCIPR2 = tmp;
+  #else
+    tmp = RCC->CCIPR;
+    tmp &= ~RCC_CCIPR_FDCANSEL_Msk;
+    tmp |= RCC_CCIPR_FDCANSEL_1;
+    RCC->CCIPR = tmp;
+  #endif
 
 	// by default CAN is in sleep mode, so exit from sleep, and go inactive
 

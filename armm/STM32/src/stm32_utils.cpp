@@ -57,6 +57,24 @@ uint32_t stm32_bus_speed(uint8_t abusid)
 	return (SystemCoreClock >> clockshr);
 }
 
+#elif defined(MCUSF_H7RS)
+
+uint32_t stm32_bus_speed(uint8_t abusid)
+{
+  uint32_t tmp;
+  uint32_t clockshr;  // clock shift right = division
+
+  // check AHB division
+  clockshr = 1; // if AHB divided, then surely only with 2
+
+  if (abusid > STM32_BUSID_AHB)
+  {
+    ++clockshr;
+  }
+
+  return (SystemCoreClock >> clockshr);
+}
+
 #elif defined(MCUSF_G0)
 
 // missing RCC_CFGR_HPRE_DIV2 etc. defines here ....

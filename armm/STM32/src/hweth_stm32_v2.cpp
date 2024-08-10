@@ -27,7 +27,7 @@
 
 #include "platform.h"
 
-#if defined(MCUSF_H7)
+#if defined(MCUSF_H7) || defined(MCUSF_H7RS)
 
 #include "string.h"
 #include "stm32_utils.h"
@@ -38,11 +38,15 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
   uint32_t n;
   uint32_t tmp;
 
-  // Select RMII Mode, must be done before enabling the hw
-  RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
-  if (RCC->APB4ENR) { } // read back for delay
-  SYSCFG->PMCR |= SYSCFG_PMCR_EPIS_SEL_2;  // select RMII mode
-  if (SYSCFG->PMCR) { }
+  #if defined(SYSCFG_PMCR_EPIS_SEL_2)
+    // Select RMII Mode, must be done before enabling the hw
+    RCC->APB4ENR |= RCC_APB4ENR_SYSCFGEN;
+    if (RCC->APB4ENR) { } // read back for delay
+    SYSCFG->PMCR |= SYSCFG_PMCR_EPIS_SEL_2;  // select RMII mode
+    if (SYSCFG->PMCR) { }
+  #else
+    #warning "implement for H7RS"
+  #endif
 
   // enable clocks
   RCC->AHB1ENR |= RCC_AHB1ENR_ETH1MACEN;

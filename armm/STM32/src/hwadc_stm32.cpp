@@ -582,8 +582,10 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 
 	if (dmaalloc < 0)  dmaalloc = defaultdma;
 
+#if !defined(MCUSF_H7RS)
 	dmach.Init((dmaalloc >> 8), dmaalloc & 15, dmamux);  // re-init the DMA channel with the proper DMAMUX
 	dmach.Prepare(false, (void *)&regs->DR, 0);
+#endif
 
 	// current setup: ADC clock = System Clock (AHB clock) / 4
 	// this gives at 168 MHz CPU speed the maximal 42 MHz ADC clock (for single ended mode)

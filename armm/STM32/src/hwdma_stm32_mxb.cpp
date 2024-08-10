@@ -31,7 +31,7 @@
 
 #include "hwdma.h"
 
-#if defined(HWDMA_MXB)
+#if defined(HWDMA_MXB) && !defined(MCUSF_H7RS)
 
 const unsigned char stm32_dma_irq_status_shifts[8] = {0, 6, 16, 22, 0, 6, 16, 22};
 

@@ -30,7 +30,7 @@
 
 #include "platform.h"
 
-#if defined(MCUSF_H7)
+#if defined(MCUSF_H7) || defined(MCUSF_H7RS)
 
 #define HWETH_PRE_ONLY
 #include "hweth.h"

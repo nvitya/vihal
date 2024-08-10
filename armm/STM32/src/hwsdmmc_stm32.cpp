@@ -86,6 +86,17 @@ bool THwSdmmc_stm32::Init()
 		RCC->AHB3RSTR &= ~RCC_AHB3RSTR_SDMMC1RST;
 		if (RCC->AHB3RSTR) { } // some syncing
 
+  #elif defined(RCC_AHB5ENR_SDMMC1EN) // H7RS
+
+    RCC->AHB5ENR |= RCC_AHB5ENR_SDMMC1EN;
+    if (RCC->AHB5ENR) { } // some syncing
+
+    // reset
+    RCC->AHB5RSTR |= RCC_AHB5RSTR_SDMMC1RST;
+    if (RCC->AHB5RSTR) { } // some syncing
+    RCC->AHB5RSTR &= ~RCC_AHB5RSTR_SDMMC1RST;
+    if (RCC->AHB5RSTR) { } // some syncing
+
 	#else
 		RCC->APB2ENR |= RCC_APB2ENR_SDMMC1EN;
 		if (RCC->APB2ENR) { } // some syncing
@@ -122,7 +133,7 @@ bool THwSdmmc_stm32::Init()
 
 	if (regs->POWER) { }
 
-#ifdef MCUSF_H7
+#if defined(MCUSF_H7) || defined(MCUSF_H7RS)
 	regs->CLKCR = (0
 		| (0  << 20)  // SELCLKRX(2): 0 = internal
 		| (0  << 19)  // BUSSPEED: 0 = 25 MHz, 1 = 50 MHz
@@ -167,7 +178,7 @@ void THwSdmmc_stm32::SetSpeed(uint32_t speed)
 
 	uint32_t tmp = regs->CLKCR;
 
-#ifdef MCUSF_H7
+#if defined(MCUSF_H7) || defined(MCUSF_H7RS)
 
   uint32_t clkdiv = 1;
   while ((periphclock / (1 << (clkdiv - 1))) > speed)
@@ -244,7 +255,7 @@ bool THwSdmmc_stm32::CmdFinished()
 		}
 	}
 
-  #ifdef MCUSF_H7
+  #if defined(MCUSF_H7) || defined(MCUSF_H7RS)
 
     #if 0
       if ((curcmdflags & SDCMD_0ES_MASK) == SDCMD_RES_R1B)
@@ -295,7 +306,7 @@ bool THwSdmmc_stm32::TransferFinished()
 
 void THwSdmmc_stm32::CloseTransfer()
 {
-#ifndef MCUSF_H7
+#if !defined(MCUSF_H7) && !defined(MCUSF_H7RS)
   while (regs->STA & SDMMC_STA_RXDAVL)
   {
     if (regs->FIFO) { }  // read the fifo
@@ -366,7 +377,7 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 		bsizecode = 31 - __CLZ(datalen);
 	}
 
-#ifdef MCUSF_H7
+#if defined(MCUSF_H7) || defined(MCUSF_H7RS)
   // setup data control register
 	uint32_t dctrl = (0
 		| (1  << 13)  // FIFORST
@@ -383,7 +394,11 @@ void THwSdmmc_stm32::StartDataReadCmd(uint8_t acmd, uint32_t cmdarg, uint32_t cm
 
 	// the DMA must be started before DCTRL (DTEN)
 
-	regs->IDMABASE0 = (uint32_t)dataptr;
+  #if defined(MCUSF_H7RS)
+	  regs->IDMABASER = (uint32_t)dataptr;
+  #else
+    regs->IDMABASE0 = (uint32_t)dataptr;
+  #endif
 	regs->IDMABSIZE = datalen; // not really necessary for single buffer mode ?
 	regs->IDMACTRL = 1; // enable the internal DMA
 #else

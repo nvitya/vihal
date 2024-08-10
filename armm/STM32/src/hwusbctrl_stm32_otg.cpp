@@ -406,7 +406,11 @@ bool THwUsbCtrl_stm32_otg::InitHw()
 		#endif
 			{
 				periph_address = USB_OTG_FS_PERIPH_BASE;
-				RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+        #if defined(RCC_AHB1ENR_OTGFSEN)
+				  RCC->AHB1ENR |= RCC_AHB1ENR_OTGFSEN;
+        #else
+				  RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+        #endif
 			}
 	#endif
 

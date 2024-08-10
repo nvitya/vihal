@@ -47,7 +47,11 @@ public:
 	bool InitHw(int adevnum);
 
 	void HandleIrq();
-	inline void SetNak() { regs->CR2 |= I2C_CR2_NACK; }
+  #if defined(I2C_CR2_NACK)
+	  inline void SetNak() { regs->CR2 |= I2C_CR2_NACK; }
+  #else
+    inline void SetNak() { }
+  #endif
 
 	void Run();
 

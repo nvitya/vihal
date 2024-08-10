@@ -32,7 +32,7 @@
 
 #include "platform.h"
 
-#if defined(HWDMA_MXB)
+#if defined(HWDMA_MXB) && !defined(MCUSF_H7RS)
 
 #define HWDMA_PRE_ONLY
 #include "hwdma.h"

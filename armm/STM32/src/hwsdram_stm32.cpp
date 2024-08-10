@@ -43,7 +43,11 @@ bool THwSdram_stm32::InitHw()
 	uint32_t bankbits;
 
   // Enable the FMC interface clock
-  RCC->AHB3ENR |= RCC_AHB3ENR_FMCEN;
+  #if defined(RCC_AHB5ENR_FMCEN)
+    RCC->AHB5ENR |= RCC_AHB5ENR_FMCEN;
+  #else
+    RCC->AHB3ENR |= RCC_AHB3ENR_FMCEN;
+  #endif
 
   regs = FMC_Bank5_6;
 

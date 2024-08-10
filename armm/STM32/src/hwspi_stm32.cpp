@@ -216,7 +216,7 @@ bool THwSpi_stm32::DmaRecvCompleted()
 	return true;
 }
 
-#if defined(MCUSF_H7)  // SPI v2
+#if defined(MCUSF_H7) || defined(MCUSF_H7RS) // SPI v2
 
 bool THwSpi_stm32::TrySendData(uint8_t adata)
 {

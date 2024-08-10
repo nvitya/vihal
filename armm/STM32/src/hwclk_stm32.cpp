@@ -340,6 +340,13 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
   FLASH->ACR = tmp;
 }
 
+#elif defined(MCUSF_H7RS)
+
+void hwclk_prepare_hispeed(unsigned acpuspeed)
+{
+  // TODO: implement
+}
+
 #else
   #error "STM32 hi-speed setup missing for this subfamily"
 #endif
@@ -1176,6 +1183,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   //RCC->DCKCFGR2 &= ~(RCC_DCKCFGR2_CK48MSEL); // select the 48 MHz from the PLL
 
   SystemCoreClock = target_speed_hz;
+  return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+#elif defined(MCUSF_H7RS)
+//---------------------------------------------------------------------------------------------------------------------------
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
   return true;
 }
 

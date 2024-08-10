@@ -162,6 +162,12 @@
   #define MCU_STM32H743ZI
   #define EXTERNAL_XTAL_HZ   (8000000 | HWCLK_EXTCLK_BYPASS)
 
+#elif defined(BOARD_NUCLEO_H7S3)
+
+  #define BOARD_NAME "STM32H7S3 Nucleo-144"
+  #define MCU_STM32H7S3L8
+  #define EXTERNAL_XTAL_HZ   (24000000)
+
 #else
 
   #error "Unknown board."
