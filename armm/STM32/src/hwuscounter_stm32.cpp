@@ -63,7 +63,7 @@ bool THwUsCounter_stm32::Init()
   }
 
   uint32_t periphclock;
-  #if defined(MCUSF_F7)
+  #if defined(MCUSF_F7) || defined(MCUSF_H7RS)
     periphclock = stm32_bus_speed(STM32_BUSID_APB1) * 2;
   #else
     periphclock = stm32_bus_speed(STM32_BUSID_APB1);

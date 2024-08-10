@@ -1262,7 +1262,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 #elif defined(MCUSF_H7RS)
 //---------------------------------------------------------------------------------------------------------------------------
 
-#define RCC_CFGR_SW_HSI  0
+#define RCC_CFGR_SW_HSI    0
+#define RCC_CFGR_SW_PLL1P  3
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
@@ -1278,7 +1279,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // wait until it is set
   }
 
-  RCC->CR &= ~RCC_CR_PLL1ON;  // disable the PLL
+  RCC->CR &= ~RCC_CR_PLL1ON;  // disable the PLLs
   while ((RCC->CR & RCC_CR_PLL1RDY) != 0)
   {
     // Wait until the PLL is ready
@@ -1302,7 +1303,12 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = MCU_INTERNAL_RC_SPEED;
   }
 
-  unsigned vcospeed = target_speed_hz;  // no * 2 here like by the other models !
+  // there are two VCOs in the PLL:
+  //   0 = VCOH: 384 - 1672 MHz (fixed /2 at the output)
+  //   1 = VCOL: 150 -  420 MHz
+
+  // use the VCOH which has a built-in /2 divider
+  unsigned vcospeed = target_speed_hz;
 
   // try some round frequencies for VCO input:
   unsigned pllrange;
@@ -1324,31 +1330,34 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
         if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
         {
           vco_in_hz = 2000000;  // hoping that works, 2MHz is the minimal PLL input freq.
-          pllrange = 0;
+          pllrange = 1;
         }
       }
     }
   }
 
-#if 0  // to be continued
 
   unsigned pllm = basespeed / vco_in_hz;   // vco input pre-divider
 
   unsigned plln = vcospeed  / vco_in_hz;   // the vco multiplier
   unsigned pllq = vcospeed / 48000000;     // usb speed
   unsigned pllp = 1;  // no processor division
-  unsigned pllr = 2;
+  unsigned plls = 2;
 
   tmp = RCC->PLLCFGR;
-  tmp &= ~((0xF << 0) | (7 << 16)); // clear PLL1 configuration
+  tmp &= ~(0x1FF << 0) ; // clear PLL1 configuration
   tmp |= (0
-    | (7 << 16) // enable all outputs (P, Q, R)
-    | (pllrange <<  2) // PLLRGE(2): 0 = 1-2 MHz PLL1 input clock range
-    | (0 <<  1) // PLL1VCOSEL: 0 = wide range (192-836 MHz), 1 = medium range (150 - 420 MHz)
-    | (0 <<  0) // PLL1FRACEN: 0 = disable fractional divider
+    | (1        << 8)  // PLL1SEN: 1 = enable S output
+    | (1        << 6)  // PLL1QEN: 1 = enable Q output
+    | (1        << 5)  // PLL1PEN: 1 = enable P output
+    | (pllrange << 3)  // PLL1RGE(2): 0 = 1-2 MHz PLL1 input clock range
+    | (0        << 2)  // PLL1SSCGEN: 0 = no spread spectrum
+    | (0        << 1)  // PLL1VCOSEL: 0 = wide range (192-836 MHz), 1 = medium range (150 - 420 MHz)
+    | (0        << 0)  // PLL1FRACEN: 0 = disable fractional divider
   );
   RCC->PLLCFGR = tmp;
 
+  // set the PLL source and PLL1 input divider
   tmp = RCC->PLLCKSELR;
   tmp &= ~(RCC_PLLCKSELR_PLLSRC | RCC_PLLCKSELR_DIVM1);
   tmp |= (0
@@ -1357,16 +1366,21 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   );
   RCC->PLLCKSELR = tmp;
 
+
   // configure PLL1 dividers:
-  RCC->PLL1DIVR = (0
-    | ((plln - 1) << RCC_PLL1DIVR_N1_Pos)
-    | ((pllp - 1) << RCC_PLL1DIVR_P1_Pos)
-    | ((pllq - 1) << RCC_PLL1DIVR_Q1_Pos)
-    | ((pllr - 1) << RCC_PLL1DIVR_R1_Pos)
+  RCC->PLL1DIVR1 = (0
+    | ((plln - 1) << RCC_PLL1DIVR1_DIVN_Pos)
+    | ((pllp - 1) << RCC_PLL1DIVR1_DIVP_Pos)
+    | ((pllq - 1) << RCC_PLL1DIVR1_DIVQ_Pos)
   );
 
-  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
-  while((RCC->CR & RCC_CR_PLLRDY) == 0)
+  RCC->PLL1DIVR2 = (0
+    | ((plls - 1) << RCC_PLL1DIVR2_DIVS_Pos)
+  );
+
+
+  RCC->CR |= RCC_CR_PLL1ON;  // enable the PLL1
+  while((RCC->CR & RCC_CR_PLL1RDY) == 0)
   {
     // Wait till PLL is ready
   }
@@ -1402,9 +1416,9 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   tmp = RCC->CFGR;
   tmp &= ~RCC_CFGR_SW;
-  tmp |= RCC_CFGR_SW_PLL1;
+  tmp |= RCC_CFGR_SW_PLL1P;
   RCC->CFGR = tmp;
-  while (((RCC->CFGR & RCC_CFGR_SWS_Msk) >> RCC_CFGR_SWS_Pos) != RCC_CFGR_SW_PLL1)
+  while (((RCC->CFGR & RCC_CFGR_SWS_Msk) >> RCC_CFGR_SWS_Pos) != RCC_CFGR_SW_PLL1P)
   {
     // wait until it is set
   }
@@ -1413,8 +1427,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   //RCC->DCKCFGR2 &= ~(RCC_DCKCFGR2_CK48MSEL); // select the 48 MHz from the PLL
 
   SystemCoreClock = target_speed_hz;
-
-#endif
 
   return true;
 }
