@@ -64,12 +64,32 @@ uint32_t stm32_bus_speed(uint8_t abusid)
   uint32_t tmp;
   uint32_t clockshr;  // clock shift right = division
 
+  // TODO: change for a more proper version
+
   // check AHB division
-  clockshr = 1; // if AHB divided, then surely only with 2
+  if (SystemCoreClock > 300000000)
+  {
+    clockshr = 1; // if AHB divided, then surely only with 2
+  }
+  else
+  {
+    clockshr = 0; // if AHB divided, then surely only with 2
+  }
 
   if (abusid > STM32_BUSID_AHB)
   {
-    ++clockshr;
+    if (SystemCoreClock > 300000000)
+    {
+      clockshr = 2;
+    }
+    else if (SystemCoreClock > 150000000)
+    {
+      clockshr = 1;
+    }
+    else
+    {
+      clockshr = 0;
+    }
   }
 
   return (SystemCoreClock >> clockshr);
