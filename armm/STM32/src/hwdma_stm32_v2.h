@@ -19,20 +19,19 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwdma_stm32_mxb.h
+ *  file:     hwdma_stm32_v2.h
  *  brief:    3x DMA for the STM32H7 series: MDMA + (x)DMA + BDMA
- *  version:  1.00
  *  date:     2020-12-11
  *  authors:  nvitya
  *  notes:
 */
 
-#ifndef HWDMA_STM32_MXB_H_
-#define HWDMA_STM32_MXB_H_
+#ifndef HWDMA_STM32_V2_H_
+#define HWDMA_STM32_V2_H_
 
 #include "platform.h"
 
-#if defined(HWDMA_MXB) && !defined(MCUSF_H7RS)
+#if defined(MCUSF_V2)
 
 #define HWDMA_PRE_ONLY
 #include "hwdma.h"
@@ -94,6 +93,6 @@ public:
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_stm32
 
-#endif // defined(HWDMA_MXB)
+#endif // defined(HWDMA_V2)
 
-#endif // def HWDMA_STM32_MXB_H_
+#endif // def HWDMA_STM32_V2_H_

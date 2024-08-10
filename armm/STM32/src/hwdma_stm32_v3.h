@@ -1,5 +1,6 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+/* -----------------------------------------------------------------------------
+ * This file is a part of the NVCM project: https://github.com/nvitya/nvcm
+ * Copyright (c) 2018 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -18,31 +19,24 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwdma_stm32.h
- *  brief:    STM32 DMA
- *  date:     2018-02-10
+ *  file:     hwdma_stm32_v3.h
+ *  brief:    DMA for the STM32H7R/S series: GPDMA + HPDMA
+ *  date:     2024-08-10
  *  authors:  nvitya
 */
 
-#ifndef HWDMA_STM32_H_
-#define HWDMA_STM32_H_
+#ifndef HWDMA_STM32_V3_H_
+#define HWDMA_STM32_V3_H_
 
 #include "platform.h"
 
-#if defined(HWDMA_V1)
+#if defined(HWDMA_V3)
 
 #define HWDMA_PRE_ONLY
 #include "hwdma.h"
 
-#ifdef DMA1_Stream0_BASE
-  #define DMASTREAMS
-#endif
-
-#ifdef DMASTREAMS
-  #define DMA_NDTR_REG  NDTR
-#else
-  #define DMA_NDTR_REG  CNDTR
-#endif
+#define HWDMA_GPDMA  0
+#define HWDMA_HPDMA  1
 
 class THwDmaChannel_stm32 : public THwDmaChannel_pre
 {
@@ -50,24 +44,15 @@ public: // special STM32 specific settings
 	unsigned           per_burst = 0;  // 0 = single, 1 = 4 beats, 2 = 8 beats, 3 = 16 beats
 	unsigned           mem_burst = 0;  // 0 = single, 1 = 4 beats, 2 = 8 beats, 3 = 16 beats
 	unsigned           per_flow_controller = 0;  // 0 = DMA, 1 = peripheral
-	unsigned           fifo_mode = 0;
-	unsigned           fifo_thr  = 0;
 
 public:
-	int                dmanum = 1;
-	HW_DMA_REGS *      regs = nullptr;
+	DMA_Channel_TypeDef *   regs = nullptr;
+	DMA_TypeDef *           gregs = nullptr;
 
-#ifdef DMASTREAMS
-  uint8_t            streamnum;
+	int                     dmanum = 1;
+	unsigned                rqnum;
 
- #ifdef DMAMUX1
-    bool Init(int admanum, int astream, int arequest); // H7
- #else
-    bool Init(int admanum, int astream, int achannel); // F4, F7
- #endif
-#else
-	bool Init(int admanum, int achannel, int arequest);
-#endif
+  bool Init(int admanum, int achannel, int arequest); // admanum: 0=GPDMA, 1=HPDMA
 
 	void Prepare(bool aistx, void * aperiphaddr, unsigned aflags);
 	void Disable();
@@ -75,12 +60,10 @@ public:
 
 	inline bool Enabled()        { return ((*crreg & 1) != 0); }
 
-  // the pure EN flag based termination check does not always work on G4
-  // using the NDTR register for the termination is not reliable
-  // because sometimes it might overflow due bursts
-  inline bool Active()         { return ((*crreg & 1) && (regs->DMA_NDTR_REG)); }  // combined termination check
+	inline bool Active()        { return ((*crreg & 1) != 0); }
 
-	inline uint16_t Remaining()  { return regs->DMA_NDTR_REG; }
+	inline uint16_t Remaining()  { return (*ndtreg & 0xFFFF); }
+	inline void ClearIrqFlag()   { *irqstclrreg = irqclrmask; }
 
 	bool StartTransfer(THwDmaTransfer * axfer);
 	bool StartMemToMem(THwDmaTransfer * axfer);
@@ -88,26 +71,19 @@ public:
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer() { Enable(); }
 
-	inline void ClearIrqFlag()
-	{
-		#ifndef DMASTREAMS
-			*irqstclrreg = (0x0F << irqstshift);
-		#else
-			*irqstclrreg = (0x3F << irqstshift);
-		#endif
-	}
-
 public:
-  __IO unsigned *    crreg;
+	uint32_t           irqclrmask = 0;
+  __IO uint32_t *    crreg;
+	__IO uint32_t *    ndtreg = nullptr;
 
-  __IO unsigned *    irqstreg;
-  __IO unsigned *    irqstclrreg;
+  __IO uint32_t *    irqstreg;
+  __IO uint32_t *    irqstclrreg;
   unsigned           irqstshift;
 
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_stm32
 
-#endif // defined(HWDMA_V1)
+#endif // defined(HWDMA_V3)
 
-#endif // def HWDMA_STM32_H_
+#endif // def HWDMA_STM32_V3_H_

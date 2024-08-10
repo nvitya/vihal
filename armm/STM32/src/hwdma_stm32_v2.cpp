@@ -19,9 +19,8 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwdma_stm32_mxb.cpp
+ *  file:     hwdma_stm32_v2.cpp
  *  brief:    3x DMA for the STM32H7 series: MDMA + (x)DMA + BDMA
- *  version:  1.00
  *  date:     2020-12-11
  *  authors:  nvitya
 */
@@ -31,7 +30,7 @@
 
 #include "hwdma.h"
 
-#if defined(HWDMA_MXB) && !defined(MCUSF_H7RS)
+#if defined(HWDMA_V2)
 
 const unsigned char stm32_dma_irq_status_shifts[8] = {0, 6, 16, 22, 0, 6, 16, 22};
 
@@ -403,4 +402,4 @@ void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 	}
 }
 
-#endif // if HWDMA_IMPLEMENTED
+#endif // if HWDMA_V2

@@ -23,7 +23,8 @@
 
 #ifdef HWDMA_H_
   #include "hwdma_stm32.h"
-  #include "hwdma_stm32_mxb.h"
+  #include "hwdma_stm32_v2.h"
+  #include "hwdma_stm32_v3.h"
 #endif
 
 #if defined(QUADSPI) && defined(HWQSPI_H_)
