@@ -69,11 +69,10 @@ public:
 
 	inline bool Enabled()        { return ((regs->CCR & 1) != 0); }
 	inline bool Active()         { return ((regs->CCR & 1) != 0); }
-
 	inline uint16_t Remaining()  { return (regs->CBR1 & 0xFFFF); }
 	inline void ClearIrqFlag()   { regs->CFCR = irqclrmask; }
 
-	bool StartTransfer(THwDmaTransfer * axfer);
+ 	bool StartTransfer(THwDmaTransfer * axfer);
 
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer() { Enable(); }
