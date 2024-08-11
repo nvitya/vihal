@@ -38,16 +38,25 @@
 #define HWDMA_GPDMA  0
 #define HWDMA_HPDMA  1
 
+typedef struct  // the 3 item LLI structure used by VIHAL
+{
+  uint32_t   CBR;    // byte count
+  uint32_t   SA_DA;  // source or destination address
+  uint32_t   NEXTLLI;
+  uint32_t   _reserved;
+//
+} THwDmaLli3;
+
 class THwDmaChannel_stm32 : public THwDmaChannel_pre
 {
 public: // special STM32 specific settings
-	unsigned           per_burst = 0;  // 0 = single, 1 = 4 beats, 2 = 8 beats, 3 = 16 beats
-	unsigned           mem_burst = 0;  // 0 = single, 1 = 4 beats, 2 = 8 beats, 3 = 16 beats
-	unsigned           per_flow_controller = 0;  // 0 = DMA, 1 = peripheral
+	uint8_t                 per_flow_controller = 0;  // 0 = DMA, 1 = peripheral
+  uint8_t                 per_bus_port = 1; // 0 = AXI/AHB, 1 = AHB
 
 public:
 	DMA_Channel_TypeDef *   regs = nullptr;
 	DMA_TypeDef *           gregs = nullptr;
+	THwDmaLli3 *            plli3 = nullptr;
 
 	int                     dmanum = 1;
 	unsigned                rqnum;
@@ -58,27 +67,20 @@ public:
 	void Disable();
 	void Enable();
 
-	inline bool Enabled()        { return ((*crreg & 1) != 0); }
+	inline bool Enabled()        { return ((regs->CCR & 1) != 0); }
+	inline bool Active()         { return ((regs->CCR & 1) != 0); }
 
-	inline bool Active()        { return ((*crreg & 1) != 0); }
-
-	inline uint16_t Remaining()  { return (*ndtreg & 0xFFFF); }
-	inline void ClearIrqFlag()   { *irqstclrreg = irqclrmask; }
+	inline uint16_t Remaining()  { return (regs->CBR1 & 0xFFFF); }
+	inline void ClearIrqFlag()   { regs->CFCR = irqclrmask; }
 
 	bool StartTransfer(THwDmaTransfer * axfer);
-	bool StartMemToMem(THwDmaTransfer * axfer);
 
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer() { Enable(); }
 
-public:
-	uint32_t           irqclrmask = 0;
-  __IO uint32_t *    crreg;
-	__IO uint32_t *    ndtreg = nullptr;
-
-  __IO uint32_t *    irqstreg;
-  __IO uint32_t *    irqstclrreg;
-  unsigned           irqstshift;
+protected:
+	uint32_t               irqclrmask = 0x7F00;  // this clears all the interrupts
+	uint32_t               ccr_base   = 0;
 
 };
 

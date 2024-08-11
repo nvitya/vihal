@@ -32,6 +32,11 @@
 
 #if defined(HWDMA_V3)
 
+#include "hwdma_stm32_v3.h"
+
+__attribute__((section("bss_RAM2"), aligned(1024)))  // target AXI RAM
+THwDmaLli3 hwdma_lli_block[32];  // 512 Byte
+
 const unsigned char stm32_dma_irq_status_shifts[8] = {0, 6, 16, 22, 0, 6, 16, 22};
 
 bool THwDmaChannel_stm32::Init(int admanum, int achannel, int arequest)
@@ -40,6 +45,7 @@ bool THwDmaChannel_stm32::Init(int admanum, int achannel, int arequest)
 
 	regs = nullptr;
 	gregs = nullptr;
+	plli3 = nullptr;
 
 	int dma = (admanum & 0x01);
 	int ch  = (achannel & 0x0F);
@@ -65,45 +71,29 @@ bool THwDmaChannel_stm32::Init(int admanum, int achannel, int arequest)
 
   dmanum = dma;
   chnum = ch;
-  rqnum = arequest;
+  rqnum = (arequest & 0x7F);
 
   regs = (DMA_Channel_TypeDef *)(channel_base_addr + 0x80 * ch);
+  plli3 = &hwdma_lli_block[dmanum * 16 + chnum];
 
-#if 0
+  Disable();  // suspend + reset when enabled
 
-  ndtreg = &xregs->NDTR;
-  crreg = (__IO uint32_t *)&xregs->CR;
+  // initialize static registers
 
-  DMA_TypeDef * dmaptr = (2 == dma ? DMA2 : DMA1);
-  if (chnum > 3)
-  {
-    irqstreg = (uint32_t *)&dmaptr->HISR;
-    irqstclrreg = (uint32_t *)&dmaptr->HIFCR;
-  }
-  else
-  {
-    irqstreg = (uint32_t *)&dmaptr->LISR;
-    irqstclrreg = (uint32_t *)&dmaptr->LIFCR;
-  }
+  ccr_base = (0
+    |  ((priority & 3) << 22)  // PRIO(2)
+    |  (0              << 17)  // LAP: linked list read port: 0 = AXI/AHB, 1 = AHB
+  );
 
-  irqstshift = stm32_dma_irq_status_shifts[chnum];
-  irqclrmask = (0x3F << irqstshift);
+  regs->CCR = ccr_base;
 
-  int muxch = (2 == dmanum ? 8 : 0) + chnum;
-  DMAMUX1[muxch].CCR = 0
-    | ((rqnum & 0x7F) <<  0)  // DMAREQ_ID(7): DMA request identification
-    | (0 <<  8)  // SOIE: Synchronization overrun interrupt enable
-    | (0 <<  9)  // EGE: Event generation enable
-    | (0 << 16)  // SE: Synchronization enable
-    | (0 << 17)  // SPOL(2): Synchronization polarity
-    | (0 << 19)  // NBREQ(4): Number of DMA requests minus 1 to forward
-    | (0 << 24)  // SYNC_ID(5): Synchronization identification
-  ;
+  regs->CLBAR = (uint32_t(plli3) & 0xFFFF0000); // set the linked list base address
 
-#endif
+  // no special 2D mode support here
+  regs->CTR3 = 0;
+  regs->CBR2 = 0;
 
-	// disable the channel:
-	Disable();
+  ClearIrqFlag();
 
 	Prepare(true, nullptr, 0); // set some defaults
 
@@ -120,258 +110,150 @@ void THwDmaChannel_stm32::Prepare(bool aistx, void * aperiphaddr, unsigned aflag
 
 void THwDmaChannel_stm32::Disable()
 {
-	*crreg &= ~1;
-
-	// wait until it is disabled
-	while (*crreg & 1)
-	{
-		// wait
-	}
-
-	*ndtreg = 0;
+  uint32_t ccr = regs->CCR;
+  if (ccr & 1)
+  {
+    while (0 == (ccr & (1 << 2))) // not suspended ?
+    {
+      regs->CCR = (ccr | (1 << 2)); // request suspend
+      ccr = regs->CCR;
+    }
+    regs->CCR = (ccr | (1 << 1));  // Reset
+    while (regs->CCR & 1)
+    {
+      // wait until the reset finishes
+    }
+  }
 }
 
 void THwDmaChannel_stm32::Enable()
 {
-	// start the channel
-	*crreg |= 1;
-}
-
-static unsigned get_busid_by_address(void * aaddr)
-{
-	uint32_t addr = (uint32_t)aaddr;
-	if (addr < 0x24000000)
-	{
-		return 1;
-	}
-
-	return 0;
+	regs->CCR |= 1;  // start the channel
 }
 
 void THwDmaChannel_stm32::PrepareTransfer(THwDmaTransfer * axfer)
 {
-  Disable();  // this is important here
+  uint32_t ccr = regs->CCR;
+  if (ccr & 1) // channel enabled ?
+  {
+    Disable();  // this will suspend, then reset the channel
+  }
+
 	ClearIrqFlag();
 
-#if 0
+  // size decoding using a micro-table:
+  //                      87654321
+  uint32_t sizecode = ((0x33332210 >> ((axfer->bytewidth-1) << 2)) & 0xF);
 
-	int sizecode = 0;
-	if (axfer->bytewidth == 2)  sizecode = 1;
-	else if (axfer->bytewidth == 4)  sizecode = 2;
-	else if (axfer->bytewidth == 8)  sizecode = 3;
+  uint32_t tr1 = (0
+    | (0        << 30)  // DAP: destination bus port: 0 = AXI/AHB, 1 = AHB
+    | (0        << 28)  // DWX: destination word exchange in 64-bit double-words
+    | (0        << 27)  // DHX: destination half-word exchange in 32-bit words
+    | (0        << 26)  // DBX: destination byte-exchange in 16-bit half-words
+    | (0        << 20)  // DBL_1(6): destination burst length - 1
+    | (0        << 19)  // DINC: Destination incrementing, 0 = fixed (burst), 1 = continuosly incremented
+    | (sizecode << 16)  // DDW_LOG2(2): Destination width: 0 = byte, 1 = 16-bit, 2 = 32-bit, 3 = 64-bit (AXI only)
+    | (0        << 14)  // SAP: source bus port: 0 = AXI/AHB, 1 = AHB
+    | (0        << 13)  // SBX: source byte-exchange in 16-bit half-words
+    | (0        << 11)  // PAM(2): padding + aligment if the src+dst sizes do not match. 0 = right aligned + zero padded
+    | (0        <<  4)  // SBL_1(6): source burst length - 1
+    | (0        <<  3)  // SINC: Source incrementing, 0 = fixed (burst), 1 = continuosly incremented
+    | (sizecode <<  0)  // SDW_LOG2(2): Source width: 0 = byte, 1 = 16-bit, 2 = 32-bit, 3 = 64-bit (AXI only)
+  );
 
-	int dircode;
+  uint32_t tr2 = (0
+    | (0        << 30)  // TCEM(2): Transfer complete event, 0 = block level, 2 = LLI level, 3 = channel level
+    | (0        << 24)  // TRIGPOL(2): 0 = no trigger, 1 = rising edge, 2 = falling edge
+    | (0        << 16)  // TRIGSEL(6): trigger event input selection
+    | (0        << 14)  // TRIGM(2): trigger mode
+    | (per_flow_controller << 12)  // PFREQ: Peripheral flow control
+    | (0        << 11)  // BREQ: Block hardware request, 0 = one HW rq. per burst, 1 = one HW requests per block
+    | (0        << 10)  // DREQ: Destination hw rq., 0 = source hw rq., 1 = destination hw rq.
+    | (0        <<  9)  // SWREQ: software request
+    | (rqnum    <<  0)  // REQSEL(7): hw request selection
+  );
+
 	if (axfer->flags & DMATR_MEM_TO_MEM)
 	{
-		dircode = 2;
+	  tr1 |= (0
+      | (1 << 19)  // DINC: Destination incrementing, 0 = fixed (burst), 1 = continuosly incremented
+      | (1 <<  3)  // SINC: Source incrementing, 0 = fixed (burst), 1 = continuosly incremented
+	  );
+    tr2 |= (0
+      | (1 <<  9)  // SWREQ: software request
+    );
+    regs->CSAR = (uint32_t)axfer->srcaddr;
+    regs->CDAR = (uint32_t)axfer->dstaddr;
 	}
-	else if (istx)
+	else if (istx)  // MEM -> PER
 	{
-		dircode = 1;
+    tr1 |= (0
+      | (per_bus_port << 30)  // DAP: destination bus port: 0 = AXI/AHB, 1 = AHB
+      | (1            <<  3)  // SINC: Source incrementing, 0 = fixed (burst), 1 = continuosly incremented
+    );
+    tr2 |= (0
+      | (1 << 10)  // DREQ: Destination hw rq., 0 = source hw rq., 1 = destination hw rq.
+    );
+    regs->CSAR = (uint32_t)axfer->srcaddr;
+    regs->CDAR = (uint32_t)periphaddr;
 	}
-	else
+	else            // PER -> MEM
 	{
-		dircode = 0;
+    tr1 |= (0
+      | (1            << 19)  // DINC: Destination incrementing, 0 = fixed (burst), 1 = continuosly incremented
+      | (per_bus_port << 14)  // SAP: source bus port: 0 = AXI/AHB, 1 = AHB
+    );
+    //tr2 |= (0
+    //  | (0 << 10)  // DREQ: Destination hw rq., 0 = source hw rq., 1 = destination hw rq.
+    //);
+    regs->CSAR = (uint32_t)periphaddr;
+    regs->CDAR = (uint32_t)axfer->dstaddr;
 	}
 
-	int meminc = (axfer->flags & DMATR_NO_ADDR_INC ? 0 : 1);
+	regs->CTR1 = tr1;
+	regs->CTR2 = tr2;
 
-	uint32_t circ = (axfer->flags & DMATR_CIRCULAR ? 1 : 0);
-	uint32_t inte = (axfer->flags & DMATR_IRQ ? 1 : 0);
-	uint32_t hinte = (axfer->flags & DMATR_IRQ_HALF ? 1 : 0);
+	uint32_t bytecount = axfer->count * axfer->bytewidth;
+	regs->CBR1 = bytecount;
 
-
-	if (mregs) // MDMA
+	ccr = ccr_base;
+	if (axfer->flags & DMATR_IRQ)
 	{
-		unsigned sbus = 0;
-		unsigned dbus = 0;
-
-		unsigned sinc = 0;
-		unsigned dinc = 0;
-
-	  unsigned ssizecode;
-	  unsigned dsizecode;
-	  if (axfer->flags & DMATR_PER32)
-	  {
-	    if (1 == dircode)
-	    {
-	      dsizecode = 2;
-	      ssizecode = sizecode;
-	    }
-	    else if (0 == dircode)
-	    {
-	      dsizecode = sizecode;
-	      ssizecode = 2;
-	    }
-	  }
-	  else
-	  {
-	    ssizecode = sizecode;
-	    dsizecode = sizecode;
-	  }
-
-
-		if (axfer->flags & DMATR_MEM_TO_MEM)
-		{
-			// DIR=0:
-			mregs->CSAR = (uint32_t)axfer->srcaddr;
-			mregs->CDAR = (uint32_t)axfer->dstaddr;
-			sbus = get_busid_by_address(axfer->srcaddr);
-			dbus = get_busid_by_address(axfer->dstaddr);
-			sinc = 2;
-			dinc = 2;
-		}
-		else if (istx)
-		{
-			mregs->CSAR = (uint32_t)axfer->srcaddr;
-			mregs->CDAR = (uint32_t)periphaddr;
-			sbus = get_busid_by_address(axfer->srcaddr);
-			sinc = (meminc << 1);
-		}
-		else
-		{
-			mregs->CSAR = (uint32_t)periphaddr;
-			mregs->CDAR = (uint32_t)axfer->dstaddr;
-			dbus = get_busid_by_address(axfer->dstaddr);
-			dinc = (meminc << 1);
-		}
-
-		// channel configuration
-		mregs->CCR = 0
-			| (0        << 16)  // SWRQ: Software request
-			| (0        << 14)  // WEX: 1 = exchange the 32 bits in every 64 bit
-			| (0        << 13)  // HEX: 1 = exchange the 16 bits in every 32 bit
-			| (0        << 12)  // BEX: 1 = exchange bytes in every 16 bit
-			| ((priority & 3) << 6) // PL(2): priority level
-			| (inte     <<  2)  // CTCIE: Channel Transfer complete interrupt enable
-			| (0        <<  0)  // EN: keep not enabled
-		;
-
-		unsigned tlen = ((1 << sizecode) - 1);
-
-		// transfer configuration
-		mregs->CTCR = 0
-			| (0        << 31)  // BWM: 0 = the destination is not bufferable
-			| (0        << 30)  // SWRM: 1 = HW requests ignored
-			| (0        << 28)  // TRGM(2): Trigger Mode, 0 = one buffer transfer per trigger
-			| (0        << 26)  // PAM(2): 0 = right aligned
-			| (0        << 25)  // PKE: PAck Enable
-			| (tlen     << 18)  // TLEN(7): Buffer Transfer Length (number of bytes - 1)
-			| (0        << 15)  // DBURST(3): destination burst, 0 = single
-			| (0        << 12)  // SBURST(3): source burst, 0 = single
-			| (dsizecode << 10)  // DINCOS(2): dest. increment offset, 0=8bit, 1=16bit, 2=32bit, 3=64bit
-			| (ssizecode <<  8)  // SINCOS(2): src. increment offset, 0=8bit, 1=16bit, 2=32bit, 3=64bit
-			| (dsizecode <<  6)  // DSIZE(2)
-			| (ssizecode <<  4)  // SSIZE(2)
-			| (dinc     <<  2)  // DINC(2): 0 = no dst. increment, 2 = +DINCOS, 3 = -DINCOS
-			| (sinc     <<  0)  // SINC(2): 0 = no src. increment, 2 = +SINCOS, 3 = -SINCOS
-		;
-
-		mregs->CTBR = 0
-			| (dbus  << 17) // DBUS: destination bus, 0 = system/AXI, 1 = AHB/TCM
-			| (sbus  << 16) // SBUS: source bus, 0 = system/AXI, 1 = AHB/TCM
-			| (rqnum <<  0) // TSEL(6): Trigger Select
-		;
-
-		mregs->CBNDTR = 0
-			| (0 << 20) // BRC(12): block repeat count
-			| (axfer->count * axfer->bytewidth)  // no block repeat stuff here
-		;
-
-		mregs->CBRUR = 0;
-
-		mregs->CLAR = 0;
-		mregs->CMAR = 0;
-		mregs->CMDR = 0;
+	  ccr |= (1 << 8); // TCIE: transfer coplete interrupt enable
 	}
-	else
-	{
-    unsigned psizecode;
-    if (axfer->flags & DMATR_PER32)  psizecode = 2;
-    else psizecode = sizecode;
+  if (axfer->flags & DMATR_IRQ_HALF)
+  {
+    ccr |= (1 << 9); // HTIE: half transfer coplete interrupt enable
+  }
 
-		if (xregs)
-		{
-			xregs->CR = 0
-				| (mem_burst  << 23)        // MBURST(2): memory burst, 0 = single transfer
-				| (per_burst  << 21)        // PBURST(2): peripheral burst
-				| (0  << 19)        // CT: current target (for double buffer mode)
-				| (0  << 18)        // DBM: double buffer mode
-				| ((priority & 3) << 16) // PL(2): priority level
-				| (0  << 15)         // PINCOS: peripheral increment offset
-				| (sizecode  << 13)  // MSIZE(2): Memory data size, 8 bit
-				| (psizecode << 11)  // PSIZE(2): Periph data size, 8 bit
-				| (meminc    << 10)  // MINC: Memory increment mode
-				| (0  <<  9)         // PINC: Peripheral increment mode
-				| (circ <<  8)       // CIRC: Circular mode
-				| (dircode <<  6 )   // DIR(2): Data transfer direction
-				| (per_flow_controller  <<  5)        // PFCTRL: Peripheral flow controller, 0 = DMA is the flow controller
-				| (inte  << 4)       // TCIE: Transfer complete interrupt enable
-				| (hinte << 3)       // HTIE: Half transfer complete interrupt enable
-				| (0  <<  1)         // (3): error interrupts
-				| (0  <<  0)         // EN: keep not enabled
-			;
+  if (axfer->flags & DMATR_CIRCULAR)
+  {
+    uint32_t lli = (0
+      | (1 << 29)   // UB1: update/load the CBR1 (byte count) register
+      | (1 << 16)   // ULL: update/load the CLLR register
+      | ((uint32_t(plli3) & 0xFFFF) << 0) // LA(16)
+    );
 
-			if (axfer->flags & DMATR_MEM_TO_MEM)
-			{
-				xregs->PAR = (uint32_t)axfer->srcaddr;
-				xregs->M0AR = (uint32_t)axfer->dstaddr;
-			}
-			else if (istx)
-			{
-				xregs->PAR = (uint32_t)periphaddr;
-				xregs->M0AR = (uint32_t)axfer->srcaddr;
-			}
-			else
-			{
-				xregs->PAR = (uint32_t)periphaddr;
-				xregs->M0AR = (uint32_t)axfer->dstaddr;
-			}
+    if (istx)  // MEM -> PER
+    {
+      lli |= (1 << 28);  // USA: update/load the CSAR (source address) register)
+      plli3->SA_DA = (uint32_t)axfer->srcaddr;
+    }
+    else       // PER -> MEM
+    {
+      lli |= (1 << 27);  // UDA: update/load the CDAR (destination address) register)
+      plli3->SA_DA = (uint32_t)axfer->dstaddr;
+    }
 
-			xregs->NDTR = (uint32_t)axfer->count;
-		}
-		else if (bregs)
-		{
-			bregs->CCR = 0
-				| (0  << 16)        // CT: current target
-				| (0  << 15)        // DBM: double buffer mode
-				| ((priority & 3) << 12) // PL(2): priority level
-				| (sizecode << 10)  // MSIZE(2): Memory data size, 0 = 8 bit
-				| (psizecode <<  8)  // PSIZE(2): Periph data size, 0 = 8 bit
-				| (meminc   <<  7)  // MINC: Memory increment mode
-				| (0        <<  6)  // PINC: Peripheral increment mode
-				| (circ     <<  5)  // CIRC: Circular mode
-				| ((dircode & 1) <<  4)  // DIR: Data transfer direction, 0 = per->mem, 1 = mem->per
-				| (hinte    <<  2)  // HTIE: Half transfer complete interrupt enable
-				| (inte     <<  1)  // TCIE: Transfer complete interrupt enable
-				| (0        <<  0)  // EN: keep not enabled
-			;
+    plli3->CBR = bytecount;
+    plli3->NEXTLLI = lli;
 
-			if (axfer->flags & DMATR_MEM_TO_MEM)
-			{
-				// DIR=0:
-				bregs->CM0AR = (uint32_t)axfer->dstaddr;
-				bregs->CM1AR = (uint32_t)axfer->srcaddr;
-			}
-			else if (istx)
-			{
-				bregs->CPAR = (uint32_t)periphaddr;
-				bregs->CM0AR = (uint32_t)axfer->srcaddr;
-				bregs->CM1AR = (uint32_t)axfer->srcaddr;
-			}
-			else
-			{
-				bregs->CPAR = (uint32_t)periphaddr;
-				bregs->CM0AR = (uint32_t)axfer->dstaddr;
-				bregs->CM1AR = (uint32_t)axfer->dstaddr;
-			}
-
-			bregs->CNDTR = (uint32_t)axfer->count;
-		}
-	}
-
-#endif
-
+    regs->CLLR = lli;
+  }
+  else
+  {
+    regs->CLLR = 0; // no linked list usage
+  }
 }
 
 #endif // if HWDMA_V3
