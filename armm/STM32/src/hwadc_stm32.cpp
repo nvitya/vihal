@@ -480,7 +480,7 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 }
 
 
-#elif defined(MCUSF_G4) || defined(MCUSF_H7)
+#elif defined(MCUSF_G4) || defined(MCUSF_H7) // || defined(MCUSF_H7RS)
 
 bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 {

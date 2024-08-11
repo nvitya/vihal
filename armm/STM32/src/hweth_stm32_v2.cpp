@@ -45,7 +45,11 @@ bool THwEth_stm32_v2::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesc
     SYSCFG->PMCR |= SYSCFG_PMCR_EPIS_SEL_2;  // select RMII mode
     if (SYSCFG->PMCR) { }
   #else
-    #warning "implement for H7RS"
+    RCC->APB4ENR |= RCC_APB4ENR_SBSEN;
+    if (RCC->APB4ENR) { } // read back for delay
+    SBS->PMCR &= ~(SBS_PMCR_ETH_PHYSEL_Msk);
+    SBS->PMCR |= (4 << SBS_PMCR_ETH_PHYSEL_Pos);  // 4 = RMII mode, 0 = MII
+    if (SBS->PMCR) { }
   #endif
 
   // enable clocks
