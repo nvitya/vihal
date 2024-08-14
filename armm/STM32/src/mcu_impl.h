@@ -27,8 +27,9 @@
   #include "hwdma_stm32_v3.h"
 #endif
 
-#if defined(QUADSPI) && defined(HWQSPI_H_)
+#if defined(HWQSPI_H_)
   #include "hwqspi_stm32.h"
+  #include "hwqspi_stm32_xspi.h"
 #endif
 
 #ifdef HWI2C_H_

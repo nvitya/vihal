@@ -41,6 +41,11 @@
 #define PORTNUM_I            8
 #define PORTNUM_J            9
 #define PORTNUM_K           10
+#define PORTNUM_L           11
+#define PORTNUM_M           12
+#define PORTNUM_N           13
+#define PORTNUM_O           14
+#define PORTNUM_P           15
 
 #define PINCFG_INPUT          0x0000
 #define PINCFG_OUTPUT         0x0001

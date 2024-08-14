@@ -19,33 +19,34 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwqspi_stm32.h
- *  brief:    STM32 QSPI
- *  version:  1.00
- *  date:     2018-09-21
+ *  file:     hwqspi_stm32_xspi.h
+ *  brief:    STM32 QSPI/XSPI driver
+ *  created:  2024-08-14
  *  authors:  nvitya
 */
 
-#ifndef HWQSPI_STM32_H_
-#define HWQSPI_STM32_H_
+#ifndef HWQSPI_XSPI_STM32_H_
+#define HWQSPI_XSPI_STM32_H_
 
 #include "platform.h"
 
-#if defined(QUADSPI)
+#if defined(XSPI) || defined(XSPI1)
 
 #define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
 
 class THwQspi_stm32 : public THwQspi_pre
 {
-public: // default DMA channels (for G4)
-	uint8_t   dmanum = 2;
+public: // configuration
+	uint8_t   dmanum = HWDMA_HPDMA;
 	uint8_t   dmach  = 7;
+	uint8_t   cssel  = 0;
 
 public:
-	QUADSPI_TypeDef * regs = nullptr;
+	XSPI_TypeDef *  regs = nullptr;
+	uint8_t         devnum = 0;
 
-	bool Init();
+	bool Init(uint8_t adevnum);
 
 	virtual bool InitInterface(); // override
 
@@ -60,6 +61,6 @@ public:
 
 #define HWQSPI_IMPL THwQspi_stm32
 
-#endif // defined QUADSPI
+#endif // defined XSPI
 
-#endif // def HWQSPI_STM32_H_
+#endif // def HWQSPI_XSPI_STM32_H_
