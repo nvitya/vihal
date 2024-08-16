@@ -31,7 +31,7 @@
 
 #include "platform.h"
 
-#if defined(MCUSF_V2)
+#if defined(HWDMA_V2)
 
 #define HWDMA_PRE_ONLY
 #include "hwdma.h"

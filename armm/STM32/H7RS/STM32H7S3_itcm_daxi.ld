@@ -10,7 +10,7 @@ MEMORY
 }
 
 REGION_ALIAS("TEXT", ITCRAM);
-REGION_ALIAS("RAM",  DTCRAM);
+REGION_ALIAS("RAM",  RAM2);
 
 INCLUDE armm_default_noflash.ld
 

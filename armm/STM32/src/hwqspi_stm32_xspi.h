@@ -20,7 +20,7 @@
  * --------------------------------------------------------------------------- */
 /*
  *  file:     hwqspi_stm32_xspi.h
- *  brief:    STM32 QSPI/XSPI driver
+ *  brief:    STM32 OSPI/XSPI driver (H723, H730, H7RS)
  *  created:  2024-08-14
  *  authors:  nvitya
 */
@@ -30,17 +30,27 @@
 
 #include "platform.h"
 
-#if defined(XSPI) || defined(XSPI1)
+#if defined(OCTOSPI1) ||  defined(XSPI) || defined(XSPI1)
 
 #define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
 
+#if defined(OCTOSPI1)
+  typedef OCTOSPI_TypeDef  XSPI_TypeDef;
+#endif
+
 class THwQspi_stm32 : public THwQspi_pre
 {
 public: // configuration
-	uint8_t   dmanum = HWDMA_HPDMA;
+  #if defined(HWDMA_V3)
+	  uint8_t   dmanum = HWDMA_HPDMA;
+  #else
+	  uint8_t   dmanum = HWDMA_MDMA;
+  #endif
 	uint8_t   dmach  = 7;
-	uint8_t   cssel  = 0;
+	uint8_t   cs_line  = 0;
+	bool      ddr_mode = false;
+	bool      dqs_enable = false;
 
 public:
 	XSPI_TypeDef *  regs = nullptr;
@@ -57,6 +67,8 @@ public:
 
 	uint32_t   mlcode = 0;
 	int        runstate = 0;
+	uint32_t   tcr_base = 0;
+	uint32_t   cr_base = 0;
 };
 
 #define HWQSPI_IMPL THwQspi_stm32

@@ -21,9 +21,10 @@
 /*
  *  file:     hwqspi.h
  *  brief:    Internal QSPI/SPIFI vendor-independent definitions
- *  version:  1.00
  *  date:     2018-02-10
  *  authors:  nvitya
+ *  notes:
+ *    Interface coding changed in 2024-08-14 to support two-byte instructions
 */
 
 #ifndef _HWQSPI_H_PRE_
@@ -35,69 +36,86 @@
 #include "hwerrors.h"
 
 // line format S = single line, M = multi line
-#define QSPICM_SSS        0x00000000  // S command, S address + dummy, S data (default)
-#define QSPICM_SSM        0x00000800  // S command, S address + dummy, M data
-#define QSPICM_SMM        0x00000E00  // S command, M address + dummy, M data
-#define QSPICM_MMM        0x00000F00  // M command, M address + dummy, M data
-#define QSPICM_MASK       0x00000F00
+#define QSPICM_SSS          0x00000000  // S command, S address + dummy, S data (default)
+#define QSPICM_SSM          0x00040000  // S command, S address + dummy, M data
+#define QSPICM_SMM          0x00060000  // S command, M address + dummy, M data
+#define QSPICM_MMM          0x00070000  // M command, M address + dummy, M data
+#define QSPICM_CMD_SMASK    0x0000FFFF  // command byte mask
+#define QSPICM_LN_MASK      0x00070000
+#define QSPICM_LN_POS               16
+#define QSPICM_LN_POS               16
+#define QSPICM_LN_DATA_POS          18
+#define QSPICM_LN_ADDR_POS          17
+#define QSPICM_LN_CMD_POS           16
+#define QSPICM_2B           0x00080000  // force 2-byte command (otherwise on second byte non-null)
 
 // Addres byte count
-#define QSPICM_ADDR       0x00080000  // send address with the default size
-#define QSPICM_ADDR0      0x00000000  // do not send address (default)
-#define QSPICM_ADDR1      0x00010000
-#define QSPICM_ADDR2      0x00020000
-#define QSPICM_ADDR3      0x00030000
-#define QSPICM_ADDR4      0x00040000
-#define QSPICM_ADDR_MASK  0x000F0000
+#define QSPICM_ADDR         0x00700000  // send address with the default size
+#define QSPICM_ADDR0        0x00000000  // do not send address (default)
+#define QSPICM_ADDR1        0x00100000
+#define QSPICM_ADDR2        0x00200000
+#define QSPICM_ADDR3        0x00300000
+#define QSPICM_ADDR4        0x00400000
+#define QSPICM_ADDR_MASK    0x00700000
+#define QSPICM_ADDR_SMASK         0x07
+#define QSPICM_ADDR_POS             20
 
-// dummy byte count
-#define QSPICM_DUMMY      0x00800000  // send dummy with the default size
-#define QSPICM_DUMMY0     0x00000000  // do not send dummy (default)
-#define QSPICM_DUMMY1     0x00100000  // 1 dummy bytes
-#define QSPICM_DUMMY2     0x00200000  // 2 dummy bytes
-#define QSPICM_DUMMY3     0x00300000  // 3 dummy bytes
-#define QSPICM_DUMMY4     0x00400000  // 4 dummy bytes
-#define QSPICM_DUMMY_MASK 0x00F00000
+// dummy cycle count (2 x [0-30])
+#define QSPICM_DUMMYC       0x1F000000  // send dummy cycles with the default size
+#define QSPICM_DUMMYC0      0x00000000  // do not send dummy (default)
+#define QSPICM_DUMMYC2      0x01000000  // 2 dummy cycles
+#define QSPICM_DUMMYC4      0x02000000  // 4 dummy cycles
+#define QSPICM_DUMMYC6      0x03000000  // 6 dummy cycles
+#define QSPICM_DUMMYC8      0x04000000  // 8 dummy cycles
+#define QSPICM_DUMMYC10     0x05000000  // 10 dummy cycles
+#define QSPICM_DUMMYC12     0x06000000  // 12 dummy cycles
+#define QSPICM_DUMMYC14     0x07000000  // 14 dummy cycles
+#define QSPICM_DUMMYC16     0x08000000  // 16 dummy cycles
+#define QSPICM_DUMMYC18     0x09000000  // 18 dummy cycles
+#define QSPICM_DUMMYC20     0x0A000000  // 20 dummy cycles
+#define QSPICM_DUMMYC22     0x0B000000  // 22 dummy cycles
+#define QSPICM_DUMMYC24     0x0C000000  // 24 dummy cycles
+#define QSPICM_DUMMYC26     0x0D000000  // 26 dummy cycles
+#define QSPICM_DUMMYC28     0x0E000000  // 28 dummy cycles
+#define QSPICM_DUMMYC30     0x0F000000  // 30 dummy cycles
+#define QSPICM_DUMMYC_MASK  0x1F000000
+#define QSPICM_DUMMYC_SMASK       0x1F
+#define QSPICM_DUMMYC_POS           24
 
 // mode bits
-#define QSPICM_MODE       0x80000000  // send mode bits with the default size
-#define QSPICM_MODE0      0x00000000  // do not send mode bits (default)
-#define QSPICM_MODE1      0x10000000  // 1 mode bytes
-#define QSPICM_MODE2      0x20000000  // 2 mode bytes
-#define QSPICM_MODE3      0x30000000  // 3 mode bytes
-#define QSPICM_MODE4      0x40000000  // 4 mode bytes
-
+#define QSPICM_MODE         0x80000000  // send mode bits with the default size
+#define QSPICM_MODE_POS             31
 
 class THwQspi_pre
 {
 public:	// settings
 	bool 					 initialized = false;
 
-	unsigned       speed = 8000000;  // default speed = 8MHz
 	bool           idleclk_high = true;
 	bool           datasample_late = false;
 
-	unsigned       addrlen = 3;
-	unsigned       modelen = 1;
-	unsigned       dummysize = 1; // default dummy size = 1 byte
+	uint8_t        addrlen = 3;           // default address byte count
+	uint8_t        modelen = 1;           // mode bytes count
+	uint8_t        dummycycles = 8;       // default dummy cycles = 1 byte
+	uint8_t        multi_line_count = 2;  // 4 = quad, 2 = dual mode, 8 = octal, 1 = disable multi line mode
 
-	unsigned       modedata = 0;
-	unsigned       dummydata = 0;
+	uint32_t       speed = 8000000;  // default speed = 8MHz
 
-	unsigned       multi_line_count = 2;  // 4 = quad, 2 = dual mode, 1 = disable multi line mode
+  uint32_t       modedata = 0;
+  uint32_t       dummydata = 0;
 
 public: // Required HW resources
-	THwDmaChannel  txdma;
-	THwDmaChannel  rxdma;
+  THwDmaChannel  txdma;
+  THwDmaChannel  rxdma;
 
-	THwDmaTransfer xfer;
+  THwDmaTransfer xfer;
 
 public: // run state
 	bool           istx = false;
 	bool           dmaused = false;
 	uint8_t *      dataptr = nullptr;
-	unsigned       datalen = 0;
-	unsigned       remainingbytes = 0;
+	uint32_t       datalen = 0;
+	uint32_t       remainingbytes = 0;
 
 	bool           busy = false;
 

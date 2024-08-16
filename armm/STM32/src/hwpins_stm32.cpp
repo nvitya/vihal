@@ -20,15 +20,24 @@
 /*
  *  file:     hwpins_stm32.cpp
  *  brief:    STM32 Pin/Pad and GPIO configuration
- *  version:  1.00
- *  date:     2018-02-10
+ *  created:  2018-02-10
  *  authors:  nvitya
 */
 
 #include "platform.h"
 #include "hwpins.h"
 
-#if defined(GPIOK_BASE)
+#if defined(GPIOP_BASE)
+  #define MAX_PORT_NUMBER 16
+#elif defined(GPIOO_BASE)
+  #define MAX_PORT_NUMBER 15
+#elif defined(GPION_BASE)
+  #define MAX_PORT_NUMBER 14
+#elif defined(GPIOM_BASE)
+  #define MAX_PORT_NUMBER 13
+#elif defined(GPIOL_BASE)
+  #define MAX_PORT_NUMBER 12
+#elif defined(GPIOK_BASE)
   #define MAX_PORT_NUMBER 11
 #elif defined(GPIOJ_BASE)
   #define MAX_PORT_NUMBER 10
