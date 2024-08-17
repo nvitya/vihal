@@ -319,7 +319,7 @@ int THwQspi_imxrt::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 	}
 	else
 	{
-		if (acmd & 0x0F00)
+		if (acmd & QSPICM_LN_MASK)
 		{
 			// other multiline are not supported
 	    return HWERR_NOTIMPL;
@@ -399,7 +399,7 @@ int THwQspi_imxrt::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 	}
 	else
 	{
-		if (acmd & 0x0F00)
+		if (acmd & QSPICM_LN_MASK)
 		{
 			// other multiline are not supported
 			return HWERR_NOTIMPL;

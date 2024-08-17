@@ -196,8 +196,6 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
   if (len <= 64)  chunksize = len;
   else            chunksize = 64;
 
-  unsigned fields = ((acmd >> 8) & 0xF);
-
   uint32_t rctrl = (0
     | (0  <<  3)  // DUMMY_OUT: In the dummy phase the signal level of spi is output by the spi controller
     | (0  <<  7)  // FCMD_DUAL: Apply 2 signals during command phase 1:enable 0: disable
@@ -250,7 +248,7 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
   {
     ruser |= (1  << 28);  // USR_MISO: This bit enable the read-data phase of an operation.
 
-    if (fields & 8) // multi line data ?
+    if (acmd & (1 << QSPICM_LN_DATA_POS))  // multi line data ?
     {
       rctrl |= (0
         | (1     << 13)  // FASTRD_MODE: This bit enable the bits: spi_mem_fread_qio  spi_mem_fread_dio  spi_mem_fread_qout and spi_mem_fread_dout. 1: enable 0: disable
@@ -272,12 +270,15 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
   }
 
   // address
-  unsigned rqaddrlen = ((acmd >> 16) & 0xF);
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
   if (rqaddrlen)
   {
-    ruser |= (1  << 30);  // USR_ADDR: This bit enable the address phase of an operation.
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
 
-    if (fields & 2)
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))  // multi-line address ?
     {
       rctrl |= (0
         | (1     << 13)  // FASTRD_MODE: This bit enable the bits: spi_mem_fread_qio  spi_mem_fread_dio  spi_mem_fread_qout and spi_mem_fread_dout. 1: enable 0: disable
@@ -290,50 +291,30 @@ int THwQspi_esp::StartReadData(unsigned acmd, unsigned address, void * dstptr, u
       // single line address
     }
 
-    if (8 == rqaddrlen)
+    ruser  |= (1  << 30);  // USR_ADDR: This bit enable the address phase of an operation.
+    ruser1 |= (((rqaddrlen << 3)-1) << 26); // requested address length
+
+    mregs->ADDR = address;
+  }
+
+  // dummy cycles
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
     {
-      ruser1 |= (((addrlen << 3)-1) << 26); // default address length
+      rqdummyc = dummycycles;
     }
     else
     {
-      ruser1 |= (((rqaddrlen << 3)-1) << 26); // requested address length
+      rqdummyc <<= 1;
     }
 
-    mregs->ADDR = address;
-
-    ruser |= (1 << 30); // enable the address
-  }
-
-  // dummy
-  unsigned dummybytes = ((acmd >> 20) & 0xF);
-  if (dummybytes)
-  {
-    ruser |= (1  << 29);  // USR_DUMMY: This bit enable the dummy phase of an operation.
-
-    // dummy required
-    if (8 == dummybytes)
-    {
-      dummybytes = dummysize;
-    }
-
-    unsigned dummybits = (dummybytes << 3); // *8
-    if (fields & 2) // multiline address ?
-    {
-      if (multi_line_count == 4)
-      {
-        dummybits = (dummybytes << 1);  // *2
-      }
-      else if (multi_line_count == 2)
-      {
-        dummybits = (dummybytes << 2);  // *4
-      }
-    }
-
-    ruser1 |= ((dummybits-1)  <<  0);  // USR_DUMMY_CYCLELEN(6): The length in spi_mem_clk cycles of dummy phase. The register value shall be (cycle_num-1).
+    ruser1 |= ((rqdummyc-1)  <<  0);  // USR_DUMMY_CYCLELEN(6): The length in spi_mem_clk cycles of dummy phase. The register value shall be (cycle_num-1).
   }
 
   // command
-  if (fields & 1) // multi line command ?
+  if (acmd & (1 << QSPICM_LN_CMD_POS))  // multi line command ?
   {
     rctrl = (0
       | (1     << 13)  // FASTRD_MODE: This bit enable the bits: spi_mem_fread_qio  spi_mem_fread_dio  spi_mem_fread_qout and spi_mem_fread_dout. 1: enable 0: disable
@@ -381,8 +362,6 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
   remainingbytes = len;
   if (len <= 64)  chunksize = len;
   else            chunksize = WRITE_CHUNK_MAX;  // use 60 byte chunks with write ahead
-
-  unsigned fields = ((acmd >> 8) & 0xF);
 
   uint32_t rctrl = (0
     | (0  <<  3)  // DUMMY_OUT: In the dummy phase the signal level of spi is output by the spi controller
@@ -438,7 +417,7 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
   {
     ruser |= (1  << 27);  // USR_MOSI: This bit enable the write-data phase of an operation.
 
-    if (fields & 8) // multi line data ?
+    if (acmd & (1 << QSPICM_LN_DATA_POS))  // multi line data ?
     {
       ruser |= (0
         | (mldio << 12)  // FWRITE_DUAL: In the write operations read-data phase apply 2 signals
@@ -461,12 +440,15 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
   }
 
   // address
-  unsigned rqaddrlen = ((acmd >> 16) & 0xF);
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
   if (rqaddrlen)
   {
-    ruser |= (1  << 30);  // USR_ADDR: This bit enable the address phase of an operation.
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
 
-    if (fields & 2)
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))  // multi-line address ?
     {
       ruser |= (0
         | (mldio << 12)  // FWRITE_DUAL: In the write operations read-data phase apply 2 signals
@@ -480,50 +462,30 @@ int THwQspi_esp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, 
       // single line address
     }
 
-    if (8 == rqaddrlen)
+    ruser  |= (1  << 30);  // USR_ADDR: This bit enable the address phase of an operation.
+    ruser1 |= (((rqaddrlen << 3)-1) << 26); // requested address length
+
+    mregs->ADDR = address;
+  }
+
+  // dummy cycles
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
     {
-      ruser1 |= (((addrlen << 3)-1) << 26); // default address length
+      rqdummyc = dummycycles;
     }
     else
     {
-      ruser1 |= (((rqaddrlen << 3)-1) << 26); // requested address length
+      rqdummyc <<= 1;
     }
 
-    mregs->ADDR = address;
-
-    ruser |= (1 << 30); // enable the address
-  }
-
-  // dummy
-  unsigned dummybytes = ((acmd >> 20) & 0xF);
-  if (dummybytes)
-  {
-    ruser |= (1  << 29);  // USR_DUMMY: This bit enable the dummy phase of an operation.
-
-    // dummy required
-    if (8 == dummybytes)
-    {
-      dummybytes = dummysize;
-    }
-
-    unsigned dummybits = (dummybytes << 3); // *8
-    if (fields & 2) // multiline address ?
-    {
-      if (multi_line_count == 4)
-      {
-        dummybits = (dummybytes << 1);  // *2
-      }
-      else if (multi_line_count == 2)
-      {
-        dummybits = (dummybytes << 2);  // *4
-      }
-    }
-
-    ruser1 |= ((dummybits-1)  <<  0);  // USR_DUMMY_CYCLELEN(6): The length in spi_mem_clk cycles of dummy phase. The register value shall be (cycle_num-1).
+    ruser1 |= ((rqdummyc-1)  <<  0);  // USR_DUMMY_CYCLELEN(6): The length in spi_mem_clk cycles of dummy phase. The register value shall be (cycle_num-1).
   }
 
   // command
-  if (fields & 1) // multi line command ?
+  if (acmd & (1 << QSPICM_LN_CMD_POS))  // multi line command ?
   {
     rctrl = (0
       | (mldio <<  7)  // FCMD_DUAL: Apply 2 signals during command phase 1:enable 0: disable

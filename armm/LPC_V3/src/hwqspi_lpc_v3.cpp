@@ -136,37 +136,66 @@ int THwQspi_lpc_v3::StartReadData(unsigned acmd, unsigned address, void * dstptr
 	regs->STAT = 0x20; // clear interrupt;
 
 	unsigned frame = 1; // send command code only by default
-	unsigned char calen = ((acmd >> 16) & 0xF);
-	if (calen != 0)
-	{
+
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen)
+  {
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
 		regs->ADDR = address;
-		if (8 == calen)
-		{
-			frame += addrlen;  // use the default address size
-		}
-		else
-		{
-			frame += calen;
-		}
+		frame += rqaddrlen;
 	}
 
-	unsigned fields = ((acmd >> 8) & 0xF);
-	if (fields != 0)
-	{
-		if      (fields == 0xE)  fields = 2;  // S opcode, M others
-		else if (fields == 0x8)  fields = 1;  // S opcode, S addres, S dummy, M data
-		else if (fields == 0xF)  fields = 3;  // M all
-		else                     fields = 0;  // S all
-	}
+	unsigned fields;
+  if (acmd & (1 << QSPICM_LN_DATA_POS))   // multi-line data ?
+  {
+    if      (acmd & (1 << QSPICM_LN_CMD_POS))   fields = 3;  // MMM M all
+    else if (acmd & (1 << QSPICM_LN_ADDR_POS))  fields = 2;  // SMM S opcode, M others
+    else                                        fields = 1;  // SSM S opcode, S addres, S dummy, M data
+  }
+  else
+  {
+    fields = 0; // SSS S all
+  }
 
-	unsigned dcnt = ((acmd >> 20) & 0xF);
-	if (8 == dcnt)  dcnt = dummysize;
+  // dummy cycles
+  unsigned dbytes = 0;
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
+
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))  // multi-line address ?
+    {
+      if (2 == multi_line_count)
+      {
+        dbytes = (rqdummyc >> 1);
+      }
+      else
+      {
+        dbytes = (rqdummyc >> 2);
+      }
+    }
+    else
+    {
+      dbytes = (rqdummyc >> 3);
+    }
+  }
 
 	unsigned cmd = 0
 		|	(len << 0)      // Data length
 		|	(0 << 14)			  // POLL
 		|	(0 << 15)			  // 0 = input/read, 1 = output/write
-		|	(dcnt   << 16)	// INTLEN (bytes after address), 2 = 8 dummy clocks (in dual mode)
+		|	(dbytes << 16)	// INTLEN (bytes after address), 2 = 8 dummy clocks (in dual mode)
 		|	(fields << 19)	// FIELDFORM: 2 = opcode is serial, others are dual/quad
 		|	(frame  << 21)	// FRAMEFORM: 3 = opcode + 2 bytes of address
 		|	((acmd & 0xFF) << 24)
@@ -227,36 +256,65 @@ int THwQspi_lpc_v3::StartWriteData(unsigned acmd, unsigned address, void * srcpt
 	regs->STAT = 0x20; // clear interrupt;
 
 	unsigned frame = 1; // send command code only by default
-	unsigned char calen = ((acmd >> 16) & 0xF);
-	if (calen != 0)
-	{
-		regs->ADDR = address;
-		if (8 == calen)
-		{
-			frame += addrlen;  // use the default address size
-		}
-		else
-		{
-			frame += calen;
-		}
-	}
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen)
+  {
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
+    regs->ADDR = address;
+    frame += rqaddrlen;
+  }
 
-	unsigned fields = ((acmd >> 8) & 0xF);
-	if (fields != 0)
-	{
-		if      (fields == 0xE)  fields = 2;  // S opcode, M others
-		else if (fields == 0x8)  fields = 1;  // S opcode, S addres, S dummy, M data
-		else if (fields == 0xF)  fields = 3;  // M all
-		else                     fields = 0;  // S all
-	}
+  unsigned fields;
+  if (acmd & (1 << QSPICM_LN_DATA_POS))   // multi-line data ?
+  {
+    if      (acmd & (1 << QSPICM_LN_CMD_POS))   fields = 3;  // MMM M all
+    else if (acmd & (1 << QSPICM_LN_ADDR_POS))  fields = 2;  // SMM S opcode, M others
+    else                                        fields = 1;  // SSM S opcode, S addres, S dummy, M data
+  }
+  else
+  {
+    fields = 0; // SSS S all
+  }
 
-	unsigned dcnt = 0;  // no dummy at the writes
+  // dummy cycles
+  unsigned dbytes = 0;
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
+
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))  // multi-line address ?
+    {
+      if (2 == multi_line_count)
+      {
+        dbytes = (rqdummyc >> 1);
+      }
+      else
+      {
+        dbytes = (rqdummyc >> 2);
+      }
+    }
+    else
+    {
+      dbytes = (rqdummyc >> 3);
+    }
+  }
 
 	unsigned cmd = 0
 		|	(len << 0)      // Data length
 		|	(0 << 14)			  // POLL
 		|	(1 << 15)			  // 0 = input/read, 1 = output/write
-		|	(dcnt   << 16)	// INTLEN (bytes after address), 2 = 8 dummy clocks (in dual mode)
+		|	(dbytes << 16)	// INTLEN (bytes after address), 2 = 8 dummy clocks (in dual mode)
 		|	(fields << 19)	// FIELDFORM: 2 = opcode is serial, others are dual/quad
 		|	(frame  << 21)	// FRAMEFORM: 4 = opcode + 3 bytes of address
 		|	((acmd & 0xFF) << 24)

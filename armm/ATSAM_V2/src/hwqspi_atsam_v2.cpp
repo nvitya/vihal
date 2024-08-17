@@ -152,26 +152,29 @@ int THwQspi_atsam_v2::StartReadData(unsigned acmd, unsigned address, void * dstp
 		| (0 << 16)    // DUMMYLEN(5)
 	;
 
-	// set WIDTH
-	unsigned fields = ((acmd >> 8) & 0xF);
-	if (fields != 0)
-	{
-		unsigned multiiooffs;
-		if (multi_line_count == 4)  multiiooffs = 1;
-		else                        multiiooffs = 0;
+  // set WIDTH
+  if (acmd & (1 << QSPICM_LN_DATA_POS))   // multi-line data ?
+  {
+    unsigned multiiooffs;
+    if (multi_line_count == 4)  multiiooffs = 1;
+    else                        multiiooffs = 0;
 
-		if      (fields == 0xE)  ifr |= (3 + multiiooffs);  // SMM S opcode, M others
-		else if (fields == 0x8)  ifr |= (1 + multiiooffs);  // SSM S opcode, S addres + dummy, M data
-		else if (fields == 0xF)  ifr |= (5 + multiiooffs);  // MMM M all
-	}
+    if      (acmd & (1 << QSPICM_LN_CMD_POS))   ifr |= (5 + multiiooffs);  // MMM M all
+    else if (acmd & (1 << QSPICM_LN_ADDR_POS))  ifr |= (3 + multiiooffs);  // SMM S opcode, M others
+    else                                        ifr |= (1 + multiiooffs);  // SSM S opcode, S addres + dummy, M data
+  }
 
-	unsigned char calen = ((acmd >> 16) & 0xF);
-	if (calen != 0)
-	{
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen)
+  {
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
+
 		regs->INSTRADDR.reg = address;
-		if (8 == calen)  calen = addrlen;
-		if (4 == calen)  ifr |= (1 << 10); // 32 bit address, 24 bit otherwise
-		else if (3 != calen)
+		if (4 == rqaddrlen)  ifr |= (1 << 10); // 32 bit address, 24 bit otherwise
+		else if (3 != rqaddrlen)
 		{
 			// other address length are not supported!
 			__BKPT();
@@ -186,50 +189,23 @@ int THwQspi_atsam_v2::StartReadData(unsigned acmd, unsigned address, void * dstp
 		qspidatamem = (uint32_t *)(QSPI_AHB);
 	}
 
-
-	unsigned trftyp;
-	unsigned dcnt;
-
-  trftyp = 0;
-  dcnt = ((acmd >> 20) & 0xF);
-  if (8 == dcnt)  dcnt = dummysize;
-  if (4 == multi_line_count)
+  // dummy cycles
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
   {
-    dcnt <<= 1;
-  }
-  else if (2 == multi_line_count)
-  {
-    dcnt <<= 2;
-  }
-  else
-  {
-    dcnt <<= 3;
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
   }
 
-#if 0
-	if (0xEB == cmd)
-	{
-		// special quad read command with 1 byte opcode
-		ifr |= 0
-			| (1 <<  6)  // enable option
-			| (3 <<  8)  // 8 bit option data (2 cycles)
-		;
-		dcnt -= 2;
-		trftyp = 1;
-	}
-	else if (0xBB == cmd)
-	{
-		//dcnt = 4;
-		trftyp = 1;
-	}
-	else if (0x0B == cmd)
-	{
-		//dcnt = 8;
-		trftyp = 1;
-	}
-#endif
+	unsigned trftyp = 0;
 
-	ifr |= ((trftyp << 12) | (dcnt << 16));
+	ifr |= ((trftyp << 12) | (rqdummyc << 16));
 
 	if (datalen > 0)  ifr |= (1 << 7);
 
@@ -297,25 +273,27 @@ int THwQspi_atsam_v2::StartWriteData(unsigned acmd, unsigned address, void * src
 	;
 
 	// set WIDTH
-	unsigned fields = ((acmd >> 8) & 0xF);
-	if (fields != 0)
-	{
-		unsigned multiiooffs;
-		if (multi_line_count == 4)  multiiooffs = 1;
-		else                        multiiooffs = 0;
+  if (acmd & (1 << QSPICM_LN_DATA_POS))   // multi-line data ?
+  {
+    unsigned multiiooffs;
+    if (multi_line_count == 4)  multiiooffs = 1;
+    else                        multiiooffs = 0;
 
-		if      (fields == 0xE)  ifr |= (3 + multiiooffs);  // SMM S opcode, M others
-		else if (fields == 0x8)  ifr |= (1 + multiiooffs);  // SSM S opcode, S addres + dummy, M data
-		else if (fields == 0xF)  ifr |= (5 + multiiooffs);  // MMM M all
-	}
+    if      (acmd & (1 << QSPICM_LN_CMD_POS))   ifr |= (5 + multiiooffs);  // MMM M all
+    else if (acmd & (1 << QSPICM_LN_ADDR_POS))  ifr |= (3 + multiiooffs);  // SMM S opcode, M others
+    else                                        ifr |= (1 + multiiooffs);  // SSM S opcode, S addres + dummy, M data
+  }
 
-	unsigned char calen = ((acmd >> 16) & 0xF);
-	if (calen != 0)
-	{
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen)
+  {
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
 		regs->INSTRADDR.reg = address;  // required for commands without data (like erase)
-		if (8 == calen)  calen = addrlen;
-		if (4 == calen)  ifr |= (1 << 10); // 32 bit address, 24 bit otherwise
-		else if (3 != calen)
+		if (4 == rqaddrlen)  ifr |= (1 << 10); // 32 bit address, 24 bit otherwise
+		else if (3 != rqaddrlen)
 		{
 			// other address length are not supported!
 			__BKPT();
@@ -330,9 +308,19 @@ int THwQspi_atsam_v2::StartWriteData(unsigned acmd, unsigned address, void * src
 		qspidatamem = (uint32_t *)(QSPI_AHB);
 	}
 
-
-	unsigned dcnt = ((acmd >> 20) & 0xF);
-	if (8 == dcnt)  dcnt = dummysize;
+  // dummy cycles
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
+  }
 
 	unsigned trftyp;
 	if ((0x32 == cmd) || (0x02 == cmd))
@@ -345,7 +333,7 @@ int THwQspi_atsam_v2::StartWriteData(unsigned acmd, unsigned address, void * src
 		trftyp = 2;
 	}
 
-	ifr |= ((trftyp << 12) | (dcnt << 19));
+	ifr |= ((trftyp << 12) | (rqdummyc << 19));
 
 	if (datalen > 0)  ifr |= (1 << 7);
 

@@ -42,7 +42,7 @@
 #define QSPICM_MMM          0x00070000  // M command, M address + dummy, M data
 #define QSPICM_CMD_SMASK    0x0000FFFF  // command byte mask
 #define QSPICM_LN_MASK      0x00070000
-#define QSPICM_LN_POS               16
+#define QSPICM_LN_SMASK           0x07
 #define QSPICM_LN_POS               16
 #define QSPICM_LN_DATA_POS          18
 #define QSPICM_LN_ADDR_POS          17
