@@ -36,6 +36,7 @@
 #endif
 
 #include "stm32_utils.h"
+#include "hwqspi_stm32.h"
 #include "hwqspi.h"
 #include "clockcnt.h"
 
@@ -116,6 +117,8 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
     return false;
   }
 
+  devnum = adevnum;
+
 	unsigned baseclock = stm32_bus_speed(0);
 	unsigned speeddiv = baseclock / speed;
 	if (speeddiv * speed < baseclock)  ++speeddiv;
@@ -138,8 +141,7 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
 	  | (0     <<  7) // FSEL: flash memory selection, 0 = FLASH1, 1 = FLASH2
 	  | (0     <<  6) // DMM: dual memory mode
 	  | (0     <<  3) // TCEN: timeout counter enable
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	  | (0     <<  2) // DMAEN: enable DMA
+	  | (1     <<  2) // DMAEN: enable DMA
 	  | (0     <<  1) // ABORT: abort request
 	  | (0     <<  0) // EN: enable, enable later
 	);
@@ -151,7 +153,7 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
 	// configure device type
 	tmp = (0
 	  | (2  << 24)  // MTYP(3): 2 = standard mode
-	  | (0x18 << 16)  // DEVSIZE(5): device size (in 2^(FSIZE+1) bytes)
+	  | (0x1A << 16)  // DEVSIZE(5): device size (in 2^(FSIZE+1) bytes)
 	  | (0  <<  8)  // CSHT(6): chip select high time
 	  | (0  <<  1)  // FRCK: 1 = free running clock
 	  | (0  <<  0)  // CKMODE: 0 = idle clock low, 1 = idle clock high
@@ -203,47 +205,193 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
 	return true;
 }
 
-void THwQspi_stm32::SetMemMappedMode()
+void THwQspi_stm32::SetMemMappedMode(uint32_t ardcmd, uint32_t awrcmd)
 {
-#if 0
-	while (busy)
-	{
-		Run();
-	}
+  regs->CR = (cr_base | (3 << 28)); // FMODE(2): 3 = memory mapped mode
+  regs->FCR = 0x1F; // clear flags
 
-	unsigned cmd = 0x0B; // fast read;
-	unsigned dummy = 8;
-	unsigned abmode = 0;
+  unsigned ccr = 0
+    | (0 << 29) // DQSE: 1 = DQS enabled
 
-	if (multi_line_count == 2)
-	{
-		cmd = 0x3B; // dual data
-	}
-	else if (multi_line_count == 4)
-	{
-		cmd = 0x6B; // quad data
-	}
+    | (0 << 27) // DDTR: 1 = DDR enabled for DATA phase
+    | (0 << 24) // DMODE(3): DATA phase line count, 0 = disable
 
-	unsigned ccr = 0
-		| (0 << 31) // DDRM: double data rate mode
-		| (0 << 30) // DHHC: DDR hold
-		| (0 << 28) // SIOO: send instruction only once, 0 = send inst. for every transaction
-		| (3 << 26) // FMODE(2): functional mode, 0 = write mode, 1 = read mode, 2 = polling, 3 = memory mapped
-		| (mlcode << 24) // DMODE(2): data mode, 0 = no data, 1 = single, 2 = dual, 4 = quad
-		| (dummy  << 18) // DCYC(5): number of dummy cycles
-		| (0 << 16) // ABSIZE(2): alternate byte size, 0 = 1 byte, 3 = 4 byte
-		| (0 << 14) // ABMODE(2): alternate byte mode, 0 = no bytes, 1 = single, 2 = dual, 3 = quad
-		| (2 << 12) // ADSIZE(2): address size, 0 = 1 byte, 3 = 4 byte
-		| (1 << 10) // ADMODE(2): address mode, 0 = do not send, 1 = single, 2 = dual, 3 = quad
-		| (1 <<  8) // IMODE(2): instruction mode, 0 = do not send, 1 = single, 2 = dual, 3 = quad
-		| ((cmd & 0xFF) <<  0) // INSTRUCTION(8): command / instruction byte
-	;
+    | (0 << 20) // ABSIZE(2): ALTERNANATE BYTE size - 1
+    | (0 << 19) // ABDTR: 1 = DDR enabled for ALTERNATE BYTEs
+    | (0 << 16) // ABMODE(3): ALTERNATE BYTE phase line count, 0 = disable
 
-	regs->FCR = 0x1F;
-	regs->ABR = 0;
-	//regs->AR = 0;
-	regs->CCR = ccr;
-#endif
+    | (0 << 12) // ADSIZE(2): ADDRESS byte count - 1
+    | (0 << 11) // ADDTR: 1 = DDR enabled for ADDRESS phase
+    | (0 <<  8) // ADMODE(3): ADDRESS phase line count, 0 = disable
+
+    | (0 <<  4) // ISIZE(2): INSTRUCTION byte count - 1
+    | (0 <<  3) // IDTR: 1 = DDR enabled for INSTRUCTION phase
+    | (0 <<  0) // IMODE(3): INSTRUCTION phase line count, 0 = disable
+  ;
+
+  // data
+  if (ardcmd & (1 << QSPICM_LN_DATA_POS))
+  {
+    ccr |= (mlcode << 24); // multi line data
+  }
+  else
+  {
+    ccr |= (1 << 24); // single line data
+  }
+
+  // address
+  unsigned rqaddrlen = ((ardcmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen > 4)
+  {
+    rqaddrlen = addrlen;  // default addrlen
+  }
+  if (ardcmd & (1 << QSPICM_LN_ADDR_POS))
+  {
+    ccr |= (mlcode << 8); // multi line address
+  }
+  else
+  {
+    ccr |= (1 << 8); // single line address
+  }
+
+  ccr |= ((rqaddrlen-1) << 12);
+
+  // mode / alternate bytes
+  if (ardcmd & QSPICM_MODE)
+  {
+    if (ardcmd & (1 << QSPICM_LN_ADDR_POS))
+    {
+      ccr |= (mlcode << 16); // multi line alternate / mode bytes
+    }
+    else
+    {
+      ccr |= (1 << 16); // single line alternate bytes
+    }
+
+    ccr |= ((modelen-1) << 20); // default modelen
+    regs->ABR = modedata;
+  }
+
+  // dummy cycles
+  unsigned rqdummyc = ((ardcmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
+  }
+
+  // command, must be present always !
+  if (ardcmd & (1 << QSPICM_LN_CMD_POS))
+  {
+    ccr |= (mlcode << 0); // multi line command, always QUAD
+  }
+  else
+  {
+    ccr |= (1 << 0); // single line command
+  }
+
+  regs->TCR = (tcr_base | (rqdummyc << 0));  // DCYC(5): dummy cycles
+  regs->CCR = ccr;
+  regs->IR = (ardcmd & QSPICM_CMD_SMASK);
+
+  //------------------------------------------------
+  // WRITE
+  //------------------------------------------------
+
+  ccr = 0
+    | (0 << 29) // DQSE: 1 = DQS enabled
+
+    | (0 << 27) // DDTR: 1 = DDR enabled for DATA phase
+    | (0 << 24) // DMODE(3): DATA phase line count, 0 = disable
+
+    | (0 << 20) // ABSIZE(2): ALTERNANATE BYTE size - 1
+    | (0 << 19) // ABDTR: 1 = DDR enabled for ALTERNATE BYTEs
+    | (0 << 16) // ABMODE(3): ALTERNATE BYTE phase line count, 0 = disable
+
+    | (0 << 12) // ADSIZE(2): ADDRESS byte count - 1
+    | (0 << 11) // ADDTR: 1 = DDR enabled for ADDRESS phase
+    | (0 <<  8) // ADMODE(3): ADDRESS phase line count, 0 = disable
+
+    | (0 <<  4) // ISIZE(2): INSTRUCTION byte count - 1
+    | (0 <<  3) // IDTR: 1 = DDR enabled for INSTRUCTION phase
+    | (0 <<  0) // IMODE(3): INSTRUCTION phase line count, 0 = disable
+  ;
+
+  // data
+  if (awrcmd & (1 << QSPICM_LN_DATA_POS))
+  {
+    ccr |= (mlcode << 24); // multi line data
+  }
+  else
+  {
+    ccr |= (1 << 24); // single line data
+  }
+
+  // address
+  rqaddrlen = ((awrcmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen > 4)
+  {
+    rqaddrlen = addrlen;  // default addrlen
+  }
+  if (awrcmd & (1 << QSPICM_LN_ADDR_POS))
+  {
+    ccr |= (mlcode << 8); // multi line address
+  }
+  else
+  {
+    ccr |= (1 << 8); // single line address
+  }
+
+  ccr |= ((rqaddrlen-1) << 12);
+
+  // mode / alternate bytes
+  if (awrcmd & QSPICM_MODE)
+  {
+    if (awrcmd & (1 << QSPICM_LN_ADDR_POS))
+    {
+      ccr |= (mlcode << 16); // multi line alternate / mode bytes
+    }
+    else
+    {
+      ccr |= (1 << 16); // single line alternate bytes
+    }
+
+    ccr |= ((modelen-1) << 20); // default modelen
+    regs->ABR = modedata;
+  }
+
+  // dummy cycles
+  rqdummyc = ((awrcmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
+  }
+
+  if (awrcmd & (1 << QSPICM_LN_CMD_POS))
+  {
+    ccr |= (mlcode << 0); // multi line command, always QUAD
+  }
+  else
+  {
+    ccr |= (1 << 0); // single line command
+  }
+
+  regs->WTCR = (tcr_base | (rqdummyc << 0));  // DCYC(5): dummy cycles
+  regs->WCCR = ccr;
+  regs->WIR = (awrcmd & QSPICM_CMD_SMASK);
 }
 
 int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr, unsigned len)
@@ -364,8 +512,6 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 
 
 	regs->FCR = 0x1F; // clear flags
-
-	TRACE("QSPI start with CCR = %08X\r\n", ccr);
 
 	regs->IR = (acmd & QSPICM_CMD_SMASK);
 	if (rqaddrlen)

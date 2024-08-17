@@ -62,7 +62,7 @@ public:
 
 	int  StartReadData(unsigned acmd, unsigned address, void * dstptr, unsigned len);
 	int  StartWriteData(unsigned acmd, unsigned address, void * srcptr, unsigned len);
-	void SetMemMappedMode();
+	void SetMemMappedMode(uint32_t ardcmd, uint32_t awrcmd);
 	void Run();
 
 	uint32_t   mlcode = 0;
