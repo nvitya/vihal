@@ -555,7 +555,7 @@ void TSpiFlash::CmdRead()
     if (qspi->multi_line_count == 4)
     {
       // 0x6B is safer
-      qspi->StartReadData(0x6B | QSPICM_SSM | QSPICM_ADDR | QSPICM_DUMMY, address, dataptr, chunksize);
+      qspi->StartReadData(0x6B | QSPICM_SSM | QSPICM_ADDR | QSPICM_DUMMYC8, address, dataptr, chunksize);
 
       // the 0xEB does not work sometime, requires mode implementation
       //qspi.StartReadData(0xEB | QSPICM_SMM | QSPICM_ADDR3 | QSPICM_MODE1 | QSPICM_DUMMY2, address, dataptr, chunksize);
@@ -563,14 +563,14 @@ void TSpiFlash::CmdRead()
     else if (qspi->multi_line_count == 2)
     {
       // 0x3B is safer
-      qspi->StartReadData(0x3B | QSPICM_SSM | QSPICM_ADDR | QSPICM_DUMMY, address, dataptr, chunksize);
+      qspi->StartReadData(0x3B | QSPICM_SSM | QSPICM_ADDR | QSPICM_DUMMYC8, address, dataptr, chunksize);
 
       // 0xBB does not work sometime, requires mode impementation and enable quad command (?)
       //qspi.StartReadData(0xBB | QSPICM_SMM | QSPICM_ADDR | QSPICM_MODE1, address, dataptr, chunksize);
     }
     else
     {
-      qspi->StartReadData(0x0B | QSPICM_SSS | QSPICM_ADDR | QSPICM_DUMMY, address, dataptr, chunksize);
+      qspi->StartReadData(0x0B | QSPICM_SSS | QSPICM_ADDR | QSPICM_DUMMYC8, address, dataptr, chunksize);
     }
   }
   else

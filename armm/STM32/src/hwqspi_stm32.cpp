@@ -231,12 +231,10 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 		| ((acmd & 0xFF) <<  0) // INSTRUCTION(8): command / instruction byte
 	;
 
-	unsigned fields = ((acmd >> 8) & 0xF);
-
 	// data
 	if (datalen > 0)
 	{
-		if (fields & 8)
+    if (acmd & (1 << QSPICM_LN_DATA_POS))
 		{
 			ccr |= (mlcode << 24); // multi line data
 		}
@@ -246,11 +244,11 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 		}
 	}
 	// address
-	unsigned rqaddrlen = ((acmd >> 16) & 0xF);
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
 	if (rqaddrlen)
 	{
 		// do not write the address here
-		if (fields & 2)
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))
 		{
 			ccr |= (mlcode << 10); // multi line address
 		}
@@ -259,21 +257,17 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 			ccr |= (1 << 10); // single line address
 		}
 
-		if (8 == rqaddrlen)
+    if (rqaddrlen > 4)
 		{
-			ccr |= ((addrlen-1) << 12); // default addrlen
+      rqaddrlen = addrlen;  // default addrlen
 		}
-		else
-		{
-			ccr |= ((rqaddrlen-1) << 12); // requested address length
-		}
+		ccr |= ((rqaddrlen-1) << 12); // requested address length
 	}
 
 	// mode / alternate bytes
-	unsigned ablen = ((acmd >> 28) & 0xF);
-	if (ablen)
+  if (acmd & QSPICM_MODE)
 	{
-		if (fields & 2)
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))
 		{
 			ccr |= (mlcode << 14); // multi line alternate bytes
 		}
@@ -282,45 +276,28 @@ int THwQspi_stm32::StartReadData(unsigned acmd, unsigned address, void * dstptr,
 			ccr |= (1 << 14); // single line alternate bytes
 		}
 
-		if (8 == ablen)
-		{
-			ccr |= ((modelen-1) << 16); // default addrlen
-		}
-		else
-		{
-			ccr |= ((ablen-1) << 16); // requested address length
-		}
+		ccr |= ((modelen-1) << 16); // default addrlen
 		regs->ABR = modedata;
 	}
 
-	// dummy
-	unsigned dummybytes = ((acmd >> 20) & 0xF);
-	if (dummybytes)
-	{
-		// dummy required
-		if (8 == dummybytes)
-		{
-			dummybytes = dummysize;
-		}
+	// dummy cycles
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
 
-		unsigned dummybits = (dummybytes * 8);
-		if (fields & 2) // multiline address ?
-		{
-			if (multi_line_count == 4)
-			{
-				dummybits = (dummybytes << 1);  // *2
-			}
-			else if (multi_line_count == 2)
-			{
-				dummybits = (dummybytes << 2);  // *4
-			}
-		}
-
-		ccr |= (dummybits << 18);
+		ccr |= (rqdummyc << 18);
 	}
 
-	// command
-	if (fields & 1)
+  // command, must be present always !
+  if (acmd & (1 << QSPICM_LN_CMD_POS))
 	{
 	  ccr |= (3 << 8); // multi line command, always QUAD
 	}
@@ -394,102 +371,80 @@ int THwQspi_stm32::StartWriteData(unsigned acmd, unsigned address, void * srcptr
 		| ((acmd & 0xFF) <<  0) // INSTRUCTION(8): command / instruction byte
 	;
 
-	unsigned fields = ((acmd >> 8) & 0xF);
+  // data
+  if (datalen > 0)
+  {
+    if (acmd & (1 << QSPICM_LN_DATA_POS))
+    {
+      ccr |= (mlcode << 24); // multi line data
+    }
+    else
+    {
+      ccr |= (1 << 24); // single line data
+    }
+  }
+  // address
+  unsigned rqaddrlen = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (rqaddrlen)
+  {
+    // do not write the address here
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))
+    {
+      ccr |= (mlcode << 10); // multi line address
+    }
+    else
+    {
+      ccr |= (1 << 10); // single line address
+    }
 
-	// data
-	if (datalen > 0)
-	{
-		if (fields & 8)
-		{
-			ccr |= (mlcode << 24); // multi line data
-		}
-		else
-		{
-			ccr |= (1 << 24); // single line data
-		}
-	}
-	// address
-	unsigned rqaddrlen = ((acmd >> 16) & 0xF);
-	if (rqaddrlen)
-	{
-		// do not write the address here
-		if (fields & 2)
-		{
-			ccr |= (mlcode << 10); // multi line address
-		}
-		else
-		{
-			ccr |= (1 << 10); // single line address
-		}
+    if (rqaddrlen > 4)
+    {
+      rqaddrlen = addrlen;  // default addrlen
+    }
+    ccr |= ((rqaddrlen-1) << 12); // requested address length
+  }
 
-		if (8 == rqaddrlen)
-		{
-			ccr |= ((addrlen-1) << 12); // default addrlen
-		}
-		else
-		{
-			ccr |= ((rqaddrlen-1) << 12); // requested address length
-		}
-	}
+  // mode / alternate bytes
+  if (acmd & QSPICM_MODE)
+  {
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))
+    {
+      ccr |= (mlcode << 14); // multi line alternate bytes
+    }
+    else
+    {
+      ccr |= (1 << 14); // single line alternate bytes
+    }
 
-	// mode / alternate bytes
-	unsigned ablen = ((acmd >> 28) & 0xF);
-	if (ablen)
-	{
-		if (fields & 2)
-		{
-			ccr |= (mlcode << 14); // multi line alternate bytes
-		}
-		else
-		{
-			ccr |= (1 << 14); // single line alternate bytes
-		}
+    ccr |= ((modelen-1) << 16); // default addrlen
+    regs->ABR = modedata;
+  }
 
-		if (8 == ablen)
-		{
-			ccr |= ((modelen-1) << 16); // default addrlen
-		}
-		else
-		{
-			ccr |= ((ablen-1) << 16); // requested address length
-		}
-		regs->ABR = modedata;
-	}
+  // dummy cycles
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
+  {
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
+    {
+      rqdummyc = dummycycles;
+    }
+    else
+    {
+      rqdummyc <<= 1;
+    }
 
-	unsigned dummybytes = ((acmd >> 20) & 0xF);
-	if (dummybytes)
-	{
-		// dummy required
-		if (8 == dummybytes)
-		{
-			dummybytes = dummysize;
-		}
+    ccr |= (rqdummyc << 18);
+  }
 
-		unsigned dummybits = (dummybytes * 8);
-		if (fields & 2) // multiline address ?
-		{
-			if (multi_line_count == 4)
-			{
-				dummybits = (dummybytes << 1);  // *2
-			}
-			else if (multi_line_count == 2)
-			{
-				dummybits = (dummybytes << 2);  // *4
-			}
-		}
-
-		ccr |= (dummybits << 18);
-	}
-
-	// command
-	if (fields & 1)
-	{
+  // command, must be present always !
+  if (acmd & (1 << QSPICM_LN_CMD_POS))
+  {
     ccr |= (3 << 8); // multi line command, always QUAD
-	}
-	else
-	{
-		ccr |= (1 << 8); // single line command
-	}
+  }
+  else
+  {
+    ccr |= (1 << 8); // single line command
+  }
 
 	dmaused = (remainingbytes > 0);
 

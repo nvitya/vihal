@@ -189,10 +189,10 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
     | (0  <<  0)  // TRANS_TYPE(2): 0 = all single, 1 = cmd single and addr multi-line, 2 = cmd and address multi-line
   );
 
-  unsigned fields = ((acmd >> 8) & 0xF);
+  //unsigned fields = ((acmd >> 8) & 0xF);
 
   // check data transfer width
-  if (fields & 8)
+  if (acmd & (1 << QSPICM_LN_DATA_POS))
   {
     // use 32 bit mode !
     byte_width = 4;
@@ -202,11 +202,11 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
     );
 
     // control (cmd + address) transfer width
-    if (fields & 1) // multiline command ?
+    if (acmd & (1 << QSPICM_LN_CMD_POS)) // multiline command ?
     {
       spi_cr0 |= (2 << 0); // TRANS_TYPE(2): 2 = multi line command and address (and data)
     }
-    else if (fields & 2) // multiline address ?
+    else if (acmd & (1 << QSPICM_LN_ADDR_POS)) // multiline address ?
     {
       spi_cr0 |= (1 << 0); // TRANS_TYPE(2): 1 = single line command, multi-line address
     }
@@ -222,31 +222,29 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
   }
 
   // dummy cycles
-  unsigned dummybytes = ((acmd >> 20) & 0xF);
-  if (dummybytes)
+  unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
+  if (rqdummyc)
   {
-    // dummy required
-    if (8 == dummybytes)
+    if (rqdummyc == QSPICM_DUMMYC_SMASK)
     {
-      dummybytes = dummysize;
-    }
-
-    unsigned dummybits = (dummybytes * 8);
-    spi_cr0 |= (dummybits << 11);
-  }
-
-  // address
-  unsigned rqaddrlen = ((acmd >> 16) & 0xF);
-  if (rqaddrlen)
-  {
-    if (8 == rqaddrlen)
-    {
-      addr_mode_len = addrlen;
+      rqdummyc = dummycycles;
     }
     else
     {
-      addr_mode_len = rqaddrlen;
+      rqdummyc <<= 1;
     }
+    spi_cr0 |= (rqdummyc << 11);
+  }
+
+  // address
+  addr_mode_len = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (addr_mode_len)
+  {
+    if (addr_mode_len > 4)
+    {
+      addr_mode_len = addrlen;  // default addrlen
+    }
+
     addrdata = address;
   }
   else
@@ -256,8 +254,7 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
   }
 
   // mode / alternate bytes
-  unsigned ablen = ((acmd >> 28) & 0xF);
-  if (ablen)
+  if (acmd & QSPICM_MODE)
   {
     // only 8-bit supported here
     addr_mode_len += 1;
@@ -329,7 +326,7 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
     }
   }
 
-  if (dummybytes && (1 == byte_width))
+  if (rqdummyc && (1 == byte_width))
   {
     // in 8-bit single line mode specifying only the wait cycles in the SPI_CR0 does not seem to be enough
     // correct results were observed, if the wait cycles are pushed into the TX fifo too:
@@ -358,6 +355,7 @@ int THwQspi_rp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, u
   unsigned  cmdlen = 1;
 
   // WARNING: no DUAL/QUAD support here!
+
   // the requested 0x32 (quad page program) is converted to 0x02 = single page program:
   if ((acmd & 0xFF) == 0x32)
   {
@@ -404,16 +402,12 @@ int THwQspi_rp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, u
   // no dummy support here
 
   // address
-  unsigned rqaddrlen = ((acmd >> 16) & 0xF);
-  if (rqaddrlen)
+  addr_mode_len = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (addr_mode_len)
   {
-    if (8 == rqaddrlen)
+    if (addr_mode_len > 4)
     {
-      addr_mode_len = addrlen;
-    }
-    else
-    {
-      addr_mode_len = rqaddrlen;
+      addr_mode_len = addrlen;  // default addrlen
     }
 
     addrdata = address;
@@ -453,12 +447,10 @@ int THwQspi_rp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, u
   }
 
   dmaused = (remaining_transfers > 0);
-  //dmaused = false; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   regs->ctrlr0 = cr0;
   regs->spi_ctrlr0 = spi_cr0;
   regs->ctrlr1 = 0; // no recevied bytes expected, one word will be put into the fifo
-
 
   if (dmaused)
   {
