@@ -69,6 +69,9 @@ public:
 	int        runstate = 0;
 	uint32_t   tcr_base = 0;
 	uint32_t   cr_base = 0;
+
+	uint32_t   baseclock = 0;
+	uint32_t   actual_speed = 0;
 };
 
 #define HWQSPI_IMPL THwQspi_stm32

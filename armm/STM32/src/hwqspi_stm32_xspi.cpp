@@ -119,9 +119,12 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
 
   devnum = adevnum;
 
-	unsigned baseclock = stm32_bus_speed(0);
+	baseclock = stm32_bus_speed(0);
 	unsigned speeddiv = baseclock / speed;
 	if (speeddiv * speed < baseclock)  ++speeddiv;
+	actual_speed = baseclock / speeddiv;
+
+	uint32_t clk_period_ps = 1000000 / (actual_speed / 1000000);
 
 	uint32_t tmp;
 
@@ -151,15 +154,31 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
   if (datasample_late)  tcr_base |= (1 << 30);  // SSHIFT: 1 = data sample shift by 1 cycle
 
 	// configure device type
+
+  // DCR1
+
+  uint32_t dscode = 0; // device size code
+  while ((1 << (dscode + 1)) < device_size)  ++dscode;
+
+  uint32_t csht = 0;   // chip select high time
+  if (cs_high_min_ns)
+  {
+    csht = ((cs_high_min_ns * 1000) + clk_period_ps-1 ) / clk_period_ps;
+    if (csht > 63)  csht = 63;
+  }
+
 	tmp = (0
-	  | (2  << 24)  // MTYP(3): 2 = standard mode
-	  | (0x1A << 16)  // DEVSIZE(5): device size (in 2^(FSIZE+1) bytes)
-	  | (0  <<  8)  // CSHT(6): chip select high time
-	  | (0  <<  1)  // FRCK: 1 = free running clock
-	  | (0  <<  0)  // CKMODE: 0 = idle clock low, 1 = idle clock high
+//	  | (2       << 24)  // MTYP(3): 2 = standard mode
+	  | (0       << 24)  // MTYP(3): 0 = macronix mode, 2 = standard mode
+	  | (dscode  << 16)  // DEVSIZE(5): device size (in 2^(FSIZE+1) bytes)
+	  | (csht    <<  8)  // CSHT(6): chip select high time
+	  | (0       <<  1)  // FRCK: 1 = free running clock
+	  | (0       <<  0)  // CKMODE: 0 = idle clock low, 1 = idle clock high
 	);
   if (idleclk_high)  tmp |= (1 << 0);
 	regs->DCR1 = tmp;
+
+	// DCR2
 
   tmp = (0
     | (0              << 16)  // WRAPSIZE(3)
@@ -167,14 +186,26 @@ bool THwQspi_stm32::Init(uint8_t adevnum)
   );
   regs->DCR2 = tmp;
 
+  // DCR3
+
+  uint32_t csbound = 0;
+  while ((1 << csbound) < page_size)  ++csbound;
   tmp = (0
-    | (0              << 16)  // CSBOUND(5)
+    | (csbound        << 16)  // CSBOUND(5): CS boundary on every 2^CSBOUND bytes
     | (0              <<  0)  // MAXTRAN(8)
   );
   regs->DCR3 = tmp;
 
+  // DCR4
+
+  uint32_t refrclk = 0;
+  if (cs_low_max_ns)
+  {
+    refrclk = ((cs_low_max_ns * 1000) + clk_period_ps-1 ) / clk_period_ps;
+  }
+
   tmp = (0
-    | (0              <<  0)  // REFRESH(32)
+    | (refrclk        <<  0)  // REFRESH(32)
   );
   regs->DCR4 = tmp;
 
@@ -299,6 +330,10 @@ void THwQspi_stm32::SetMemMappedMode(uint32_t ardcmd, uint32_t awrcmd)
   regs->TCR = (tcr_base | (rqdummyc << 0));  // DCYC(5): dummy cycles
   regs->CCR = ccr;
   regs->IR = (ardcmd & QSPICM_CMD_SMASK);
+
+  regs->WPTCR = (tcr_base | (rqdummyc << 0));  // DCYC(5): dummy cycles
+  regs->WPCCR = ccr;
+  regs->WPIR = (ardcmd & QSPICM_CMD_SMASK);
 
   //------------------------------------------------
   // WRITE
