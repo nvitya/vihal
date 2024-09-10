@@ -103,6 +103,10 @@ public:	// settings
 
   uint32_t       modedata = 0;
   uint32_t       dummydata = 0;
+  uint32_t       device_size = 16 * 1024 * 1024;
+  uint32_t       page_size = 0;   // 0 = disabled, 1024 usually for PSRAM devices
+  uint32_t       cs_low_max_ns = 0; // 0 = disabled
+  uint32_t       cs_high_min_ns = 0; // 0 = disabled
 
 public: // Required HW resources
   THwDmaChannel  txdma;
