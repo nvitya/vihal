@@ -522,6 +522,11 @@ bool THwCan_stm32::IsWarning()
 	return (psr & FDCAN_PSR_EW);
 }
 
+uint16_t THwCan_stm32::TimeStampCounter()
+{
+  return regs->TSCV;
+}
+
 void THwCan_stm32::UpdateErrorCounters()
 {
 	uint32_t ecr = regs->ECR;

@@ -139,6 +139,7 @@ public: // mandatory
 	void Disable()                                    { }
 	bool Enabled()                                    { return false; }
 
+	uint16_t TimeStampCounter()                       { return 0; }
 	void UpdateErrorCounters()                        { }
 };
 
