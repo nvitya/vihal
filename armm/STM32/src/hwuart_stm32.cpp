@@ -42,6 +42,9 @@
   #define RCC_APB2ENR_USART1EN   RCC_APBENR2_USART1EN
   #define RCC_APB1ENR_USART2EN   RCC_APBENR1_USART2EN
   #define RCC_APB1ENR_USART3EN   RCC_APBENR1_USART3EN
+  #define RCC_APB1ENR_USART5EN   RCC_APBENR1_USART5EN
+  #define RCC_APB1ENR_USART6EN   RCC_APBENR1_USART6EN
+  #define RCC_APB1ENR_LPUART1EN  RCC_APBENR1_LPUART1EN
 #elif defined(RCC_APB1LENR_USART2EN)
   #define RCC_APB1ENR_USART2EN   RCC_APB1LENR_USART2EN
   #define RCC_APB1ENR_USART3EN   RCC_APB1LENR_USART3EN
@@ -75,7 +78,7 @@ bool THwUart_stm32::Init(int adevnum)
         #if defined(RCC_APB4ENR_LPUART1EN)
 				  RCC->APB4ENR |= RCC_APB4ENR_LPUART1EN;
         #else
-				  RCC->APB1ENR |= RCC_APB1ENR_LPUART1EN;
+				  APB1ENR_REGISTER |= RCC_APB1ENR_LPUART1EN;
         #endif
 			#endif
 			//lpuart = true;
@@ -118,12 +121,23 @@ bool THwUart_stm32::Init(int adevnum)
 		APB1ENR_REGISTER |= RCC_APB1ENR_UART5EN;
 	}
 #endif
+#if defined(USART5_BASE)
+	else if (5 == devnum)
+	{
+		regs = (USART_TypeDef *)USART5_BASE;
+		APB1ENR_REGISTER |= RCC_APB1ENR_USART5EN;
+	}
+#endif
 #if defined(USART6_BASE)
 	else if (6 == devnum)
 	{
 		regs = (USART_TypeDef *)USART6_BASE;
-		RCC->APB2ENR |= RCC_APB2ENR_USART6EN;
-		busid = STM32_BUSID_APB2;
+    #if defined(RCC_APBENR1_USART6EN)
+		  APB1ENR_REGISTER |= RCC_APBENR1_USART6EN;
+		#else
+			RCC->APB2ENR |= RCC_APB2ENR_USART6EN;
+			busid = STM32_BUSID_APB2;
+		#endif
 	}
 #endif
 

@@ -89,6 +89,8 @@ bool THwCan_stm32::HwInit(int adevnum)
 
   #if defined(RCC_APB1ENR2_FDCANEN)
 	  RCC->APB1ENR2 |= RCC_APB1ENR2_FDCANEN;
+  #elif defined(RCC_APBENR1_FDCANEN)
+    RCC->APBENR1  |= RCC_APBENR1_FDCANEN;
   #else
     RCC->APB1ENR1 |= RCC_APB1ENR1_FDCANEN;
   #endif

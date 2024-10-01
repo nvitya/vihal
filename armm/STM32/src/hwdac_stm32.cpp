@@ -60,6 +60,8 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
         regs = DAC1;
         #if defined(RCC_APB1ENR_DAC1EN)
             RCC->APB1ENR |= RCC_APB1ENR_DAC1EN;
+				#elif defined(RCC_APBENR1_DAC1EN)
+						RCC->APBENR1 |= RCC_APBENR1_DAC1EN;
         #elif defined(RCC_APB1LENR_DAC12EN)
             RCC->APB1LENR |= RCC_APB1LENR_DAC12EN;
         #else
@@ -85,6 +87,8 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
   timer = TIM6; // uses TIM6!
   #ifdef RCC_APB1ENR1_TIM6EN
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
+	#elif defined(RCC_APBENR1_TIM6EN)
+			RCC->APBENR1 |= RCC_APBENR1_TIM6EN;
   #elif defined(RCC_APB1LENR_TIM6EN)
     RCC->APB1LENR |= RCC_APB1LENR_TIM6EN;
   #else
