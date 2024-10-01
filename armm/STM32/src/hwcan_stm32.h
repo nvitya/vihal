@@ -91,6 +91,7 @@ public: // mandatory
 	bool IsBusOff();
 	bool IsWarning();
 
+  uint16_t TimeStampCounter();
 	void UpdateErrorCounters();
 
 public:

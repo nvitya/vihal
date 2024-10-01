@@ -78,6 +78,7 @@ public: // mandatory
 	void SetSpeed(uint32_t aspeed);
 	bool IsBusOff();
 	bool IsWarning();
+  uint16_t TimeStampCounter();
 
 public:
 	HW_CAN_REGS *      regs = nullptr;

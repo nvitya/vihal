@@ -591,17 +591,41 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   unsigned basespeed;
   unsigned pllsrc;
-
-  // external clock source is not implemented !
-  pllsrc = 2;
-  basespeed = MCU_INTERNAL_RC_SPEED;
+  if (external_clock_hz)
+  {
+    hwclk_start_ext_osc(external_clock_hz);
+    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
+    pllsrc = 3;  // HSE
+  }
+  else
+  {
+    pllsrc = 2; // HSI (16 MHz)
+    basespeed = MCU_INTERNAL_RC_SPEED;
+  }
 
   unsigned vcospeed = target_speed_hz * 2;
-  unsigned pllr = 2; // divide by 2 to get the final CPU speed
 
-  unsigned pllm = 1;
+  // try some round frequencies for VCO input:
+  unsigned vco_in_hz;
+  vco_in_hz = 4000000; // this is the default
+  if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+  {
+    vco_in_hz = 5000000; // for 25 MHz input cristals
+    if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+    {
+      vco_in_hz = 3000000;
+      if (!is_divisible(basespeed, vco_in_hz) || !is_divisible(vcospeed, vco_in_hz))
+      {
+        vco_in_hz = 4000000;  // not synthetizable properly, stay with the default
+      }
+    }
+  }
+
+  unsigned pllm = basespeed / vco_in_hz;
+  unsigned plln = vcospeed / vco_in_hz;
+
+  unsigned pllr = 2; // divide by 2 to get the final CPU speed
   unsigned pllq = 2;
-  unsigned plln = vcospeed  / basespeed;    // the vco multiplier
   unsigned pllp = vcospeed / 35000000;      // adc speed
 
   RCC->PLLCFGR = (0

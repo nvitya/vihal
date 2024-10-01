@@ -434,4 +434,9 @@ bool THwCan_atsam_v2::IsWarning()
 	return (regs->PSR.bit.EW != 0);
 }
 
+uint16_t THwCan_atsam_v2::TimeStampCounter()
+{
+  return regs->TSCV.bit.TSC;
+}
+
 #endif

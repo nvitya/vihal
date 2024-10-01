@@ -283,6 +283,11 @@ bool THwCan_stm32::IsWarning()
 	return ((regs->ESR & CAN_ESR_EWGF) != 0);
 }
 
+uint16_t THwCan_stm32::TimeStampCounter()
+{
+  return 0;  // not available here
+}
+
 void THwCan_stm32::UpdateErrorCounters()
 {
 	uint32_t esr = regs->ESR;
