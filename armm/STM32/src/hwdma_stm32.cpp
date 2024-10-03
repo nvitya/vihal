@@ -103,7 +103,7 @@ bool THwDmaChannel_stm32::Init(int admanum, int achannel, int arequest)  // adma
 
 #ifdef DMAMUX1_BASE
 	#ifdef RCC_AHB1ENR_DMAMUX1EN
-    RCC->AHB1ENR |= RCC_AHBENR_DMA1EN;
+    RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;
   #endif
   //RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;
   int muxch = (2 == dmanum ? 8 : 0) + chid;
