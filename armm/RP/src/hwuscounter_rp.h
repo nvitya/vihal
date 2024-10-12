@@ -32,7 +32,6 @@
 class THwUsCounter_rp : public THwUsCounter_pre
 {
 public:
-  int             timerdev = 2;  // 2 = TIM2 by default, alternate: 5 = TIM5
   timer_hw_t *    regs = nullptr;
 
   bool Init();

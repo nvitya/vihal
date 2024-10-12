@@ -273,13 +273,18 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   hwclk_prepare_hispeed(target_speed_hz);
 
   // prepare all the 1 us timers, it uses always the crystal reference
-  for (tmp = 0; tmp < TICK_COUNT; ++tmp)
-  {
-    ticks_slice_hw_t * pslice = &ticks_hw->ticks[tmp];
+  ticks_hw->ticks[TICK_PROC0].cycles = 1;
+  ticks_hw->ticks[TICK_PROC0].ctrl   = 1; // enable
+  ticks_hw->ticks[TICK_PROC1].cycles = 1;
+  ticks_hw->ticks[TICK_PROC1].ctrl   = 1; // enable
+  ticks_hw->ticks[TICK_RISCV].cycles = 1;
+  ticks_hw->ticks[TICK_RISCV].ctrl   = 1; // enable
 
-    pslice->cycles = (basespeed / 1000000);
-    pslice->ctrl   = 1; // enable
-  }
+  uint32_t tick_1us = (basespeed / 1000000 / 2);  // Why the /2 is required ??
+  ticks_hw->ticks[TICK_TIMER0].cycles = tick_1us;
+  ticks_hw->ticks[TICK_TIMER0].ctrl   = 1; // enable
+  ticks_hw->ticks[TICK_TIMER1].cycles = tick_1us;
+  ticks_hw->ticks[TICK_TIMER1].ctrl   = 1; // enable
 
   rp_reset_control(RESETS_RESET_PLL_SYS_BITS, true);
   rp_reset_control(RESETS_RESET_PLL_SYS_BITS, false);
