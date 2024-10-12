@@ -35,7 +35,7 @@ bool THwExtIrq_rp::Init(int aportnum, int apinnum, unsigned flags)
 	regidx = (apinnum >> 3);  // 8 pins / register
 	bitpos = ((apinnum & 7) << 2);  // 4 bits / pin
 
-	io_irq_ctrl_hw_t * pirqctrl = &iobank0_hw->proc0_irq_ctrl;
+	io_bank0_irq_ctrl_hw_t * pirqctrl = &io_bank0_hw->proc0_irq_ctrl;
 
 	irqpend_reg = &pirqctrl->ints[regidx];
 	irqack_reg  = &iobank0_hw->intr[regidx];

@@ -52,6 +52,9 @@ So using SSS mode with 32-bit mode not recommended.
 
 #include "hwpins.h"
 #include "hwqspi_rp.h"
+
+#if defined(SSI)
+
 #include "rp_utils.h"
 
 #include "hwqspi.h" // for eclipse indexer
@@ -592,3 +595,5 @@ void THwQspi_rp::Run()
 
   busy = false;
 }
+
+#endif

@@ -27,6 +27,12 @@
   #define MCU_RP2040
   #define EXTERNAL_XTAL_HZ   12000000
 
+#elif defined(BOARD_RPI_PICO2)
+
+  #define BOARD_NAME "Raspberry Pi Pico-2 with RP2350"
+  #define MCU_RP2350
+  #define EXTERNAL_XTAL_HZ   12000000
+
 #else
 
   #error "Unknown board."

@@ -28,7 +28,7 @@
 #include "platform.h"
 #include <hwmemprot.h>
 
-#if defined(MPU)
+#if defined(MPU) && (__CORTEX_M != 33)
 
 THwMemProt   hwmemprot;
 

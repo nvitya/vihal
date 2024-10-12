@@ -31,6 +31,8 @@
 
 #include "platform.h"
 
+#if defined(SSI)
+
 #define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
 
@@ -63,5 +65,7 @@ protected:
 };
 
 #define HWQSPI_IMPL THwQspi_rp
+
+#endif
 
 #endif // def HWQSPI_RP_H_

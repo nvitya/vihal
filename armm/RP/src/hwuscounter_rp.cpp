@@ -31,7 +31,12 @@
 
 bool THwUsCounter_rp::Init()
 {
+#if defined(timer0_hw)
+  regs = timer0_hw;
+#else
   regs = timer_hw;
+#endif
+
   regs->dbgpause = 0;  // do not stop for multi-core debugging
   initialized = true;
   return true;

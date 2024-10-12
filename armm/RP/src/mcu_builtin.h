@@ -1,8 +1,7 @@
 /*
  *  file:     mcu_builtin.h (RP)
  *  brief:    Built-in RP MCU definitions
- *  version:  1.00
- *  date:     2021-12-18
+ *  created:  2021-12-18
  *  authors:  nvitya
 */
 
@@ -23,8 +22,17 @@
 
   #define MCUF_RP
   #define MCUSF_20
+  #define MAX_CLOCK_SPEED  132000000
 
-  #include "rp2040.h"
+  #include "rp2040_vihal.h"
+
+#elif defined(MCU_RP2350)
+
+  #define MCUF_RP
+  #define MCUSF_23
+  #define MAX_CLOCK_SPEED  150000000
+
+  #include "rp2350_vihal.h"
 
 #else
 

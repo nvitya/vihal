@@ -61,8 +61,9 @@ bool THwPinCtrl_rp::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 	padcfg = padsbank0_hw->io[apinnum];
 
-	padcfg &= 0xFFFFFF00; // clear bits
+	padcfg &= 0xFFFFFE00; // clear bits
 	padcfg |= (0
+	  | (0 << 8)  // ISO: 1 = PAD isolation  (RP2350 only)
 	  | (0 << 7)  // OD: output disable
 	  | (1 << 6)  // IE: input enable
 	  | (0 << 4)  // DRIVE(2): 0 = 2mA, 1 = 4mA, 2 = 8mA, 3 = 12mA

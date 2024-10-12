@@ -1,0 +1,5 @@
+
+#ifndef _CMSIS_SYSTEM_RP2040_H
+#define _CMSIS_SYSTEM_RP2040_H
+
+#endif /* _CMSIS_SYSTEM_RP2040_H */

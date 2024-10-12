@@ -9,8 +9,9 @@
 #ifndef __MCU_DEFS_H
 #define __MCU_DEFS_H
 
-
-#define MAX_CLOCK_SPEED  132000000
+#ifndef MAX_CLOCK_SPEED
+  #define MAX_CLOCK_SPEED  132000000
+#endif
 
 #define MAX_IRQ_HANDLER_COUNT   64
 
@@ -19,7 +20,7 @@
 #define SELF_FLASHING_SPI_ADDR    0x001000
 #define SELF_FLASHING_RAM_ADDR  0x21000000
 
-#define HW_GPIO_REGS      iobank0_status_ctrl_hw_t
+#define HW_GPIO_REGS      io_bank0_status_ctrl_hw_t
 //#define HW_UART_REGS      SercomUsart
 
 #if __CORTEX_M < 3

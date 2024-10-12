@@ -30,7 +30,7 @@
 
 #include "platform.h"
 
-#if defined(MPU)
+#if defined(MPU) && (__CORTEX_M != 33)
 
 /* ATTR description
 
