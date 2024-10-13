@@ -30,7 +30,8 @@
 #endif
 
 #ifdef HWQSPI_H_
-  #include "hwqspi_rp.h"
+  #include "hwqspi_rp_ssi.h"
+  #include "hwqspi_rp_qmi.h"
 #endif
 
 #ifdef HWADC_H_

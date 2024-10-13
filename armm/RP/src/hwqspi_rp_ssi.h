@@ -19,19 +19,18 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwqspi_rp.h
- *  brief:    RP2040 QSPI driver
- *  version:  1.00
- *  date:     2022-05-07
+ *  file:     hwqspi_rp_ssi.h
+ *  brief:    RP2040 QSPI driver using the SSI unig
+ *  created:  2022-05-07
  *  authors:  nvitya
 */
 
-#ifndef HWQSPI_RP_H_
-#define HWQSPI_RP_H_
+#ifndef HWQSPI_RP_SSI_H_
+#define HWQSPI_RP_SSI_H_
 
 #include "platform.h"
 
-#if defined(SSI)
+#if defined(ssi_hw)
 
 #define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
@@ -68,4 +67,4 @@ protected:
 
 #endif
 
-#endif // def HWQSPI_RP_H_
+#endif // def HWQSPI_RP_SSI_H_

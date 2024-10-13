@@ -19,10 +19,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwdma_rp.h
- *  brief:    RP2040 QSPI driver
- *  version:  1.00
- *  date:     2022-05-07
+ *  file:     hwdma_rp_ssi.cpp
+ *  brief:    RP2040 QSPI driver using the SSI unig
+ *  created:  2022-05-07
  *  authors:  nvitya
  *  notes:
  *    WARNING: this code is not compatible with XIP,
@@ -51,9 +50,9 @@ So using SSS mode with 32-bit mode not recommended.
 #include "platform.h"
 
 #include "hwpins.h"
-#include "hwqspi_rp.h"
+#include "hwqspi_rp_ssi.h"
 
-#if defined(SSI)
+#if defined(ssi_hw)
 
 #include "rp_utils.h"
 
