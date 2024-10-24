@@ -48,7 +48,7 @@
 		__IO uint32_t  DATAH;
 		__IO uint32_t  DATAX[14];
 	//
-	} __attribute__((packed)) hwcan_rx_fifo_t;
+	} hwcan_rx_fifo_t;
 
 	typedef struct
 	{
@@ -58,14 +58,14 @@
 		__IO uint32_t  DATAH; // data high
 		__IO uint32_t  DATAX[14];
 	//
-	} __attribute__((packed)) hwcan_tx_fifo_t;
+	} hwcan_tx_fifo_t;
 
 	typedef struct
 	{
 		__IO uint32_t  IDFL;   // ID + Flags
 		__IO uint32_t  DLCTS;  // Length code, Timestamp, MM (mark)
 	//
-	} __attribute__((packed)) hwcan_txev_fifo_t;
+	} hwcan_txev_fifo_t;
 
 #else
   #define HWCAN_STM32_FD  0
