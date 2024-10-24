@@ -110,7 +110,11 @@ bool THwCan_stm32::HwInit(int adevnum)
   #if defined(RCC_CCIPR2_FDCANSEL)
     tmp = RCC->CCIPR2;
     tmp &= ~RCC_CCIPR2_FDCANSEL_Msk;
-    tmp |= RCC_CCIPR2_FDCANSEL_1;
+		#if defined(MCUSF_G0)
+      // keep at zero = PCLK
+		#else
+    	tmp |= RCC_CCIPR2_FDCANSEL_1;
+    #endif
     RCC->CCIPR2 = tmp;
   #else
     tmp = RCC->CCIPR;
