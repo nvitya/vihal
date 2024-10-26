@@ -35,11 +35,16 @@
 #define HWQSPI_PRE_ONLY
 #include "hwqspi.h"
 
+#define QMI_TXFIFO_NOPUSH  (1 << 20)
+#define QMI_TXFIFO_OE      (1 << 19)
+#define QMI_TXFIFO_D16     (1 << 18)
+#define QMI_TXFIFO_MLPOS   16
+
 class THwQspi_rp : public THwQspi_pre
 {
 public:
-	unsigned char  txdmachannel = 7;  // same channel can be used because of the single direction transfers
-	unsigned char  rxdmachannel = 7;
+	unsigned char  txdmachannel = 7;
+	unsigned char  rxdmachannel = 6;
 
 	qmi_hw_t *     regs = nullptr;
 
@@ -56,10 +61,13 @@ public:
 	unsigned       runstate = 0;
 
 protected:
+	uint32_t       csr_base = 0;
   uint32_t       addrdata = 0;
-  uint32_t       addr_mode_len = 0;
+  uint32_t       addr_len = 0;
   uint32_t       remaining_transfers = 0;
-  uint8_t        byte_width = 1;
+
+  uint8_t        cmdbuflen = 0;
+  uint32_t       cmdbuf[16];
 
 };
 

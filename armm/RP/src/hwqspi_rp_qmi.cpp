@@ -97,27 +97,33 @@ bool THwQspi_rp::Init()
 
 	xip_ctrl_hw->ctrl &= ~(XIP_CTRL_EN_NONSECURE_BITS | XIP_CTRL_EN_SECURE_BITS);  // disable XIP cache
 
-#if 0
-	regs->ssienr = 0; // disable to allow configuration
-  regs->ser = 0;
-
-  // Clear sticky errors (clear-on-read)
-  if (regs->sr) { }
-  if (regs->icr) { }
-
   unsigned baseclock = SystemCoreClock;
   unsigned speeddiv = baseclock / speed;
   if (speeddiv * speed < baseclock)  ++speeddiv;
 
-  regs->baudr = speeddiv;
+	// set to direct mode
 
-  regs->rx_sample_dly = 0;
+	csr_base = (0
+	  | (0  << 30)  // RXDELAY(2)
+	  | (speeddiv << 22)  // CLKDIV(8)
+	  | (0  << 18)  // RXLEVEL(3)
+	  | (0  << 17)  // RXFULL
+	  | (0  << 16)  // RXEMPTY
+	  | (0  << 12)  // TXLEVEL(3)
+	  | (0  << 11)  // TXEMPTY
+	  | (0  << 10)  // TXFULL
+	  | (0  <<  7)  // AUTO_CS1N
+	  | (0  <<  6)  // AUTO_CS0N
+	  | (0  <<  3)  // ASSERT_CS1N
+	  | (0  <<  2)  // ASSERT_CS0N
+	  | (0  <<  1)  // BUSY
+	  | (1  <<  0)  // EN: 1 = enable direct mode
+	);
 
-	rxdma.Prepare(false, (void *)&regs->dr0, 0);
-	txdma.Prepare(true,  (void *)&regs->dr0, 0);
+  regs->direct_csr = csr_base;
 
-  // do not enable yet enable
-  // regs->ssienr = 1;
+	rxdma.Prepare(false, (void *)&regs->direct_rx, 0);
+	txdma.Prepare(true,  (void *)&regs->direct_tx, 0);
 
 	if (4 == multi_line_count)
 	{
@@ -132,90 +138,99 @@ bool THwQspi_rp::Init()
 	  mlcode = 0;
 	}
 
-
 	initialized = true;
 
 	return true;
-#else
-	return false;
-#endif
 }
 
 int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, unsigned len)
 {
-#if 0
+  uint32_t fcmd;
+  uint32_t iwidth;
+
   if (busy)
   {
     return HWERR_BUSY;
   }
 
   istx = false;
-  byte_width = 1;
   dataptr = (uint8_t *)dstptr;
   datalen = len;
   remainingbytes = datalen;
 
-  regs->ssienr = 0; // disable for re-configuration, also flushes the fifo-s
+  regs->direct_csr = csr_base;
 
-  uint32_t cr0 = (0
-    | (0  << 24)  // SSTE: slave select toggle
-    | (0  << 21)  // SPI_FRF(2): 0 = single, 1 = dual, 2 = quad
-    | (7  << 16)  // DFS_32(5): 31 = 32-bit frames, 7 = 8-bit frames (will be set later)
-    | (0  << 12)  // CFS(4): control frame size - ??? not documented
-    | (0  << 11)  // SRL: shift register loop
-    | (0  << 10)  // SLV_OE: slave output enable (???, not well documented)
-    | (3  <<  8)  // TMOD(2): 3 = eeprom mode: RX starts after control data
-    | (0  <<  7)  // SCPOL serial clock polarity
-    | (0  <<  6)  // SCPH: serial clock phase
-    | (0  <<  4)  //   FRF(2): ??? not documented, the SDK and the BOOTROM uses only the SPI_FRF field
-    | (0  <<  0)  //   DFS(4): ??? not documented, the SDK and the BOOTROM uses only the DFS_32 field
+  // prepare the command buffer
+  cmdbuflen = 0;
+
+  // COMMAND
+  fcmd = (0
+    | (1  <<  20)  // NOPUSH
+    | (1  <<  19)  // OE
+    | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+    | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
   );
-
-  uint32_t spi_cr0 = (0
-//    | ((acmd & 0xFF) << 24)  // XIP_CMD(8): instruction code in XIP mode when INST_L = 8-bit
-    | (0  << 24)  // XIP_CMD(8): instruction code in XIP mode when INST_L = 8-bit
-    | (0  << 18)  // SPI_RXDS_EN: read data strobe enable
-    | (0  << 17)  // INST_DDR_EN
-    | (0  << 16)  // SPI_DDR_EN
-    | (0  << 11)  // WAIT_CYCLES(5)
-    | (2  <<  8)  // INST_L(2): 0 = no instruction, 2 = 8-bit instruction, 3 = 16-bit
-    | (0  <<  2)  // ADDR_L(4): in 4 bit increments
-    | (0  <<  0)  // TRANS_TYPE(2): 0 = all single, 1 = cmd single and addr multi-line, 2 = cmd and address multi-line
-  );
-
-  //unsigned fields = ((acmd >> 8) & 0xF);
-
-  // check data transfer width
-  if (acmd & (1 << QSPICM_LN_DATA_POS))
+  if (acmd & QSPICM_2B)
   {
-    // use 32 bit mode !
-    byte_width = 4;
-    cr0 |= (0
-      | (mlcode << 21)  // SPI_FRF(2): multi line data
-      | (31     << 16)  // DFS_32(5): 31 = 32 bit mode
-    );
+    fcmd |= QMI_TXFIFO_D16;
+  }
+  if (acmd & (1 << QSPICM_LN_CMD_POS))
+  {
+    fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
+  }
+  cmdbuf[cmdbuflen++] = fcmd;
 
-    // control (cmd + address) transfer width
-    if (acmd & (1 << QSPICM_LN_CMD_POS)) // multiline command ?
+  // ADDRESS
+  addr_len = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
+  if (addr_len)
+  {
+    if (addr_len > 4)
     {
-      spi_cr0 |= (2 << 0); // TRANS_TYPE(2): 2 = multi line command and address (and data)
+      addr_len = addrlen;  // default addrlen
     }
-    else if (acmd & (1 << QSPICM_LN_ADDR_POS)) // multiline address ?
+    addrdata = address;
+
+    fcmd = (0
+      | (1  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+      | (1  <<  19)  // OE: 0 = disable output, 1 = enable output
+      | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+      | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
+    );
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))
     {
-      spi_cr0 |= (1 << 0); // TRANS_TYPE(2): 1 = single line command, multi-line address
+      fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
     }
-    else
-    {
-      // leave it all single line
-    }
+    if (addr_len > 3)   cmdbuf[cmdbuflen++] = (fcmd | ((addrdata >> 24) & 0xFF));
+    if (addr_len > 2)   cmdbuf[cmdbuflen++] = (fcmd | ((addrdata >> 16) & 0xFF));
+    if (addr_len > 1)   cmdbuf[cmdbuflen++] = (fcmd | ((addrdata >>  8) & 0xFF));
+    if (addr_len > 0)   cmdbuf[cmdbuflen++] = (fcmd | ((addrdata >>  0) & 0xFF));
   }
   else
   {
-    // single line, 8 bit mode, normal spi
-    // dummy bytes must be pushed too
+    addr_len = 0;
+    addrdata = 0;
   }
 
-  // dummy cycles
+  // MODE / ALTERNATE BYTES
+  if (acmd & QSPICM_MODE)
+  {
+    fcmd = (0
+      | (1  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+      | (1  <<  19)  // OE: 0 = disable output, 1 = enable output
+      | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+      | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
+    );
+    if (acmd & (1 << QSPICM_LN_ADDR_POS))
+    {
+      fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
+    }
+    if (modelen > 3)   cmdbuf[cmdbuflen++] = (fcmd | ((modedata >> 24) & 0xFF));
+    if (modelen > 2)   cmdbuf[cmdbuflen++] = (fcmd | ((modedata >> 16) & 0xFF));
+    if (modelen > 1)   cmdbuf[cmdbuflen++] = (fcmd | ((modedata >>  8) & 0xFF));
+    if (modelen > 0)   cmdbuf[cmdbuflen++] = (fcmd | ((modedata >>  0) & 0xFF));
+  }
+
+  // DUMMY
   unsigned rqdummyc = ((acmd >> QSPICM_DUMMYC_POS) & QSPICM_DUMMYC_SMASK);
   if (rqdummyc)
   {
@@ -227,49 +242,44 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
     {
       rqdummyc <<= 1;
     }
-    spi_cr0 |= (rqdummyc << 11);
-  }
 
-  // address
-  addr_mode_len = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
-  if (addr_mode_len)
-  {
-    if (addr_mode_len > 4)
+    uint32_t dummybytes = (rqdummyc >> 3);
+    fcmd = (0
+      | (1  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+      | (0  <<  19)  // OE: 0 = disable output, 1 = enable output
+      | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+      | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
+    );
+    fcmd = (0 | QMI_TXFIFO_NOPUSH); // disable output !
+    if (acmd & (1 << QSPICM_LN_DATA_POS))
     {
-      addr_mode_len = addrlen;  // default addrlen
+      fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
     }
-
-    addrdata = address;
+    while (dummybytes)
+    {
+      cmdbuf[cmdbuflen++] = fcmd;
+      --dummybytes;
+    }
   }
-  else
+
+  // DATA
+  fcmd = (0
+    | (0  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+    | (0  <<  19)  // OE: 0 = disable output, 1 = enable output
+    | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+    | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
+  );
+  if (acmd & (1 << QSPICM_LN_DATA_POS))
   {
-    addr_mode_len = 0;
-    addrdata = 0;
+    fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
   }
 
-  // mode / alternate bytes
-  if (acmd & QSPICM_MODE)
-  {
-    // only 8-bit supported here
-    addr_mode_len += 1;
-    addrdata = ((addrdata << 8) | (modedata & 0xFF));
-  }
+  remaining_transfers = remainingbytes;
 
-  spi_cr0 |= ((addr_mode_len << 1) << 2); // requested address length
+  //dmaused = (remaining_transfers > 0);
+  dmaused = false; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  // push addr and command into the fifo
-
-  if (byte_width > 1)
-  {
-    remaining_transfers = ((remainingbytes + 3) >> 2);
-  }
-  else
-  {
-    remaining_transfers = remainingbytes;
-  }
-
-  dmaused = (remaining_transfers > 0);
-  //dmaused = false; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#if 0
 
   regs->ctrlr0 = cr0;
   regs->spi_ctrlr0 = spi_cr0;
@@ -332,13 +342,12 @@ int THwQspi_rp::StartReadData(unsigned acmd, unsigned address, void * dstptr, un
     // wait until it is really started
   }
 
+#endif
+
   busy = true;
   runstate = 0;
 
   return HWERR_OK;
-#else
-  return HWERR_NOTIMPL;
-#endif
 }
 
 int THwQspi_rp::StartWriteData(unsigned acmd, unsigned address, void * srcptr, unsigned len)
