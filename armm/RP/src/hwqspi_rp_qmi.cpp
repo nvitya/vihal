@@ -302,6 +302,14 @@ void THwQspi_rp::StartReadWrite(unsigned acmd)
     if (acmd & (1 << QSPICM_LN_DATA_POS))
     {
       fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
+      if (4 == multi_line_count)
+      {
+        dummybytes <<= 2;
+      }
+      else if (2 == multi_line_count)
+      {
+        dummybytes <<= 1;
+      }
     }
     while (dummybytes)
     {
@@ -311,22 +319,27 @@ void THwQspi_rp::StartReadWrite(unsigned acmd)
   }
 
   // DATA
-  fcmd = (0
-    | (0  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
-    | (0  <<  19)  // OE: 0 = disable output, 1 = enable output
-    | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
-    | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
-  );
+  if (istx)
+  {
+    fcmd = (0
+      | (1  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+      | (1  <<  19)  // OE: 0 = disable output, 1 = enable output
+      | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+      | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
+    );
+  }
+  else
+  {
+    fcmd = (0
+      | (0  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+      | (0  <<  19)  // OE: 0 = disable output, 1 = enable output
+      | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
+      | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
+    );
+  }
   if (acmd & (1 << QSPICM_LN_DATA_POS))
   {
     fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
-  }
-  if (istx)
-  {
-    fcmd |= (0
-      | (1 << 20)  // NOPUSH: 1 = do not push rx into rx fifo for this tx
-      | (1 << 19)  // OE: 0 = disable output, 1 = enable output
-    );
   }
   data_fcmd = fcmd;
   remaining_fcmd = remainingbytes;
