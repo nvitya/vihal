@@ -214,8 +214,8 @@ void THwQspi_rp::StartReadWrite(unsigned acmd)
 
   // COMMAND
   fcmd = (0
-    | (1  <<  20)  // NOPUSH
-    | (1  <<  19)  // OE
+    | (1  <<  20)  // NOPUSH: 0 = push rx byte into the rx fifo, 1 = do not push rx into rx fifo for this tx
+    | (1  <<  19)  // OE: 0 = disable output, 1 = enable output
     | (0  <<  18)  // DWIDTH: 0 = 8, 1 = 16
     | (0  <<  16)  // IWIDTH(2): 0 = single line, 1 = dual, 2 = quad
   );
@@ -227,7 +227,7 @@ void THwQspi_rp::StartReadWrite(unsigned acmd)
   {
     fcmd |= (mlcode << QMI_TXFIFO_MLPOS);
   }
-  cmdbuf[cmdbuflen++] = fcmd | (acmd & QSPICM_CMD_SMASK);
+  cmdbuf[cmdbuflen++] = (fcmd | (acmd & QSPICM_CMD_SMASK));
 
   // ADDRESS
   addr_len = ((acmd >> QSPICM_ADDR_POS) & QSPICM_ADDR_SMASK);
@@ -323,7 +323,10 @@ void THwQspi_rp::StartReadWrite(unsigned acmd)
   }
   if (istx)
   {
-    fcmd |= (1 << 20); // NOPUSH: 1 = do not push rx into rx fifo for this tx
+    fcmd |= (0
+      | (1 << 20)  // NOPUSH: 1 = do not push rx into rx fifo for this tx
+      | (1 << 19)  // OE: 0 = disable output, 1 = enable output
+    );
   }
   data_fcmd = fcmd;
   remaining_fcmd = remainingbytes;
@@ -433,7 +436,7 @@ void THwQspi_rp::Run()
         return;
       }
 
-      regs->direct_tx = (data_fcmd | *((uint8_t *)dataptr));
+      regs->direct_tx = (data_fcmd | *dataptr);
       ++dataptr;
       --remainingbytes;
     }
