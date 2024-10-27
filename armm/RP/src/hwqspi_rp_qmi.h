@@ -43,6 +43,8 @@
 class THwQspi_rp : public THwQspi_pre
 {
 public:
+  uint8_t        cs_index = 0;
+  uint8_t        rx_delay = 0;
 	unsigned char  txdmachannel = 7;
 	unsigned char  rxdmachannel = 6;
 
@@ -62,12 +64,18 @@ public:
 
 protected:
 	uint32_t       csr_base = 0;
+	uint32_t       data_fcmd = 0;
   uint32_t       addrdata = 0;
   uint32_t       addr_len = 0;
-  uint32_t       remaining_transfers = 0;
+  uint32_t       remaining_fcmd = 0;
 
   uint8_t        cmdbuflen = 0;
+  uint8_t        cmdbufidx = 0;
   uint32_t       cmdbuf[16];
+
+  void SetCs(uint8_t alevel);
+  void StartReadWrite(unsigned acmd);
+  void FinishReadWrite();
 
 };
 
