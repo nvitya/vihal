@@ -104,11 +104,11 @@ bool THwDacChannel_stm32::Init(int adacnum, int achnum)
 
   if (1 == chidx)
   {
-    outreg = &regs->DHR12R2;
+    outreg = &regs->DHR12L2;  // left aligment !
   }
   else
   {
-    outreg = &regs->DHR12R1;
+    outreg = &regs->DHR12L1;  // left alignment !
   }
 
   uint32_t crreg = regs->CR;

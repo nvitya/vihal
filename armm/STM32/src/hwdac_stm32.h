@@ -50,6 +50,7 @@ public:
   bool                 Init(int adacnum, int achnum);
 
   inline void          SetTo(uint16_t avalue)  { *outreg = avalue; }
+  inline uint16_t      Value()                 { return *outreg;   }
 
   void                 SetFrequency(uint32_t afrequency);
 

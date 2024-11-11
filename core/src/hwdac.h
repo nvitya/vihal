@@ -60,7 +60,8 @@ public: // mandatory
 
   bool         Init(int adacnum, int achnum) { return false; }
   void         SetFrequency(uint32_t afrequency) { }
-  inline void  SetTo(uint16_t avalue)  { }
+  inline void      SetTo(uint16_t avalue)  { }
+  inline uint16_t  Value()                 { return 0; }
   void         RepeatPattern(uint16_t * asrc, uint32_t alen) { }
   void         StopPattern() { }
 };
