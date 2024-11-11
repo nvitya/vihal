@@ -121,6 +121,8 @@ void hwclk_setup_pll(pll_hw_t * pll_hw, unsigned basespeed, unsigned target_spee
   pll_hw->pwr = tmp;
 }
 
+#if defined(MCUSF_20)
+
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   SystemCoreClock = MCU_INTERNAL_RC_SPEED;
@@ -226,4 +228,120 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   return true;
 }
+
+#endif
+
+#if defined(MCUSF_23)
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+
+  uint32_t tmp;
+
+  // swithc the reference clock to ring osc
+  tmp = clocks_hw->clk[clk_ref].ctrl;
+  tmp &= ~(3);
+  clocks_hw->clk[clk_ref].ctrl = tmp;
+
+  // switch back to ref_clk (driven by the ring oscillator)
+  clock_hw_t * pclk_sys = &clocks_hw->clk[clk_sys];
+  pclk_sys->ctrl &= ~(1u); // select the clk_ref
+  while (0 == (pclk_sys->selected & 1))
+  {
+    __NOP();
+  }
+
+  // now it is safe to modify the PLLs
+
+  if (!external_clock_hz)
+  {
+    // no external crystal, the PLL does not supports it !
+    SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+    return true;
+  }
+
+  hwclk_start_ext_osc(external_clock_hz);
+
+  tmp = clocks_hw->clk[clk_ref].ctrl;
+  tmp &= ~(3);
+  tmp |= 2; // select XOSC for the reference clock
+  clocks_hw->clk[clk_ref].ctrl = tmp;
+
+  unsigned basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
+
+  hwclk_prepare_hispeed(target_speed_hz);
+
+  // prepare all the 1 us timers, it uses always the crystal reference
+  ticks_hw->ticks[TICK_PROC0].cycles = 1;
+  ticks_hw->ticks[TICK_PROC0].ctrl   = 1; // enable
+  ticks_hw->ticks[TICK_PROC1].cycles = 1;
+  ticks_hw->ticks[TICK_PROC1].ctrl   = 1; // enable
+  ticks_hw->ticks[TICK_RISCV].cycles = 1;
+  ticks_hw->ticks[TICK_RISCV].ctrl   = 1; // enable
+
+  uint32_t tick_1us = (basespeed / 1000000 / 2);  // Why the /2 is required ??
+  ticks_hw->ticks[TICK_TIMER0].cycles = tick_1us;
+  ticks_hw->ticks[TICK_TIMER0].ctrl   = 1; // enable
+  ticks_hw->ticks[TICK_TIMER1].cycles = tick_1us;
+  ticks_hw->ticks[TICK_TIMER1].ctrl   = 1; // enable
+
+  rp_reset_control(RESETS_RESET_PLL_SYS_BITS, true);
+  rp_reset_control(RESETS_RESET_PLL_SYS_BITS, false);
+
+  hwclk_setup_pll(pll_sys_hw, basespeed, target_speed_hz);
+
+  // select the pll for the system clock
+  tmp = pclk_sys->ctrl;
+  tmp &= ~((7 << 5) | (1 << 0)); // select the PLL, keep with reference
+  pclk_sys->ctrl = tmp;
+  for (unsigned n = 0; n < 10; ++n)
+  {
+    __NOP();
+  }
+  tmp |= 1; // swith to PLL
+  pclk_sys->ctrl = tmp;
+
+  // now we running hi-speed...
+
+  // set the peripheral clocks
+  tmp = clocks_hw->clk[clk_peri].ctrl;
+  tmp &= ~(3 << 5);  // 0 = clk_sys
+  tmp |= (1 << 11);  // enable
+  clocks_hw->clk[clk_peri].ctrl = tmp;
+
+  // setup the USB PLL and set to the USB clock source
+  clock_hw_t * pclk_usb = &clocks_hw->clk[clk_usb];
+
+  pclk_usb->ctrl &= ~(1 << 11); // disable the generator
+  while (0 == (pclk_usb->selected & 1))
+  {
+    __NOP();
+  }
+
+  rp_reset_control(RESETS_RESET_PLL_USB_BITS, true);
+  rp_reset_control(RESETS_RESET_PLL_USB_BITS, false);
+  hwclk_setup_pll(pll_usb_hw, basespeed, 48000000);
+
+  pclk_usb->div = (1 << 8);  // set the divisor to 1
+
+  tmp = pclk_usb->ctrl;
+  tmp &= ~((1 << 20) | (3 << 16) | (7 << 5)); // clear the bitfields (NUDGE, PHASE, AUXSRC)
+  tmp |= (0 << 5);               // AUXSRC(3): 0 = USB PLL
+  pclk_usb->ctrl = tmp;
+  for (unsigned n = 0; n < 10; ++n)
+  {
+    __NOP();
+  }
+  tmp |= (1 << 11); // turn on the generator
+  pclk_usb->ctrl = tmp;
+
+  // inform the system of the clock speeds
+
+  SystemCoreClock = target_speed_hz;
+
+  return true;
+}
+
+#endif
 

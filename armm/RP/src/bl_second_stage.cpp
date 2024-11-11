@@ -30,6 +30,8 @@
 #include "platform.h"
 #include "app_header.h"
 
+#if defined(MCUSF_20)
+
 #pragma GCC optimize ("Os")
 
 // this code is targeted to SRAM5 (0x20041000), the RP2040 boot rom loads this code there
@@ -149,3 +151,5 @@ void bl_second_stage_start()
   }
 
 }
+
+#endif

@@ -51,7 +51,7 @@
 
   #include "stm32g030xx.h"
 
-#elif defined(MCU_STM32G0B1RE)
+#elif defined(MCU_STM32G0B1RE) || defined(MCU_STM32G0B1CB)
 
   #define MCUF_STM32
   #define MCUSF_G0

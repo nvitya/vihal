@@ -130,7 +130,7 @@
  */
 __STATIC_FORCEINLINE __NO_RETURN void __cmsis_start(void)
 {
-  extern void _start(void) __NO_RETURN;
+  extern void _start(unsigned self_flashing) __NO_RETURN;
 
   typedef struct {
     uint32_t const* src;
@@ -160,7 +160,7 @@ __STATIC_FORCEINLINE __NO_RETURN void __cmsis_start(void)
     }
   }
 
-  _start();
+  _start(0);
 }
 
 #define __PROGRAM_START           __cmsis_start

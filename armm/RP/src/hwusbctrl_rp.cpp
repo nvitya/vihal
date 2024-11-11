@@ -39,10 +39,10 @@
 
 bool THwUsbEndpoint_rp::ConfigureHwEp()
 {
-	uint  tmp;
-	uint  epc;
-  uint  htod_len;
-  uint  dtoh_len;
+	uint32_t  tmp;
+	uint32_t  epc;
+  uint32_t  htod_len;
+  uint32_t  dtoh_len;
 
 	if (!usbctrl)
 	{
@@ -406,12 +406,12 @@ void THwUsbCtrl_rp::HandleIrq()
 
 	if (ints & USB_INTS_BUFF_STATUS_BITS)
 	{
-	  uint buffm = regs->buf_status;
+	  uint32_t buffm = regs->buf_status;
     //TRACE("%u ", timer_hw->timelr - usb_dbg_time_ref);
 	  //TRACE("USB BUFF IRQ: %08X\r\n", buffm);
 	  // no __CLZ() is available here, so bit looping
-    uint bit = 1;
-    for (uint i = 0; buffm && i < USB_NUM_ENDPOINTS * 2; i++)
+    uint32_t bit = 1;
+    for (uint32_t i = 0; buffm && i < USB_NUM_ENDPOINTS * 2; i++)
     {
       if (buffm & bit)
       {
@@ -419,7 +419,7 @@ void THwUsbCtrl_rp::HandleIrq()
         regs_clear->buf_status = bit;
 
         // IN transfer for even i, OUT transfer for odd i
-        uint epid = (i >> 1);
+        uint32_t epid = (i >> 1);
         if (i & 1)
         {
           // OUT transfer if odd
