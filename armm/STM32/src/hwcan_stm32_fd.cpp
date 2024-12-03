@@ -231,30 +231,44 @@ void THwCan_stm32::SetSpeed(uint32_t aspeed)
 
 	uint32_t periphclock = SystemCoreClock / 1;
 
-	uint32_t brp = 1;  // bit rate prescaler
-	uint32_t ts1, ts2;
-
 	// timing:
-  //   1 + ts1 + ts2 = total number of clocks for one CAN bit time
-	//   1x bit quanta reserved for sync (at the beginning)
+	//   fixbits = 1x bit quanta reserved for sync (at the beginning)
+	//   fixbits + ts1 + ts2 = total number of clocks for one CAN bit time
 	//   ts1 = offset of sampling point (in bit quanta clocks)
 	//   ts2 = bit quanta clocks from sampling point to next bit
 
+	// according to canopen the sampling point should be at 87.5% = 7/8:
+	//   fixbits + ts1 = (7 * brbits) >> 3
 
-	uint32_t bitclocks = periphclock / (brp * speed);
-	while (bitclocks > 384)
+	uint32_t  fixbits = 1;  // 1 clocks are reserved for synchronization
+	uint32_t  ts1max = 256;  // (ts2 will fit surely)
+
+	uint32_t  bitclocks;
+	int32_t   ts1, ts2;
+	uint32_t  brp = 1;  // bit rate prescaler
+
+	while (true)
 	{
-		++brp;
 		bitclocks = periphclock / (brp * speed);
+		ts1 = ((bitclocks * 7) >> 3) - fixbits;  // aim to the 87.5% sampling point
+		if (ts1 <= ts1max)
+		{
+			ts2 = bitclocks - fixbits - ts1;
+			if (ts2 < 1)  // ensure minimum 1 bit for the TS2
+			{
+				ts2 = 1;
+				ts1 = bitclocks - fixbits - ts2;
+			}
+			break;
+		}
+		else
+		{
+			++brp;  // increase the baud rate prescaler
+		}
 	}
 
-	ts2 = (bitclocks - 1) / 3;
-	if (ts2 > 128) ts2 = 128;
-	if (ts2 < 1) ts2 = 1;
-	ts1 = bitclocks - 1 - ts2;  // should not bigger than 16
-
 	regs->NBTP = 0
-	  | (ts2  << 25)  // NSJW(7): Resynchronization jump width
+	  | (fixbits    << 25)  // NSJW(7): Resynchronization jump width
 	  | ((brp - 1)  << 16)  // NBRP(9): Bit Rate Prescaler
 	  | ((ts1 - 1)  <<  8)  // NTSEG1(8): Time segment 1
 	  | ((ts2 - 1)  <<  0)  // NTSEG2(7): Time segment 2
