@@ -155,7 +155,14 @@ bool THwPinCtrl_sg::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio
       {
         regs->SWPORTA_DDR &= ~pinmask;
       }
-      *reg_fmux = 3; // GPIO
+      if ((0x400 <= agpio) && (agpio <= 0x402))
+      {
+      	*reg_fmux = 0; // GPIO for PWR_GPIO0-2 on SG2002
+      }
+      else
+      {
+      	*reg_fmux = 3; // GPIO
+      }
 
       sg_gpio_shadow_regs[agpio >> 8] = regs->SWPORTA_DR; // update the shadow reg
     }
