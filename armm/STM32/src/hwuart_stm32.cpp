@@ -146,22 +146,23 @@ bool THwUart_stm32::Init(int adevnum)
 		return false;
 	}
 
+	uint32_t cr1 = regs->CR1;
+	uint32_t cr2 = regs->CR2;
+
 	// disable UART
-	regs->CR1 &=  ~USART_CR1_UE;
+	cr1 &=  ~USART_CR1_UE;
+	regs->CR1 = cr1;
 
 	// STOP BITS:
 	code = 0; // = 1 stopbit
 	if      (1 == halfstopbits)  code = 1;
 	else if (3 == halfstopbits)  code = 3;
 	else if (4 == halfstopbits)  code = 2;
-	regs->CR2 &= ~(3 << 12);
-	regs->CR2 |= (code << 12);
+	cr2 &= ~(3 << 12);
+	cr2 |= (code << 12);
 
 	// DATA BITS = 8:
-	code = 0; // = 8 databits
-	if      (7 == databits)  code = 2;
-	regs->CR1 &= ~((1 << 28) | (1 << 12));
-	regs->CR1 |= ((code & 1) << 12) | (((code >> 1) & 1) << 28);
+	uint32_t effdatabits = databits;
 
 	// PARITY:
 	code = 0; // parity off
@@ -169,24 +170,32 @@ bool THwUart_stm32::Init(int adevnum)
 	{
 		code |= 2;
 		if (oddparity)  code |= 1;
+		++effdatabits;  // parity increases the effective data bits !
 	}
-	regs->CR1 &= ~(3 << 9);
-	regs->CR1 |= (code << 9);
+	cr1 &= ~(3 << 9);
+	cr1 |= (code << 9);
+
+	code = 0; // = 8 databits
+	if      (7 == effdatabits)  code = 2;
+	if      (9 == effdatabits)  code = 1;
+	cr1 &= ~((1 << 28) | (1 << 12));
+	cr1 |= ((code & 1) << 12) | (((code >> 1) & 1) << 28);
+
 
 #if defined(USART_CR1_FIFOEN)
-	regs->CR1 |= USART_CR1_FIFOEN;
+	cr1 |= USART_CR1_FIFOEN;
 #endif
 
 	// Enable RX, TX:
-	regs->CR1 |= USART_CR1_TE | USART_CR1_RE;
+	cr1 |= USART_CR1_TE | USART_CR1_RE;
 
 	// disable LIN and CLK out
 #if defined(USART_CR2_LINEN)
-	regs->CR2 &= ~(USART_CR2_LINEN | USART_CR2_CLKEN);
+	cr2 &= ~(USART_CR2_LINEN | USART_CR2_CLKEN);
 	// disable hadware flow control and others:
 	regs->CR3 &= ~(USART_CR3_RTSE | USART_CR3_CTSE | USART_CR3_SCEN | USART_CR3_HDSEL | USART_CR3_IREN);
 #else // e.g. F030
-	regs->CR2 &= ~(USART_CR2_CLKEN);
+	cr2 &= ~(USART_CR2_CLKEN);
 	// disable hadware flow control and others:
 	regs->CR3 &= ~(USART_CR3_RTSE | USART_CR3_CTSE | USART_CR3_HDSEL);
 #endif
@@ -195,11 +204,15 @@ bool THwUart_stm32::Init(int adevnum)
 	regs->PRESC = 0; // do not divide the input clock
 #endif
 
+	regs->CR2 = cr2;
+	regs->CR1 = cr1;  // the uart is still not enabled yet !
+
 	periphclock = stm32_bus_speed(busid);
 	SetBaudRate();
 
 	// Enable:
-	regs->CR1 |= USART_CR1_UE;
+	cr1 |= USART_CR1_UE;
+	regs->CR1 = cr1;
 
 	initialized = true;
 
