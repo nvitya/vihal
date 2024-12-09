@@ -316,8 +316,19 @@ void THwCan_stm32::HandleTx() // warning it can be called from multiple contexts
 
 		txmb->DATAL = *(uint32_t *)&msg.data[0]; // must be aligned
 		txmb->DATAH = *(uint32_t *)&msg.data[4];
-		unsigned dlc = (msg.len << 16) | (tpi << 24);  // mark the message with the tx fifo index for tx timetamp
-		if (receive_own)  dlc |= (1 << 23); // store the event in the event fifo
+		unsigned dlc = (msg.len << 16);
+		if (receive_own)
+		{
+			dlc |= (0
+			 | (1             << 23)  // store the event in the event fifo
+			 | (txev_data_idx << 24)  // mark the message with the tx data index for tx timetamp
+		  );
+
+			// copy the data into the bigger data fifo
+			txev_data[txev_data_idx].u32[0] = *(uint32_t *)&msg.data[0];
+			txev_data[txev_data_idx].u32[1] = *(uint32_t *)&msg.data[4];
+			txev_data_idx = ((txev_data_idx + 1) & (MAX_TXEV_DATA - 1));
+		}
 		txmb->DLC = dlc;
 		uint32_t idfl = ((msg.cobid & 0x7FF) << 18);
 		if (msg.cobid & HWCAN_RTR_FLAG)  idfl |= (1 << 29);
@@ -409,47 +420,40 @@ void THwCan_stm32::HandleRx()
 			hwcan_txev_fifo_t *  ptxe = (txevfifo + efgi);
 
 			unsigned txdlcts = ptxe->DLCTS; // here is the Tx timestamp
-			unsigned txidx = ((txdlcts >> 24) & 7); // the marker is the tx fifo index
+			unsigned txevdataidx = ((txdlcts >> 24) & (MAX_TXEV_DATA - 1)); // the marker is the tx ev data index
 
-			// read the message back from the TX FIFO
-			hwcan_tx_fifo_t *  txmb = (txfifo + txidx);
+			unsigned idfl = ptxe->IDFL;
+			msg.cobid = ((idfl >> 18) & 0x7FF);
+			if (idfl & (1 << 29))  msg.cobid |= HWCAN_RTR_FLAG;
 
-			unsigned txdlc = txmb->DLC;
-			if ((txdlc >> 24) == txidx) // marked properly?
+			*((uint32_t *)&(msg.data[0])) = txev_data[txevdataidx].u32[0];
+			*((uint32_t *)&(msg.data[4])) = txev_data[txevdataidx].u32[1];
+
+			msg.len = ((txdlcts >> 16) & 15);
+			if (raw_timestamp)
 			{
-				unsigned idfl = txmb->IDFL;
-				msg.cobid = ((idfl >> 18) & 0x7FF);
-				if (idfl & (1 << 29))  msg.cobid |= HWCAN_RTR_FLAG;
-
-				*((uint32_t *)&(msg.data[0])) = txmb->DATAL;
-				*((uint32_t *)&(msg.data[4])) = txmb->DATAH;
-
-				msg.len = ((txdlc >> 16) & 15);
-				if (raw_timestamp)
-				{
-					msg.timestamp = (txdlcts & 0xFFFF);
-				}
-				else
-				{
-					// get the time reference
-
-					unsigned t0, t1;
-					uint16_t cantimer;
-					do
-					{
-						t0 = CLOCKCNT;
-						cantimer = regs->TSCV;
-						t1 = CLOCKCNT;
-					}
-					while (t1-t0 > 100);  // repeat if it was interrupted
-
-					msg.timestamp = t1 - canbitcpuclocks * uint16_t(cantimer - uint16_t(txdlcts & 0xFFFF));
-				}
-
-				++rx_msg_counter;
-
-				OnRxMessage(&msg); // call the virtual function
+				msg.timestamp = (txdlcts & 0xFFFF);
 			}
+			else
+			{
+				// get the time reference
+
+				unsigned t0, t1;
+				uint16_t cantimer;
+				do
+				{
+					t0 = CLOCKCNT;
+					cantimer = regs->TSCV;
+					t1 = CLOCKCNT;
+				}
+				while (t1-t0 > 100);  // repeat if it was interrupted
+
+				msg.timestamp = t1 - canbitcpuclocks * uint16_t(cantimer - uint16_t(txdlcts & 0xFFFF));
+			}
+
+			++rx_msg_counter;
+
+			OnRxMessage(&msg); // call the virtual function
 
 			regs->TXEFA = efgi; // acknowledge the Tx Event Fifo Read read
 		}

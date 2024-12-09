@@ -67,6 +67,14 @@
 	//
 	} hwcan_txev_fifo_t;
 
+  #define MAX_TXEV_DATA  16  // must be power of two
+
+	typedef struct
+	{
+		uint32_t  u32[2];   //
+	//
+	} hwcan_txev_data_t;
+
 #else
   #define HWCAN_STM32_FD  0
   #define HW_CAN_REGS     CAN_TypeDef
@@ -104,11 +112,14 @@ public:
 
 	uint32_t *         stdfilters = nullptr;
 
-	hwcan_rx_fifo_t *  rxfifo = nullptr;
-	hwcan_tx_fifo_t *  txfifo = nullptr;
+	hwcan_rx_fifo_t *    rxfifo = nullptr;
+	hwcan_tx_fifo_t *    txfifo = nullptr;
 	hwcan_txev_fifo_t *  txevfifo = nullptr;
 
 	ALWAYS_INLINE uint32_t           ReadPsr(); // special function to handle the reset on read fields
+
+	uint8_t            txev_data_idx = 0;
+	hwcan_txev_data_t  txev_data[MAX_TXEV_DATA];
 #endif
 };
 
