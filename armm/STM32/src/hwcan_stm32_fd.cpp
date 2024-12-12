@@ -502,6 +502,9 @@ uint32_t THwCan_stm32::ReadPsr()  // updates the CAN error counters
 	uint32_t  psr = regs->PSR;  // resets the LEC to 7 when read
 	unsigned  lec = (psr & 7);
 
+	acterr_warning = (psr & FDCAN_PSR_EW);
+	acterr_busoff  = (psr & FDCAN_PSR_BO);
+
 	if ((0 == lec) || (7 == lec)) // the fast path, most probable case
 	{
 		//
@@ -536,14 +539,14 @@ uint32_t THwCan_stm32::ReadPsr()  // updates the CAN error counters
 
 bool THwCan_stm32::IsBusOff()
 {
-	uint32_t psr = ReadPsr();
-	return (psr & FDCAN_PSR_BO);
+	ReadPsr();
+	return acterr_busoff;
 }
 
 bool THwCan_stm32::IsWarning()
 {
-	uint32_t psr = ReadPsr();
-	return (psr & FDCAN_PSR_EW);
+	ReadPsr();
+	return acterr_warning;
 }
 
 uint16_t THwCan_stm32::TimeStampCounter()
@@ -554,7 +557,7 @@ uint16_t THwCan_stm32::TimeStampCounter()
 void THwCan_stm32::UpdateErrorCounters()
 {
 	uint32_t ecr = regs->ECR;
-	acterr_rx = ((ecr >>  8) & 0xFF);
+	acterr_rx = ((ecr >>  8) & 0x7F);
 	acterr_tx = ((ecr >>  0) & 0xFF);
 
 	if (ReadPsr()) // updates the error counters inside

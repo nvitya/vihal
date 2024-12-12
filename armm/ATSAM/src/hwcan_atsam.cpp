@@ -186,41 +186,57 @@ void THwCan_atsam::SetSpeed(uint32_t aspeed)
 
 	unsigned periphclock = atsam_peripheral_clock();
 
-	uint32_t brp = 1;
-	uint32_t ts1, ts2;
-
-	uint32_t ts2max = 128;
-	uint32_t maxbitclocks = 3 * ts2max;
 
 	// timing:
-  //   1 + ts1 + ts2 = total number of clocks for one CAN bit time
-	//   1x bit quanta reserved for sync (at the beginning)
+	//   fixbits = 1x bit quanta reserved for sync (at the beginning)
+	//   fixbits + ts1 + ts2 = total number of clocks for one CAN bit time
 	//   ts1 = offset of sampling point (in bit quanta clocks)
 	//   ts2 = bit quanta clocks from sampling point to next bit
 
+	// according to canopen the sampling point should be at 87.5% = 7/8:
+	//   fixbits + ts1 = (7 * brbits) >> 3
 
-	uint32_t bitclocks = periphclock / (brp * speed);
-	while (bitclocks > maxbitclocks)
+	uint32_t  fixbits = 1;  // 1 clocks are reserved for synchronization
+	uint32_t  ts1max = 256;  // (ts2 will fit surely)
+
+	uint32_t  bitclocks;
+	int32_t   ts1, ts2;
+	uint32_t  brp = 1;  // bit rate prescaler
+
+	while (true)
 	{
-		++brp;
 		bitclocks = periphclock / (brp * speed);
+		ts1 = ((bitclocks * 7) >> 3) - fixbits;  // aim to the 87.5% sampling point
+		if (ts1 <= ts1max)
+		{
+			ts2 = bitclocks - fixbits - ts1;
+			if (ts2 < 1)  // ensure minimum 1 bit for the TS2
+			{
+				ts2 = 1;
+				ts1 = bitclocks - fixbits - ts2;
+			}
+			break;
+		}
+		else
+		{
+			++brp;  // increase the baud rate prescaler
+		}
 	}
-
-	uint32_t fixbits = 1;
-
-	ts2 = (bitclocks - fixbits) / 3;
-	if (ts2 > ts2max) ts2 = ts2max;
-	if (ts2 < 1) ts2 = 1;
-	ts1 = bitclocks - fixbits - ts2;  // should not be bigger than 48
 
 	// warning! the old ATSAM documentation (with Atmel logo) is wrong about the content of this register !
 
-	regs->MCAN_BTP = 0
-		| (3         << 25)  // NSJW(7): Resynchronization jump width
-		| ((brp - 1) << 16)  // NBRP(9): baud rate prescaler
-		| ((ts1 - 1) <<  8)  // NTSEG1(8):
-		| ((ts2 - 1) <<  0)  // NTSEG2(7):
-	;
+	regs->MCAN_BTP = (0
+	  | (fixbits    << 25)  // NSJW(7): Resynchronization jump width
+	  | ((brp - 1)  << 16)  // NBRP(9): Bit Rate Prescaler
+	  | ((ts1 - 1)  <<  8)  // NTSEG1(8): Time segment 1
+	  | ((ts2 - 1)  <<  0)  // NTSEG2(7): Time segment 2
+	);
+
+
+	// do not change the (fast) Data Bit timing register, it won't be used anyway
+	// regs->DBTP.reg = 0;
+
+  canbitcpuclocks = SystemCoreClock / speed;
 
 	if (wasenabled)
 	{
@@ -239,6 +255,8 @@ void THwCan_atsam::Disable()
 {
 	regs->MCAN_CCCR |= MCAN_CCCR_INIT;
 	while ((regs->MCAN_CCCR & MCAN_CCCR_INIT) == 0) { }
+
+	regs->MCAN_CCCR |= MCAN_CCCR_CCE;	// enable configuration change
 }
 
 void THwCan_atsam::HandleTx()
@@ -336,12 +354,71 @@ bool THwCan_atsam::Enabled()
 
 bool THwCan_atsam::IsBusOff()
 {
-	return ((regs->MCAN_PSR & MCAN_PSR_BO) != 0);
+	ReadPsr();
+	return acterr_busoff;
 }
 
 bool THwCan_atsam::IsWarning()
 {
-	return ((regs->MCAN_PSR & MCAN_PSR_EW) != 0);
+	ReadPsr();
+	return acterr_warning;
 }
+
+uint16_t THwCan_atsam::TimeStampCounter()
+{
+  return regs->MCAN_TSCV;
+}
+
+uint32_t THwCan_atsam::ReadPsr()  // updates the CAN error counters
+{
+  uint32_t  psr = regs->MCAN_PSR;  // resets the LEC to 7 when read
+  unsigned  lec = (psr & 7);
+
+	acterr_warning = (psr & (1 << 6));
+	acterr_busoff  = (psr & (1 << 7));
+
+  if ((0 == lec) || (7 == lec)) // the fast path, most probable case
+  {
+    //
+  }
+  else if (3 == lec)
+  {
+    ++errcnt_ack;
+  }
+  else if (1 == lec)
+  {
+    ++errcnt_stuff;
+  }
+  else if (2 == lec)
+  {
+    ++errcnt_form;
+  }
+  else if (6 == lec)
+  {
+    ++errcnt_crc;
+  }
+	else if (4 == lec)
+	{
+		++errcnt_bit1;
+	}
+	else if (5 == lec)
+	{
+		++errcnt_bit0;
+	}
+
+  return psr;
+}
+
+void THwCan_atsam::UpdateErrorCounters()
+{
+  uint32_t ecr = regs->MCAN_ECR;
+  acterr_rx = ((ecr >>  8) & 0x7F);
+  acterr_tx = ((ecr >>  0) & 0xFF);
+
+  if (ReadPsr()) // updates the error counters inside
+  {
+  }
+}
+
 
 #endif

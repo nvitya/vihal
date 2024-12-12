@@ -60,6 +60,11 @@ public:	// settings
 	bool        raw_timestamp = false;  // true: u32 timestamp = original u16 timestamp (can bit time counter)
 	bool        receive_own   = false;
 
+	uint8_t     acterr_tx    = 0;
+	uint8_t     acterr_rx    = 0;
+	bool        acterr_busoff  = 0;
+	bool        acterr_warning = 0;
+
 	unsigned    canbitcpuclocks = 0;
 
 	unsigned    bus_error_count = 0;
@@ -70,9 +75,6 @@ public:	// settings
 	uint32_t    errcnt_crc   = 0;
 	uint32_t    errcnt_bit0  = 0;
 	uint32_t    errcnt_bit1  = 0;
-
-	uint8_t     acterr_tx    = 0;
-	uint8_t     acterr_rx    = 0;
 
 public: // software queues
 	TCanMsg *   rxmsgbuf = nullptr;
