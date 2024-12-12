@@ -149,7 +149,7 @@ bool THwUart_stm32::Init(int adevnum)
 	uint32_t cr1 = regs->CR1;
 	uint32_t cr2 = regs->CR2;
 
-	// disable UART
+	// disable UART in order to the CR registers
 	cr1 &=  ~USART_CR1_UE;
 	regs->CR1 = cr1;
 
@@ -208,11 +208,10 @@ bool THwUart_stm32::Init(int adevnum)
 	regs->CR1 = cr1;  // the uart is still not enabled yet !
 
 	periphclock = stm32_bus_speed(busid);
-	SetBaudRate();
+	SetBaudRate();  // might change the CR1 !
 
-	// Enable:
-	cr1 |= USART_CR1_UE;
-	regs->CR1 = cr1;
+	// Finally enable the the UART (locks the CR registers)
+	regs->CR1 |= USART_CR1_UE;
 
 	initialized = true;
 
