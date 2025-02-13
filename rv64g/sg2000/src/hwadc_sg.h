@@ -18,21 +18,39 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     sg_utils.h
- *  brief:    Sophgo Utilities
- *  created:  2024-04-21
+ *  file:     hwadc_sg.h
+ *  brief:    Simple Internal ADC for the SG200x/CV1800
+ *  date:     2025-02-13
  *  authors:  nvitya
 */
 
-#ifndef _SG_UTILS_H_
-#define _SG_UTILS_H_
+#ifndef HWADC_SG_H_
+#define HWADC_SG_H_
 
-#include "platform.h"
+#define HWADC_PRE_ONLY
+#include "hwadc.h"
 
-uint32_t sg_bus_speed(uint8_t abusid);
+#define HWADC_MAX_CHANNELS   3
+#define HWADC_DATA_LSHIFT    4
 
-void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar);
+class THwAdc_sg : public THwAdc_pre
+{
+public:
+	uint32_t        channel_map = 0;  // by default convert only ch 0
 
-void set_periph_clock_enable(uint32_t en_reg_idx, uint32_t en_bit, uint32_t aenable);
+	saradc_regs_t *      regs = nullptr;
 
-#endif // _SG_UTILS_H_
+	bool            Init(int adevnum, uint32_t achannel_map);
+	uint16_t        ChValue(uint8_t ach);  // performs and waits one measurement !
+
+	void StartFreeRun(uint32_t achsel);  // does nothing !
+	void StopFreeRun();
+
+	// no DMA support so no recording.
+	void StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr);
+	bool RecordFinished() { return true; }
+};
+
+#define HWADC_IMPL THwAdc_sg
+
+#endif /* HWADC_SG_H_ */

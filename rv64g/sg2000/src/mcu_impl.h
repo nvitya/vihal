@@ -30,3 +30,7 @@
 #ifdef HWEXTIRQ_H_
   #include "hwextirq_sg.h"
 #endif
+
+#ifdef HWADC_H_
+  #include "hwadc_sg.h"
+#endif

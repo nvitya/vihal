@@ -25,6 +25,9 @@
 */
 
 #include "sg_utils.h"
+#include "sg2000_common_vihal.h"
+
+clk_div_regs_t *  mapped_clk_div_regs = nullptr;
 
 uint32_t sg_bus_speed(uint8_t abusid)
 {
@@ -70,3 +73,20 @@ void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar)
 }
 
 #endif
+
+void set_periph_clock_enable(uint32_t en_reg_idx, uint32_t en_bit, uint32_t aenable)
+{
+	clk_div_regs_t *  regs = (clk_div_regs_t *)map_hw_addr(CLK_DIV_BASE_ADDR, 0x1000, (void * *)&mapped_clk_div_regs);
+	if (en_reg_idx > 4)
+	{
+		return;
+	}
+	if (aenable)
+	{
+		regs->CLK_EN[en_reg_idx] |= (1 << en_bit);
+	}
+	else
+	{
+		regs->CLK_EN[en_reg_idx] &= ~(1 << en_bit);
+	}
+}
