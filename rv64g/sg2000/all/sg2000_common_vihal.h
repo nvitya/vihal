@@ -468,6 +468,8 @@ typedef struct
   volatile uint32_t  INTR_CLR;   // 0x24
   volatile uint32_t  INTR_STA;   // 0x28
   volatile uint32_t  INTR_RAW;   // 0x2C
+  volatile uint32_t  TEST;       // 0x30
+  volatile uint32_t  TRIM;       // 0x34
 //
 } saradc_regs_t;
 

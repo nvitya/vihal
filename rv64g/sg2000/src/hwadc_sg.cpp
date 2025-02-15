@@ -37,8 +37,6 @@ bool THwAdc_sg::Init(int adevnum, uint32_t achannel_map)
 	devnum = adevnum;
 	initialized = false;
 
-	channel_map = (achannel_map & 7); // three channels only
-
 	set_periph_clock_enable(0, 10, true);  // enable the SARADC clock
 
   regs = (saradc_regs_t *)map_hw_addr(SARADC_BASE_ADDR, sizeof(saradc_regs_t), (void * *)&regs);
@@ -50,30 +48,22 @@ bool THwAdc_sg::Init(int adevnum, uint32_t achannel_map)
 	return true;
 }
 
-void THwAdc_sg::StartFreeRun(uint32_t achsel)
-{
-}
-
-void THwAdc_sg::StopFreeRun()
-{
-}
-
-void THwAdc_sg::StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr)
-{
-}
-
 uint16_t THwAdc_sg::ChValue(uint8_t ach)
 {
-  // enable the ADC, start the sampling
-  regs->CTRL = (0
-  	| (1  <<  0)  // EN: 1 = enable the adc and start the measurements
-  	| (1  <<  (5 + ach))  // SEL(3): select adc channels, bit5 = first adc channel = ADC1 !!!
-  );
+	StartMeasure(1 << ach);
 
-  while (regs->STATUS & 1)
+  while (!MeasureFinished())
   {
   	// wait
   }
 
-	return (regs->RESULT[ach] & 0x0FFF) << HWADC_DATA_LSHIFT;
+	return MeasuredValue(ach);
+}
+
+void THwAdc_sg::StartMeasure(uint32_t achsel)
+{
+  regs->CTRL = (0
+  	| (1      <<  0)  // EN: 1 = enable the adc and start the measurements
+  	| (achsel <<  5)  // SEL(3): select adc channels, bit5 = first adc channel = ADC1 !!!
+  );
 }

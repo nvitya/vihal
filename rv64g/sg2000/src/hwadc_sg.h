@@ -36,19 +36,21 @@
 class THwAdc_sg : public THwAdc_pre
 {
 public:
-	uint32_t        channel_map = 0;  // by default convert only ch 0
+	saradc_regs_t *  regs = nullptr;
 
-	saradc_regs_t *      regs = nullptr;
+	bool             Init(int adevnum, uint32_t achannel_map);
+	uint16_t         ChValue(uint8_t ach);  // performs and waits one measurement !
 
-	bool            Init(int adevnum, uint32_t achannel_map);
-	uint16_t        ChValue(uint8_t ach);  // performs and waits one measurement !
+	// no free-running in background, no DMA support, so these do nothing:
+	void            StartFreeRun(uint32_t achsel) { }
+	void            StopFreeRun() { }
+	void            StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr) { }
+	bool            RecordFinished() { return true; }
 
-	void StartFreeRun(uint32_t achsel);  // does nothing !
-	void StopFreeRun();
-
-	// no DMA support so no recording.
-	void StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr);
-	bool RecordFinished() { return true; }
+public: // SG200x specific
+	void             StartMeasure(uint32_t achsel);
+	inline bool      MeasureFinished() { return (0 == (regs->STATUS & 1)); }
+	inline uint16_t  MeasuredValue(uint8_t ach) { return (regs->RESULT[ach] & 0x0FFF) << HWADC_DATA_LSHIFT; }
 };
 
 #define HWADC_IMPL THwAdc_sg
