@@ -42,10 +42,10 @@ public:
 	uint16_t         ChValue(uint8_t ach);  // performs and waits one measurement !
 
 	// no free-running in background, no DMA support, so these do nothing:
-	void            StartFreeRun(uint32_t achsel) { }
-	void            StopFreeRun() { }
-	void            StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr) { }
-	bool            RecordFinished() { return true; }
+	void             StartFreeRun(uint32_t achsel) { }
+	void             StopFreeRun() { }
+	void             StartRecord(uint32_t achsel, uint32_t abufsize, uint16_t * adstptr) { }
+	bool             RecordFinished() { return true; }
 
 public: // SG200x specific
 	void             StartMeasure(uint32_t achsel);
