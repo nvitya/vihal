@@ -845,15 +845,20 @@ bool THwAdc_stm32::Init(int adevnum, uint32_t achannel_map)
 
 	// setup channel sampling time registers
 
-	uint32_t stcode = 0; // sampling time code, use the fastest sampling
-	// 0: 1.5 cycles
-	// 1: 7.5 cycles
-	// 2: 13.5 cycles
-	// 3: 28.5 cycles
-	// 4: 41.5 cycles
-	// 5: 55.5 cycles
-	// 6: 71.5 cycles
-	// 7: 239.5 cycles
+	// setup sampling time
+
+	uint32_t stcode = 0; // sampling time code, index for the following array
+	#if defined(MCUSF_G0)
+		uint32_t sampling_clocks[8] = {2, 4, 8, 13, 20, 40, 80, 161};  // actually its 0.5 CLK less
+	#else // F0
+		uint32_t sampling_clocks[8] = {2, 8, 14, 29, 42, 56, 72, 239};  // actually its 0.5 CLK less
+	#endif
+	uint32_t target_sampling_clocks = (sampling_time_ns * 1000) / (adc_clock / 1000);
+	while ((stcode < 7) && (sampling_clocks[stcode] < target_sampling_clocks))
+	{
+		++stcode;
+	}
+
 	regs->SMPR = stcode;
 
 	#ifdef ADC_TR_LT
