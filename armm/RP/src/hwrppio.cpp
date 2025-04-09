@@ -59,6 +59,12 @@ void THwRpPioPrg::Add(uint16_t ainstr)
 {
   if (offset + length < 32)
   {
+    // Add offset to the JMP instruction address
+    if ((ainstr & 0xE000) == 0)
+    {
+      ainstr += offset;
+    }
+
     dregs->instr_mem[offset + length++] = ainstr;
   }
 }
@@ -131,12 +137,18 @@ void THwRpPioSm::SetPrg(THwRpPioPrg * aprg)
   regs->execctrl = execctrl;
 }
 
-void THwRpPioSm::SetupPinsSideSet(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPinsSideSet(unsigned abase, unsigned acount, bool optional, bool pindir)
 {
   sideset_len = (acount & 7);
   pinctrl &= ~((0x1F  << 10) | (0x7         << 29));
   pinctrl |=  ((abase << 10) | (sideset_len << 29));
   regs->pinctrl = pinctrl;
+
+  execctrl &= ~(PIO_SM0_EXECCTRL_SIDE_EN_BITS | PIO_SM0_EXECCTRL_SIDE_PINDIR_BITS);
+  execctrl |= (optional << PIO_SM0_EXECCTRL_SIDE_EN_LSB);
+  execctrl |= (pindir << PIO_SM0_EXECCTRL_SIDE_PINDIR_LSB);
+  regs->execctrl = execctrl;
+
   SetupPioPins(abase, acount);
 }
 
@@ -148,20 +160,27 @@ void THwRpPioSm::SetupPinsSet(unsigned abase, unsigned acount)
   SetupPioPins(abase, acount);
 }
 
-void THwRpPioSm::SetupPinsOut(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPinsOut(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
   pinctrl &= ~((0x1F  << 0) | (0x3F   << 20));
   pinctrl |=  ((abase << 0) | (acount << 20));
   regs->pinctrl = pinctrl;
-  SetupPioPins(abase, acount);
+  SetupPioPins(abase, acount, aextra_flags);
 }
 
-void THwRpPioSm::SetupPinsIn(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPinsIn(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
   pinctrl &= ~((0x1F  << 15));
   pinctrl |=  ((abase << 15));
   regs->pinctrl = pinctrl;
-  SetupPioPins(abase, acount);
+  SetupPioPins(abase, acount, aextra_flags);
+}
+
+void THwRpPioSm::SetupPinsJmp(unsigned abase, unsigned acount)
+{
+  execctrl &= ~(PIO_SM0_EXECCTRL_JMP_PIN_BITS);
+  execctrl |= ((abase & 31) << PIO_SM0_EXECCTRL_JMP_PIN_LSB);
+  regs->execctrl = execctrl;
 }
 
 void THwRpPioSm::SetClkDiv(uint32_t aclkdiv)
@@ -186,12 +205,12 @@ void THwRpPioSm::SetClkDiv(uint32_t abasespeed, uint32_t targetfreq)
   SetClkDiv((divi << 16) + (divf << 8));
 }
 
-void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
   int af = (1 == devnum ? PINCFG_AF_7 : PINCFG_AF_6);
   for (unsigned n = 0; n < acount; ++n)
   {
-    hwpinctrl.PinSetup(0, abase + n, af);
+    hwpinctrl.PinSetup(0, abase + n, af | aextra_flags);
   }
 }
 
