@@ -17,9 +17,6 @@
 
 #define MCU_INTERNAL_RC_SPEED      6000000 // ring oscillator
 
-#define SELF_FLASHING_SPI_ADDR    0x001000
-#define SELF_FLASHING_RAM_ADDR  0x21000000
-
 #define HW_GPIO_REGS      io_bank0_status_ctrl_hw_t
 //#define HW_UART_REGS      SercomUsart
 

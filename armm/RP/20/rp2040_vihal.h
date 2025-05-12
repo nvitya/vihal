@@ -56,6 +56,9 @@ typedef enum
 
 #define __force_inline   inline __attribute__((always_inline))
 
+#define SELF_FLASHING_SPI_ADDR    0x001000
+#define SELF_FLASHING_RAM_ADDR  0x21000000
+
 // cstddef required for offsetof in the usb.h
 #include <cstddef>
 
