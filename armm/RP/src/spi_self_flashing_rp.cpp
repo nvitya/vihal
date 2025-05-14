@@ -114,8 +114,7 @@ const uint32_t rp235x_boot_blocks[] =
     (0
       | (0x42   <<  0)  // TYPE(8): 0x42 = IMAGE_TYPE item
       | (1      <<  8)  // SIZE(8): 1 = just one word
-      //| (0x1021 << 16)  // FLAGS(16): 0x1021 = ARM Executable, Secure , 0x1011 = ARM Executable, non-secure
-      | (0x1011 << 16)  // FLAGS(16): 0x1021 = ARM Executable, Secure , 0x1011 = ARM Executable, non-secure
+      | (0x1021 << 16)  // FLAGS(16): 0x1021 = ARM Executable, Secure , 0x1011 = ARM Executable, non-secure
     ),
 
     // LOAD_MAP item
@@ -124,15 +123,15 @@ const uint32_t rp235x_boot_blocks[] =
       | (4     <<  8)  // SIZE(16): block size in words
       | (0x81u << 24)  // ITEMS(8): 1x items + Absolute SPI Flash Addressing,
     ),
-    0x10000000,              // Storage start address
+    0x10000000 + SELF_FLASHING_SPI_ADDR,               // Storage start address
     SELF_FLASHING_RAM_ADDR,  // Runtime start address
-    ((3 + unsigned(&__app_image_end))  & 0x0FFFFFFC),  // Runtime start address
+    ((3 + unsigned(&__app_image_end))  & 0xFFFFFFFC),  // Runtime end address
 
     // ENTRY_POINT item
     (0
-      | (0x44 << 0)  // TYPE(8): 0x44 = ENTRY_POINT item
-      | (3    << 1)  // SIZE(8): block size in words
-      | (0    << 2)  // PAD(16): padding
+      | (0x44 <<  0)  // TYPE(8): 0x44 = ENTRY_POINT item
+      | (3    <<  8)  // SIZE(8): block size in words
+      | (0    << 16)  // PAD(16): padding
     ),
     uint32_t(cold_entry),    // Initial PC
     uint32_t(&__stack),      // Initial Stack
@@ -146,6 +145,12 @@ const uint32_t rp235x_boot_blocks[] =
 
     0x00000000,  // block loop link to self = end of the block loop
     0xab123579,  // block end magic footer
+
+    // just padding
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF
 };
 
 // do self flashing using the flash writer
