@@ -187,13 +187,13 @@ bool spi_self_flashing(TSpiFlash * spiflash)
 
   // write the boot-blocks into the first SPI Flash sector
 
-  TRACE("RP235x Boot Blocks...\r\n");
+  TRACE("RP235x Boot Blocks: ");
   if (!flashupdater.UpdateFlash(0x000000, (uint8_t *)(&rp235x_boot_blocks[0]), sizeof(rp235x_boot_blocks)))
   {
-    TRACE("  ERROR!\r\n");
+    TRACE("ERROR!\r\n");
     return false;
   }
-  if (flashupdater.writecnt)  { TRACE("  updated\r\n"); }  else { TRACE("  matched\r\n"); }
+  if (flashupdater.writecnt)  { TRACE("updated\r\n"); }  else { TRACE("matched\r\n"); }
 
   return true;
 }
