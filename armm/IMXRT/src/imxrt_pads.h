@@ -36,7 +36,7 @@
   #define IMXRT_GENPAD_CTRL_REG_START   0x401F8188
   #define IMXRT_GENPAD_IOSEL_REG_START  0x401F82FC
 
-#elif defined(MCUSF_1050)
+#elif defined(MCUSF_1050) ||  defined(MCUSF_1040)
 
   #define IMXRT_GENPAD_CTRL_REG_START   0x401F8204
   #define IMXRT_GENPAD_IOSEL_REG_START  0x401F83F4
@@ -150,7 +150,7 @@
 
 #define PAD_COUNT  93
 
-#elif defined(MCUSF_1050)
+#elif defined(MCUSF_1050) || defined(MCUSF_1040)
 
 #define PAD_GPIO_B0_00     74
 #define PAD_GPIO_B0_01     75

@@ -57,6 +57,12 @@
   #define MCU_IMXRT1052
   #define EXTERNAL_XTAL_HZ   24000000
 
+#elif defined(BOARD_EVK_IMXRT1040)
+
+  #define BOARD_NAME "IMXRT1040-EVK"
+  #define MCU_IMXRT1042
+  #define EXTERNAL_XTAL_HZ   24000000
+
 #else
 
   #error "Unknown board."
