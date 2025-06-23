@@ -190,7 +190,12 @@ bool THwPinCtrl_msp::PinSetup(int aportnum, int apinnum, unsigned flags)
 		{
 			regs->DOECLR31_0 = pinmask;
 
-			if (0 == (flags & PINCFG_ANALOGUE))  // no hysteresis for analogue inputs
+			if (flags & PINCFG_ANALOGUE)  // no hysteresis for analogue inputs
+			{
+				//cmreg &= ~(IOMUX_PINCM_PC_CONNECTED | IOMUX_PINCM_INENA_MASK);
+				cmreg = 0;
+			}
+			else
 			{
 				cmreg |= IOMUX_PINCM_HYSTEN_MASK;
 			}

@@ -35,6 +35,8 @@ inline bool hwclk_ext_osc_ready()
 
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
+  SYSCTL->SOCLOCK.HSCLKEN &= ~(SYSCTL_HSCLKEN_HFXTEN_MASK);
+
 	unsigned rsel;
 	if      (aextspeed >= 32000000)  rsel = 3;
 	else if (aextspeed >= 16000000)  rsel = 2;
@@ -47,6 +49,7 @@ void hwclk_start_ext_osc(unsigned aextspeed)
 		| (0xFF <<  0) // HFXTTIME(8)
 	);
 
+	SYSCTL->SOCLOCK.HSCLKEN &= ~SYSCTL_HSCLKEN_USEEXTHFCLK_MASK;
 	SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_HFXTEN_MASK;
 
 	while (!hwclk_ext_osc_ready())
@@ -91,14 +94,15 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // ??? SYSCTL->SOCLOCK.HSCLKCFG = 1; // use the
 
+
   // set the system oscillator to 32 MHz
   tmp = SYSCTL->SOCLOCK.SYSOSCCFG;
   tmp &= ~SYSCTL_SYSOSCCFG_FREQ_MASK;
-  tmp |= 0;
+  tmp |= 0; // 0 = 32 MHz = SYSCTL_SYSOSCCFG_FREQ_SYSOSCBASE
   SYSCTL->SOCLOCK.SYSOSCCFG = tmp;
 
   tmp = SYSCTL->SOCLOCK.MCLKCFG;
-  tmp &= ~(SYSCTL_MCLKCFG_USEHSCLK_ENABLE | SYSCTL_MCLKCFG_UDIV_MASK | SYSCTL_SYSOSCCFG_FREQ_MASK);
+  tmp &= ~(SYSCTL_MCLKCFG_USEHSCLK_ENABLE | SYSCTL_MCLKCFG_UDIV_MASK | SYSCTL_MCLKCFG_MDIV_MASK);
   tmp |= (1 << SYSCTL_MCLKCFG_UDIV_OFS);  // Set the ULPCLK to half of the MCLK
   SYSCTL->SOCLOCK.MCLKCFG = tmp;
 
@@ -119,6 +123,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     basespeed = MCU_INTERNAL_RC_SPEED;
 
     //TODO: implement
+    SystemCoreClock = basespeed;
     return true; // NOT implemented yet !
   }
   else
@@ -133,15 +138,6 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   SYSCTL->SOCLOCK.HSCLKEN &= ~SYSCTL_HSCLKEN_SYSPLLEN_ENABLE; // disable the system PLL
 
-  // these constants were taken from TI SDK:
-  // populate SYSPLLPARAM0/1 tuning registers from flash, based on input freq
-  if      (basespeed >= 32000000)  tmp = 0x41C40034;
-  else if (basespeed >= 16000000)  tmp = 0x41C4002C;
-  else if (basespeed >=  8000000)  tmp = 0x41C40024;
-  else                             tmp = 0x41C4001C;
-	SYSCTL->SOCLOCK.SYSPLLPARAM0 = *(volatile uint32_t *)(tmp);
-	SYSCTL->SOCLOCK.SYSPLLPARAM1 = *(volatile uint32_t *)(tmp + 4);
-
 	// the CLK0 and CLK1 clock output will be set to the half of the CLK2X
 
 	unsigned pdiv = 0;
@@ -149,14 +145,25 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned rdiv2x = 1;
 	unsigned vcospeed;  // The VCO frequency must be within 60 and 400 MHz
 
+	#if defined(MSPM0G_MAX_VCO_SPEED)
+		unsigned max_vco_speed = MSPM0G_MAX_VCO_SPEED;
+	#else
+		unsigned max_vco_speed = 400000000;
+	#endif
+
+	if (basespeed >= 48000000)
+	{
+		pdiv = 2; // start with /4 pre-divisor
+	}
+
 	while (1)
 	{
 	  vcospeed = (basespeed >> pdiv) * mul;
-	  if (vcospeed < 60000000)  // minimum 60 MHz
+	  if (vcospeed < 80000000)  // minimum 80 MHz
 	  {
 	    ++mul;
 	  }
-	  else if (vcospeed > 400000000) // maximum 400 MHz
+	  else if (vcospeed > max_vco_speed) // maximum 400 MHz
 	  {
 	    if (3 == pdiv)
 	    {
@@ -179,7 +186,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 	  }
 	}
 
-	if ((vcospeed < 200000000) && (rdiv2x & 1)) // when the rdiv2x is odd, then the PLLCLK1 cant be set to half CPU clock
+	if ((vcospeed < (max_vco_speed / 2)) && (rdiv2x & 1)) // when the rdiv2x is odd, then the PLLCLK1 cannot be set to half CPU clock
 	{
 		// multiply everything by two
 		mul      <<= 1;
@@ -187,13 +194,14 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 		rdiv2x   <<= 1;
 	}
 
-  unsigned rdiv0 = (rdiv2x >> 0); // results to the half frequency as the 2x output
-	unsigned rdiv1 = (rdiv2x >> 1); // half the CPU FREQ, the >> 1 comes from the divisor coding (/2)
+	unsigned vco_in_speed = (basespeed >> pdiv);
+
+  unsigned rdiv0 = (rdiv2x >> 0); // results to the /4 frequency
 
   SYSCTL->SOCLOCK.SYSPLLCFG0 = (0
     | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)
-    | ((rdiv1 - 1)  << 12)  // RDIVCLK1(4) - /2 coding already applied
-    | ((rdiv0 - 1)  <<  8)  // RDIVCLK0(4)
+    | ((rdiv0 - 1)  << 12)  // RDIVCLK1(4) - /2 coding already applied
+    | ((rdiv0 - 1)  <<  8)  // RDIVCLK0(4) - /2 coding already applied
     | (1  <<  6)  // ENABLECLK2X
     | (1  <<  5)  // ENABLECLK1
     | (1  <<  4)  // ENABLECLK0
@@ -205,6 +213,19 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     | ((mul - 1)  <<  8)  // QDIV(7):
     | (pdiv <<  0)  // PDIV(2): 0 = /1, 1 = /2, 2 = /4, 3 = /8
 	);
+
+  // populate SYSPLLPARAM0/1 tuning registers from flash, based on input freq
+  // see the chapter "Loading SYSPLL Lookup Parameters" in the reference manual
+  if      (vco_in_speed >= 32000000)  tmp = 0x41C40034;
+  else if (vco_in_speed >= 16000000)  tmp = 0x41C4002C;
+  else if (vco_in_speed >=  8000000)  tmp = 0x41C40024;
+  else                                tmp = 0x41C4001C;
+
+  volatile uint32_t pp1 = *(volatile uint32_t *)(tmp);
+  volatile uint32_t pp2 = *(volatile uint32_t *)(tmp + 4);
+
+	SYSCTL->SOCLOCK.SYSPLLPARAM0 = pp1;
+	SYSCTL->SOCLOCK.SYSPLLPARAM1 = pp2;
 
   // enable SYSPLL
   SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_SYSPLLEN_ENABLE;
