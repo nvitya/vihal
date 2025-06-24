@@ -30,27 +30,36 @@
 
 inline bool hwclk_ext_osc_ready()
 {
-	return (0 != (SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HFCLKGOOD_MASK));
+	volatile uint32_t clkstat = SYSCTL->SOCLOCK.CLKSTATUS;
+	return (0 != (clkstat & SYSCTL_CLKSTATUS_HFCLKGOOD_MASK));
 }
 
 void hwclk_start_ext_osc(unsigned aextspeed)
 {
-  SYSCTL->SOCLOCK.HSCLKEN &= ~(SYSCTL_HSCLKEN_HFXTEN_MASK);
+	unsigned extspeed = (aextspeed & HWCLK_EXTCLK_MASK);
+
+  SYSCTL->SOCLOCK.HSCLKEN &= ~(SYSCTL_HSCLKEN_HFXTEN_MASK | SYSCTL_HSCLKEN_USEEXTHFCLK_MASK);
 
 	unsigned rsel;
-	if      (aextspeed >= 32000000)  rsel = 3;
-	else if (aextspeed >= 16000000)  rsel = 2;
-	else if (aextspeed >=  8000000)	 rsel = 1;
-	else                             rsel = 0;
+	if      (extspeed >= 32000000)  rsel = 3;
+	else if (extspeed >= 16000000)  rsel = 2;
+	else if (extspeed >=  8000000)  rsel = 1;
+	else                            rsel = 0;
 
 	SYSCTL->SOCLOCK.HFCLKCLKCFG = (0
-	  | (1    << 28) // HFCLKFLTCHK: 1 = check startup time
+		| (1    << 28) // HFCLKFLTCHK: 1 = check startup time
 		| (rsel << 12) // HFXTRSEL(2): xtal frequency range select
 		| (0xFF <<  0) // HFXTTIME(8)
 	);
 
-	SYSCTL->SOCLOCK.HSCLKEN &= ~SYSCTL_HSCLKEN_USEEXTHFCLK_MASK;
-	SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_HFXTEN_MASK;
+  if (aextspeed & HWCLK_EXTCLK_BYPASS)
+  {
+		SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_USEEXTHFCLK_MASK;
+  }
+  else
+  {
+		SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_HFXTEN_MASK;
+  }
 
 	while (!hwclk_ext_osc_ready())
 	{
@@ -97,7 +106,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   // set the system oscillator to 32 MHz
   tmp = SYSCTL->SOCLOCK.SYSOSCCFG;
-  tmp &= ~SYSCTL_SYSOSCCFG_FREQ_MASK;
+  tmp &= ~(SYSCTL_SYSOSCCFG_FREQ_MASK | SYSCTL_SYSOSCCFG_DISABLE_MASK);
   tmp |= 0; // 0 = 32 MHz = SYSCTL_SYSOSCCFG_FREQ_SYSOSCBASE
   SYSCTL->SOCLOCK.SYSOSCCFG = tmp;
 
