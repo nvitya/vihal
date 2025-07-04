@@ -87,10 +87,11 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
   void SetInShift(bool shift_right, bool autopush, unsigned threshold);
 
-  void SetupPinsSideSet(unsigned abase, unsigned acount);
+  void SetupPinsSideSet(unsigned abase, unsigned acount, bool optional, bool pindir);
   void SetupPinsSet(unsigned abase, unsigned acount);
-  void SetupPinsOut(unsigned abase, unsigned acount);
-  void SetupPinsIn(unsigned abase, unsigned acount);
+  void SetupPinsOut(unsigned abase, unsigned acount, unsigned aextra_flags = 0x0);
+  void SetupPinsIn(unsigned abase, unsigned acount, unsigned aextra_flags = 0x0);
+  void SetupPinsJmp(unsigned abase, unsigned acount);
 
   inline void PreloadX(unsigned avalue, unsigned abits)
   {
@@ -121,7 +122,7 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   bool TryRecvMsb16(uint16_t * adata);
 
 public:
-  void SetupPioPins(unsigned abase, unsigned acount);
+  void SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_flags = 0x0);
 
 };
 
