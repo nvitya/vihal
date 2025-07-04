@@ -249,6 +249,17 @@ void THwRpPioSm::Stop()
   dregs->ctrl = tmp;
 }
 
+void THwRpPioSm::IrqEnable(uint32_t amask, EPioIrqLine airq_line)
+{
+  dregs->irq = 0xFF; // Clear flag for all interrupts
+
+  // Set the bits specified by mask, keep others intact
+  if (airq_line == EPioIrqLine::Irq0)
+    dregs->inte0 |= amask;
+  else if (airq_line == EPioIrqLine::Irq1)
+    dregs->inte1 |= amask;
+}
+
 void THwRpPioSm::SetOutShift(bool shift_right, bool autopull, unsigned threshold)
 {
   shiftctrl &= ~(PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS | PIO_SM0_SHIFTCTRL_PULL_THRESH_BITS);

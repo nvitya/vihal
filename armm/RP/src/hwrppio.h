@@ -11,6 +11,12 @@
 #include "platform.h"
 #include "hwrppio_instructions.h"
 
+enum EPioIrqLine
+{
+  Irq0,
+  Irq1
+};
+
 class THwRpPioPrg
 {
 public:
@@ -83,6 +89,7 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetPinDir(uint32_t apin, unsigned aoutput);
   inline void IrqClear(uint32_t amask) { dregs->irq = amask; }
   inline void IrqForce(uint32_t amask) { dregs->irq_force = amask; }
+  void IrqEnable(uint32_t amask, EPioIrqLine airq_line);
 
   void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
   void SetInShift(bool shift_right, bool autopush, unsigned threshold);
