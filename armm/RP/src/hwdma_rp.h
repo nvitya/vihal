@@ -34,7 +34,7 @@
 
 #define MAX_DMA_CHANNELS  12
 
-#define DMA_CTRL_BUSY  (1 << 24)
+#define DMA_CTRL_BUSY  (1 << 26)
 #define DMA_CTRL_EN    (1 <<  0)
 
 typedef struct
