@@ -98,6 +98,8 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
 
   Stop();  // ensure that the state machine is not running
 
+  ClearFifos(); // Clear FIFOs and their debug flags
+
   tx_lsb   = (uint32_t *)&dregs->txf[smnum];
   tx_msb8 = (uint8_t *)tx_lsb;
   tx_msb8 += 3;
@@ -117,6 +119,19 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
 
   initialized = true;
   return true;
+}
+
+void THwRpPioSm::ClearFifos()
+{
+  regs->shiftctrl ^= PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
+  regs->shiftctrl ^= PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
+
+  const uint32_t fdebug_sm_mask =
+              (1u << PIO_FDEBUG_TXOVER_LSB) |
+              (1u << PIO_FDEBUG_RXUNDER_LSB) |
+              (1u << PIO_FDEBUG_TXSTALL_LSB) |
+              (1u << PIO_FDEBUG_RXSTALL_LSB);
+  dregs->fdebug = fdebug_sm_mask << smnum;
 }
 
 uint32_t THwRpPioSm::GetDmaRequest(bool istx)
