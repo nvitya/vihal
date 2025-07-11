@@ -36,6 +36,8 @@
   #include "imxrt_iomuxc_1020.h"
 #elif defined(MCUSF_1050)
   #include "imxrt_iomuxc_1050.h"
+#elif defined(MCUSF_1040)
+  #include "imxrt_iomuxc_1040.h"
 #else
   #error "subfamily not supported."
 #endif

@@ -136,7 +136,7 @@ const unsigned char imxrt_gpio_table[] =
   3, 30,
   3, 31,
 
-#elif defined(MCUSF_1050)
+#elif defined(MCUSF_1050) || defined(MCUSF_1040)
 // 74
   2, 0,
   2, 1,

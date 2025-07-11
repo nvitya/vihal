@@ -3,8 +3,7 @@ MEMORY
   ITCRAM (xrw)   :  ORIGIN = 0x20000000, LENGTH = 256K  /* striped SRAM0-SRAM3 */
   RAM (xrw)      :  ORIGIN = 0x20040000, LENGTH = 256K  /* striped SRAM4-SRAM7 */
   STACK1 (xrw)   :  ORIGIN = 0x20080000, LENGTH = 4K    /* SRAM8 */
-
-  BLSTAGE2 (xrw) :  ORIGIN = 0x20081000, LENGTH = 256   /* SRAM9 */
+  STACK2 (xrw)   :  ORIGIN = 0x20081000, LENGTH = 4K    /* SRAM9 */
 }
 
 REGION_ALIAS("TEXT",    ITCRAM);
@@ -44,18 +43,7 @@ SECTIONS
     KEEP(*(.startup))
   } > TEXT
 
-
-  .bl_second_stage : ALIGN(16)
-  {
-    FILL(0xFF)
-    KEEP(*(.bl_second_stage_start))
-    KEEP(*(.bl_second_stage))
-    FILL(0xFF)
-	. = ALIGN(256);
-  } > BLSTAGE2 AT > TEXT
-
-  PROVIDE( __bl_stage2_src = LOADADDR(.bl_second_stage) );
-  PROVIDE( __bl_stage2_len = SIZEOF(.bl_second_stage) );
+  /* there is no bl_second_stage for RP235x ! */
 
   .inits : ALIGN(4)
   {

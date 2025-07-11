@@ -65,6 +65,11 @@ public:
 
 	void PrepareTransfer(THwDmaTransfer * axfer);
 	inline void StartPreparedTransfer() { Enable(); }
+
+	inline void ClearIrqFlag()
+	{
+		DMA0->CINT = chnum;	 // clear the interrupt request
+	}
 };
 
 #define HWDMACHANNEL_IMPL  THwDmaChannel_imxrt

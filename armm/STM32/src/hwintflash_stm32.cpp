@@ -263,7 +263,7 @@ bool THwIntFlash_stm32::CmdFinished()
 	return true;
 }
 
-#if defined(MCUSF_G4)
+#if defined(MCUSF_G4) || defined(MCUSF_WB) || defined(MCUSF_G0)
 
 void THwIntFlash_stm32::CmdEraseBlock()
 {
@@ -329,18 +329,6 @@ void THwIntFlash_stm32::CmdEraseBlock()
 
     uint32_t cr = (FLASH_CR_SER | (blid << 3) | cr_reg_base);
     regs->CR = cr; // prepare sector erase
-    regs->CR = (cr | FLASH_CR_STRT); // start page erase
-
-  #elif defined(MCUSF_WB) | defined(MCUSF_G0)
-
-    int blid = BlockIdFromAddress(address);
-    if (blid < 0)
-    {
-      return;
-    }
-
-    uint32_t cr = (FLASH_CR_PER | (blid << 3));
-    regs->CR = cr; // prepare page erase
     regs->CR = (cr | FLASH_CR_STRT); // start page erase
 
   #else

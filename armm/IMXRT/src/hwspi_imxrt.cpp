@@ -56,11 +56,13 @@ bool THwSpi_imxrt::Init(int adevnum)
 		regs = (HW_SPI_REGS *)LPSPI3;
 		imxrt_set_clock_gate(1, 4, 3);
 	}
-	else if (4 == devnum)
-	{
-		regs = (HW_SPI_REGS *)LPSPI4;
-		imxrt_set_clock_gate(1, 6, 3);
-	}
+	#ifdef LPSPI4
+		else if (4 == devnum)
+		{
+			regs = (HW_SPI_REGS *)LPSPI4;
+			imxrt_set_clock_gate(1, 6, 3);
+		}
+	#endif
 
 	if (!regs)
 	{

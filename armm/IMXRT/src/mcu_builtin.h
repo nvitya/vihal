@@ -26,6 +26,13 @@
 
   #include "MIMXRT1052.h"
 
+#elif defined(MCU_IMXRT1040) || defined(MCU_IMXRT1041) || defined(MCU_IMXRT1042)
+
+  #define MCUF_IMXRT
+  #define MCUSF_1040
+
+  #include "MIMXRT1042_vihal.h"
+
 #elif defined(MCU_IMXRT1052A) // old eval board?
 
   #define MCUF_IMXRT

@@ -95,17 +95,7 @@ bool THwEth_imxrt::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclis
 
 	// reset
   regs->ECR = ENET_ECR_RESET_MASK;
-
-	// setup MII (MSI) Interface
-
-	uint32_t baseclk = SystemCoreClock / 4 / 2;
-	uint32_t mii_speed = baseclk / 2500000;  // MII speed fix 2.5 MHz
-
-	regs->MSCR = 0
-	  | ((mii_speed - 1) <<  1)  // MII_SPEED(6):
-	  | (0  <<  7)  // DIS_PRE: 1 = disable preamble
-	  | (3  <<  8)  // HOLD_TIME(3):
-	;
+  if (regs->ECR) {}  // adds some delay
 
 	regs->ECR = 0
 		| (1  <<  8)  // DBSWP: 0 = do not swap descriptor bytes, 1 = swap descriptor bytes !!!!
@@ -116,6 +106,18 @@ bool THwEth_imxrt::InitMac(void * prxdesclist, uint32_t rxcnt, void * ptxdesclis
 		| (0  <<  1)  // ETHEREN: do not enable yet
 		| (0  <<  0)  // RESET: clears the ETHEREN flag
 	;
+  if (regs->ECR) {}  // adds some delay
+
+  // setup MII (MSI) Interface
+
+  uint32_t baseclk = SystemCoreClock / 4 / 2;
+  uint32_t mii_speed = baseclk / 2500000;  // MII speed fix 2.5 MHz
+
+  regs->MSCR = 0
+    | ((mii_speed - 1) <<  1)  // MII_SPEED(6):
+    | (0  <<  7)  // DIS_PRE: 1 = disable preamble
+    | (3  <<  8)  // HOLD_TIME(3):
+  ;
 
 	regs->MRBR = HWETH_MAX_PACKET_SIZE;
 	regs->FTRL = HWETH_MAX_PACKET_SIZE;

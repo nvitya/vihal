@@ -20,7 +20,7 @@
   #define MCU_MSPM0G3507
   #define EXTERNAL_XTAL_HZ     48000000
 
-  #define MCU_EARLY_SAMPLE
+  //#define MCU_EARLY_SAMPLE
 
 #else
 

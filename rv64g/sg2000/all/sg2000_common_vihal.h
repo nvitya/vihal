@@ -141,6 +141,27 @@ typedef struct
 #define CLINT               ((clint_regs_t *)CLINT_BASE_ADDR)
 
 //------------------------------------------------------------------------------
+// CLOCK CONTROL
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+  volatile uint32_t  CLK_EN[5];   // 000 - 010
+  uint32_t _pad_014[3];           // 014, 018, 01C
+  volatile uint32_t  CLK_SEL[4];  // 020
+  volatile uint32_t  CLK_BYP[2];  // 030
+  uint32_t _pad_038[4];           // 038
+
+  volatile uint32_t  DIV_CLK_CPU_AXI0;  // 048
+  uint32_t _pad_04C[(0x054-0x04C)/4];
+  volatile uint32_t  DIV_CLK_TPU; // 054
+//
+} clk_div_regs_t;
+
+#define CLK_DIV_BASE_ADDR     0x03002000
+#define CLK_DIV               ((clk_div_regs_t *)CLK_DIV_BASE_ADDR)
+
+//------------------------------------------------------------------------------
 // DMA
 //------------------------------------------------------------------------------
 
@@ -431,5 +452,28 @@ typedef struct
 #define PWM2  ((pwm_regs_t *)PWM2_BASE_ADDR)
 #define PWM3  ((pwm_regs_t *)PWM3_BASE_ADDR)
 
+//------------------------------------------------------------------------------
+// SARADC
+//------------------------------------------------------------------------------
+
+typedef struct
+{
+  uint32_t _pad_00;              // 0x00
+  volatile uint32_t  CTRL;       // 0x04
+  volatile uint32_t  STATUS;     // 0x08
+  volatile uint32_t  CYC_SET;    // 0x0C
+  uint32_t _pad_10;              // 0x10
+  volatile uint32_t  RESULT[3];  // 0x14
+  volatile uint32_t  INTR_EN;    // 0x20
+  volatile uint32_t  INTR_CLR;   // 0x24
+  volatile uint32_t  INTR_STA;   // 0x28
+  volatile uint32_t  INTR_RAW;   // 0x2C
+  volatile uint32_t  TEST;       // 0x30
+  volatile uint32_t  TRIM;       // 0x34
+//
+} saradc_regs_t;
+
+#define SARADC_BASE_ADDR         (0x030F0000)
+#define RTCSYS_SARADC_BASE_ADDR  (0x0502C000)
 
 #endif

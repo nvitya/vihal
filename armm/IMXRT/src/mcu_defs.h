@@ -12,7 +12,7 @@
 
   #define MAX_CLOCK_SPEED  500000000
 
-#elif defined(MCUSF_1050)
+#elif defined(MCUSF_1050) || defined(MCUSF_1040)
 
   //#define MAX_CLOCK_SPEED  600000000
   #define MAX_CLOCK_SPEED  528000000  // safer speed, 600 MHz does not work yet

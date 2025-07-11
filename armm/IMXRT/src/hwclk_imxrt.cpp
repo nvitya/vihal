@@ -41,7 +41,7 @@ void hwclk_prepare_hispeed(unsigned acpuspeed)
    bool overdrive;
 #if defined(MCUSF_1020)
    overdrive = (acpuspeed > 400000000);
-#elif defined(MCUSF_1050)
+#elif defined(MCUSF_1050) || defined(MCUSF_1040)
    overdrive = (acpuspeed > 528000000);
 #else
   #error "define MCU overdrive conditions"
@@ -210,7 +210,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 	CCM->CBCMR = tmp;
 
 
-#elif defined(MCUSF_1050)
+#elif defined(MCUSF_1050) || defined(MCUSF_1040)
 
   //CLOCK_InitArmPll(&armPllConfig); /* Configure ARM PLL to 1200M */
   unsigned loopdivider;

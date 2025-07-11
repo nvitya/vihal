@@ -33,4 +33,6 @@ uint32_t sg_bus_speed(uint8_t abusid);
 
 void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar);
 
+void set_periph_clock_enable(uint32_t en_reg_idx, uint32_t en_bit, uint32_t aenable);
+
 #endif // _SG_UTILS_H_
