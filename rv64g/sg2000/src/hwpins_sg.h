@@ -112,13 +112,13 @@ public:
 	void SwitchDirection(int adirection);
 
 public:
-	gpio_regs_t *       regs;
-	uint32_t            pinmask = 0;
-	uint32_t            negpinmask = 0;
-	uint32_t *          setbitptr = nullptr;
-	uint32_t *          getbitptr = nullptr;
-	uint32_t *          pindirptr = nullptr;
-	uint32_t *          outshadowptr = nullptr;
+	gpio_regs_t *          regs;
+	uint32_t               pinmask = 0;
+	uint32_t               negpinmask = 0;
+	volatile uint32_t *    setbitptr = nullptr;
+	volatile uint32_t *    getbitptr = nullptr;
+	volatile uint32_t *    pindirptr = nullptr;
+	volatile uint32_t *    outshadowptr = nullptr;
 };
 
 #define HWPINCTRL_IMPL   THwPinCtrl_sg
