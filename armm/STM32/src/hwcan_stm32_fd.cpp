@@ -236,39 +236,63 @@ void THwCan_stm32::SetSpeed(uint32_t aspeed)
 	//   fixbits + ts1 + ts2 = total number of clocks for one CAN bit time
 	//   ts1 = offset of sampling point (in bit quanta clocks)
 	//   ts2 = bit quanta clocks from sampling point to next bit
+	//   rjw = resynchronisation jump width
 
-	// according to canopen the sampling point should be at 87.5% = 7/8:
-	//   fixbits + ts1 = (7 * brbits) >> 3
-
-	uint32_t  fixbits = 1;  // 1 clocks are reserved for synchronization
 	uint32_t  ts1max = 256;  // (ts2 will fit surely)
+	uint32_t  ts2max = 128;  // (ts2 will fit surely)
 
 	uint32_t  bitclocks;
-	int32_t   ts1, ts2;
+	int32_t   ts1, ts2, rjw;
 	uint32_t  brp = 1;  // bit rate prescaler
+
+	// correct very invalid settings
+	if (smp_01_percent < HWCAN_SMP_01_PERCENT_MIN)  smp_01_percent = HWCAN_SMP_01_PERCENT_MIN;
+	if (smp_01_percent > HWCAN_SMP_01_PERCENT_MAX)  smp_01_percent = HWCAN_SMP_01_PERCENT_MAX;
+	if (rjw_01_percent > HWCAN_RJW_01_PERCENT_MAX)  rjw_01_percent = HWCAN_RJW_01_PERCENT_MAX;
 
 	while (true)
 	{
 		bitclocks = periphclock / (brp * speed);
-		ts1 = ((bitclocks * 7) >> 3) - fixbits;  // aim to the 87.5% sampling point
-		if (ts1 <= ts1max)
+
+		rjw = (bitclocks * rjw_01_percent) / 1000;  // resynchronization jump width in 0.1% (rounded downwards)
+		if (rjw < 1) rjw = 1;
+		ts2 = ((bitclocks * (1000 - smp_01_percent)) / 1000);  // aim to the 87.5% sampling point (rounded downwards)
+		if (ts2 < 1)  ts2 = 1;
+		ts1 = bitclocks - rjw - ts2;
+		if (ts1 < 1)
 		{
-			ts2 = bitclocks - fixbits - ts1;
-			if (ts2 < 1)  // ensure minimum 1 bit for the TS2
+			ts1 = 1;
+			rjw = bitclocks - ts2 - ts1;
+			if (rjw < 1)
 			{
-				ts2 = 1;
-				ts1 = bitclocks - fixbits - ts2;
+				rjw = 1;
+				ts2 = bitclocks - ts1 - rjw;
 			}
-			break;
 		}
-		else
+
+		if ((ts1 >= 1) && (ts1 <= ts1max) && (ts2 >= 1) && (ts2 <= ts2max))
 		{
-			++brp;  // increase the baud rate prescaler
+			break; // solution found
+		}
+		else // something wrong
+		{
+			if (bitclocks >= 128)
+			{
+				++brp;  // increase the baud rate prescaler, try again
+			}
+			else  // no solution was found (settings are wrong probably)
+			{
+				// use fix 87.5 % sampling and 12.5 % RJW
+				ts2 = ((7 * bitclocks) >> 3);
+				rjw = ts2;
+				ts1 = bitclocks - ts2 - rjw;
+				break;
+			}
 		}
 	}
 
 	regs->NBTP = 0
-	  | (fixbits    << 25)  // NSJW(7): Resynchronization jump width
+	  | (rjw        << 25)  // NSJW(7): Resynchronization jump width
 	  | ((brp - 1)  << 16)  // NBRP(9): Bit Rate Prescaler
 	  | ((ts1 - 1)  <<  8)  // NTSEG1(8): Time segment 1
 	  | ((ts2 - 1)  <<  0)  // NTSEG2(7): Time segment 2

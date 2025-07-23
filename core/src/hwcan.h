@@ -36,6 +36,10 @@
 
 #define HWCAN_RTR_FLAG  0x8000  // or-ed to the COBID field
 
+#define HWCAN_SMP_01_PERCENT_MIN  600
+#define HWCAN_SMP_01_PERCENT_MAX  950
+#define HWCAN_RJW_01_PERCENT_MAX  300
+
 typedef struct TCanMsg
 {
 	uint16_t   cobid;
@@ -59,6 +63,10 @@ public:	// settings
 	bool        loopback_mode = false;
 	bool        raw_timestamp = false;  // true: u32 timestamp = original u16 timestamp (can bit time counter)
 	bool        receive_own   = false;
+	uint16_t    smp_01_percent = 875; // Sampling point position in 0.1% of the whole bit time (87.5 % by default)
+	                                  // min: 600, max: 950
+	uint16_t    rjw_01_percent = 125; // Resinchronisation Jump Width in 0.1% of the whole bit time (12.5 % by default)
+	                                  // min: 0 (=smallest possible), max: 300
 
 	uint8_t     acterr_tx    = 0;
 	uint8_t     acterr_rx    = 0;
