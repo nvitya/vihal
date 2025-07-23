@@ -194,13 +194,15 @@ void THwCan_atsam_v2::SetSpeed(uint32_t aspeed)
 	//   fixbits + ts1 + ts2 = total number of clocks for one CAN bit time
 	//   ts1 = offset of sampling point (in bit quanta clocks)
 	//   ts2 = bit quanta clocks from sampling point to next bit
+	//   fixbits = 1 clocks fix reserved for synchronization
 	//   rjw = resynchronisation jump width
 
+	uint32_t  fixbits = 1;  // 1 clocks are reserved for synchronization
 	uint32_t  ts1max = 256;  // (ts2 will fit surely)
 	uint32_t  ts2max = 128;  // (ts2 will fit surely)
 
 	uint32_t  bitclocks;
-	int32_t   ts1, ts2, rjw;
+	volatile int32_t   ts1, ts2, rjw;
 	uint32_t  brp = 1;  // bit rate prescaler
 
 	// correct very invalid settings
@@ -212,21 +214,17 @@ void THwCan_atsam_v2::SetSpeed(uint32_t aspeed)
 	{
 		bitclocks = periphclock / (brp * speed);
 
-		rjw = (bitclocks * rjw_01_percent) / 1000;  // resynchronization jump width in 0.1% (rounded downwards)
-		if (rjw < 1) rjw = 1;
 		ts2 = ((bitclocks * (1000 - smp_01_percent)) / 1000);  // aim to the 87.5% sampling point (rounded downwards)
 		if (ts2 < 1)  ts2 = 1;
-		ts1 = bitclocks - rjw - ts2;
+		ts1 = bitclocks - fixbits - ts2;
 		if (ts1 < 1)
 		{
 			ts1 = 1;
-			rjw = bitclocks - ts2 - ts1;
-			if (rjw < 1)
-			{
-				rjw = 1;
-				ts2 = bitclocks - ts1 - rjw;
-			}
+			ts2 = bitclocks - fixbits- ts1;
 		}
+
+		rjw = (bitclocks * rjw_01_percent) / 1000;  // resynchronization jump width in 0.1% (rounded downwards)
+		if (rjw < 1) rjw = 1;
 
 		if ((ts1 >= 1) && (ts1 <= ts1max) && (ts2 >= 1) && (ts2 <= ts2max))
 		{
@@ -242,15 +240,15 @@ void THwCan_atsam_v2::SetSpeed(uint32_t aspeed)
 			{
 				// use fix 87.5 % sampling and 12.5 % RJW
 				ts2 = ((7 * bitclocks) >> 3);
+				ts1 = bitclocks - ts2 - fixbits;
 				rjw = ts2;
-				ts1 = bitclocks - ts2 - rjw;
 				break;
 			}
 		}
 	}
 
 	regs->NBTP.reg = 0
-	  | (rjw        << 25)  // NSJW(7): Resynchronization jump width
+	  | ((rjw - 1)  << 25)  // NSJW(7): Resynchronization jump width
 	  | ((brp - 1)  << 16)  // NBRP(9): Bit Rate Prescaler
 	  | ((ts1 - 1)  <<  8)  // NTSEG1(8): Time segment 1
 	  | ((ts2 - 1)  <<  0)  // NTSEG2(7): Time segment 2
