@@ -61,13 +61,8 @@ struct remote_resource_table
 
 extern struct remote_resource_table resources;
 
-#if defined(BOARD_MILKV_DUO)
-  #define START_ADDR  0x83F40000
-  #define IMAGE_LEN   0x000C0000
-#else
-  #define START_ADDR  0x8FE00000
-  #define IMAGE_LEN   0x00200000
-#endif
+#define START_ADDR  0xFFF84000
+#define IMAGE_LEN   0x00008000
 
 __attribute__((section(".resource_table"),used))
 struct remote_resource_table resources =
