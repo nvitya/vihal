@@ -87,11 +87,11 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetClkDiv(uint32_t aclkdiv);
   void SetClkDiv(uint32_t abasespeed, uint32_t targetfreq);
 
-  void SetPinDir(uint32_t apin, unsigned aoutput);
   inline void IrqClear(uint32_t amask) { dregs->irq = amask; }
   inline void IrqForce(uint32_t amask) { dregs->irq_force = amask; }
-  void IrqEnable(uint32_t amask, EPioIrqLine airq_line);
+  inline void IrqEnable(uint32_t amask, EPioIrqLine airq_line) { dregs->irq_ctrl[airq_line].inte |= amask; }
 
+  void SetPinDir(uint32_t apin, unsigned aoutput);
   void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
   void SetInShift(bool shift_right, bool autopush, unsigned threshold);
 
