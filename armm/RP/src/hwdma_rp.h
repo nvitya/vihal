@@ -32,10 +32,16 @@
 #define HWDMA_PRE_ONLY
 #include "hwdma.h"
 
-#define MAX_DMA_CHANNELS  12
+#define DMA_CTRL_EN    		(1 << 0)
 
-#define DMA_CTRL_BUSY  (1 << 26)
-#define DMA_CTRL_EN    (1 <<  0)
+#if defined(_RP2040_H_)
+	#define MAX_DMA_CHANNELS  12
+	#define DMA_CTRL_BUSY  	(1 << 24)
+#elif defined(_RP2350_H_)
+	#define MAX_DMA_CHANNELS  16
+	#define DMA_CTRL_BUSY  	(1 << 26)
+#endif
+
 
 typedef struct
 {

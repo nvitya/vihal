@@ -128,26 +128,43 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 {
   Disable();
 
-  uint32_t crreg = (0
-    | (0     << 31)  // AHB_ERROR
-    | (0     << 30)  // READ_ERROR
-    | (0     << 29)  // WRITE_ERROR
-    | (0     << 26)  // BUSY: (read only)
-    | (0     << 25)  // SNIFF_EN:
-    | (0     << 24)  // BSWAP: 1 = byte swap
-    | (0     << 23)  // IRQ_QUIET
-    | (perid << 17)  // TREQ_SEL(6): Transfer Request Signal
-    | (0     << 13)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
-    | (0     << 12)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
-    | (0     <<  8)  // RING_SIZE(4):
-    | (0     <<  7)  // INCR_WRITE_REV:
-    | (0     <<  6)  // INCR_WRITE:
-    | (0     <<  5)  // INCR_RED_REV:
-    | (0     <<  4)  // INCR_READ:
-    | (0     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
-    | (0     <<  1)  // HIGH_PRIORIY
-    | (0     <<  0)  // EN
-  );
+  #if defined(MCUSF_20)
+    uint32_t crreg = (0
+      | (0     << 24)  // BUSY: (read only)
+      | (0     << 23)  // SNIFF_EN:
+      | (0     << 22)  // BSWAP: 1 = byte swap
+      | (perid << 15)  // TREQ_SEL(6): Transfer Request Signal
+      | (0     << 11)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
+      | (0     << 10)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
+      | (0     <<  6)  // RING_SIZE(4): use 16 byte wrapping here !!!
+      | (0     <<  5)  // INCR_WRITE: do not increment !
+      | (0     <<  4)  // INCR_READ: do not increment !
+      | (0     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
+      | (0     <<  1)  // HIGH_PRIORIY
+      | (0     <<  0)  // EN
+    );
+  #elif defined(MCUSF_23)
+    uint32_t crreg = (0
+      | (0     << 31)  // AHB_ERROR
+      | (0     << 30)  // READ_ERROR
+      | (0     << 29)  // WRITE_ERROR
+      | (0     << 26)  // BUSY: (read only)
+      | (0     << 25)  // SNIFF_EN:
+      | (0     << 24)  // BSWAP: 1 = byte swap
+      | (0     << 23)  // IRQ_QUIET
+      | (perid << 17)  // TREQ_SEL(6): Transfer Request Signal
+      | (0     << 13)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
+      | (0     << 12)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
+      | (0     <<  8)  // RING_SIZE(4): use 16 byte wrapping here !!!
+      | (0     <<  7)  // INCR_WRITE_REV:
+      | (0     <<  6)  // INCR_WRITE: do not increment !
+      | (0     <<  5)  // INCR_RED_REV:
+      | (0     <<  4)  // INCR_READ: do not increment !
+      | (0     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
+      | (0     <<  1)  // HIGH_PRIORIY
+      | (0     <<  0)  // EN
+    );
+  #endif
 
 	if      (axfer->bytewidth == 4)  crreg |= (2 << 2);
 	else if (axfer->bytewidth == 2)  crreg |= (1 << 2);
@@ -160,9 +177,13 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 		}
 
 		if ((axfer->flags & DMATR_NO_DST_INC) == 0)
-		{
-			crreg |= (1 << 6);
-		}
+    {
+      #if defined(MCUSF_20)
+        crreg |= (1 << 5);
+      #elif defined(MCUSF_23)
+        crreg |= (1 << 6);
+      #endif
+    }
 
 		regs->read_addr  = ((uint32_t)axfer->srcaddr);
 		regs->write_addr = ((uint32_t)axfer->dstaddr);
@@ -184,9 +205,13 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 		else
 		{
 	    if ((axfer->flags & DMATR_NO_DST_INC) == 0)
-	    {
-	      crreg |= (1 << 6);
-	    }
+      {
+        #if defined(MCUSF_20)
+          crreg |= (1 << 5);
+        #elif defined(MCUSF_23)
+          crreg |= (1 << 6);
+        #endif
+      }
 
 	    regs->read_addr  = (uint32_t)periphaddr;
 	    regs->write_addr = ((uint32_t)axfer->dstaddr);
@@ -197,7 +222,12 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 
   if (axfer->flags & DMATR_BYTESWAP)
   {
-    crreg |= (1 << 24); // the QSPI unit uses this
+    // the QSPI unit uses this
+    #if defined(MCUSF_20)
+      crreg |= (1 << 22);
+    #elif defined(MCUSF_23)
+      crreg |= (1 << 24);
+    #endif
   }
 
   // Circular buffer support using helper channel
@@ -205,16 +235,31 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
   {
     if (ConfigureCircular(axfer, crreg))
     {
-      crreg |= (helper_chnum << 13);  // CHAIN_TO(4): trigger the helper channel on completition
+      // CHAIN_TO(4): trigger the helper channel on completition
+      #if defined(MCUSF_20)
+        crreg |= (helper_chnum << 11);
+      #elif defined(MCUSF_23)
+        crreg |= (helper_chnum << 13);
+      #endif
     }
     else
     {
-      crreg |= (chnum << 13);  // CHAIN_TO(4): Disable the chaining by setting self-number here
+      // CHAIN_TO(4): Disable the chaining by setting self-number here
+      #if defined(MCUSF_20)
+        crreg |= (chnum << 11);
+      #elif defined(MCUSF_23)
+        crreg |= (chnum << 13);
+      #endif
     }
   }
   else
   {
-    crreg |= (chnum << 13);  // CHAIN_TO(4): Disable the chaining by setting self-number here
+    // CHAIN_TO(4): Disable the chaining by setting self-number here
+    #if defined(MCUSF_20)
+      crreg |= (chnum << 11);
+    #elif defined(MCUSF_23)
+      crreg |= (chnum << 13);
+    #endif
   }
 
   gregs->ints0 = chbit; // clear current interrupt bit (both lines)
@@ -268,26 +313,43 @@ bool THwDmaChannel_rp::ConfigureCircular(THwDmaTransfer * axfer, uint32_t crreg)
   }
 
   helper_regs->transfer_count = 1;  // will be re-setted
-  helper_regs->al1_ctrl = (0
-    | (0     << 31)  // AHB_ERROR
-    | (0     << 30)  // READ_ERROR
-    | (0     << 29)  // WRITE_ERROR
-    | (0     << 26)  // BUSY: (read only)
-    | (0     << 25)  // SNIFF_EN:
-    | (0     << 24)  // BSWAP: 1 = byte swap
-    | (0     << 23)  // IRQ_QUIET
-    | (0x3F  << 17)  // TREQ_SEL(6): Transfer Request Signal
-    | (chnum << 13)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
-    | (0     << 12)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
-    | (0     <<  8)  // RING_SIZE(4):
-    | (0     <<  7)  // INCR_WRITE_REV:
-    | (0     <<  6)  // INCR_WRITE:
-    | (0     <<  5)  // INCR_RED_REV:
-    | (0     <<  4)  // INCR_READ:
-    | (2     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
-    | (1     <<  1)  // HIGH_PRIORIY
-    | (1     <<  0)  // EN
-  );
+  #if defined(MCUSF_20)
+    helper_regs->al1_ctrl = (0
+      | (0     << 24)  // BUSY: (read only)
+      | (0     << 23)  // SNIFF_EN:
+      | (0     << 22)  // BSWAP: 1 = byte swap
+      | (0x3F  << 15)  // TREQ_SEL(6): Transfer Request Signal
+      | (chnum << 11)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
+      | (0     << 10)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
+      | (0     <<  6)  // RING_SIZE(4): use 16 byte wrapping here !!!
+      | (0     <<  5)  // INCR_WRITE: do not increment !
+      | (0     <<  4)  // INCR_READ: do not increment !
+      | (2     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
+      | (1     <<  1)  // HIGH_PRIORIY
+      | (1     <<  0)  // EN
+    );
+  #elif defined(MCUSF_23)
+    helper_regs->al1_ctrl = (0
+      | (0     << 31)  // AHB_ERROR
+      | (0     << 30)  // READ_ERROR
+      | (0     << 29)  // WRITE_ERROR
+      | (0     << 26)  // BUSY: (read only)
+      | (0     << 25)  // SNIFF_EN:
+      | (0     << 24)  // BSWAP: 1 = byte swap
+      | (0     << 23)  // IRQ_QUIET
+      | (0x3F  << 17)  // TREQ_SEL(6): Transfer Request Signal
+      | (chnum << 13)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
+      | (0     << 12)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
+      | (0     <<  8)  // RING_SIZE(4): use 16 byte wrapping here !!!
+      | (0     <<  7)  // INCR_WRITE_REV:
+      | (0     <<  6)  // INCR_WRITE: do not increment !
+      | (0     <<  5)  // INCR_RED_REV:
+      | (0     <<  4)  // INCR_READ: do not increment !
+      | (2     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
+      | (1     <<  1)  // HIGH_PRIORIY
+      | (1     <<  0)  // EN
+    );
+  #endif
 
   return true;
 }
