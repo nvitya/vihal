@@ -10,7 +10,7 @@
 #include "hwrppio_instructions.h"
 #include <hwrppio.h>
 
-uint8_t hwpio_reset_done[2];  // will be initialized with zeroes as it goes to the .bss
+uint8_t hwpio_reset_done[3];  // will be initialized with zeroes as it goes to the .bss
 
 pio_hw_t * hwpio_init_and_get_regs(uint8_t adevnum)
 {
@@ -26,6 +26,11 @@ pio_hw_t * hwpio_init_and_get_regs(uint8_t adevnum)
   {
     dregs = pio1_hw;
     reset_mask = RESETS_RESET_PIO1_BITS;
+  }
+  else if (2 == adevnum)
+  {
+    dregs = pio2_hw;
+    reset_mask = RESETS_RESET_PIO2_BITS;
   }
   else
   {
@@ -222,7 +227,15 @@ void THwRpPioSm::SetClkDiv(uint32_t abasespeed, uint32_t targetfreq)
 
 void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
-  int af = (1 == devnum ? PINCFG_AF_7 : PINCFG_AF_6);
+  int af;
+  switch (devnum)
+  {
+    case 0: af = PINCFG_AF_6; break;
+    case 1: af = PINCFG_AF_7; break;
+    case 2: af = PINCFG_AF_8; break;
+    default: return; // TODO Not smart
+  }
+
   for (unsigned n = 0; n < acount; ++n)
   {
     hwpinctrl.PinSetup(0, abase + n, af | aextra_flags);
