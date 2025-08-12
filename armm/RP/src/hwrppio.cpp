@@ -10,7 +10,7 @@
 #include "hwrppio_instructions.h"
 #include <hwrppio.h>
 
-uint8_t hwpio_reset_done[2];  // will be initialized with zeroes as it goes to the .bss
+uint8_t hwpio_reset_done[3];  // will be initialized with zeroes as it goes to the .bss
 
 pio_hw_t * hwpio_init_and_get_regs(uint8_t adevnum)
 {
@@ -26,6 +26,11 @@ pio_hw_t * hwpio_init_and_get_regs(uint8_t adevnum)
   {
     dregs = pio1_hw;
     reset_mask = RESETS_RESET_PIO1_BITS;
+  }
+  else if (2 == adevnum)
+  {
+    dregs = pio2_hw;
+    reset_mask = RESETS_RESET_PIO2_BITS;
   }
   else
   {
@@ -59,6 +64,12 @@ void THwRpPioPrg::Add(uint16_t ainstr)
 {
   if (offset + length < 32)
   {
+    // Add offset to the JMP instruction address
+    if ((ainstr & 0xE000) == 0)
+    {
+      ainstr += offset;
+    }
+
     dregs->instr_mem[offset + length++] = ainstr;
   }
 }
@@ -92,6 +103,8 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
 
   Stop();  // ensure that the state machine is not running
 
+  ClearFifos(); // Clear FIFOs and their debug flags
+
   tx_lsb   = (uint32_t *)&dregs->txf[smnum];
   tx_msb8 = (uint8_t *)tx_lsb;
   tx_msb8 += 3;
@@ -113,6 +126,19 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
   return true;
 }
 
+void THwRpPioSm::ClearFifos()
+{
+  regs->shiftctrl ^= PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
+  regs->shiftctrl ^= PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
+
+  const uint32_t fdebug_sm_mask =
+              (1u << PIO_FDEBUG_TXOVER_LSB) |
+              (1u << PIO_FDEBUG_RXUNDER_LSB) |
+              (1u << PIO_FDEBUG_TXSTALL_LSB) |
+              (1u << PIO_FDEBUG_RXSTALL_LSB);
+  dregs->fdebug = fdebug_sm_mask << smnum;
+}
+
 uint32_t THwRpPioSm::GetDmaRequest(bool istx)
 {
   uint32_t result = DREQ_PIO0_TX0 + smnum + (devnum << 3);
@@ -131,12 +157,18 @@ void THwRpPioSm::SetPrg(THwRpPioPrg * aprg)
   regs->execctrl = execctrl;
 }
 
-void THwRpPioSm::SetupPinsSideSet(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPinsSideSet(unsigned abase, unsigned acount, bool optional, bool pindir)
 {
   sideset_len = (acount & 7);
   pinctrl &= ~((0x1F  << 10) | (0x7         << 29));
   pinctrl |=  ((abase << 10) | (sideset_len << 29));
   regs->pinctrl = pinctrl;
+
+  execctrl &= ~(PIO_SM0_EXECCTRL_SIDE_EN_BITS | PIO_SM0_EXECCTRL_SIDE_PINDIR_BITS);
+  execctrl |= (optional << PIO_SM0_EXECCTRL_SIDE_EN_LSB);
+  execctrl |= (pindir << PIO_SM0_EXECCTRL_SIDE_PINDIR_LSB);
+  regs->execctrl = execctrl;
+
   SetupPioPins(abase, acount);
 }
 
@@ -148,20 +180,27 @@ void THwRpPioSm::SetupPinsSet(unsigned abase, unsigned acount)
   SetupPioPins(abase, acount);
 }
 
-void THwRpPioSm::SetupPinsOut(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPinsOut(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
   pinctrl &= ~((0x1F  << 0) | (0x3F   << 20));
   pinctrl |=  ((abase << 0) | (acount << 20));
   regs->pinctrl = pinctrl;
-  SetupPioPins(abase, acount);
+  SetupPioPins(abase, acount, aextra_flags);
 }
 
-void THwRpPioSm::SetupPinsIn(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPinsIn(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
   pinctrl &= ~((0x1F  << 15));
   pinctrl |=  ((abase << 15));
   regs->pinctrl = pinctrl;
-  SetupPioPins(abase, acount);
+  SetupPioPins(abase, acount, aextra_flags);
+}
+
+void THwRpPioSm::SetupPinsJmp(unsigned abase, unsigned acount)
+{
+  execctrl &= ~(PIO_SM0_EXECCTRL_JMP_PIN_BITS);
+  execctrl |= ((abase & 31) << PIO_SM0_EXECCTRL_JMP_PIN_LSB);
+  regs->execctrl = execctrl;
 }
 
 void THwRpPioSm::SetClkDiv(uint32_t aclkdiv)
@@ -172,8 +211,8 @@ void THwRpPioSm::SetClkDiv(uint32_t aclkdiv)
 
 void THwRpPioSm::SetClkDiv(uint32_t abasespeed, uint32_t targetfreq)
 {
-  unsigned divi = abasespeed / targetfreq;
-  unsigned divf;
+  unsigned long long divi = abasespeed / targetfreq;
+  unsigned long long divf;
   if (divi < 1)
   {
     divi = 1;
@@ -183,15 +222,23 @@ void THwRpPioSm::SetClkDiv(uint32_t abasespeed, uint32_t targetfreq)
   {
     divf = ((abasespeed - divi * targetfreq) << 8) / targetfreq;
   }
-  SetClkDiv((divi << 16) + (divf << 8));
+  SetClkDiv(uint32_t((divi << 16) + (divf << 8)));
 }
 
-void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount)
+void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_flags)
 {
-  int af = (1 == devnum ? PINCFG_AF_7 : PINCFG_AF_6);
+  int af;
+  switch (devnum)
+  {
+    case 0: af = PINCFG_AF_6; break;
+    case 1: af = PINCFG_AF_7; break;
+    case 2: af = PINCFG_AF_8; break;
+    default: return; // TODO Not smart
+  }
+
   for (unsigned n = 0; n < acount; ++n)
   {
-    hwpinctrl.PinSetup(0, abase + n, af);
+    hwpinctrl.PinSetup(0, abase + n, af | aextra_flags);
   }
 }
 

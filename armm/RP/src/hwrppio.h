@@ -11,6 +11,12 @@
 #include "platform.h"
 #include "hwrppio_instructions.h"
 
+enum EPioIrqLine
+{
+  Irq0,
+  Irq1
+};
+
 class THwRpPioPrg
 {
 public:
@@ -70,9 +76,10 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   uint32_t       pinctrl = 0;
   uint32_t       clkdiv = 0x10000;    // 1 = no clk division, runs with the SystemCoreClock
   uint32_t       execctrl = 0;        // some fields will be updated on SetPrg()
-  uint32_t       shiftctrl = 0x000C000;
+  uint32_t       shiftctrl = 0x000C0000;
 
   bool Init(uint8_t adevnum, uint8_t asmnum);
+  void ClearFifos();
   void SetPrg(THwRpPioPrg * aprg);
   void Start();
   void Stop();
@@ -80,17 +87,19 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   void SetClkDiv(uint32_t aclkdiv);
   void SetClkDiv(uint32_t abasespeed, uint32_t targetfreq);
 
-  void SetPinDir(uint32_t apin, unsigned aoutput);
   inline void IrqClear(uint32_t amask) { dregs->irq = amask; }
   inline void IrqForce(uint32_t amask) { dregs->irq_force = amask; }
+  inline void IrqEnable(uint32_t amask, EPioIrqLine airq_line) { dregs->irq_ctrl[airq_line].inte |= amask; }
 
+  void SetPinDir(uint32_t apin, unsigned aoutput);
   void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
   void SetInShift(bool shift_right, bool autopush, unsigned threshold);
 
-  void SetupPinsSideSet(unsigned abase, unsigned acount);
+  void SetupPinsSideSet(unsigned abase, unsigned acount, bool optional, bool pindir);
   void SetupPinsSet(unsigned abase, unsigned acount);
-  void SetupPinsOut(unsigned abase, unsigned acount);
-  void SetupPinsIn(unsigned abase, unsigned acount);
+  void SetupPinsOut(unsigned abase, unsigned acount, unsigned aextra_flags = 0x0);
+  void SetupPinsIn(unsigned abase, unsigned acount, unsigned aextra_flags = 0x0);
+  void SetupPinsJmp(unsigned abase, unsigned acount);
 
   inline void PreloadX(unsigned avalue, unsigned abits)
   {
@@ -121,7 +130,7 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   bool TryRecvMsb16(uint16_t * adata);
 
 public:
-  void SetupPioPins(unsigned abase, unsigned acount);
+  void SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_flags = 0x0);
 
 };
 

@@ -1,7 +1,7 @@
-// rp2040.h
+// rp2350.h
 
-#ifndef _RP2040_H_
-#define _RP2040_H_
+#ifndef _RP2350_H_
+#define _RP2350_H_
 
 #include <stdint.h>
 
@@ -141,5 +141,5 @@ typedef enum {
 #include "hardware/structs/usb.h"
 
 
-#endif /* _RP2040_H_ */
+#endif /* _RP2350_H_ */
 
