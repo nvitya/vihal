@@ -211,8 +211,8 @@ void THwRpPioSm::SetClkDiv(uint32_t aclkdiv)
 
 void THwRpPioSm::SetClkDiv(uint32_t abasespeed, uint32_t targetfreq)
 {
-  unsigned divi = abasespeed / targetfreq;
-  unsigned divf;
+  unsigned long long divi = abasespeed / targetfreq;
+  unsigned long long divf;
   if (divi < 1)
   {
     divi = 1;
@@ -222,7 +222,7 @@ void THwRpPioSm::SetClkDiv(uint32_t abasespeed, uint32_t targetfreq)
   {
     divf = ((abasespeed - divi * targetfreq) << 8) / targetfreq;
   }
-  SetClkDiv((divi << 16) + (divf << 8));
+  SetClkDiv(uint32_t((divi << 16) + (divf << 8)));
 }
 
 void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_flags)
