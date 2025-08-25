@@ -34,14 +34,31 @@
 
 #define DMA_CTRL_EN    		(1 << 0)
 
-#if defined(_RP2040_H_)
-	#define MAX_DMA_CHANNELS  12
-	#define DMA_CTRL_BUSY  	(1 << 24)
-#elif defined(_RP2350_H_)
-	#define MAX_DMA_CHANNELS  16
-	#define DMA_CTRL_BUSY  	(1 << 26)
-#endif
+#if defined(MCUSF_20)
 
+	#define MAX_DMA_CHANNELS             12
+
+  #define DMA_CTRL_INC_READ     (1 <<  4)
+  #define DMA_CTRL_INC_WRITE    (1 <<  5)
+	#define DMA_CTRL_CHAIN_TO_POS        11
+	#define DMA_CTRL_TREQ_SEL_POS        15
+  #define DMA_CTRL_BSWAP        (1 << 22)
+	#define DMA_CTRL_BUSY  	      (1 << 24)
+
+#elif defined(MCUSF_23)
+
+	#define MAX_DMA_CHANNELS             16
+
+  #define DMA_CTRL_INC_READ     (1 <<  4)
+  #define DMA_CTRL_INC_WRITE    (1 <<  6)
+	#define DMA_CTRL_CHAIN_TO_POS        13
+	#define DMA_CTRL_TREQ_SEL_POS        17
+  #define DMA_CTRL_BSWAP        (1 << 24)
+	#define DMA_CTRL_BUSY  	      (1 << 26)
+
+#else
+	#error "DMA is not implmented for this RP family"
+#endif
 
 typedef struct
 {

@@ -137,8 +137,8 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
       | (0     << 11)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
       | (0     << 10)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
       | (0     <<  6)  // RING_SIZE(4): use 16 byte wrapping here !!!
-      | (0     <<  5)  // INCR_WRITE: do not increment !
-      | (0     <<  4)  // INCR_READ: do not increment !
+      | (0     <<  5)  // INCR_WRITE: 0 = do not increment
+      | (0     <<  4)  // INCR_READ: 0 = do not increment
       | (0     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
       | (0     <<  1)  // HIGH_PRIORIY
       | (0     <<  0)  // EN
@@ -156,14 +156,16 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
       | (0     << 13)  // CHAIN_TO(4): will be set later, disable the chaining by setting self-number here
       | (0     << 12)  // RING_SEL: 1 = ring applies to write address, 0 = ring applies to read address
       | (0     <<  8)  // RING_SIZE(4): use 16 byte wrapping here !!!
-      | (0     <<  7)  // INCR_WRITE_REV:
-      | (0     <<  6)  // INCR_WRITE: do not increment !
-      | (0     <<  5)  // INCR_RED_REV:
-      | (0     <<  4)  // INCR_READ: do not increment !
+      | (0     <<  7)  // INCR_WRITE_REV: 1 = decrement rather increment
+      | (0     <<  6)  // INCR_WRITE: 0 = do not increment
+      | (0     <<  5)  // INCR_READ_REV: 1 = decrement rather increment
+      | (0     <<  4)  // INCR_READ: 0 = do not increment
       | (0     <<  2)  // DATA_SIZE(2): 0 = 1 byte, 1 = 2 byte, 2 = 4 byte
       | (0     <<  1)  // HIGH_PRIORIY
       | (0     <<  0)  // EN
     );
+  #else
+    #error "DMA is not implmented for this RP family"
   #endif
 
 	if      (axfer->bytewidth == 4)  crreg |= (2 << 2);
@@ -173,16 +175,12 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 	{
 		if ((axfer->flags & DMATR_NO_SRC_INC) == 0)
 		{
-			crreg |= (1 << 4);
+			crreg |= DMA_CTRL_INC_READ;
 		}
 
 		if ((axfer->flags & DMATR_NO_DST_INC) == 0)
     {
-      #if defined(MCUSF_20)
-        crreg |= (1 << 5);
-      #elif defined(MCUSF_23)
-        crreg |= (1 << 6);
-      #endif
+      crreg |= DMA_CTRL_INC_WRITE;
     }
 
 		regs->read_addr  = ((uint32_t)axfer->srcaddr);
@@ -206,11 +204,7 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
 		{
 	    if ((axfer->flags & DMATR_NO_DST_INC) == 0)
       {
-        #if defined(MCUSF_20)
-          crreg |= (1 << 5);
-        #elif defined(MCUSF_23)
-          crreg |= (1 << 6);
-        #endif
+        crreg |= DMA_CTRL_INC_WRITE;
       }
 
 	    regs->read_addr  = (uint32_t)periphaddr;
@@ -223,11 +217,7 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
   if (axfer->flags & DMATR_BYTESWAP)
   {
     // the QSPI unit uses this
-    #if defined(MCUSF_20)
-      crreg |= (1 << 22);
-    #elif defined(MCUSF_23)
-      crreg |= (1 << 24);
-    #endif
+    crreg |= DMA_CTRL_BSWAP;
   }
 
   // Circular buffer support using helper channel
@@ -236,30 +226,18 @@ void THwDmaChannel_rp::PrepareTransfer(THwDmaTransfer * axfer)
     if (ConfigureCircular(axfer, crreg))
     {
       // CHAIN_TO(4): trigger the helper channel on completition
-      #if defined(MCUSF_20)
-        crreg |= (helper_chnum << 11);
-      #elif defined(MCUSF_23)
-        crreg |= (helper_chnum << 13);
-      #endif
+      crreg |= (helper_chnum << DMA_CTRL_CHAIN_TO_POS);
     }
     else
     {
       // CHAIN_TO(4): Disable the chaining by setting self-number here
-      #if defined(MCUSF_20)
-        crreg |= (chnum << 11);
-      #elif defined(MCUSF_23)
-        crreg |= (chnum << 13);
-      #endif
+      crreg |= (chnum << DMA_CTRL_CHAIN_TO_POS);
     }
   }
   else
   {
     // CHAIN_TO(4): Disable the chaining by setting self-number here
-    #if defined(MCUSF_20)
-      crreg |= (chnum << 11);
-    #elif defined(MCUSF_23)
-      crreg |= (chnum << 13);
-    #endif
+    crreg |= (chnum << DMA_CTRL_CHAIN_TO_POS);
   }
 
   gregs->ints0 = chbit; // clear current interrupt bit (both lines)
@@ -349,7 +327,9 @@ bool THwDmaChannel_rp::ConfigureCircular(THwDmaTransfer * axfer, uint32_t crreg)
       | (1     <<  1)  // HIGH_PRIORIY
       | (1     <<  0)  // EN
     );
-  #endif
+	#else
+		#error "DMA is not implmented for this RP family"
+	#endif
 
   return true;
 }
