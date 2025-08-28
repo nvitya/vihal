@@ -76,10 +76,12 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   uint32_t       pinctrl = 0;
   uint32_t       clkdiv = 0x10000;    // 1 = no clk division, runs with the SystemCoreClock
   uint32_t       execctrl = 0;        // some fields will be updated on SetPrg()
-  uint32_t       shiftctrl = 0x000C0000;
+  uint32_t       shiftctrl = 0x000C0000;  // keep the defaults (IN_SHIFTDIR=1, OUT_SHIFTDIR=1)
 
   bool Init(uint8_t adevnum, uint8_t asmnum);
   void ClearFifos();
+  void JoinFifosForTx();
+  void JoinFifosForRx();
   void SetPrg(THwRpPioPrg * aprg);
   void Start();
   void Stop();
