@@ -92,6 +92,7 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
   inline void IrqEnable(uint32_t amask, EPioIrqLine airq_line) { dregs->irq_ctrl[airq_line].inte |= amask; }
 
   void SetPinDir(uint32_t apin, unsigned aoutput);
+  void SetOutputs(uint32_t apin, uint32_t amask); // can be used to initialize the output states
   void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
   void SetInShift(bool shift_right, bool autopush, unsigned threshold);
 

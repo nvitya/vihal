@@ -128,15 +128,16 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
 
 void THwRpPioSm::ClearFifos()
 {
-  regs->shiftctrl ^= PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS;
-  regs->shiftctrl ^= PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS;
+  regs->shiftctrl &= ~(PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS);
+  regs->shiftctrl &= ~(PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS);
 
-  const uint32_t fdebug_sm_mask =
-              (1u << PIO_FDEBUG_TXOVER_LSB) |
-              (1u << PIO_FDEBUG_RXUNDER_LSB) |
-              (1u << PIO_FDEBUG_TXSTALL_LSB) |
-              (1u << PIO_FDEBUG_RXSTALL_LSB);
-  dregs->fdebug = fdebug_sm_mask << smnum;
+  const uint32_t fdebug_sm_mask = (0
+    | (1u << PIO_FDEBUG_TXOVER_LSB)
+    | (1u << PIO_FDEBUG_RXUNDER_LSB)
+    | (1u << PIO_FDEBUG_TXSTALL_LSB)
+    | (1u << PIO_FDEBUG_RXSTALL_LSB)
+	);
+  dregs->fdebug = (fdebug_sm_mask << smnum);
 }
 
 uint32_t THwRpPioSm::GetDmaRequest(bool istx)
@@ -245,11 +246,23 @@ void THwRpPioSm::SetupPioPins(unsigned abase, unsigned acount, unsigned aextra_f
 void THwRpPioSm::SetPinDir(uint32_t apin, unsigned aoutput)
 {
   uint32_t prev_pinctrl = regs->pinctrl;
-
-  regs->pinctrl = (apin << 5) | (1 << 26);   // change the pinctrl for the SET instructions
+  uint32_t tmp = (prev_pinctrl & ~(0x1F << 5));
+  tmp |= ((apin << 5) | (1 << 26));   // change the pinctrl for the SET instructions
+  regs->pinctrl = tmp;
   regs->instr = pio_encode_set(pio_pindirs, aoutput);
   regs->pinctrl = prev_pinctrl;
 }
+
+void THwRpPioSm::SetOutputs(uint32_t apin, uint32_t amask)
+{
+  uint32_t prev_pinctrl = regs->pinctrl;
+  uint32_t tmp = (prev_pinctrl & ~(0x1F << 5));
+  tmp |= ((apin << 5) | (1 << 26));   // change the pinctrl for the SET instructions
+  regs->pinctrl = tmp;
+  regs->instr = pio_encode_set(pio_pins, amask);
+  regs->pinctrl = prev_pinctrl;
+}
+
 
 void THwRpPioSm::Start()
 {
