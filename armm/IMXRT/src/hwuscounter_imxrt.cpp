@@ -57,8 +57,8 @@ bool THwUsCounter_imxrt::Init()
     __NOP();
   }
 
-  // uses the PERCLK_CLK_ROOT which is set to use the 24 MHz oscillator
-  uint32_t periphclock = 24000000;
+  // uses the PERCLK_CLK_ROOT which is set to peripheral bus freq
+  uint32_t periphclock = SystemCoreClock / 4;
   regs->PR = (0
     | (((periphclock / 1000000) - 1) << 0)
     | (0 << 12) // PRESCALER24M

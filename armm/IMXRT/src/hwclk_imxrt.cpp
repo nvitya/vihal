@@ -283,6 +283,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   {
   }
 
+  // set the GPT, CCM clock to the IPG_CLOCK to allow higher resolutin IRQ timing
+  tmp = CCM->CSCMR1;
+  tmp &= ~CCM_CSCMR1_PERCLK_CLK_SEL_MASK;  // 0 = IPG, 1 = OSC (24M)
+  CCM->CSCMR1 = tmp;
+
   SystemCoreClock = target_speed_hz;
   return true;
 }
