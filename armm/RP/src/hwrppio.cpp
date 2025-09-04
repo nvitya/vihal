@@ -128,9 +128,8 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
 
 void THwRpPioSm::ClearFifos()
 {
-  regs->shiftctrl ^= (PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS);  // fifo cleared when this bit changes
-  regs->shiftctrl ^= (PIO_SM0_SHIFTCTRL_FJOIN_TX_BITS);
-
+	// fifos cleared when the join bits are changed
+  regs->shiftctrl ^= (PIO_SM0_SHIFTCTRL_FJOIN_RX_BITS);
   regs->shiftctrl = shiftctrl; // restore the original
 
   const uint32_t fdebug_sm_mask = (0
