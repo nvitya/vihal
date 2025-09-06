@@ -1,0 +1,18 @@
+MEMORY
+{
+  CODERAM (xrw) :  ORIGIN = 0x00000000, LENGTH = 0x6000
+  RAM (xrw)     :  ORIGIN = 0x00006000, LENGTH = 0x2000
+
+/* Real bus addresses:
+  CODERAM (xrw) :  ORIGIN = 0xFFF84000, LENGTH = 0x6000
+  RAM (xrw)     :  ORIGIN = 0xFFF8A000, LENGTH = 0x2000
+*/
+}
+
+REGION_ALIAS("TEXT",   CODERAM);
+REGION_ALIAS("ITCRAM", CODERAM);
+REGION_ALIAS("DTCRAM", RAM);
+REGION_ALIAS("RAM2", RAM);
+
+INCLUDE armm_default_noflash.ld
+
