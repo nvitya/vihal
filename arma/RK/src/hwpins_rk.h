@@ -32,6 +32,41 @@
 #include "hwpins.h"
 #include "platform.h"
 
+#define PINNUM_A0    0
+#define PINNUM_A1    1
+#define PINNUM_A2    2
+#define PINNUM_A3    3
+#define PINNUM_A4    4
+#define PINNUM_A5    5
+#define PINNUM_A6    6
+#define PINNUM_A7    7
+#define PINNUM_B0    8
+#define PINNUM_B1    9
+#define PINNUM_B2   10
+#define PINNUM_B3   11
+#define PINNUM_B4   12
+#define PINNUM_B5   13
+#define PINNUM_B6   14
+#define PINNUM_B7   15
+#define PINNUM_C0   16
+#define PINNUM_C1   17
+#define PINNUM_C2   18
+#define PINNUM_C3   19
+#define PINNUM_C4   20
+#define PINNUM_C5   21
+#define PINNUM_C6   22
+#define PINNUM_C7   23
+#define PINNUM_D0   24
+#define PINNUM_D1   25
+#define PINNUM_D2   26
+#define PINNUM_D3   27
+#define PINNUM_D4   28
+#define PINNUM_D5   29
+#define PINNUM_D6   30
+#define PINNUM_D7   31
+
+#define PINCFG_AF_RM_IO  7
+
 // The register accesses are very slow on this platform!
 
 class THwPinCtrl_rk : public THwPinCtrl_pre
@@ -45,6 +80,7 @@ public: //
 	bool PinSetup(int aportnum, int apinnum, unsigned flags);  // this does only GPIO setup
 
 	void GpioSet(int aportnum, int apinnum, int value);
+	void GpioDir(int aportnum, int apinnum, int value);
 
 	inline bool GpioSetup(int aportnum, int apinnum, unsigned flags)  { return PinSetup(aportnum, apinnum, flags); }
 
@@ -52,6 +88,8 @@ public: //
 
 public:
 	GPIO_REG *           mapped_gpio_regs[5] = {0};
+	uint8_t *            mapped_ioc = nullptr;  // using uint8_t for using byte offsets from the TRM
+
 	uint8_t *            mapped_fmux_regs = nullptr;
 	uint8_t *            mapped_pwr_ioblk = nullptr;
 };

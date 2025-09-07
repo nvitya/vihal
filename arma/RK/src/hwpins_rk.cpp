@@ -40,8 +40,6 @@ GPIO_REG * THwPinCtrl_rk::GetGpioRegs(int aportnum)
 	GPIO_REG * regs = mapped_gpio_regs[aportnum];
 	if (!regs)
 	{
-		uint32_t addr;
-
 		const uint32_t gpio_base_addresses[5] =
 		{
 				GPIO0_BASE, GPIO1_BASE, GPIO2_BASE, GPIO3_BASE, GPIO4_BASE
@@ -169,22 +167,106 @@ bool THwPinCtrl_rk::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio
 
 bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
-#if 0
-  const gpio_pad_table_item_t * pitem = &gpio_pad_table[0];
-  uint32_t gpio_code = aportnum * 0x100 + apinnum;
-  while (pitem->fmux_offs | pitem->gpio | pitem->ioblk_reg)
+	if ((aportnum < 0) || (aportnum > 4))
+	{
+		return false;
+	}
+
+	if (!map_hw_addr(GPIO0_IOC_BASE, 4096, (void * *)&mapped_ioc))
+	{
+		return false;
+	}
+
+	uint32_t pinpos, value;
+
+	// set Open-Drain
+	volatile uint32_t * reg_od = (volatile uint32_t *)(&mapped_ioc[0x700 + (aportnum << 4) + 4 * (apinnum >> 3)]);
+	pinpos = (apinnum & 0x7);
+  if (flags & PINCFG_OPENDRAIN)
   {
-    if (pitem->gpio == gpio_code)
-    {
-      PadSetup(pitem->fmux_offs,  pitem->ioblk_reg,  pitem->gpio, flags);
-      return true;
-    }
-    ++pitem;
+  	*reg_od = (1 << (16 + pinpos)) | (1 << pinpos);
   }
-  return false;
-#else
-  return false;
-#endif
+  else
+  {
+  	*reg_od = (1 << (16 + pinpos)) | 0;
+  }
+
+  // set Pull-Up/Down
+  if (flags & PINCFG_PULLUP)
+  {
+    value = 1;
+  }
+  else if (flags & PINCFG_PULLDOWN)
+  {
+    value = 2;
+  }
+  else
+  {
+  	value = 0;
+  }
+	pinpos = ((apinnum & 0xF) << 1);
+	volatile uint32_t * reg_pupd = (volatile uint32_t *)(&mapped_ioc[0x200 + (aportnum << 4) + 4 * (apinnum >> 3)]);
+	*reg_pupd = ((3 << (16 + pinpos)) | (value << pinpos));
+
+	// set Pin Speed
+
+  if (PINCFG_SPEED_SLOW == (flags & PINCFG_SPEED_MASK))
+  {
+    //ioblk |= (1 << 11);
+  }
+
+  if (PINCFG_DRIVE_WEAK == (flags & PINCFG_DRIVE_MASK))
+  {
+    //ioblk |= (0 <<  5);
+  }
+  else if (PINCFG_DRIVE_STRONG == (flags & PINCFG_DRIVE_MASK))
+  {
+    //ioblk |= (3 <<  5);
+  }
+  else
+  {
+    //ioblk |= (2 <<  5);  // drive medium (default)
+  }
+
+  if (0 == (flags & PINCFG_ANALOGUE))
+  {
+    //ioblk |= (1 << 8);  // activate the Schmitt trigger
+  }
+
+
+	apinnum &= 0x1F;
+
+	uint32_t iomux_shift = 4 * (apinnum & 3);
+	uint32_t iomux_val = 0; // GPIO by default
+  if (flags & PINCFG_AF_MASK)
+  {
+  	iomux_val = ((flags & PINCFG_AF_MASK) >> PINCFG_AF_SHIFT);
+  }
+  else // gpio
+  {
+    //uint32_t pinmask16 = (1 << (apinnum & 0x0F));
+		if (flags & PINCFG_OUTPUT)
+		{
+			if (flags & PINCFG_GPIO_INIT_1)
+			{
+				GpioSet(aportnum, apinnum, 1);
+			}
+			else
+			{
+				GpioSet(aportnum, apinnum, 0);
+			}
+			GpioDir(aportnum, apinnum, 1);
+		}
+		else
+		{
+			GpioDir(aportnum, apinnum, 0);
+		}
+  }
+	volatile uint32_t * reg_iomux = (volatile uint32_t *)(&mapped_ioc[(aportnum << 5) | (apinnum & 0x1C)]);
+  *reg_iomux = (0xF << (16 + iomux_shift)) | (iomux_val << iomux_shift);
+
+
+  return true;
 }
 
 void THwPinCtrl_rk::GpioSet(int aportnum, int apinnum, int value)
@@ -192,16 +274,52 @@ void THwPinCtrl_rk::GpioSet(int aportnum, int apinnum, int value)
   GPIO_REG * regs = GetGpioRegs(aportnum);
   if (regs)
   {
-#if 0
+  	uint32_t * setbitptr;
+  	if (apinnum >= 16)
+  	{
+      setbitptr = (uint32_t *)&regs->SWPORT_DR_H;
+  	}
+  	else
+  	{
+      setbitptr = (uint32_t *)&regs->SWPORT_DR_L;
+  	}
+
+  	uint32_t bitmask = (1 << (apinnum & 0xF));
     if (value)
     {
-      regs->SWPORTA_DR |= (1 << apinnum);
+      *setbitptr = (bitmask << 16) | bitmask;
     }
     else
     {
-      regs->SWPORTA_DR &= ~(1 << apinnum);
+      *setbitptr = (bitmask << 16);
     }
-#endif
+  }
+}
+
+void THwPinCtrl_rk::GpioDir(int aportnum, int apinnum, int value)
+{
+  GPIO_REG * regs = GetGpioRegs(aportnum);
+  if (regs)
+  {
+  	uint32_t * setbitptr;
+  	if (apinnum >= 16)
+  	{
+      setbitptr = (uint32_t *)&regs->SWPORT_DDR_H;
+  	}
+  	else
+  	{
+      setbitptr = (uint32_t *)&regs->SWPORT_DDR_L;
+  	}
+
+  	uint32_t bitmask = (1 << (apinnum & 0xF));
+    if (value)
+    {
+      *setbitptr = (bitmask << 16) | bitmask;
+    }
+    else
+    {
+      *setbitptr = (bitmask << 16);
+    }
   }
 }
 
