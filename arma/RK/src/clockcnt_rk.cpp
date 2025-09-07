@@ -36,10 +36,14 @@ void clockcnt_init()
 	map_hw_addr(TIMER5_BASE, sizeof(struct TIMER_REG), (void * *)&g_clkcnt_timer);
 
 	// enable the clk_gpll_div_100m = 100MHz clock
-	cru_reg_set_field(0x800, 6, 0, 1);  // 0x800 = CRU_GATE_CON00
+	cru_reg_set_field(0x800, 6, 1, 0);  // 0x800 = CRU_GATE_CON00
+  // select the 100 MHz clock for the TIMER5:
+	cru_reg_set_field(0x35C, 6, 3, 1);  // 0x35C = CRU_CLKSEL_CON23
 
-	// select the 100 MHz clock for the TIMER5:
-	cru_reg_set_field(0x35C, 6, 1, 3);  // 0x35C = CRU_CLKSEL_CON23
+	// enable the pclk_timer0:
+	cru_reg_set_field(0x818, 2, 1, 0);  // 0x818 = CRU_GATE_CON6
+	// enable the timer0_c5:
+	cru_reg_set_field(0x818, 8, 1, 0);  // 0x818 = CRU_GATE_CON6
 
 	// start this timer in free running mode
 	g_clkcnt_timer->CONTROLREG = 0;

@@ -98,7 +98,7 @@ void set_periph_clock_enable(uint32_t en_reg_idx, uint32_t en_bit, uint32_t aena
 }
 #endif
 
-void unit_regwm16_set_field(void * regbase, uint32_t regoffs, uint32_t bitoffs, uint32_t avalue, uint32_t bitlen)
+void unit_regwm16_set_field(void * regbase, uint32_t regoffs, uint32_t bitoffs, uint32_t bitlen, uint32_t avalue)
 {
   volatile uint32_t * reg = (volatile uint32_t *)( ((uint8_t *)regbase) + regoffs );
 
@@ -107,9 +107,9 @@ void unit_regwm16_set_field(void * regbase, uint32_t regoffs, uint32_t bitoffs, 
   *reg = tmp;
 }
 
-void cru_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t avalue, uint32_t bitlen)
+void cru_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t bitlen, uint32_t avalue)
 {
 	map_hw_addr(CRU_BASE, sizeof(struct CRU_REG), (void * *)&mapped_cru_regs);
 
-	unit_regwm16_set_field(mapped_cru_regs, regoffs, bitoffs, avalue, bitlen);
+	unit_regwm16_set_field(mapped_cru_regs, regoffs, bitoffs, bitlen, avalue);
 }
