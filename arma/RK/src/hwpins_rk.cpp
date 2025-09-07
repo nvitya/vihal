@@ -51,120 +51,6 @@ GPIO_REG * THwPinCtrl_rk::GetGpioRegs(int aportnum)
 	return regs;
 }
 
-
-bool THwPinCtrl_rk::PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio, unsigned flags)
-{
-#if 0
-	if (!mapped_fmux_regs)
-	{
-		mapped_fmux_regs = (uint8_t *)map_hw_addr(0x03001000, 0x1000, (void * *)&mapped_fmux_regs);
-		mapped_pwr_ioblk = (uint8_t *)map_hw_addr(0x05027000, 0x1000, (void * *)&mapped_pwr_ioblk);
-	}
-  volatile uint32_t * reg_fmux  = (volatile uint32_t *)(mapped_fmux_regs + afmuxoffs);
-
-  volatile uint32_t * reg_ioblk = nullptr;
-  if (aioblk)
-  {
-  	if (((aioblk >> 24) & 0x0F) == 0x05)
-  	{
-  		reg_ioblk = (volatile uint32_t *)(mapped_pwr_ioblk + (aioblk & 0xFFF));
-  	}
-  	else
-  	{
-  		reg_ioblk = (volatile uint32_t *)(mapped_fmux_regs + (aioblk & 0xFFF));
-  	}
-  }
-
-  if (reg_ioblk)  // not always present!
-  {
-    uint32_t ioblk = (0
-      | (0  <<  2)  // PU: 1 = pull-up
-      | (0  <<  3)  // PD: 1 = pull-down
-      | (0  <<  5)  // DS(3): drive strength, default = 2
-      | (0  <<  8)  // ST(2): Schmitt trigger level
-      | (0  << 10)  // HE: bus-holder enable
-      | (0  << 11)  // SL: slew rate limiter
-    );
-
-    if (flags & PINCFG_PULLUP)
-    {
-      ioblk |= (1 << 2);
-    }
-
-    if (flags & PINCFG_PULLDOWN)
-    {
-      ioblk |= (1 << 3);
-    }
-
-    if (PINCFG_SPEED_SLOW == (flags & PINCFG_SPEED_MASK))
-    {
-      ioblk |= (1 << 11);
-    }
-
-    if (PINCFG_DRIVE_WEAK == (flags & PINCFG_DRIVE_MASK))
-    {
-      ioblk |= (0 <<  5);
-    }
-    else if (PINCFG_DRIVE_STRONG == (flags & PINCFG_DRIVE_MASK))
-    {
-      ioblk |= (3 <<  5);
-    }
-    else
-    {
-      ioblk |= (2 <<  5);  // drive medium (default)
-    }
-
-    if (0 == (flags & PINCFG_ANALOGUE))
-    {
-      ioblk |= (1 << 8);  // activate the Schmitt trigger
-    }
-
-    *reg_ioblk = ioblk;
-  }
-
-  if (flags & PINCFG_AF_MASK)
-  {
-    *reg_fmux = ((flags >> PINCFG_AF_SHIFT) & 0x7);
-  }
-  else // GPIO
-  {
-    gpio_regs_t * regs = GetGpioRegs(agpio >> 8);
-    if (agpio && regs)
-    {
-      uint32_t pinmask = (1 << (agpio & 0x1F));
-      if (flags & PINCFG_OUTPUT)
-      {
-        if (flags & PINCFG_GPIO_INIT_1)
-        {
-          regs->SWPORTA_DR |= pinmask;
-        }
-        else
-        {
-          regs->SWPORTA_DR &= ~pinmask;
-        }
-        regs->SWPORTA_DDR |= pinmask;
-      }
-      else
-      {
-        regs->SWPORTA_DDR &= ~pinmask;
-      }
-      if ((0x400 <= agpio) && (agpio <= 0x402))
-      {
-      	*reg_fmux = 0; // GPIO for PWR_GPIO0-2 on SG2002
-      }
-      else
-      {
-      	*reg_fmux = 3; // GPIO
-      }
-
-      sg_gpio_shadow_regs[agpio >> 8] = regs->SWPORTA_DR; // update the shadow reg
-    }
-  }
-#endif
-
-  return true;
-}
-
 bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
 	if ((aportnum < 0) || (aportnum > 4))
@@ -284,8 +170,26 @@ bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
 	pinpos = ((apinnum & 3) << 2);
 	*reg_iomux = (0xF << (16 + pinpos)) | (value << pinpos);
 
-
   return true;
+}
+
+bool THwPinCtrl_rk::RmioSetup(int rmionum, int funcnum)
+{
+	if ((rmionum < 0) || (rmionum > 31))
+	{
+		return false;
+	}
+
+	if (!map_hw_addr(RM_IO_BASE, 4096, (void * *)&mapped_rm_io))
+	{
+		return false;
+	}
+
+	funcnum &= 0x7F;
+	volatile uint32_t * reg_sel = (volatile uint32_t *)(&mapped_rm_io[rmionum << 4]);
+	*reg_sel = ((0x7F << 16) | funcnum);
+
+	return true;
 }
 
 void THwPinCtrl_rk::GpioSet(int aportnum, int apinnum, int value)
