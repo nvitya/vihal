@@ -32,8 +32,7 @@
 
 GPIO_REG * THwPinCtrl_rk::GetGpioRegs(int aportnum)
 {
-#if 0
-	if ((aportnum < 0) || (aportnum > 4))
+	if ((aportnum < 1) || (aportnum > 5))
 	{
 		return nullptr;
 	}
@@ -43,22 +42,15 @@ GPIO_REG * THwPinCtrl_rk::GetGpioRegs(int aportnum)
 	{
 		uint32_t addr;
 
-	  if (PORTNUM_PWR == aportnum)
-	  {
-	    addr = GPIOPWR_BASE_ADDR;
-	  }
-	  else
-	  {
-	    addr = GPIO0_BASE_ADDR + 0x1000 * aportnum;
-	  }
+		const uint32_t gpio_base_addresses[5] =
+		{
+				GPIO0_BASE, GPIO1_BASE, GPIO2_BASE, GPIO3_BASE, GPIO4_BASE
+		};
 
-		regs = (gpio_regs_t *)map_hw_addr(addr, sizeof(gpio_regs_t), (void * *)&mapped_gpio_regs[aportnum]);
+		regs = (GPIO_REG *)map_hw_addr(gpio_base_addresses[aportnum], sizeof(GPIO_REG), (void * *)&mapped_gpio_regs[aportnum]);
 	}
 
 	return regs;
-#else
-	return nullptr;
-#endif
 }
 
 
@@ -213,51 +205,75 @@ void THwPinCtrl_rk::GpioSet(int aportnum, int apinnum, int value)
   }
 }
 
-static uint32_t g_dummy_u32 = 0;
+bool THwPinCtrl_rk::PadFuncSetup(uint32_t afmuxoffs, uint32_t aioblk,
+    uint32_t agpio, uint32_t afunc, unsigned flags)
+{
+	return false;
+}
 
 // GPIO Pin
 
+uint32_t g_rk_dummy_u32 = 0;
+
 void TGpioPin_rk::InitDummy()
 {
-  setbitptr = &g_dummy_u32;
-  getbitptr = &g_dummy_u32;
-  pindirptr = &g_dummy_u32;
-  outshadowptr = &g_dummy_u32;
+  // Initialize the pointers with harmless target
+  setbitptr = &g_rk_dummy_u32;
+  clrbitptr = &g_rk_dummy_u32;
+  pindirptr = &g_rk_dummy_u32;
+  getbitptr = &g_rk_dummy_u32;
+  getoutbitptr = &g_rk_dummy_u32;
 }
 
 void TGpioPin_rk::Assign(int aportnum, int apinnum, bool ainvert)
 {
+	apinnum &= 0x1F;
+
 	portnum = aportnum;
   pinnum = apinnum;
   inverted = ainvert;
-  pinmask = (1u << apinnum);
-  negpinmask = ~pinmask;
 
-  regs = hwpinctrl.GetGpioRegs(aportnum);
+  getbitshift   = apinnum;
+  getbitshift16 = (apinnum & 0xF);
 
-#if 0
-  if (regs)
+  if (ainvert)
   {
-    setbitptr = (uint32_t *)&regs->SWPORTA_DR;
-    getbitptr = (uint32_t *)&regs->EXT_PORTA;
-    pindirptr = (uint32_t *)&regs->SWPORTA_DDR;
-    outshadowptr = &sg_gpio_shadow_regs[aportnum];
-    *outshadowptr = regs->SWPORTA_DR; // update the shadow reg
+    clrbitvalue = ((1 << (16 + getbitshift16)) | (1 << getbitshift16));
+    setbitvalue = ((1 << (16 + getbitshift16)) | 0);
   }
   else
   {
-    setbitptr = &g_dummy_u32;
-    getbitptr = &g_dummy_u32;
-    pindirptr = &g_dummy_u32;
-    outshadowptr = &g_dummy_u32;
+    setbitvalue = ((1 << (16 + getbitshift16)) | (1 << getbitshift16));
+    clrbitvalue = ((1 << (16 + getbitshift16)) | 0);
   }
-#endif
+
+  regs = hwpinctrl.GetGpioRegs(aportnum);
+  if (regs)
+  {
+  	if (apinnum >= 16)
+  	{
+      setbitptr = (uint32_t *)&regs->SWPORT_DR_H;
+      pindirptr = (uint32_t *)&regs->SWPORT_DDR_H;
+    	getoutbitptr = (volatile uint32_t *)&regs->SWPORT_DR_H;
+  	}
+  	else
+  	{
+      setbitptr = (uint32_t *)&regs->SWPORT_DR_L;
+      pindirptr = (uint32_t *)&regs->SWPORT_DDR_L;
+    	getoutbitptr = (volatile uint32_t *)&regs->SWPORT_DR_L;
+  	}
+  	clrbitptr = setbitptr;
+    getbitptr = (volatile uint32_t *)&regs->EXT_PORT;
+  }
+  else
+  {
+  	InitDummy();
+  }
 }
 
 void TGpioPin_rk::Toggle()
 {
-#if 0
-  if (*setbitptr & pinmask)
+  if (OutValue())
   {
     Set0();
   }
@@ -265,20 +281,16 @@ void TGpioPin_rk::Toggle()
   {
     Set1();
   }
-#endif
 }
 
 void TGpioPin_rk::SwitchDirection(int adirection)
 {
-#if 0
   if (adirection)
   {
-    *pindirptr |= pinmask;
+    *pindirptr = ((1 << (16 + getbitshift16)) | (1 << getbitshift16));
   }
   else
   {
-    *pindirptr &= negpinmask;
+    *pindirptr = ((1 << (16 + getbitshift16)) | 0);
   }
-#endif
 }
-

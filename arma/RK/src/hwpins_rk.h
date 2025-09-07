@@ -59,41 +59,32 @@ public:
 class TGpioPin_rk : public TGpioPin_pre
 {
 public:
-  void InitDummy(); // for unassigned ports
+	GPIO_REG *             regs = nullptr;
 
-  // WARNING: the atomic extension does not work here on the DR register
-  // the solution is not perfect, because the linux core can access
-  // the same gpio register parallel to these !
+	uint32_t *             setbitptr = nullptr;
+	uint32_t *             pindirptr = nullptr;
+	uint32_t *             clrbitptr = nullptr;
+	volatile uint32_t *    getbitptr = nullptr;
+	volatile uint32_t *    getoutbitptr = nullptr;
+	uint32_t               setbitvalue = 0;
+	uint32_t               clrbitvalue = 0;
+	uint32_t               getbitshift = 0;
+	uint32_t               getbitshift16 = 0;
 
-  inline void Set1() // irq-safe read-modify-write
-  {
-    *setbitptr |= pinmask;  // this read-modify-write takes about 340 ns, and not multi-core safe !
-  }
 
-  inline void Set0() // irq-safe read-modify-write
-  {
-    *setbitptr &= negpinmask; // this read-modify-write takes about 340 ns, and not multi-core safe !
-  }
-
-  inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
-
-  inline unsigned char Value()       { return ((*getbitptr >> pinnum) & 1); }
-  inline unsigned char OutValue()    { return ((*setbitptr >> pinnum) & 1); }
-
+	void InitDummy(); // for unassigned ports
 	void Assign(int aportnum, int apinnum, bool ainvert);
 
-	void Toggle();
+	inline void Set1()                 { *setbitptr = setbitvalue; }
+	inline void Set0()                 { *clrbitptr = clrbitvalue; }
+	inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
 
+	inline unsigned char Value()       { return ((*getbitptr >> getbitshift) & 1); }
+	inline unsigned char OutValue()    { return ((*getoutbitptr >> getbitshift16) & 1); }
+
+	void Toggle();
 	void SwitchDirection(int adirection);
 
-public:
-	GPIO_REG *             regs;
-	uint32_t               pinmask = 0;
-	uint32_t               negpinmask = 0;
-	volatile uint32_t *    setbitptr = nullptr;
-	volatile uint32_t *    getbitptr = nullptr;
-	volatile uint32_t *    pindirptr = nullptr;
-	volatile uint32_t *    outshadowptr = nullptr;
 };
 
 #define HWPINCTRL_IMPL   THwPinCtrl_rk
