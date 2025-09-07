@@ -177,21 +177,24 @@ bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
 		return false;
 	}
 
+	apinnum &= 0x1F;
+
 	uint32_t pinpos, value;
 
-	// set Open-Drain
-	volatile uint32_t * reg_od = (volatile uint32_t *)(&mapped_ioc[0x700 + (aportnum << 4) + 4 * (apinnum >> 3)]);
-	pinpos = (apinnum & 0x7);
+	// Open-Drain
   if (flags & PINCFG_OPENDRAIN)
   {
-  	*reg_od = (1 << (16 + pinpos)) | (1 << pinpos);
+  	value = 1;
   }
   else
   {
-  	*reg_od = (1 << (16 + pinpos)) | 0;
+  	value = 0;
   }
+	volatile uint32_t * reg_od = (volatile uint32_t *)(&mapped_ioc[0x700 + (aportnum << 4) + 4 * (apinnum >> 3)]);
+	pinpos = (apinnum & 0x7);
+	*reg_od = (7 << (16 + pinpos)) | (value << pinpos);
 
-  // set Pull-Up/Down
+  // Pull-Up/Down
   if (flags & PINCFG_PULLUP)
   {
     value = 1;
@@ -208,42 +211,57 @@ bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
 	volatile uint32_t * reg_pupd = (volatile uint32_t *)(&mapped_ioc[0x200 + (aportnum << 4) + 4 * (apinnum >> 3)]);
 	*reg_pupd = ((3 << (16 + pinpos)) | (value << pinpos));
 
-	// set Pin Speed
-
+	// Slew Rate
   if (PINCFG_SPEED_SLOW == (flags & PINCFG_SPEED_MASK))
   {
-    //ioblk |= (1 << 11);
-  }
-
-  if (PINCFG_DRIVE_WEAK == (flags & PINCFG_DRIVE_MASK))
-  {
-    //ioblk |= (0 <<  5);
-  }
-  else if (PINCFG_DRIVE_STRONG == (flags & PINCFG_DRIVE_MASK))
-  {
-    //ioblk |= (3 <<  5);
+    value = 0;
   }
   else
   {
-    //ioblk |= (2 <<  5);  // drive medium (default)
+  	value = 3;
   }
+	volatile uint32_t * reg_sl = (volatile uint32_t *)(&mapped_ioc[0x600 + (aportnum << 4) + 4 * (apinnum >> 3)]);
+	pinpos = ((apinnum & 0x7) << 1);
+	*reg_sl = (3 << (16 + pinpos)) | (value << pinpos);
 
+	// Drive Strength
+  if (PINCFG_DRIVE_WEAK == (flags & PINCFG_DRIVE_MASK))
+  {
+    value = 1;
+  }
+  else if (PINCFG_DRIVE_STRONG == (flags & PINCFG_DRIVE_MASK))
+  {
+    value = 31;
+  }
+  else
+  {
+    value = 7;
+  }
+	volatile uint32_t * reg_ds = (volatile uint32_t *)(&mapped_ioc[0x100 + (aportnum << 6) + 4 * (apinnum >> 1)]);
+	pinpos = ((apinnum & 0x1) << 8);
+	*reg_ds = (63 << (16 + pinpos)) | (value << pinpos);
+
+  // Disable Schmitt trigger for the analogue
   if (0 == (flags & PINCFG_ANALOGUE))
   {
-    //ioblk |= (1 << 8);  // activate the Schmitt trigger
+  	value = 0; // disable Schmitt trigger
   }
+  else
+  {
+  	value = 1; // enable the Schmitt trigger
+  }
+	volatile uint32_t * reg_smt = (volatile uint32_t *)(&mapped_ioc[0x400 + (aportnum << 4) + 4 * (apinnum >> 3)]);
+	pinpos = (apinnum & 0x7);
+	*reg_smt = (1 << (16 + pinpos)) | (value << pinpos);
 
-
-	apinnum &= 0x1F;
-
-	uint32_t iomux_shift = 4 * (apinnum & 3);
-	uint32_t iomux_val = 0; // GPIO by default
+	// IO MUX + GPIO
   if (flags & PINCFG_AF_MASK)
   {
-  	iomux_val = ((flags & PINCFG_AF_MASK) >> PINCFG_AF_SHIFT);
+  	value = ((flags & PINCFG_AF_MASK) >> PINCFG_AF_SHIFT);
   }
   else // gpio
   {
+  	value = 0;
     //uint32_t pinmask16 = (1 << (apinnum & 0x0F));
 		if (flags & PINCFG_OUTPUT)
 		{
@@ -263,7 +281,8 @@ bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
 		}
   }
 	volatile uint32_t * reg_iomux = (volatile uint32_t *)(&mapped_ioc[(aportnum << 5) | (apinnum & 0x1C)]);
-  *reg_iomux = (0xF << (16 + iomux_shift)) | (iomux_val << iomux_shift);
+	pinpos = ((apinnum & 3) << 2);
+	*reg_iomux = (0xF << (16 + pinpos)) | (value << pinpos);
 
 
   return true;
