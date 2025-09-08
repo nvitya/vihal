@@ -178,12 +178,12 @@ class THwPinCtrl_rk : public THwPinCtrl_pre
 {
 public: // platform specific
 
-  bool PadSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio, unsigned flags);  // CV1800/SG200x specific PAD setup
-  bool PadFuncSetup(uint32_t afmuxoffs, uint32_t aioblk, uint32_t agpio, uint32_t afunc, unsigned flags);  // CV1800/SG200x specific PAD setup with FMUX
+	bool PinSetupRmio(int aportnum, int apinnum, int rmio_func, unsigned flags);
+	bool RmioSetup(int rmionum, int funcnum);
+	int  RmioByPortPin(int aportnum, int apinnum);
 
 public: //
 	bool PinSetup(int aportnum, int apinnum, unsigned flags);  // this does only GPIO setup
-	bool RmioSetup(int rmionum, int funcnum);
 
 	void GpioSet(int aportnum, int apinnum, int value);
 	void GpioDir(int aportnum, int apinnum, int value);

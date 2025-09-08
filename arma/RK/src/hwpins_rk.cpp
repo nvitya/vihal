@@ -173,6 +173,79 @@ bool THwPinCtrl_rk::PinSetup(int aportnum, int apinnum, unsigned flags)
   return true;
 }
 
+const uint8_t rk3506_rmio_lookup[] = // values here: (gpio_port << 5) | gpio_pin
+{
+// from GPIO0_A0 -> GPIO0_C7 it is linear
+
+/*  0 */ 0x00, // 0.A0
+/*  1 */ 0x01,
+/*  2 */ 0x02,
+/*  3 */ 0x03,
+/*  4 */ 0x04,
+/*  5 */ 0x05,
+/*  6 */ 0x06,
+/*  7 */ 0x07,
+
+/*  8 */ 0x08, // 0.B0
+/*  9 */ 0x09,
+/* 10 */ 0x0A,
+/* 11 */ 0x0B,
+/* 12 */ 0x0C,
+/* 13 */ 0x0F,
+/* 14 */ 0x0E,
+/* 15 */ 0x0F,
+
+/* 16 */ 0x10, // 0.C0
+/* 17 */ 0x11,
+/* 18 */ 0x12,
+/* 19 */ 0x13,
+/* 20 */ 0x14,
+/* 21 */ 0x15,
+/* 22 */ 0x16,
+/* 23 */ 0x17,
+
+	// from now it is non-linear
+
+/* 24 */ 0x29,  // 1.B1
+/* 25 */ 0x2A,  // 1.B2
+/* 26 */ 0x2B,	// 1.B3
+/* 27 */ 0x32,	// 1.C2
+/* 28 */ 0x33,	// 1.C3
+/* 29 */ 0x39,	// 1.D1
+/* 30 */ 0x3A,	// 1.D2
+/* 31 */ 0x3B,	// 1.D3
+};
+
+int THwPinCtrl_rk::RmioByPortPin(int aportnum, int apinnum)
+{
+	uint8_t gpio_code = ((aportnum << 5) | apinnum);
+	int rmio_num = 0;
+	while (rmio_num < (int)sizeof(rk3506_rmio_lookup))
+	{
+		if (rk3506_rmio_lookup[rmio_num] == gpio_code)
+		{
+			return rmio_num;
+		}
+		++rmio_num;
+	}
+	return -1;
+}
+
+bool THwPinCtrl_rk::PinSetupRmio(int aportnum, int apinnum, int rmio_func, unsigned flags)
+{
+	int rmionum = RmioByPortPin(aportnum, apinnum);
+	if (rmionum < 0)
+	{
+		return false;
+	}
+
+  if (!PinSetup(aportnum, apinnum, (flags & ~(PINCFG_AF_MASK)) | PINCFG_AF_RM_IO))
+  {
+  	return false;
+  }
+  return RmioSetup(rmionum, rmio_func);
+}
+
 bool THwPinCtrl_rk::RmioSetup(int rmionum, int funcnum)
 {
 	if ((rmionum < 0) || (rmionum > 31))
@@ -244,12 +317,6 @@ void THwPinCtrl_rk::GpioDir(int aportnum, int apinnum, int value)
       *setbitptr = (bitmask << 16);
     }
   }
-}
-
-bool THwPinCtrl_rk::PadFuncSetup(uint32_t afmuxoffs, uint32_t aioblk,
-    uint32_t agpio, uint32_t afunc, unsigned flags)
-{
-	return false;
 }
 
 // GPIO Pin
