@@ -1,5 +1,6 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
- * Copyright (c) 2021 Viktor Nagy, nvitya
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+ * Copyright (c) 2023 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * In no event will the authors be held liable for any damages arising from
@@ -18,22 +19,35 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     sg_utils.h
- *  brief:    Sophgo Utilities
- *  created:  2024-04-21
+ *  file:     hwuart_rk.h
+ *  brief:    RK 3506 UART
+ *  date:     2025-09-08
  *  authors:  nvitya
 */
 
-#ifndef _RK_UTILS_H_
-#define _RK_UTILS_H_
 
-#include "platform.h"
+#ifndef HWUART_RK_H_
+#define HWUART_RK_H_
 
-uint32_t rk_bus_speed(uint8_t abusid);
+#define HWUART_PRE_ONLY
+#include "hwuart.h"
 
-void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar);
+class THwUart_rk : public THwUart_pre
+{
+public:
+	bool Init(int adevnum);
 
-void unit_regwm16_set_field(void * regbase, uint32_t regoffs, uint32_t bitoffs, uint32_t avalue, uint32_t bitlen);
-void cru_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t avalue, uint32_t bitlen);
+  bool SetBaudRate(int abaudrate);
 
-#endif // _RK_UTILS_H_
+	bool TrySendChar(char ach);
+	bool TryRecvChar(char * ach);
+	bool SendFinished();
+
+public:
+
+	UART_REG *      regs = nullptr;
+};
+
+#define HWUART_IMPL THwUart_rk
+
+#endif // def HWUART_RK_H_

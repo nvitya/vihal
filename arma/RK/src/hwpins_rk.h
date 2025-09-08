@@ -65,7 +65,7 @@
 #define PINNUM_D6   30
 #define PINNUM_D7   31
 
-#define PINCFG_AF_RM_IO  7
+#define PINCFG_AF_RM_IO  (7 << PINCFG_AF_SHIFT)
 
 typedef enum
 {
@@ -194,8 +194,11 @@ public: //
 
 public:
 	GPIO_REG *           mapped_gpio_regs[5] = {0};
-	uint8_t *            mapped_ioc = nullptr;  // using uint8_t for using byte offsets from the TRM
+	uint8_t *            mapped_ioc_regs[5] = {0};     // using uint8_t for using byte offsets from the TRM
 	uint8_t *            mapped_rm_io = nullptr;  // using uint8_t for using byte offsets from the TRM
+
+protected:
+	uint8_t *            GetIocRegs(int aportnum);
 };
 
 class TGpioPin_rk : public TGpioPin_pre

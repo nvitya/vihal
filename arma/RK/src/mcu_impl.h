@@ -12,7 +12,7 @@
 #endif
 
 #ifdef HWUART_H_
-//  #include "hwuart_rk.h"
+  #include "hwuart_rk.h"
 #endif
 
 #ifdef HWSPI_H_
