@@ -28,6 +28,7 @@
 #include "rk_utils.h"
 
 struct CRU_REG *      mapped_cru_regs = nullptr;
+struct CRU_PMU_REG *  mapped_cru_pmu_regs = nullptr;
 
 //struct GRF_PMU_REG *  mapped_grf_pmu_regs = nullptr;
 //struct CRU_PMU_REG *  mapped_cru_pmu_regs = nullptr;
@@ -112,4 +113,11 @@ void cru_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t bitlen, uint
 	map_hw_addr(CRU_BASE, sizeof(struct CRU_REG), (void * *)&mapped_cru_regs);
 
 	unit_regwm16_set_field(mapped_cru_regs, regoffs, bitoffs, bitlen, avalue);
+}
+
+void cru_pmu_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t bitlen, uint32_t avalue)
+{
+	map_hw_addr(CRU_PMU_BASE, sizeof(struct CRU_PMU_REG), (void * *)&mapped_cru_pmu_regs);
+
+	unit_regwm16_set_field(mapped_cru_pmu_regs, regoffs, bitoffs, bitlen, avalue);
 }

@@ -1,4 +1,5 @@
-/* This file is a part of the VIHAL project: https://github.com/nvitya/vihal
+/* -----------------------------------------------------------------------------
+ * This file is a part of the VIHAL project: https://github.com/nvitya/vihal
  * Copyright (c) 2021 Viktor Nagy, nvitya
  *
  * This software is provided 'as-is', without any express or implied warranty.
@@ -18,23 +19,38 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     sg_utils.h
- *  brief:    Sophgo Utilities
- *  created:  2024-04-21
+ *  file:     hwpwm_rk.h
+ *  brief:    RK3506 PWM Driver
+ *  created:  2025-09-09
  *  authors:  nvitya
 */
 
-#ifndef _RK_UTILS_H_
-#define _RK_UTILS_H_
+#ifndef SRC_HWPWM_RK_H_
+#define SRC_HWPWM_RK_H_
 
-#include "platform.h"
+#define HWPWM_PRE_ONLY
+#include "hwpwm.h"
 
-uint32_t rk_bus_speed(uint8_t abusid);
+class THwPwmChannel_rk : public THwPwmChannel_pre
+{
+public:
+	bool          Init(int adevnum, int achnum);
 
-void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar);
+	void          SetOnClocks(uint32_t aclocks);
+	uint32_t      GetOnClocks() { return on_clocks; };
+	void          Enable();
+	void          Disable();
+	inline bool   Enabled() { return ((regs->ENABLE & 1) != 0); }
 
-void unit_regwm16_set_field(void * regbase, uint32_t regoffs, uint32_t bitoffs, uint32_t avalue, uint32_t bitlen);
-void cru_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t avalue, uint32_t bitlen);
-void cru_pmu_reg_set_field(uint32_t regoffs, uint32_t bitoffs, uint32_t bitlen, uint32_t avalue);
+	void          SetFrequency(uint32_t afrequency);
 
-#endif // _RK_UTILS_H_
+public:
+	PWM_REG *            regs = nullptr;
+	uint32_t             base_speed = 0;
+	uint32_t             on_clocks = 0;
+	bool                 chenabled = false;
+};
+
+#define HWPWM_IMPL THwPwmChannel_rk
+
+#endif /* SRC_HWPWM_RK_H_ */

@@ -24,7 +24,7 @@
 #endif
 
 #ifdef HWPWM_H_
-//  #include "hwpwm_rk.h"
+  #include "hwpwm_rk.h"
 #endif
 
 #ifdef HWEXTIRQ_H_
