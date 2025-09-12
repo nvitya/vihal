@@ -16,7 +16,7 @@
 #endif
 
 #ifdef HWSPI_H_
-//  #include "hwspi_rk.h"
+  #include "hwspi_rk.h"
 #endif
 
 #ifdef HWDMA_H_
