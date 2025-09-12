@@ -45,7 +45,8 @@ bool THwSpi_rk::Init(int adevnum)
 
 	initialized = false;
 
-  basespeed = 200000000;  // gpll_div = 200 MHz
+	// GPLL = 1500 MHz, probably it is GPLL / 8
+  basespeed = 187500000;    // gpll_div = 200 MHz
 
 	if (0 == devnum)
 	{

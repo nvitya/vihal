@@ -63,12 +63,14 @@ bool THwPwmChannel_rk::Init(int adevnum, int achnum)
 
   Disable();  // disable first otherwise the settings sill be ineffective
 
-  base_speed = 24000000;
+  // GPLL speed = 1500 MHz
+  base_speed =    93750000;  // probably GPLL / 16
+  //base_speed = 100000000;
 
   regs->CLK_CTRL = (0
   	| (0xFFFF << 16)  // write bits
   	| (0 << 15) // clk_global_sel: 0 = left_alignedpositive
-  	| (1 << 13) // clk_src_sel: 1 = osc
+  	| (0 << 13) // clk_src_sel: 0 = clk_pwm, 1 = osc,
   	| (0 <<  4) // sclale(9): /2
   	| (0 <<  0) // prescale(3)
   );
