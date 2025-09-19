@@ -27,11 +27,13 @@ pio_hw_t * hwpio_init_and_get_regs(uint8_t adevnum)
     dregs = pio1_hw;
     reset_mask = RESETS_RESET_PIO1_BITS;
   }
-  else if (2 == adevnum)
-  {
-    dregs = pio2_hw;
-    reset_mask = RESETS_RESET_PIO2_BITS;
-  }
+  #if defined(pio2_hw)
+    else if (2 == adevnum)
+    {
+      dregs = pio2_hw;
+      reset_mask = RESETS_RESET_PIO2_BITS;
+    }
+  #endif
   else
   {
     return nullptr;

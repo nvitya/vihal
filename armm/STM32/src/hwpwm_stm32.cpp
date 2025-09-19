@@ -163,7 +163,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	else if (15 == devnum)
 	{
 		regs = TIM15;
-		APB2ENR_REGISTER |= RCC_APBENR2_TIM15EN;
+		APB2ENR_REGISTER |= RCC_APB2ENR_TIM15EN; //RCC_APBENR2_TIM15EN;
 		advanced_timer = true;
     busid = 2;
 	}
@@ -172,7 +172,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	else if (16 == devnum)
 	{
 		regs = TIM16;
-		APB2ENR_REGISTER |= RCC_APBENR2_TIM16EN;
+		APB2ENR_REGISTER |= RCC_APB2ENR_TIM16EN; //RCC_APBENR2_TIM16EN;
 		advanced_timer = true;
     busid = 2;
 	}
@@ -181,7 +181,7 @@ bool THwPwmChannel_stm32::Init(int atimernum, int achnum, int aoutnum) // outnum
 	else if (17 == devnum)
 	{
 		regs = TIM17;
-		APB2ENR_REGISTER |= RCC_APBENR2_TIM16EN;
+		APB2ENR_REGISTER |= RCC_APB2ENR_TIM17EN; //RCC_APBENR2_TIM17EN;
 		advanced_timer = true;
     busid = 2;
 	}

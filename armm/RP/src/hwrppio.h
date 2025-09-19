@@ -91,7 +91,21 @@ public:  // optimization hint: the first 32 variables / addresses are accessed f
 
   inline void IrqClear(uint32_t amask) { dregs->irq = amask; }
   inline void IrqForce(uint32_t amask) { dregs->irq_force = amask; }
-  inline void IrqEnable(uint32_t amask, EPioIrqLine airq_line) { dregs->irq_ctrl[airq_line].inte |= amask; }
+  inline void IrqEnable(uint32_t amask, EPioIrqLine airq_line)
+  {
+    #if defined(MCUSF_23)
+      dregs->irq_ctrl[airq_line].inte |= amask;
+    #else
+      if (0 == airq_line)
+      {
+        dregs->inte0 |= amask;
+      }
+      else
+      {
+        dregs->inte1 |= amask;
+      }
+    #endif
+  }
 
   void SetPinDir(uint32_t apin, unsigned aoutput);
   void SetOutputs(uint32_t apin, uint32_t amask); // can be used to initialize the output states

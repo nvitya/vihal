@@ -1,0 +1,1 @@
+For RK3506 use the directory from ARM-A: "arma/RK"
