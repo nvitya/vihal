@@ -51,7 +51,7 @@ void clockcnt_init()
   g_clkcnt_timer->LOAD_COUNT[1] = 0xFFFFFFFFU;
 	g_clkcnt_timer->CONTROLREG = 1;
 
-	SystemCoreClock = 100000000;
+	SystemCoreClock = 93750000;  // probably GPLL / 16;
 }
 
 uint32_t clockcnt_get()

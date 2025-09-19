@@ -14,7 +14,7 @@
 
   #define BOARD_NAME "Luckfox Lyra Plus"
   #define MCU_RK3506
-  #define EXTERNAL_XTAL_HZ   25000000
+  #define EXTERNAL_XTAL_HZ   24000000
 
 #else
 

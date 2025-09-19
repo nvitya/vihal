@@ -80,25 +80,6 @@ void * map_hw_addr(uintptr_t aaddr, unsigned asize, void * * aptrvar)
 
 #endif
 
-#if 0
-void set_periph_clock_enable(uint32_t en_reg_idx, uint32_t en_bit, uint32_t aenable)
-{
-	clk_div_regs_t *  regs = (clk_div_regs_t *)map_hw_addr(CLK_DIV_BASE_ADDR, 0x1000, (void * *)&mapped_clk_div_regs);
-	if (en_reg_idx > 4)
-	{
-		return;
-	}
-	if (aenable)
-	{
-		regs->CLK_EN[en_reg_idx] |= (1 << en_bit);
-	}
-	else
-	{
-		regs->CLK_EN[en_reg_idx] &= ~(1 << en_bit);
-	}
-}
-#endif
-
 void unit_regwm16_set_field(void * regbase, uint32_t regoffs, uint32_t bitoffs, uint32_t bitlen, uint32_t avalue)
 {
   volatile uint32_t * reg = (volatile uint32_t *)( ((uint8_t *)regbase) + regoffs );

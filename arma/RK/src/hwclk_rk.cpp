@@ -31,7 +31,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
   // This is set fixed by the Linux
 
-  SystemCoreClock = 200000000;
+  SystemCoreClock = 93750000;  // probably GPLL / 16;
 
   return true;
 }
