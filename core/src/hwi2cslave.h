@@ -79,6 +79,8 @@ public: // mandatory
 
 	void HandleIrq()              { }
 	void Run()                    { }
+
+	void SetNak()                 { }
 };
 
 #define HWI2CSLAVE_IMPL   THwI2cSlave_noimpl
