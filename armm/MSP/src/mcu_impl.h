@@ -37,4 +37,8 @@
   #include "hwpwm_msp.h"
 #endif
 
+#if defined(HWI2CSLAVE_H_)
+  #include "hwi2cslave_msp.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING
