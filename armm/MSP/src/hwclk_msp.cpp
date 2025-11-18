@@ -125,24 +125,21 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   hwclk_prepare_hispeed(target_speed_hz);
 
+  unsigned pllref;
   unsigned basespeed;
   if (!external_clock_hz)
   {
-    // use the internal 48 MHz oscillator
+    // use the internal 32 MHz oscillator
     basespeed = MCU_INTERNAL_RC_SPEED;
-
-    //TODO: implement
-    SystemCoreClock = basespeed;
-    return true; // NOT implemented yet !
+    pllref = 0;  // use the SYSOSC as the PLL reference
   }
   else
   {
     hwclk_start_ext_osc(external_clock_hz);
     basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
+    pllref = 1;  // use the HFCLK as the PLL reference
 	}
 
-
-#if 1
   // setup the SYSPLL
 
   SYSCTL->SOCLOCK.HSCLKEN &= ~SYSCTL_HSCLKEN_SYSPLLEN_ENABLE; // disable the system PLL
@@ -211,11 +208,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)
     | ((rdiv0 - 1)  << 12)  // RDIVCLK1(4) - /2 coding already applied
     | ((rdiv0 - 1)  <<  8)  // RDIVCLK0(4) - /2 coding already applied
-    | (1  <<  6)  // ENABLECLK2X
-    | (1  <<  5)  // ENABLECLK1
-    | (1  <<  4)  // ENABLECLK0
-    | (1  <<  1)  // MCLK2XVCO: 0 = CLK0 will be used as HSCLK, 1 = CLK2X will be used as HSCLK
-    | (1  <<  0)  // SYSPLLREF: 1 = use the HFLCK as the reference
+    | (1            <<  6)  // ENABLECLK2X
+    | (1            <<  5)  // ENABLECLK1
+    | (1            <<  4)  // ENABLECLK0
+    | (1            <<  1)  // MCLK2XVCO: 0 = CLK0 will be used as HSCLK, 1 = CLK2X will be used as HSCLK
+    | (pllref       <<  0)  // SYSPLLREF: 1 = use the HFLCK as the reference
 	);
 
   SYSCTL->SOCLOCK.SYSPLLCFG1 = (0
@@ -263,31 +260,5 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   SystemCoreClock = target_speed_hz;
   return true;
-
-#else
-
-  // just use the external clock directly
-
-  SYSCTL->SOCLOCK.HSCLKCFG = SYSCTL_HSCLKCFG_HSCLKSEL_HFCLKCLK;  // set the SYSPLL for the HFCLK (external crystal freq)
-
-  // Verify HSCLK source is valid
-  while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKGOOD_MASK) == 0)
-  {
-    // wait until HSCLKGOOD
-  }
-
-  // Switch MCLK to HSCLK
-  SYSCTL->SOCLOCK.MCLKCFG |= SYSCTL_MCLKCFG_USEHSCLK_ENABLE;
-
-  // Verify HSCLK -> MCLK
-  while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKMUX_MASK) == 0)
-  {
-    // wait until MCLK is sourced from the HSCLK
-  }
-
-  SystemCoreClock = basespeed;
-  return true;
-
-#endif
 }
 

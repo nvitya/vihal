@@ -36,6 +36,8 @@
 class THwAdc_msp : public THwAdc_pre
 {
 public: // settings
+	// Warning: EXTERNAL reference (=1) must be used for the highest precision
+	// The internal 2.5V VREF buffer can be used to present the external reference (1 uF external required)
 	uint8_t         reference = 0;  // 0 = VDDA, 1 = EXTREF, 2 = internal reference
 	uint8_t         averaging = 0;  // 0 = no averaging, 1 = 2x, 2 = 4x ... 7 = 128x
 	uint8_t         avg_denom = 0;  // averaging denominator (right shift count)
