@@ -51,7 +51,7 @@ bool THwDmaChannel_msp::Init(int achannel, uint8_t atrigger)  // achannel = 0..6
   dmaregs = DMA;
 	regs = &(dmaregs->DMACHAN[chnum]);
 	tctlreg = &(dmaregs->DMATRIG[chnum].DMATCTL);
-	intregs = &(dmaregs->INT_EVENT[0]);
+	intregs = &(dmaregs->CPU_INT);
 
 	*tctlreg = trigger;
 

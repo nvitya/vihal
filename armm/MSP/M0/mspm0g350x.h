@@ -1,39 +1,42 @@
 /*****************************************************************************
 
-  Copyright (C) 2020 Texas Instruments Incorporated - http://www.ti.com/
+  Copyright (C) 2020 Texas Instruments Incorporated - http://www.ti.com/ 
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
+  Redistribution and use in source and binary forms, with or without 
+  modification, are permitted provided that the following conditions 
   are met:
 
-   Redistributions of source code must retain the above copyright
+   Redistributions of source code must retain the above copyright 
    notice, this list of conditions and the following disclaimer.
 
    Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the
+   notice, this list of conditions and the following disclaimer in the 
+   documentation and/or other materials provided with the   
    distribution.
 
    Neither the name of Texas Instruments Incorporated nor the names of
    its contributors may be used to endorse or promote products derived
    from this software without specific prior written permission.
 
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *****************************************************************************/
 
 #ifndef ti_devices_msp_m0p_mspm0g350x__include
 #define ti_devices_msp_m0p_mspm0g350x__include
+
+/* Filename: mspm0g350x.h */
+/* Revised: 2023-02-03 08:37:25 */
 
 /* Use standard integer types with explicit width */
 #include <stdint.h>
@@ -190,37 +193,38 @@ typedef enum IRQn
   @{
 */
 
-#include <peripherals/hw_adc12.h>
-#include <peripherals/hw_aes.h>
-#include <peripherals/hw_comp.h>
-#include <peripherals/hw_crc.h>
-#include <peripherals/hw_dac12.h>
-#include <peripherals/hw_dma.h>
-#include <peripherals/hw_flashctl.h>
-#include <peripherals/hw_gpio.h>
-#include <peripherals/hw_gptimer.h>
-#include <peripherals/hw_i2c.h>
-#include <peripherals/hw_iomux.h>
-#include <peripherals/hw_mathacl.h>
-#include <peripherals/hw_mcan.h>
-#include <peripherals/hw_oa.h>
-#include <peripherals/hw_rtc.h>
-#include <peripherals/hw_spi.h>
-#include <peripherals/hw_trng.h>
-#include <peripherals/hw_uart.h>
-#include <peripherals/hw_vref.h>
-#include <peripherals/hw_wuc.h>
-#include <peripherals/hw_wwdt.h>
-#include <peripherals/hw_factoryregion.h>
-#include <peripherals/hw_cpuss.h>
-#include <peripherals/hw_debugss.h>
-#include <peripherals/hw_sysctl.h>
+#include <ti/devices/msp/peripherals/hw_adc12.h>
+#include <ti/devices/msp/peripherals/hw_aes.h>
+#include <ti/devices/msp/peripherals/hw_comp.h>
+#include <ti/devices/msp/peripherals/hw_crc.h>
+#include <ti/devices/msp/peripherals/hw_dac12.h>
+#include <ti/devices/msp/peripherals/hw_dma.h>
+#include <ti/devices/msp/peripherals/hw_flashctl.h>
+#include <ti/devices/msp/peripherals/hw_gpio.h>
+#include <ti/devices/msp/peripherals/hw_gptimer.h>
+#include <ti/devices/msp/peripherals/hw_i2c.h>
+#include <ti/devices/msp/peripherals/hw_iomux.h>
+#include <ti/devices/msp/peripherals/hw_mathacl.h>
+#include <ti/devices/msp/peripherals/hw_mcan.h>
+#include <ti/devices/msp/peripherals/hw_oa.h>
+#include <ti/devices/msp/peripherals/hw_rtc.h>
+#include <ti/devices/msp/peripherals/hw_spi.h>
+#include <ti/devices/msp/peripherals/hw_trng.h>
+#include <ti/devices/msp/peripherals/hw_uart.h>
+#include <ti/devices/msp/peripherals/hw_vref.h>
+#include <ti/devices/msp/peripherals/hw_wuc.h>
+#include <ti/devices/msp/peripherals/hw_wwdt.h>
+#include <ti/devices/msp/peripherals/m0p/hw_factoryregion.h>
+#include <ti/devices/msp/peripherals/m0p/hw_cpuss.h>
+#include <ti/devices/msp/peripherals/m0p/hw_debugss.h>
+#include <ti/devices/msp/peripherals/m0p/hw_sysctl.h>
 
 #define __MSPM0_HAS_ADC12__
 #define __MSPM0_HAS_AES__
 #define __MSPM0_HAS_COMP__
 #define __MSPM0_HAS_CRC__
 #define __MSPM0_HAS_DAC12__
+#define __MSPM0_HAS_GPAMP__
 #define __MSPM0_HAS_GPIO__
 #define __MSPM0_HAS_TIMER_A__
 #define __MSPM0_HAS_TIMER_G__
@@ -235,6 +239,12 @@ typedef enum IRQn
 #define __MSPM0_HAS_UART_MAIN__
 #define __MSPM0_HAS_VREF__
 #define __MSPM0_HAS_WWDT__
+
+#define __MSPM0_HAS_ECC__
+#define __MSPM0_HAS_LEGACY_ADC_REFERENCE__ 
+
+/*! @brief Workaround added for bug in sineCosine operation in MATHACL */
+#define _IQMATH_MATHACL_SINCOS_BUG_WORKAROUND_
 
 /*@}*/ /* end of group MSPM0G350X_Peripherals */
 
@@ -353,6 +363,12 @@ static DEBUGSS_Regs                             * const DEBUGSS                 
 #define DMA_SYS_N_DMA_FULL_CHANNEL                    (3)       /* !< Number of FULL-DMA channels implemented in DMA. */
 #define CRC_SYS_CRC32_ENABLE                          (1)       /* !< Parameter to exclude or include 32-bit CRC. */
 #define FLASHCTL_SYS_DATAWIDTH                        (64)      /* !< Data bit width of a single flash word. */
+#define ADC_SYS_NUM_ANALOG_CHAN                       (16)      /* !< Number of analog channels. */
+#define I2C_SYS_FENTRIES                              (8)       /* !< Number of FIFO entries */
+#define FLASHCTL_SYS_WEPROTAWIDTH                     (32)      /* !< Bit width of WEPROTA register */
+#define FLASHCTL_SYS_WEPROTBWIDTH                     (12)      /* !< Bit width of WEPROTB register */
+#define FLASHCTL_SYS_WEPROTCWIDTH                     (0)       /* !< Bit width of WEPROTC register */
+#define GPAMP_SYS_ADC_CHOPPING                        (1)       /* !< GPAMP supports ADC assited chopping */
 
 /******************************************************************************
 * DMA Triggers                                                                *

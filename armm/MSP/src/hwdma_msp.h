@@ -41,7 +41,7 @@ public:
 	DMA_DMACHAN_Regs *    regs = nullptr;
 	DMA_Regs *            dmaregs = nullptr;
 	__IO uint32_t *       tctlreg = nullptr;
-	DMA_INT_EVENT_Regs *  intregs = nullptr;
+	DMA_CPU_INT_Regs *    intregs = nullptr;
 	uint32_t              irqmask = 0;
 
 	bool Init(int achannel, uint8_t atrigger);  // only the channels 0-2 are advanced DMAs !

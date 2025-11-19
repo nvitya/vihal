@@ -113,12 +113,14 @@ bool THwAdc_msp::Init(int adevnum, uint32_t achannel_map)
 	  | (0  <<  0)  // DF: 0 = unsigned right aligned, 1 = signed left aligned
 	);
 
+#if 0
 	// Ad-hoc single conversion (ASC) setup
 	regs->CTL3 = (0
 	  | (0  << 12)  // ASCVRSEL(2): ASC voltage reference, 0 = VDDA, 1 = EXTREV, 2 = internal reference
 	  | (0  <<  8)  // ASCSTIME: 0 = SCOMP0, 1 = SCOMP1
 	  | (0  <<  0)  // ASCCHSEL(5): channel select
 	);
+#endif
 
 	uint32_t stime_clk = (sampling_time_ns * adc_mhz) / 1000;
 	if (stime_clk < 4)  stime_clk = 4;
@@ -126,7 +128,9 @@ bool THwAdc_msp::Init(int adevnum, uint32_t achannel_map)
 	regs->SCOMP0 = stime_clk; // VAL(10): sampling time clocks
 	regs->SCOMP1 = stime_clk; // VAL(10): sampling time clocksg
 
+#if 0
 	regs->REFCFG = 0; // disable the internal voltage reference
+#endif
 
 	// set ADC clock
 	uint32_t baseclock = SystemCoreClock / 2; // = ULPICLK

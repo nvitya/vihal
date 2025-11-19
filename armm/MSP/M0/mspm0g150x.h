@@ -32,10 +32,10 @@
 
 *****************************************************************************/
 
-#ifndef ti_devices_msp_m0p_mspm0g310x__include
-#define ti_devices_msp_m0p_mspm0g310x__include
+#ifndef ti_devices_msp_m0p_mspm0g150x__include
+#define ti_devices_msp_m0p_mspm0g150x__include
 
-/* Filename: mspm0g310x.h */
+/* Filename: mspm0g150x.h */
 /* Revised: 2023-02-03 08:37:25 */
 
 /* Use standard integer types with explicit width */
@@ -46,12 +46,12 @@
  extern "C" {
 #endif
 
-/** @addtogroup MSPM0G310X_Definitions MSPM0G310X Definitions
-  This file defines all structures and symbols for MSPM0G310X
+/** @addtogroup MSPM0G150X_Definitions MSPM0G150X Definitions
+  This file defines all structures and symbols for MSPM0G150X
   @{
 */
 
-/** @addtogroup MSPM0G310X_CMSIS Device CMSIS Definitions
+/** @addtogroup MSPM0G150X_CMSIS Device CMSIS Definitions
   Configuration of the Processor and Core Peripherals
   @{
 */
@@ -73,11 +73,14 @@ typedef enum IRQn
   GPIOB_INT_IRQn              = 1,      /* 17 GPIOB_INT Interrupt */
   GPIOA_INT_IRQn              = 1,      /* 17 GPIOA_INT Interrupt */
   TRNG_INT_IRQn               = 1,      /* 17 TRNG_INT Interrupt */
+  COMP0_INT_IRQn              = 1,      /* 17 COMP0_INT Interrupt */
+  COMP1_INT_IRQn              = 1,      /* 17 COMP1_INT Interrupt */
+  COMP2_INT_IRQn              = 1,      /* 17 COMP2_INT Interrupt */
   TIMG8_INT_IRQn              = 2,      /* 18 TIMG8_INT Interrupt */
   UART3_INT_IRQn              = 3,      /* 19 UART3_INT Interrupt */
   ADC0_INT_IRQn               = 4,      /* 20 ADC0_INT Interrupt */
   ADC1_INT_IRQn               = 5,      /* 21 ADC1_INT Interrupt */
-  CANFD0_INT_IRQn             = 6,      /* 22 CANFD0_INT Interrupt */
+  DAC0_INT_IRQn               = 7,      /* 23 DAC0_INT Interrupt */
   SPI0_INT_IRQn               = 9,      /* 25 SPI0_INT Interrupt */
   SPI1_INT_IRQn               = 10,     /* 26 SPI1_INT Interrupt */
   UART1_INT_IRQn              = 13,     /* 29 UART1_INT Interrupt */
@@ -109,11 +112,14 @@ typedef enum IRQn
 #define GPIOB_INT_VECn          17    /* GPIOB_INT Interrupt */
 #define GPIOA_INT_VECn          17    /* GPIOA_INT Interrupt */
 #define TRNG_INT_VECn           17    /* TRNG_INT Interrupt */
+#define COMP0_INT_VECn          17    /* COMP0_INT Interrupt */
+#define COMP1_INT_VECn          17    /* COMP1_INT Interrupt */
+#define COMP2_INT_VECn          17    /* COMP2_INT Interrupt */
 #define TIMG8_INT_VECn          18    /* TIMG8_INT Interrupt */
 #define UART3_INT_VECn          19    /* UART3_INT Interrupt */
 #define ADC0_INT_VECn           20    /* ADC0_INT Interrupt */
 #define ADC1_INT_VECn           21    /* ADC1_INT Interrupt */
-#define CANFD0_INT_VECn         22    /* CANFD0_INT Interrupt */
+#define DAC0_INT_VECn           23    /* DAC0_INT Interrupt */
 #define SPI0_INT_VECn           25    /* SPI0_INT Interrupt */
 #define SPI1_INT_VECn           26    /* SPI1_INT Interrupt */
 #define UART1_INT_VECn          29    /* UART1_INT Interrupt */
@@ -173,21 +179,24 @@ typedef enum IRQn
 /******************************************************************************
 * Peripheral headers                                                          *
 ******************************************************************************/
-/** @addtogroup MSPM0G310X_Peripherals MSPM0G310X Peripherals
-  MSPM0G310X Peripheral registers structures
+/** @addtogroup MSPM0G150X_Peripherals MSPM0G150X Peripherals
+  MSPM0G150X Peripheral registers structures
   @{
 */
 
 #include <ti/devices/msp/peripherals/hw_adc12.h>
 #include <ti/devices/msp/peripherals/hw_aes.h>
+#include <ti/devices/msp/peripherals/hw_comp.h>
 #include <ti/devices/msp/peripherals/hw_crc.h>
+#include <ti/devices/msp/peripherals/hw_dac12.h>
 #include <ti/devices/msp/peripherals/hw_dma.h>
 #include <ti/devices/msp/peripherals/hw_flashctl.h>
 #include <ti/devices/msp/peripherals/hw_gpio.h>
 #include <ti/devices/msp/peripherals/hw_gptimer.h>
 #include <ti/devices/msp/peripherals/hw_i2c.h>
 #include <ti/devices/msp/peripherals/hw_iomux.h>
-#include <ti/devices/msp/peripherals/hw_mcan.h>
+#include <ti/devices/msp/peripherals/hw_mathacl.h>
+#include <ti/devices/msp/peripherals/hw_oa.h>
 #include <ti/devices/msp/peripherals/hw_rtc.h>
 #include <ti/devices/msp/peripherals/hw_spi.h>
 #include <ti/devices/msp/peripherals/hw_trng.h>
@@ -202,13 +211,16 @@ typedef enum IRQn
 
 #define __MSPM0_HAS_ADC12__
 #define __MSPM0_HAS_AES__
+#define __MSPM0_HAS_COMP__
 #define __MSPM0_HAS_CRC__
+#define __MSPM0_HAS_DAC12__
 #define __MSPM0_HAS_GPAMP__
 #define __MSPM0_HAS_GPIO__
 #define __MSPM0_HAS_TIMER_A__
 #define __MSPM0_HAS_TIMER_G__
 #define __MSPM0_HAS_I2C__
-#define __MSPM0_HAS_MCAN__
+#define __MSPM0_HAS_MATHACL__
+#define __MSPM0_HAS_OA__
 #define __MSPM0_HAS_RTC__
 #define __MSPM0_HAS_SPI__
 #define __MSPM0_HAS_TRNG__
@@ -220,12 +232,15 @@ typedef enum IRQn
 #define __MSPM0_HAS_ECC__
 #define __MSPM0_HAS_LEGACY_ADC_REFERENCE__ 
 
-/*@}*/ /* end of group MSPM0G310X_Peripherals */
+/*! @brief Workaround added for bug in sineCosine operation in MATHACL */
+#define _IQMATH_MATHACL_SINCOS_BUG_WORKAROUND_
+
+/*@}*/ /* end of group MSPM0G150X_Peripherals */
 
 /******************************************************************************
 * Device and peripheral memory map                                            *
 ******************************************************************************/
-/** @addtogroup MSPM0G310X_MemoryMap MSPM0G310X Memory Mapping
+/** @addtogroup MSPM0G150X_MemoryMap MSPM0G150X Memory Mapping
   @{
 */
 
@@ -233,13 +248,12 @@ typedef enum IRQn
 #define SYSCTL_BASE                    (0x400AF000U)     /*!< Base address of module SYSCTL */
 #define WWDT1_BASE                     (0x40082000U)     /*!< Base address of module WWDT1 */
 #define CPUSS_BASE                     (0x40400000U)     /*!< Base address of module CPUSS */
-#define CANFD0_BASE                    (0x40508000U)     /*!< Base address of module CANFD0 */
-#define CANFD0_SRAM_BASE               (0x40508000U)     /*!< Base address of memory CANFD0_SRAM */
 #define IOMUX_BASE                     (0x40428000U)     /*!< Base address of module IOMUX */
 #define GPIOB_BASE                     (0x400A2000U)     /*!< Base address of module GPIOB */
 #define CRC_BASE                       (0x40440000U)     /*!< Base address of module CRC */
 #define WWDT0_BASE                     (0x40080000U)     /*!< Base address of module WWDT0 */
 #define SPI1_BASE                      (0x4046A000U)     /*!< Base address of module SPI1 */
+#define DAC0_BASE                      (0x40018000U)     /*!< Base address of module DAC0 */
 #define I2C1_BASE                      (0x400F2000U)     /*!< Base address of module I2C1 */
 #define GPIOA_BASE                     (0x400A0000U)     /*!< Base address of module GPIOA */
 #define FLASHCTL_BASE                  (0x400CD000U)     /*!< Base address of module FLASHCTL */
@@ -248,12 +262,17 @@ typedef enum IRQn
 #define SPI0_BASE                      (0x40468000U)     /*!< Base address of module SPI0 */
 #define AES_BASE                       (0x40442000U)     /*!< Base address of module AES */
 #define DMA_BASE                       (0x4042A000U)     /*!< Base address of module DMA */
+#define OPA0_BASE                      (0x40020000U)     /*!< Base address of module OPA0 */
+#define OPA1_BASE                      (0x40022000U)     /*!< Base address of module OPA1 */
 #define TIMA0_BASE                     (0x40860000U)     /*!< Base address of module TIMA0 */
 #define TIMA1_BASE                     (0x40862000U)     /*!< Base address of module TIMA1 */
 #define UART3_BASE                     (0x40500000U)     /*!< Base address of module UART3 */
 #define UART0_BASE                     (0x40108000U)     /*!< Base address of module UART0 */
 #define UART1_BASE                     (0x40100000U)     /*!< Base address of module UART1 */
 #define UART2_BASE                     (0x40102000U)     /*!< Base address of module UART2 */
+#define COMP0_BASE                     (0x40008000U)     /*!< Base address of module COMP0 */
+#define COMP1_BASE                     (0x4000A000U)     /*!< Base address of module COMP1 */
+#define COMP2_BASE                     (0x4000C000U)     /*!< Base address of module COMP2 */
 #define WUC_BASE                       (0x40424000U)     /*!< Base address of module WUC */
 #define FACTORYREGION_BASE             (0x41C40000U)     /*!< Base address of module FACTORYREGION */
 #define ADC0_BASE                      (0x40000000U)     /*!< Base address of module ADC0 */
@@ -262,6 +281,7 @@ typedef enum IRQn
 #define ADC1_PERIPHERALREGIONSVT_BASE  (0x40558000U)     /*!< Base address of module ADC1_PERIPHERALREGIONSVT */
 #define TIMG0_BASE                     (0x40084000U)     /*!< Base address of module TIMG0 */
 #define VREF_BASE                      (0x40030000U)     /*!< Base address of module VREF */
+#define MATHACL_BASE                   (0x40410000U)     /*!< Base address of module MATHACL */
 #define TIMG12_BASE                    (0x40870000U)     /*!< Base address of module TIMG12 */
 #define TIMG6_BASE                     (0x40868000U)     /*!< Base address of module TIMG6 */
 #define TIMG7_BASE                     (0x4086A000U)     /*!< Base address of module TIMG7 */
@@ -269,12 +289,12 @@ typedef enum IRQn
 #define DEBUGSS_BASE                   (0x400C7000U)     /*!< Base address of module DEBUGSS */
 
 
-/*@}*/ /* end of group MSPM0G310X_MemoryMap */
+/*@}*/ /* end of group MSPM0G150X_MemoryMap */
 
 /******************************************************************************
 * Peripheral declarations                                                     *
 ******************************************************************************/
-/** @addtogroup MSPM0G310X_PeripheralDecl MSPM0G310X Peripheral Declaration
+/** @addtogroup MSPM0G150X_PeripheralDecl MSPM0G150X Peripheral Declaration
   @{
 */
 
@@ -282,12 +302,12 @@ static I2C_Regs                                 * const I2C0                    
 static SYSCTL_Regs                              * const SYSCTL                         = ((SYSCTL_Regs *) SYSCTL_BASE);
 static WWDT_Regs                                * const WWDT1                          = ((WWDT_Regs *) WWDT1_BASE);
 static CPUSS_Regs                               * const CPUSS                          = ((CPUSS_Regs *) CPUSS_BASE);
-static MCAN_Regs                                * const CANFD0                         = ((MCAN_Regs *) CANFD0_BASE);
 static IOMUX_Regs                               * const IOMUX                          = ((IOMUX_Regs *) IOMUX_BASE);
 static GPIO_Regs                                * const GPIOB                          = ((GPIO_Regs *) GPIOB_BASE);
 static CRC_Regs                                 * const CRC                            = ((CRC_Regs *) CRC_BASE);
 static WWDT_Regs                                * const WWDT0                          = ((WWDT_Regs *) WWDT0_BASE);
 static SPI_Regs                                 * const SPI1                           = ((SPI_Regs *) SPI1_BASE);
+static DAC12_Regs                               * const DAC0                           = ((DAC12_Regs *) DAC0_BASE);
 static I2C_Regs                                 * const I2C1                           = ((I2C_Regs *) I2C1_BASE);
 static GPIO_Regs                                * const GPIOA                          = ((GPIO_Regs *) GPIOA_BASE);
 static FLASHCTL_Regs                            * const FLASHCTL                       = ((FLASHCTL_Regs *) FLASHCTL_BASE);
@@ -296,12 +316,17 @@ static RTC_Regs                                 * const RTC                     
 static SPI_Regs                                 * const SPI0                           = ((SPI_Regs *) SPI0_BASE);
 static AES_Regs                                 * const AES                            = ((AES_Regs *) AES_BASE);
 static DMA_Regs                                 * const DMA                            = ((DMA_Regs *) DMA_BASE);
+static OA_Regs                                  * const OPA0                           = ((OA_Regs *) OPA0_BASE);
+static OA_Regs                                  * const OPA1                           = ((OA_Regs *) OPA1_BASE);
 static GPTIMER_Regs                             * const TIMA0                          = ((GPTIMER_Regs *) TIMA0_BASE);
 static GPTIMER_Regs                             * const TIMA1                          = ((GPTIMER_Regs *) TIMA1_BASE);
 static UART_Regs                                * const UART3                          = ((UART_Regs *) UART3_BASE);
 static UART_Regs                                * const UART0                          = ((UART_Regs *) UART0_BASE);
 static UART_Regs                                * const UART1                          = ((UART_Regs *) UART1_BASE);
 static UART_Regs                                * const UART2                          = ((UART_Regs *) UART2_BASE);
+static COMP_Regs                                * const COMP0                          = ((COMP_Regs *) COMP0_BASE);
+static COMP_Regs                                * const COMP1                          = ((COMP_Regs *) COMP1_BASE);
+static COMP_Regs                                * const COMP2                          = ((COMP_Regs *) COMP2_BASE);
 static WUC_Regs                                 * const WUC                            = ((WUC_Regs *) WUC_BASE);
 static FACTORYREGION_OPEN_Regs                  * const FACTORYREGION                  = ((FACTORYREGION_OPEN_Regs *) FACTORYREGION_BASE);
 static ADC12_Regs                               * const ADC0                           = ((ADC12_Regs *) ADC0_BASE);
@@ -310,6 +335,7 @@ static ADC12_Regs                               * const ADC1                    
 static ADC12_PERIPHERALREGIONSVT_Regs           * const ADC1_PERIPHERALREGIONSVT       = ((ADC12_PERIPHERALREGIONSVT_Regs *) ADC1_PERIPHERALREGIONSVT_BASE);
 static GPTIMER_Regs                             * const TIMG0                          = ((GPTIMER_Regs *) TIMG0_BASE);
 static VREF_Regs                                * const VREF                           = ((VREF_Regs *) VREF_BASE);
+static MATHACL_Regs                             * const MATHACL                        = ((MATHACL_Regs *) MATHACL_BASE);
 static GPTIMER_Regs                             * const TIMG12                         = ((GPTIMER_Regs *) TIMG12_BASE);
 static GPTIMER_Regs                             * const TIMG6                          = ((GPTIMER_Regs *) TIMG6_BASE);
 static GPTIMER_Regs                             * const TIMG7                          = ((GPTIMER_Regs *) TIMG7_BASE);
@@ -343,6 +369,7 @@ static DEBUGSS_Regs                             * const DEBUGSS                 
 #define DMA_AES_AES_0_TRIG                            (3)
 #define DMA_AES_AES_1_TRIG                            (4)
 #define DMA_AES_AES_2_TRIG                            (5)
+#define DMA_DAC0_EVT_BD_1_TRIG                        (6)
 #define DMA_I2C0_TX_TRIG                              (7)
 #define DMA_I2C0_RX_TRIG                              (8)
 #define DMA_I2C1_TX_TRIG                              (9)
@@ -1023,13 +1050,13 @@ typedef enum IOMUX_PINCM
   #warning Not supported compiler type
 #endif
 
-/*@}*/ /* end of group MSPM0G310X_PeripheralDecl */
+/*@}*/ /* end of group MSPM0G150X_PeripheralDecl */
 
-/*@}*/ /* end of group MSPM0G310X_Definitions */
+/*@}*/ /* end of group MSPM0G150X_Definitions */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ti_devices_msp_m0p_mspm0g310x__include */
+#endif /* ti_devices_msp_m0p_mspm0g150x__include */
 

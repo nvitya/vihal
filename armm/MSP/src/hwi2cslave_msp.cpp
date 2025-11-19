@@ -103,7 +103,7 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
   );
 
   // setup interrupts
-  regs->INT_EVENT0.IMASK = (0
+  regs->CPU_INT.IMASK = (0
     | (0  << 31)  // INTR_OVFL: Interrupt Overflow
     | (0  << 30)  // TARBLOST: Target Arbitration Lost
     | (0  << 29)  // TRX_OVFL: Target RX FIFO overflow
@@ -124,7 +124,7 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
     // 0-15: Controller Interrupts
   );
 
-  regs->INT_EVENT0.ICLR = 0xFFFFFFFF;
+  regs->CPU_INT.ICLR = 0xFFFFFFFF;
 
   // activate the Slave (Target) mode
 
@@ -149,13 +149,13 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
 
 void THwI2cSlave_msp::HandleIrq()
 {
-	uint32_t intflag = regs->INT_EVENT0.MIS;
+	uint32_t intflag = regs->CPU_INT.MIS;
 
 	if (intflag & I2C_EV_TSTART) // TSTART IRQ: address matched
 	{
 	  // This IRQ comes before the R/W bit so we cannot call the OnAddressRw() without setting the istx
 	  call_address_rw = true;
-    regs->INT_EVENT0.ICLR = I2C_EV_TSTART;
+    regs->CPU_INT.ICLR = I2C_EV_TSTART;
 	}
 
 	if (intflag & I2C_EV_TTXEMPTY) // a byte must loaded into the transmit register
@@ -169,7 +169,7 @@ void THwI2cSlave_msp::HandleIrq()
 
     uint8_t d = OnTransmitRequest();
 		regs->SLAVE.STXDATA = d;
-    regs->INT_EVENT0.ICLR = I2C_EV_TTXEMPTY;
+    regs->CPU_INT.ICLR = I2C_EV_TTXEMPTY;
 	}
 
   if (intflag & I2C_EV_TRXDONE) // TRXDONE: byte received
@@ -193,12 +193,12 @@ void THwI2cSlave_msp::HandleIrq()
       | (1  <<  0)  // ACKOEN: 1 = enable ACK override
     );
 
-    regs->INT_EVENT0.ICLR = I2C_EV_TRXDONE;
+    regs->CPU_INT.ICLR = I2C_EV_TRXDONE;
   }
 
   if (intflag & I2C_EV_TSTOP) // TSTOP: stop detected
   {
     OnStopDetected();
-    regs->INT_EVENT0.ICLR = I2C_EV_TSTOP;
+    regs->CPU_INT.ICLR = I2C_EV_TSTOP;
   }
 }

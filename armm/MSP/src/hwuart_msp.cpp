@@ -72,8 +72,8 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
   regs->CLKSEL = UART_CLKSEL_BUSCLK_SEL_ENABLE;
   regs->CLKDIV = 0; // do not divide the bus clock
 
-  regs->INT_EVENT1.IMASK = (1 << 10); // enable the RX DMA trigger
-  regs->INT_EVENT2.IMASK = (1 << 11); // enable the TX DMA trigger
+  regs->DMA_TRIG_RX.IMASK = (1 << 10); // enable the RX DMA trigger
+  regs->DMA_TRIG_TX.IMASK = (1 << 11); // enable the TX DMA trigger
 
   unsigned lcrh = (0
     | (0  << 21)  // EXTDIR_HOLD(5)

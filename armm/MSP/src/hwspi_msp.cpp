@@ -102,8 +102,8 @@ bool THwSpi_msp::Init(int adevnum)
 	  | (7  <<  0)  // TXIFLSEL(3): 7 = TX trigger if at least one free fifo entry
 	);
 
-  regs->INT_EVENT1.IMASK = (1 << 3); // enable the RX DMA trigger
-  regs->INT_EVENT2.IMASK = (1 << 4); // enable the TX DMA trigger
+  regs->DMA_TRIG_RX.IMASK = (1 << 3); // enable the RX DMA trigger
+  regs->DMA_TRIG_TX.IMASK = (1 << 4); // enable the TX DMA trigger
 
 	SetSpeed(speed);
 
