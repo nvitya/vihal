@@ -33,7 +33,7 @@
 // The Pin-to IOMUX table made from the datasheet
 //   WARNING: they are +1 than the IOMUX->SECCFG.PINCM[] indexes !!!
 
-uint8_t pincm_table[64] =
+const uint8_t pincm_table[64] =
 {
    1, // A0
    2, // A1
@@ -318,3 +318,45 @@ void TGpioPin_msp::SwitchDirection(int adirection)
 		regs->DOECLR31_0 = setbitvalue; // output disable
 	}
 }
+
+TGpioOut::TGpioOut(int aportnum, int apinnum, bool ainvert)
+{
+	Assign(aportnum, apinnum, ainvert);
+}
+
+bool TGpioOut::Setup(unsigned flags)
+{
+	if (inverted)
+	{
+	  flags |= PINCFG_GPIO_INVERT;
+	}
+
+	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
+}
+
+void TGpioOut::Assign(int aportnum, int apinnum, bool ainvert)
+{
+	portnum = aportnum;
+  pinnum = apinnum;
+  inverted = ainvert;
+
+  GPIO_Regs * regs = hwpinctrl.GetGpioRegs(aportnum);
+	if (!regs)
+	{
+		return;
+	}
+
+	setbitvalue = (1 << pinnum);
+
+  if (inverted)
+  {
+    setbitptr = (uint32_t *)&(regs->DOUTCLR31_0);
+    clrbitptr = (uint32_t *)&(regs->DOUTSET31_0);
+  }
+  else
+  {
+    setbitptr = (uint32_t *)&(regs->DOUTSET31_0);
+    clrbitptr = (uint32_t *)&(regs->DOUTCLR31_0);
+  }
+}
+

@@ -73,6 +73,29 @@ public:
 	void SwitchDirection(int adirection);
 };
 
+class TGpioOut
+{
+public:
+	int8_t           portnum = 0;
+	int8_t           pinnum  = 0;
+	bool             inverted = false;
+
+	uint32_t *       setbitptr = nullptr;
+	uint32_t *       clrbitptr = nullptr;
+	uint32_t         setbitvalue = 0;
+
+	TGpioOut(int aportnum, int apinnum, bool ainvert);
+
+	bool Setup(unsigned flags);
+	void Assign(int aportnum, int apinnum, bool ainvert);
+
+	inline void Set1()                 { *setbitptr = setbitvalue; }
+	inline void Set0()                 { *clrbitptr = setbitvalue; }
+	inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
+
+};
+
+
 #define HWPINCTRL_IMPL   THwPinCtrl_msp
 #define HWGPIOPORT_IMPL  TGpioPort_msp
 #define HWGPIOPIN_IMPL   TGpioPin_msp
