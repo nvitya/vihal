@@ -47,7 +47,7 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
 	devnum = adevnum;
 	regs = nullptr;
 
-	runstate = 0;
+	call_address_rw = false;
 
 	if (0 == devnum)
 	{
@@ -94,49 +94,39 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
   	regs->SLAVE.SOAR2 = 0;
   }
 
-  // setup interrupts
-  regs->INT_EVENT0.IMASK = (0
-  	| (0  << 31)  // INTR_OVFL: Interrupt Overflow
-  	| (0  << 30)  // TARBLOST: Target Arbitration Lost
-  	| (0  << 29)  // TRX_OVFL: Target RX FIFO overflow
-  	| (0  << 28)  // TTX_UNFL: Target TX FIFO underflow
-  	| (0  << 27)  // TPEC_RX_ERR: Target RX Pec Error Interrupt
-  	| (0  << 26)  // TDMA_DONE_RX: Target DMA Done on Event Channel RX
-  	| (0  << 25)  // TDMA_DONE_TX: Target DMA Done on Event Channel TX
-  	| (0  << 24)  // TGENCALL: General Call
-  	| (0  << 23)  // TSTOP: Stop Condition
-  	| (0  << 22)  // TSTART: Start Condition
-  	| (1  << 21)  // TTXEMPTY: Target Transmit FIFO Empty
-  	| (0  << 20)  // TRXFIFOFULL: RXFIFO full event
-  	| (0  << 19)  // TTXFIFOTRG: Target Transmit FIFO Trigger
-  	| (0  << 18)  // TRXFIFOTRG: Target Receive FIFO Trigger
-  	| (1  << 17)  // TTXDONE: Target Transmit Transaction completed Interrupt
-  	| (1  << 16)  // TRXDONE: Target Receive Data Interrupt
-
-		// 0-15: Controller Interrupts
-  );
-
-  regs->INT_EVENT0.ICLR = 0xFFFFFFFF;
-
   // turn-on the ACK override
 
-#if 0
-  regs->SLAVE.SACKCTL = (0
-    | (1  <<  4)  // ACKOEN_ON_PECDONE
-    | (1  <<  3)  // ACKOEN_ON_PECNEXT
-    | (1  <<  2)  // ACKOEN_ON_START
-    | (1  <<  1)  // ACKOVAL: 1 = send NACK, 0 = send ACK
-    | (1  <<  0)  // ACKOEN: 1 = enable ACK override
-  );
-#else
   regs->SLAVE.SACKCTL = (0
     | (0  <<  4)  // ACKOEN_ON_PECDONE
     | (0  <<  3)  // ACKOEN_ON_PECNEXT
-    | (0  <<  2)  // ACKOEN_ON_START
+    | (1  <<  2)  // ACKOEN_ON_START
     | (0  <<  1)  // ACKOVAL: 1 = send NACK, 0 = send ACK
-    | (0  <<  0)  // ACKOEN: 1 = enable ACK override
+    | (1  <<  0)  // ACKOEN: 1 = enable ACK override
   );
-#endif
+
+  // setup interrupts
+  regs->INT_EVENT0.IMASK = (0
+    | (0  << 31)  // INTR_OVFL: Interrupt Overflow
+    | (0  << 30)  // TARBLOST: Target Arbitration Lost
+    | (0  << 29)  // TRX_OVFL: Target RX FIFO overflow
+    | (0  << 28)  // TTX_UNFL: Target TX FIFO underflow
+    | (0  << 27)  // TPEC_RX_ERR: Target RX Pec Error Interrupt
+    | (0  << 26)  // TDMA_DONE_RX: Target DMA Done on Event Channel RX
+    | (0  << 25)  // TDMA_DONE_TX: Target DMA Done on Event Channel TX
+    | (0  << 24)  // TGENCALL: General Call
+    | (1  << 23)  // TSTOP: Stop Condition
+    | (1  << 22)  // TSTART: Start Condition
+    | (1  << 21)  // TTXEMPTY: Target Transmit FIFO Empty
+    | (0  << 20)  // TRXFIFOFULL: RXFIFO full event
+    | (0  << 19)  // TTXFIFOTRG: Target Transmit FIFO Trigger
+    | (0  << 18)  // TRXFIFOTRG: Target Receive FIFO Trigger
+    | (0  << 17)  // TTXDONE: Target Transmit Transaction completed Interrupt (byte successfully transmitted)
+    | (1  << 16)  // TRXDONE: Target Receive Data Interrupt
+
+    // 0-15: Controller Interrupts
+  );
+
+  regs->INT_EVENT0.ICLR = 0xFFFFFFFF;
 
   // activate the Slave (Target) mode
 
@@ -159,90 +149,64 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
 	return true;
 }
 
-// runstate:
-//   0: idle
-//   1: receive data
-//   5: transmit data
-
 void THwI2cSlave_msp::HandleIrq()
 {
 	uint32_t intflag = regs->INT_EVENT0.MIS;
 
-	//TRACE("I2C %08X\r\n", intflag);
+	//TRACE("[%04X/%03X]\r\n", (intflag >> 16), regs->SLAVE.SSR & 0x1FF);
 
-	__NOP();
-
-	if (intflag & (1 << 21)) // TX_EMPTY
+	if (intflag & (1 << 22)) // TSTART IRQ: address matched
 	{
-		regs->SLAVE.STXDATA = test_data;
-		++test_data;
+	  // This IRQ comes before the R/W bit so we cannot call the OnAddressRw() without setting the istx
+	  call_address_rw = true;
+    regs->INT_EVENT0.ICLR = (1 << 22);
 	}
 
-#if 0
-  regs->SLAVE.SACKCTL = (0
-    | (1  <<  4)  // ACKOEN_ON_PECDONE
-    | (1  <<  3)  // ACKOEN_ON_PECNEXT
-    | (1  <<  2)  // ACKOEN_ON_START
-    | (0  <<  1)  // ACKOVAL: 1 = send NACK, 0 = send ACK
-    | (1  <<  0)  // ACKOEN: 1 = enable ACK override
-  );
-
-#endif
-
-	__NOP();
-
-  regs->INT_EVENT0.ICLR = 0xFFFFFFFF;
-
-#if 0
-	if (intflag & I2C_EV_AMATCH)
+	if (intflag & (1 << 21)) // TX_EMPTY: a byte must loaded into the transmit register
 	{
-		if (regs->STATUS.bit.DIR)
-		{
-			istx = true;
-			runstate = 5;  // go to transfer data
-		}
-		else
-		{
-			istx = false;
-			runstate = 1;  // go to receive data
-		}
+	  if (call_address_rw)
+	  {
+	    istx = true;
+	    OnAddressRw((regs->SLAVE.SSR >> 9) & 0x7F);
+	    call_address_rw = false;
+	  }
 
-		OnAddressRw(address); // there is no other info on this chip, use own address
-
-		//regs->INTFLAG.reg = I2C_EV_AMATCH;
-		regs->CTRLB.bit.CMD = 3;
+    //tracebuf.AddChar('T');
+    uint8_t d = OnTransmitRequest();
+		regs->SLAVE.STXDATA = d;
+    regs->INT_EVENT0.ICLR = (1 << 21);
 	}
 
-	if (intflag & I2C_EV_DRDY)
-	{
-		if (1 == runstate)
-		{
-			uint8_t d = *(uint8_t *)&regs->DATA.reg;
-			OnByteReceived(d);
-		}
-		else if (5 == runstate)
-		{
-			uint8_t d = OnTransmitRequest();
-			*(uint8_t *)&regs->DATA.reg = d;
-		}
+  if (intflag & (1 << 16)) // TRXDONE: byte received
+  {
+    if (call_address_rw)
+    {
+      istx = false;
+      OnAddressRw((regs->SLAVE.SSR >> 9) & 0x7F);
+      call_address_rw = false;
+    }
 
-		//regs->INTFLAG.reg = I2C_EV_DRDY;
-		regs->CTRLB.bit.CMD = 3;
-	}
+    //tracebuf.AddChar('R');
+    uint8_t d = regs->SLAVE.SRXDATA;
 
-	if (intflag & I2C_EV_PREC)
-	{
-		runstate = 0;
-		regs->INTFLAG.reg = I2C_EV_PREC;
-	}
+    ack_value = 0;  // ACK by default
+    OnByteReceived(d);  // this might call SetNak()
 
-	if (intflag & I2C_EV_ERROR)
-	{
-		regs->INTFLAG.reg = I2C_EV_ERROR;
-	}
-#endif
-}
+    regs->SLAVE.SACKCTL = (0
+      | (0  <<  4)  // ACKOEN_ON_PECDONE
+      | (0  <<  3)  // ACKOEN_ON_PECNEXT
+      | (1  <<  2)  // ACKOEN_ON_START
+      | (ack_value <<  1)  // ACKOVAL: 1 = send NACK, 0 = send ACK
+      | (1  <<  0)  // ACKOEN: 1 = enable ACK override
+    );
 
-void THwI2cSlave_msp::SetNak()
-{
+    regs->INT_EVENT0.ICLR = (1 << 16);
+  }
+
+  if (intflag & (1 << 23)) // TSTOP: stop detected
+  {
+    //tracebuf.AddChar('P');
+    OnStopDetected();
+    regs->INT_EVENT0.ICLR = (1 << 23);
+  }
 }

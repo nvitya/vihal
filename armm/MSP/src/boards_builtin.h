@@ -18,7 +18,9 @@
 
   #define BOARD_NAME "Launchpad MSPM0G3507"
   #define MCU_MSPM0G3507
-  #define EXTERNAL_XTAL_HZ     48000000
+  #ifndef EXTERNAL_XTAL_HZ
+    #define EXTERNAL_XTAL_HZ     48000000
+  #endif
 
   //#define MCU_EARLY_SAMPLE
 

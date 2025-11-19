@@ -28,22 +28,24 @@
 #ifndef HWI2CSLAVE_MSP_H_
 #define HWI2CSLAVE_MSP_H_
 
+#include "platform.h"
+
 #define HWI2CSLAVE_PRE_ONLY
 #include "hwi2cslave.h"
 
 class THwI2cSlave_msp : public THwI2cSlave_pre
 {
 public:
-	uint8_t      runstate = 0;
-	I2C_Regs *   regs = nullptr;
+	bool         call_address_rw = false;
+	uint8_t      ack_value = 0;
 
-	uint8_t      test_data = 0x55;
+	I2C_Regs *   regs = nullptr;
 
 	bool InitHw(int adevnum);
 
 	void HandleIrq();
 
-	void SetNak();
+	inline void SetNak()  { ack_value = 1; }  // will be used in the IRQ handler
 };
 
 #define HWI2CSLAVE_IMPL THwI2cSlave_msp
