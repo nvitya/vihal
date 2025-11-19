@@ -31,12 +31,10 @@
 
 #include "msp_utils.h"
 
-#include "traces.h"
-
-#define I2C_EV_PREC    (1 <<  0) // STOP received
-#define I2C_EV_AMATCH  (1 <<  1)
-#define I2C_EV_DRDY    (1 <<  2)
-#define I2C_EV_ERROR   (1 <<  7)
+#define I2C_EV_TSTART   (1 << 22)
+#define I2C_EV_TSTOP    (1 << 23)
+#define I2C_EV_TRXDONE  (1 << 16)
+#define I2C_EV_TTXEMPTY (1 << 21)
 
 bool THwI2cSlave_msp::InitHw(int adevnum)
 {
@@ -153,16 +151,14 @@ void THwI2cSlave_msp::HandleIrq()
 {
 	uint32_t intflag = regs->INT_EVENT0.MIS;
 
-	//TRACE("[%04X/%03X]\r\n", (intflag >> 16), regs->SLAVE.SSR & 0x1FF);
-
-	if (intflag & (1 << 22)) // TSTART IRQ: address matched
+	if (intflag & I2C_EV_TSTART) // TSTART IRQ: address matched
 	{
 	  // This IRQ comes before the R/W bit so we cannot call the OnAddressRw() without setting the istx
 	  call_address_rw = true;
-    regs->INT_EVENT0.ICLR = (1 << 22);
+    regs->INT_EVENT0.ICLR = I2C_EV_TSTART;
 	}
 
-	if (intflag & (1 << 21)) // TX_EMPTY: a byte must loaded into the transmit register
+	if (intflag & I2C_EV_TTXEMPTY) // a byte must loaded into the transmit register
 	{
 	  if (call_address_rw)
 	  {
@@ -171,13 +167,12 @@ void THwI2cSlave_msp::HandleIrq()
 	    call_address_rw = false;
 	  }
 
-    //tracebuf.AddChar('T');
     uint8_t d = OnTransmitRequest();
 		regs->SLAVE.STXDATA = d;
-    regs->INT_EVENT0.ICLR = (1 << 21);
+    regs->INT_EVENT0.ICLR = I2C_EV_TTXEMPTY;
 	}
 
-  if (intflag & (1 << 16)) // TRXDONE: byte received
+  if (intflag & I2C_EV_TRXDONE) // TRXDONE: byte received
   {
     if (call_address_rw)
     {
@@ -186,10 +181,8 @@ void THwI2cSlave_msp::HandleIrq()
       call_address_rw = false;
     }
 
-    //tracebuf.AddChar('R');
-    uint8_t d = regs->SLAVE.SRXDATA;
-
     ack_value = 0;  // ACK by default
+    uint8_t d = regs->SLAVE.SRXDATA;
     OnByteReceived(d);  // this might call SetNak()
 
     regs->SLAVE.SACKCTL = (0
@@ -200,13 +193,12 @@ void THwI2cSlave_msp::HandleIrq()
       | (1  <<  0)  // ACKOEN: 1 = enable ACK override
     );
 
-    regs->INT_EVENT0.ICLR = (1 << 16);
+    regs->INT_EVENT0.ICLR = I2C_EV_TRXDONE;
   }
 
-  if (intflag & (1 << 23)) // TSTOP: stop detected
+  if (intflag & I2C_EV_TSTOP) // TSTOP: stop detected
   {
-    //tracebuf.AddChar('P');
     OnStopDetected();
-    regs->INT_EVENT0.ICLR = (1 << 23);
+    regs->INT_EVENT0.ICLR = I2C_EV_TSTOP;
   }
 }
