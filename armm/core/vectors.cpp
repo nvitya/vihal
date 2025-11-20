@@ -280,7 +280,7 @@ extern unsigned int __stack;  // defined in the linker script
 typedef void (* pHandler)(void);
 
 __attribute__ ((section(".isr_vector"),aligned(1024),used))  // it must be properly aligned, otherwise it won't work !
-pHandler __isr_vectors[] =
+const pHandler __isr_vectors[] =
 {
 	// Configure Initial Stack Pointer, using linker-generated symbols
 	(pHandler) (&__stack),

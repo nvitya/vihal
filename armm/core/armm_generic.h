@@ -111,7 +111,8 @@ inline bool mcu_irq_enabled(unsigned intnum)
   return (NVIC_GetEnableIRQ(IRQn_Type(intnum)) != 0);
 }
 
-extern "C" void (* __isr_vectors [])();
+typedef void (* pHandler)(void);
+extern "C" const pHandler __isr_vectors[];
 
 inline void __attribute__((always_inline)) mcu_init_vector_table()
 {
