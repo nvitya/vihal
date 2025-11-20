@@ -1,0 +1,13 @@
+MEMORY
+{
+  FLASH (rx)          : ORIGIN = 0x00000000, LENGTH = 16K
+  RAM (xrw)           : ORIGIN = 0x20200000, LENGTH = 1K
+}
+
+REGION_ALIAS("TEXT", FLASH);
+REGION_ALIAS("ITCRAM", RAM);
+REGION_ALIAS("DTCRAM", RAM);
+REGION_ALIAS("RAM2", RAM);
+
+INCLUDE armm_default_flash.ld
+
