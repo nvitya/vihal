@@ -28,9 +28,15 @@
 #include "platform.h"
 #include "hwpins.h"
 
-#define MAX_PORT_NUMBER   2
+#ifdef MCUSF_M0C
+  #define MAX_PORT_NUMBER   1
+#else
+  #define MAX_PORT_NUMBER   2
+#endif
 
-// The Pin-to IOMUX table made from the datasheet
+#if defined(MCUSF_M0G)
+
+// The Pin-to IOMUX table made from the datasheet (first column of the "Pin Attributes" table)
 //   WARNING: they are +1 than the IOMUX->SECCFG.PINCM[] indexes !!!
 
 const uint8_t pincm_table[64] =
@@ -103,6 +109,52 @@ const uint8_t pincm_table[64] =
    0   // B31 (non-existing)
 };
 
+#elif defined(MCUSF_M0C)
+
+// The Pin-to IOMUX table made from the datasheet (first column of the "Pin Attributes" table)
+//   WARNING: they are +1 than the IOMUX->SECCFG.PINCM[] indexes !!!
+
+const uint8_t pincm_table[32] =
+{
+   1, // A0
+   2, // A1
+   3, // A2
+   0, // A3  (non-existing)
+   5, // A4
+   0, // A5  (non-existing)
+   7, // A6
+   0, // A7  (non-existing)
+   0, // A8  (non-existing)
+   0, // A9  (non-existing)
+   0, // A10 (non-existing)
+  12, // A11
+   0, // A12 (non-existing)
+   0, // A13 (non-existing)
+   0, // A14 (non-existing)
+   0, // A15 (non-existing)
+  17, // A16
+  18, // A17
+  19, // A18
+  20, // A19
+  21, // A20
+   0, // A21 (non-existing)
+  23, // A22
+  24, // A23
+  25, // A24
+  26, // A25
+  27, // A26
+  28, // A27
+  29, // A28
+   0, // A29 (non-existing)
+   0, // A30 (non-existing)
+   0, // A31 (non-existing)
+};
+
+#else
+
+  #error "IOMUX index table is missing for this family."
+
+#endif
 
 uint8_t get_pincm_index(unsigned aportnum, unsigned apinnum)
 {
