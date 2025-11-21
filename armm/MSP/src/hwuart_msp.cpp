@@ -45,19 +45,25 @@ bool THwUart_msp::Init(int adevnum)  // devnum = 0 - 3 (UART0 .. UART3)
 	{
 	  regs = UART0;
 	}
+#ifdef UART1
 	else if (1 == devnum)
   {
     regs = UART1;
   }
+#endif
+#ifdef UART1
   else if (2 == devnum)
   {
     regs = UART2;
   }
+#endif
+#ifdef UART1
 	else if (3 == devnum)
 	{
 	  regs = UART3;
 	  busid = 1; // high speed bus
 	}
+#endif
 	else
 	{
 	  return false;

@@ -120,7 +120,11 @@ GPIO_Regs * THwPinCtrl_msp::GetGpioRegs(int aportnum)
 	{
 		if (aportnum == PORTNUM_B)
 		{
-			return GPIOB;
+      #if !defined(MCUSF_M0C)
+			  return GPIOB;
+			#else
+			  return nullptr;
+			#endif
 		}
 		else
 		{

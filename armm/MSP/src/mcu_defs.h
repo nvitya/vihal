@@ -28,19 +28,37 @@
 #ifndef __MCU_DEFS_H
 #define __MCU_DEFS_H
 
-#define MAX_CLOCK_SPEED         80000000
-#define MCU_INTERNAL_RC_SPEED   32000000
+#if defined(MCUSF_M0C)
+
+  #if !defined(MAX_CLOCK_SPEED)
+    #define MAX_CLOCK_SPEED         24000000
+  #endif
+
+  #define MCU_INTERNAL_RC_SPEED    24000000
+
+#elif defined(MCUSF_M0G)
+
+  #if !defined(MAX_CLOCK_SPEED)
+    #define MAX_CLOCK_SPEED         80000000
+  #endif
+
+  #define MCU_INTERNAL_RC_SPEED   32000000
+
+#else
+
+  #error "unhandled MCU family"
+
+#endif
 
 #define HW_GPIO_REGS      GPIO_Regs
 #define HW_UART_REGS      UART_Regs
 
-#if defined(MCU_EARLY_SAMPLE)
+#if defined(MCUSF_M0C)
 
-#define TIMG_CLOCKCNT     TIMG0 // for the eningeering samle currently, later will be TIMG12 (the only 32-bit ? timer)
-                                // unfortunately it runs with the half of the CPU frequency so some shifting is also required
+#define TIMG_CLOCKCNT     TIMG8
 
 #if __CORTEX_M < 3
-  #define CLOCKCNT16       (((0xFFFF - TIMG_CLOCKCNT->COUNTERREGS.CTR) << 1) & 0xFFFF)
+  #define CLOCKCNT16       (TIMG_CLOCKCNT->COUNTERREGS.CTR)
 #endif
 
 #else

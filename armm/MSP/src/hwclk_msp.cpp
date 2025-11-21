@@ -28,6 +28,8 @@
 #include "hwclk.h"
 //#include "msp_utils.h"
 
+#ifdef MCUSF_M0G
+
 inline bool hwclk_ext_osc_ready()
 {
 	volatile uint32_t clkstat = SYSCTL->SOCLOCK.CLKSTATUS;
@@ -262,3 +264,14 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   return true;
 }
 
+#elif defined(MCUSF_M0C)
+
+bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
+{
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+  return true;
+}
+
+#else
+  #error "Unhandled MSPM0 family"
+#endif

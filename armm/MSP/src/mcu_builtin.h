@@ -45,7 +45,7 @@
 #elif defined(MCU_MSPM0C1103) || defined(MCU_MSPM0C1104)
 
   #define MCUF_MSP
-  #define MCUSF_M0G
+  #define MCUSF_M0C
   #define __MSPM0C1104__
 
   #include "mspm0c110x.h"

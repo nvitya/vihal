@@ -51,10 +51,12 @@ bool THwI2cSlave_msp::InitHw(int adevnum)
 	{
 		regs = I2C0;
 	}
+#ifdef I2C1
 	else if (1 == devnum)
 	{
 		regs = I2C1;
 	}
+#endif
 	else
 	{
 		return false;

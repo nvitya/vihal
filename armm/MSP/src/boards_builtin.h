@@ -22,8 +22,6 @@
     #define EXTERNAL_XTAL_HZ     48000000
   #endif
 
-  //#define MCU_EARLY_SAMPLE
-
 #else
 
   #error "Unknown board."

@@ -28,11 +28,13 @@
 
 uint32_t msp_bus_speed(uint8_t abusid)  // 0 = PD0 (MCLK/2), 1 = PD1 (MCLK)
 {
-  if ((0 == abusid) && (SYSCTL->SOCLOCK.MCLKCFG & SYSCTL_MCLKCFG_UDIV_MASK))
-  {
-    return (SystemCoreClock >> 1);
-  }
+  #if !defined(MCUSF_M0C)
+		if ((0 == abusid) && (SYSCTL->SOCLOCK.MCLKCFG & SYSCTL_MCLKCFG_UDIV_MASK))
+		{
+			return (SystemCoreClock >> 1);
+		}
+  #endif
 
-  return SystemCoreClock;
+	return SystemCoreClock;
 }
 
