@@ -73,6 +73,8 @@ public:
 	void SwitchDirection(int adirection);
 };
 
+// Lightwheight classes
+
 class TGpioOut
 {
 public:
@@ -93,6 +95,22 @@ public:
 	inline void Set0()                 { *clrbitptr = setbitvalue; }
 	inline void SetTo(unsigned value)  { if (value & 1) Set1(); else Set0(); }
 
+};
+
+class TGpioIn
+{
+public:
+	uint8_t          portnum = 0;
+	uint8_t          pinnum  = 0;
+
+	volatile uint32_t *  getbitptr = nullptr;
+
+	TGpioIn(int aportnum, int apinnum, bool ainvert); // ainvert is not used, provided for compatibility
+
+	bool Setup(unsigned flags);
+	void Assign(int aportnum, int apinnum, bool ainvert);
+
+	inline unsigned char Value()       { return ((*getbitptr >> pinnum) & 1); }
 };
 
 

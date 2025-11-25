@@ -268,6 +268,29 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
+	uint32_t tmp;
+
+  // set the system oscillator to 24 MHz
+	tmp = SYSCTL->SOCLOCK.SYSOSCCFG;
+	tmp &= ~(SYSCTL_SYSOSCCFG_FREQ_MASK | SYSCTL_SYSOSCCFG_DISABLE_MASK);
+	tmp |= 0; // 0 = 24 MHz (Base), WARNING: the reference manual says 32 MHz !
+	SYSCTL->SOCLOCK.SYSOSCCFG = tmp;
+
+	// set MDIV = 0 = /1
+	tmp = SYSCTL->SOCLOCK.MCLKCFG;
+	tmp &= ~(SYSCTL_MCLKCFG_USEHSCLK_ENABLE
+			     | SYSCTL_MCLKCFG_USEMFTICK_MASK
+					 | SYSCTL_MCLKCFG_USELFCLK_MASK
+					 | SYSCTL_MCLKCFG_MDIV_MASK
+					);
+	SYSCTL->SOCLOCK.MCLKCFG = tmp;
+
+	// Verify SYSOSC -> MCLK
+	while ((SYSCTL->SOCLOCK.CLKSTATUS & SYSCTL_CLKSTATUS_HSCLKMUX_MASK) != 0)
+	{
+		// wait until it is changed to SYSOSC
+	}
+
   SystemCoreClock = MCU_INTERNAL_RC_SPEED;
   return true;
 }

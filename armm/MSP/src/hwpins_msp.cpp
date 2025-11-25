@@ -416,3 +416,26 @@ void TGpioOut::Assign(int aportnum, int apinnum, bool ainvert)
   }
 }
 
+TGpioIn::TGpioIn(int aportnum, int apinnum, bool ainvert)
+{
+	Assign(aportnum, apinnum, ainvert);
+}
+
+bool TGpioIn::Setup(unsigned flags)
+{
+	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
+}
+
+void TGpioIn::Assign(int aportnum, int apinnum, bool ainvert)
+{
+	portnum = aportnum;
+  pinnum = apinnum;
+
+  GPIO_Regs * regs = hwpinctrl.GetGpioRegs(aportnum);
+	if (!regs)
+	{
+		return;
+	}
+
+  getbitptr = (volatile uint32_t *)&(regs->DIN31_0);
+}

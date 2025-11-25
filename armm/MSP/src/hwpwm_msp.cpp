@@ -76,6 +76,13 @@ bool THwPwmChannel_msp::Init(int atimernum, int achnum)
 		busid = 0;
 	}
 #endif
+#ifdef TIMG14_BASE
+	else if (14 == devnum)
+	{
+		regs = TIMG14;
+		busid = 0;
+	}
+#endif
 #ifdef TIMA0_BASE
 	if (0x80 == devnum)
 	{
