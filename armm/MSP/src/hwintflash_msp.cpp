@@ -90,7 +90,28 @@ void THwIntFlash_msp::ClearWriteProtection()
 	regs->CMDWEPROTB = wprot_reg[1];
 }
 
-__attribute__((section(".text_ITCRAM")))
+__attribute__((noinline, section(".text_ITCRAM")))
+void THwIntFlash_msp::ExecFlashWriteRamCode()
+{
+	// start the command, do not run from flash now
+	regs->CMDEXEC = 1;
+	while (regs->STATCMD & (1 << 2))
+	{
+		// wait for finish
+	}
+}
+
+void THwIntFlash_msp::ExecFlashWriteCmd()
+{
+	// disable the interrupts too, because
+
+	uint32_t irq_state = mcu_interrupts_save_and_disable();
+
+	ExecFlashWriteRamCode();  // switch to RAM CODE for the FLASH write
+
+	mcu_interrupts_restore(irq_state);
+}
+
 void THwIntFlash_msp::CmdEraseBlock()
 {
 	ClearWriteProtection();
@@ -100,12 +121,9 @@ void THwIntFlash_msp::CmdEraseBlock()
 		| (2  <<  0)  // COMMAND(3): 0 = noop, 1 = program, 2 = erase, 3 = read veryfy, 6 = blank verify
   );
 	regs->CMDADDR = address;
-	regs->CMDEXEC = 1;
 
-	while (regs->STATCMD & (1 << 2))
-	{
-		// wait for finish
-	}
+	ExecFlashWriteCmd(); // ensures that the flash are not used during the flash write operation,
+	                     // code executed from RAM
 
 	if (regs->STATCMD != 3)
 	{
@@ -114,7 +132,7 @@ void THwIntFlash_msp::CmdEraseBlock()
 	}
 }
 
-__attribute__((section(".text_ITCRAM")))
+
 void THwIntFlash_msp::CmdWritePage(uint32_t wordcnt)
 {
 	ClearWriteProtection();
@@ -147,13 +165,8 @@ void THwIntFlash_msp::CmdWritePage(uint32_t wordcnt)
 
 	regs->CMDBYTEN = 0x1FF;
 
-	// start the command
-	regs->CMDEXEC = 1;
-
-	while (regs->STATCMD & (1 << 2))
-	{
-		// wait for finish
-	}
+	ExecFlashWriteCmd(); // ensures that the flash are not used during the flash write operation,
+	                     // code executed from RAM
 
 	if (regs->STATCMD != 3)
 	{

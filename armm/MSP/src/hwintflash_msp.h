@@ -54,6 +54,10 @@ public:
   uint32_t       wprot_reg[2];  // CMDWEPROTA, CMDWEPROTB contents
   void           PrepareWriteProtection();
   void           ClearWriteProtection();  // must be called after every write
+
+public:
+	void           ExecFlashWriteRamCode();
+	void           ExecFlashWriteCmd();
 };
 
 #define HWINTFLASH_IMPL THwIntFlash_msp
