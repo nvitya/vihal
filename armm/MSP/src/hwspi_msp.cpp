@@ -39,7 +39,7 @@ bool THwSpi_msp::Init(int adevnum)
 	{
 		regs = SPI0;
 	}
-#ifdef SPI1
+#ifdef SPI1_BASE
 	else if (1 == devnum)
 	{
 		regs = SPI1;
