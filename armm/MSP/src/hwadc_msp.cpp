@@ -213,7 +213,7 @@ void THwAdc_msp::StartFreeRun(uint32_t achsel)
 		//regs->CTL1 |= ADC12_CTL1_SC_MASK;  // start the conversion
 	}
 
-	data_lshift = 16 - 12 - averaging;
+	data_lshift = 16 - 12 - averaging + avg_denom;
 }
 
 void THwAdc_msp::StopFreeRun()
