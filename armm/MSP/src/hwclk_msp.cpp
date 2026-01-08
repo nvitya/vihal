@@ -204,7 +204,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 	unsigned vco_in_speed = (basespeed >> pdiv);
 
-  unsigned rdiv0 = (rdiv2x >> 0); // results to the /4 frequency
+  unsigned rdiv0 = (rdiv2x >> 1); // results to the /2 frequency
 
   SYSCTL->SOCLOCK.SYSPLLCFG0 = (0
     | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)
