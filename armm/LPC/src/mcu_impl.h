@@ -7,6 +7,10 @@
   #include "hwdma_lpc.h"
 #endif
 
+#ifdef HWUART_H_
+  #include "hwuart_lpc.h"
+#endif
+
 #ifdef HWSPI_H_
   #include "hwspi_lpc.h"
 #endif
