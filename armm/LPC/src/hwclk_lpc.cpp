@@ -183,8 +183,8 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
                      PCLKSEL0_PCLK_SSP1_CCLK |
                      PCLKSEL0_PCLK_DAC_CCLK |
                      PCLKSEL0_PCLK_ADC_CCLK |
-                     PCLKSEL0_PCLK_CAN1_CCLK_4 |
-                     PCLKSEL0_PCLK_CAN2_CCLK_4 |
+                     PCLKSEL0_PCLK_CAN1_CCLK |
+                     PCLKSEL0_PCLK_CAN2_CCLK |
                      PCLKSEL0_PCLK_ACF_CCLK;
 
   LPC_SC->PCLKSEL1 = PCLKSEL1_PCLK_QEI_CCLK |
