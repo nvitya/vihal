@@ -120,6 +120,9 @@ bool THwPinCtrl_lpc::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 bool THwPinCtrl_lpc::GpioPortEnable()
 {
+  #ifdef MCUSF_17XX
+	  LPC_SC->PCONP |= PCONP_PCGPIO_ENABLED;
+  #endif
 	//LPC_CCU1->CLKCCU[CLK_MX_GPIO].CFG |= 1;
   return true;
 }
