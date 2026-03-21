@@ -53,7 +53,7 @@ bool THwSpi_rk::Init(int adevnum)
 		map_hw_addr(SPI0_BASE, sizeof(struct SPI_REG), (void * *)&regs);
     cru_reg_set_field(0x830, 10, 2, 0); // clk_spi0 + pclk_spi0
 
-    // select the 24 MHz base clock
+    // select the base clock
     cru_reg_set_field(0x388, 14, 2, 1); // 0 = xin_osc0_func, 1 = gpll_div, 2 = v0pll_div, 3 = v1pll_div
     cru_reg_set_field(0x388, 10, 4, 0); // 0 = do not divide
 	}
@@ -62,7 +62,7 @@ bool THwSpi_rk::Init(int adevnum)
 		map_hw_addr(SPI1_BASE, sizeof(struct SPI_REG), (void * *)&regs);
     cru_reg_set_field(0x830, 12, 2, 0); // clk_spi1 + pclk_spi1
 
-    // select the 24 MHz base clock
+    // select the base clock
     cru_reg_set_field(0x388, 8, 2, 1); // 0 = xin_osc0_func, 1 = gpll_div, 2 = v0pll_div, 3 = v1pll_div
     cru_reg_set_field(0x388, 4, 4, 0); // 0 = do not divide
   }
@@ -91,7 +91,7 @@ bool THwSpi_rk::Init(int adevnum)
   	| (0  << 18)  // XFM(2): 0 = Tx + Rx, 1 = Tx Only, 2 = Rx Only
   	| (0  << 16)  // FRF(2): frame format, 0 = Motorola SPI, 1 = Ti SSP, 2 = NS Microwire
   	| ((rx_sample_delay & 3) << 14) // RSD(2): rx sample delay
-    | (0  << 13)  // BHT: when 8-bit data: 0 = APB 16-bit -> spi 8-bit, 1 = APB 8-bit -> SPI 8-bit
+    | (1  << 13)  // BHT: when 8-bit data: 0 = APB 16-bit -> spi 8-bit, 1 = APB 8-bit -> SPI 8-bit
     | (0  << 12)  // FBM: 0 = MSB first, 1 = LSB first
     | (0  << 11)  // EM: 0 = Little endian, 1 = Big Endien
     | (0  << 10)  // SSD: delay from CS to clock, 0 = half clock, 1 = one clock
@@ -99,7 +99,7 @@ bool THwSpi_rk::Init(int adevnum)
     | (0  <<  7)  // SCPOL: 0 = clock is low when inactive, 1 = clock is high when inactive
     | (0  <<  6)  // SCPH: 0 = serial clock toggles in middle of first data bit, 1 = serial clock toggles at start of first bit
     | ((databits-1) <<  2)  // CFS(4): Microwire control word length 3 = 4-bit, 7 = 8-bit, 15 = 16-bit
-    | (flcode <<  2)  // DFS: 0 = 4-bit, 1 = 8-bit, 2 = 16-bit
+    | (flcode <<  0)  // DFS: 0 = 4-bit, 1 = 8-bit, 2 = 16-bit
   );
   if (idleclk_high)      ctrl0 |= (1 << 7);
   if (datasample_late)   ctrl0 |= (1 << 6);
@@ -108,6 +108,8 @@ bool THwSpi_rk::Init(int adevnum)
   regs->CTRLR[1] = (0
     | (0  <<  0)  // DFNUM(32): number of data frames
   );
+
+  regs->SER = 1; // use the CSN0
 
   regs->DMATDLR = 0;
   regs->DMARDLR = 0;

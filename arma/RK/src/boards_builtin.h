@@ -16,6 +16,12 @@
   #define MCU_RK3506
   #define EXTERNAL_XTAL_HZ   24000000
 
+#elif defined(BOARD_LUCKFOX_LYRA_ULTRA)
+
+  #define BOARD_NAME "Luckfox Lyra Ultra"
+  #define MCU_RK3506
+  #define EXTERNAL_XTAL_HZ   24000000
+
 #else
 
   #error "Unknown board."
