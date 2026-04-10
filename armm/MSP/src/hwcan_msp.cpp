@@ -55,7 +55,7 @@ bool THwCan_msp::HwInit(int adevnum)
 	uint32_t tmp;
 
 	// select PCLK as the CANFD base clock (=SystemCoreClock)
-	SYSCTL->SOCLOCK.GENCLKCFG |= SYSCTL_GENCLKCFG_CANCLKSRC_MASK; // select CAN CLOCK as SYSPLL1 (80 MHz)
+	SYSCTL->SOCLOCK.GENCLKCFG |= SYSCTL_GENCLKCFG_CANCLKSRC_MASK; // select CAN CLOCK as SYSPLL1 (40 MHz)
 	if (SYSCTL->SOCLOCK.GENCLKCFG) { }
 
 	if (false)  { }
@@ -244,6 +244,8 @@ void THwCan_msp::Disable()
 	regs->CCCR |= MCAN_CCCR_CCE_MASK; // enable configuration change
 }
 
+extern uint32_t msp_sysppl1_freq;  // defined in the hwclk_msp.cpp
+
 void THwCan_msp::SetSpeed(uint32_t aspeed)
 {
 	bool wasenabled = Enabled();
@@ -256,7 +258,7 @@ void THwCan_msp::SetSpeed(uint32_t aspeed)
 
 	// set speed (nominal only)
 
-	uint32_t periphclock = SystemCoreClock / 2;  // Uses SYSPLLCLK1, which is set to half CPU FREQ
+	uint32_t periphclock = msp_sysppl1_freq;  // CAN uses SYSPLLCLK1
 
 	// timing:
 	//   fixbits = 1x bit quanta reserved for sync (at the beginning)

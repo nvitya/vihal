@@ -28,6 +28,10 @@
 #include "hwclk.h"
 //#include "msp_utils.h"
 
+// The actual syspll1 frequ
+__attribute__ ((section(".noinit"),used))
+uint32_t msp_sysppl1_freq;
+
 #ifdef MCUSF_M0G
 
 inline bool hwclk_ext_osc_ready()
@@ -148,10 +152,11 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 	// the CLK0 and CLK1 clock output will be set to the half of the CLK2X
 
-	unsigned pdiv = 0;
-	unsigned mul = 2;  // = qdiv
-  unsigned rdiv2x = 1;
-	unsigned vcospeed;  // The VCO frequency must be within 60 and 400 MHz
+  // (volatile is used here only for debugging)
+	volatile unsigned pdiv = 0;
+	volatile unsigned mul = 2;  // = qdiv
+	volatile unsigned rdiv2x = 1;
+	volatile unsigned vcospeed;  // The VCO frequency must be within 60 and 400 MHz
 
 	#if defined(MSPM0G_MAX_VCO_SPEED)
 		unsigned max_vco_speed = MSPM0G_MAX_VCO_SPEED;
@@ -194,7 +199,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 	  }
 	}
 
-	if ((vcospeed < (max_vco_speed / 2)) && (rdiv2x & 1)) // when the rdiv2x is odd, then the PLLCLK1 cannot be set to half CPU clock
+	if ((vcospeed <= (max_vco_speed / 2)) && (rdiv2x & 1)) // when the rdiv2x is odd, then the PLLCLK1 cannot be set to half CPU clock
 	{
 		// multiply everything by two
 		mul      <<= 1;
@@ -204,7 +209,22 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
 	unsigned vco_in_speed = (basespeed >> pdiv);
 
-  unsigned rdiv0 = (rdiv2x >> 1); // results to the /2 frequency
+	#ifdef MSPM0G_SYSPLL1_FREQ
+		volatile unsigned pll1div = vcospeed / MSPM0G_SYSPLL1_FREQ;
+		volatile unsigned rdiv0  = (pll1div >> 1); // results to the /2 frequency
+	#else
+		volatile unsigned rdiv0 = (rdiv2x >> 1); // results to the /2 frequency
+	#endif
+
+	if (rdiv0 < 1)  rdiv0 = 1;
+
+#if 0
+  // delay for debug probe connection !!!!
+  for (unsigned n = 0; n < 10000000; ++n)
+  {
+  	__NOP();
+  }
+#endif
 
   SYSCTL->SOCLOCK.SYSPLLCFG0 = (0
     | ((rdiv2x - 1) << 16)  // RDIVCLK2X(4)
@@ -260,6 +280,7 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
     // wait until MCLK is sourced from the HSCLK
   }
 
+  msp_sysppl1_freq = vcospeed / (rdiv0 << 1);
   SystemCoreClock = target_speed_hz;
   return true;
 }
