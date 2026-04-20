@@ -1,0 +1,4 @@
+#ifndef SYSTEM_PY32F0XX_H
+#define SYSTEM_PY32F0XX_H
+
+#endif /* SYSTEM_PY32F0XX_H */
