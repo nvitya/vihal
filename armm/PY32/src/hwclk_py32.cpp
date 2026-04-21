@@ -33,18 +33,21 @@ void hwclk_start_ext_osc(unsigned aextspeed)
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
+	uint32_t tmp = FLASH->ACR;
+	tmp &= ~3;
 	if (acpuspeed <= 24000000)
 	{
-		FLASH->ACR = 0;
+		tmp |= 0;
 	}
 	else if (acpuspeed <= 48000000)
 	{
-		FLASH->ACR = 1;
+		tmp |= 1;
 	}
 	else
 	{
-		FLASH->ACR = 2;
+		tmp |= 2;
 	}
+	FLASH->ACR = tmp;
 }
 
 #define RCC_CFGR_SW_HSI   0  /*!< HSISYS used as system clock */
