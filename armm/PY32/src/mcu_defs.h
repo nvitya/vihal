@@ -30,15 +30,13 @@
 #if defined(MCUSF_F0)
 
   #if !defined(MAX_CLOCK_SPEED)
-    #define MAX_CLOCK_SPEED         48000000
+    #define MAX_CLOCK_SPEED         72000000
   #endif
-
-  #define MCU_INTERNAL_RC_SPEED    8000000
 
 #endif
 
 #ifndef MCU_INTERNAL_RC_SPEED
-  #define MCU_INTERNAL_RC_SPEED     4000000
+  #define MCU_INTERNAL_RC_SPEED     8000000
 #endif
 
 #if __CORTEX_M < 3

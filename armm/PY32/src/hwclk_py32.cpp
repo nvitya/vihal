@@ -18,9 +18,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwclk_stm32.cpp
- *  brief:    STM32 clock speed implementation
- *  date:     2021-10-23
+ *  file:     hwclk_py32.cpp
+ *  brief:    PY32 clock speed implementation
+ *  date:     2026-04-21
  *  authors:  nvitya
 */
 
@@ -39,23 +39,36 @@ static bool is_divisible(unsigned nom, unsigned div)
 
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
-  /* Enable Prefetch Buffer and set Flash Latency */
-//  FLASH->ACR = FLASH_ACR_LATENCY | FLASH_ACR_PRFTEN;
+	if (acpuspeed <= 24000000)
+	{
+		FLASH->ACR = 0;
+	}
+	else if (acpuspeed <= 48000000)
+	{
+		FLASH->ACR = 1;
+	}
+	else
+	{
+		FLASH->ACR = 2;
+	}
 }
+
+#define RCC_CFGR_SW_HSI   0  /*!< HSISYS used as system clock */
+#define RCC_CFGR_SW_PLL   2  /*!< PLL used as system clock */
+
 
 bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 {
-#if 0
-
   // select the HSI as clock source (required if this is called more times)
 
+	uint32_t tmp;
   uint32_t cfgr;
 
   cfgr = RCC->CFGR;
-  cfgr &= ~3;
+  cfgr &= ~7;
   cfgr |= RCC_CFGR_SW_HSI;
   RCC->CFGR = cfgr;
-  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_HSI)
+  while (((RCC->CFGR >> 3) & 7) != RCC_CFGR_SW_HSI)
   {
     // wait until it is set
   }
@@ -70,6 +83,18 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
 
   hwclk_prepare_hispeed(target_speed_hz);
 
+  // read the 24 MHz calibration value from the FLASH
+  uint32_t hsi_calib_24M = *((volatile uint32_t *)0x1FFF0F10);
+
+  // change the HSI to 24 MHz (starts with 8 MHz by default)
+  tmp = RCC->ICSCR;
+  tmp &= ~((7 << 13) | (0x1FFF << 0));
+  tmp |= ( (4 << 13) | ((hsi_calib_24M & 0x1FFF) << 0) );
+  RCC->ICSCR = tmp;
+
+  uint32_t internal_rc_speed = 24000000;
+  SystemCoreClock = internal_rc_speed;
+
   unsigned basespeed;
   unsigned pllsrc;
   if (external_clock_hz)
@@ -80,61 +105,56 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   else
   {
     // the internal oscillator is usually 8 MHz, but it will be divided by 2 at the PLL input
-    basespeed = (MCU_INTERNAL_RC_SPEED >> 1);
+    basespeed = internal_rc_speed;
   }
 
   unsigned freqmul = target_speed_hz / basespeed;
-  if ((freqmul < 2) or (freqmul > 16))
+  if (freqmul > 3)
   {
-    return false;
+  	return false;
   }
 
-  cfgr = RCC->CFGR;
-
-  unsigned pllmul = ((freqmul - 2) & 0xF);  // STM32F0 multiplyer code
-
-  // setup bus dividers AHB=1, PERIPH=1
-  cfgr &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE);
-  cfgr |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE_DIV1);
-
-  cfgr &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMUL);
-  cfgr |= (pllmul << 18);
-
-  if (external_clock_hz)
+  if (freqmul <= 1)
   {
-    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSE_PREDIV | RCC_CFGR_PLLXTPRE_HSE_PREDIV_DIV1);
+  	freqmul = 1;
   }
   else
   {
-#ifdef RCC_CFGR_PLLSRC_HSI_DIV2
-    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSI_DIV2);
-#else
-    cfgr |= (uint32_t)(RCC_CFGR_PLLSRC_HSI_PREDIV);
-#endif
+    // setup the PLL
+    uint32_t pllcode;
+    if (freqmul >= 3)
+    {
+    	freqmul = 3;
+    	pllcode = 1;
+    }
+    else
+    {
+    	freqmul = 2;
+    	pllcode = 0;
+    }
+
+    RCC->PLLCFGR = (0
+    	| (pllcode << 2)  // PLLMUL(2): 0 = 2x, 1 = 3x, otherwise invalid
+			| (0       << 0)  // PLLSRC: 0 = HSI, 1 = HSE
+    );
+
+    RCC->CR |= RCC_CR_PLLON;  // enable the PLL
+    while((RCC->CR & RCC_CR_PLLRDY) == 0)
+    {
+      // Wait till PLL is ready
+    }
+
+    // Select PLL as system clock source
+    cfgr = RCC->CFGR;
+    cfgr &= ~7;
+    cfgr |= RCC_CFGR_SW_PLL;
+    RCC->CFGR = cfgr;
+    while (((RCC->CFGR >> 3) & 7) != RCC_CFGR_SW_PLL)
+    {
+      // wait until it is set
+    }
   }
 
-  RCC->CFGR = cfgr;
-
-  RCC->CR |= RCC_CR_PLLON;  // enable the PLL
-  while((RCC->CR & RCC_CR_PLLRDY) == 0)
-  {
-    // Wait till PLL is ready
-  }
-
-  // Select PLL as system clock source
-  cfgr &= ~3;
-  cfgr |= RCC_CFGR_SW_PLL;
-  RCC->CFGR = cfgr;
-  while (((RCC->CFGR >> 2) & 3) != RCC_CFGR_SW_PLL)
-  {
-    // wait until it is set
-  }
-
-  SystemCoreClock = target_speed_hz;
+  SystemCoreClock = internal_rc_speed * freqmul;
   return true;
-
-#else
-  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
-  return true;
-#endif
 }

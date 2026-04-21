@@ -28,34 +28,7 @@
 
 uint32_t py32_bus_speed(uint8_t abusid)
 {
-	uint32_t tmp;
-	uint32_t clockshr;  // clock shift right = division
-
-#if 0
-
-	if (STM32_BUSID_AHB == abusid)
-	{
-		tmp = (RCC->CFGR & RCC_CFGR_HPRE);
-		if      (RCC_CFGR_HPRE_DIV2 == tmp)  clockshr = 1;
-		else if (RCC_CFGR_HPRE_DIV4 == tmp)  clockshr = 2;
-		else                                 clockshr = 0;
-	}
-	else if ((STM32_BUSID_APB1 == abusid) || (STM32_BUSID_APB2 == abusid))
-	{
-		tmp = (RCC->CFGR & RCC_CFGR_PPRE);
-		if      (RCC_CFGR_PPRE_DIV2 == tmp)  clockshr = 1;
-		else if (RCC_CFGR_PPRE_DIV4 == tmp)  clockshr = 2;
-		else                                 clockshr = 0;
-	}
-	else
-	{
-		clockshr = 0; // unhandled, no division by default
-	}
-
-#else
-	clockshr = 0; // unhandled, no division by default
-#endif
-
-	return (SystemCoreClock >> clockshr);
+	// no bus division here
+	return SystemCoreClock;
 }
 
