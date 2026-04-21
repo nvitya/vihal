@@ -21,6 +21,8 @@
   //#include "hwspi_py32.h"
 #endif
 
+#define SKIP_UNIMPLEMENTED_WARNING
+
 #ifdef HWDMA_H_
   //#include "hwdma_py32.h"
 #endif

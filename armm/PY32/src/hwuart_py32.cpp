@@ -144,27 +144,24 @@ bool THwUart_py32::SetBaudRate(int abaudrate)
   unsigned baseclock = periphclock / 16;
   unsigned divider = ((baseclock << 4) + 8) / baudrate;
 
-  uint32_t tmp = regs->CR1;
-  regs->CR1 = tmp & ~USART_CR1_UE;
+  uint32_t cr1 = regs->CR1;
+  regs->CR1 = cr1 & ~USART_CR1_UE;  // disable for be able to set the control registers
 
-  #ifdef USART_CR1_OVER8
-    if (divider < 16)
-    {
-      baseclock = periphclock / 8;
-      divider = ((baseclock << 4) + 8) / baudrate;
-      tmp |= USART_CR1_OVER8;
-      divider = ((divider & 0xFFF0) | ((divider & 0xE) >> 1));
-    }
-    else
-    {
-      tmp &= ~USART_CR1_OVER8;
-    }
-    regs->CR1 = tmp & ~USART_CR1_UE;
-  #endif
+	if (divider < 16)
+	{
+		baseclock = periphclock / 8;
+		divider = ((baseclock << 4) + 8) / baudrate;
+		regs->CR3 |= USART_CR3_OVER8;
+		divider = ((divider & 0xFFF0) | ((divider & 0xE) >> 1));
+	}
+	else
+	{
+		regs->CR3 &= ~USART_CR3_OVER8;
+	}
 
-  regs->BRR = divider;
+	regs->BRR = divider;
 
-  regs->CR1 = tmp;
+  regs->CR1 = cr1;
 
   return true;
 }

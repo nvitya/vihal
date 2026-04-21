@@ -18,10 +18,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     clockcnt_stm32.cpp
- *  brief:    STM32 Clock Counter for M0 MCUs
- *  version:  1.00
- *  date:     2018-02-10
+ *  file:     clockcnt_py32.cpp
+ *  brief:    PY32 Clock Counter for M0 MCUs
+ *  date:     2026-04-21
  *  authors:  nvitya
 */
 
@@ -33,23 +32,12 @@
 
 void clockcnt_init()
 {
-#if defined(TIM14)
-	#if defined(RCC_APBENR2_TIM14EN)
-		RCC->APBENR2 |= RCC_APBENR2_TIM14EN;
-	#else
-	  RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
-	#endif
-  #define CCTIMER  TIM14
+	RCC->APBENR2 |= RCC_APBENR2_TIM14EN;
 
-#else
-	RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
-  #define CCTIMER  TIM21
-#endif
-
-	CCTIMER->CR1 = 0;
-	CCTIMER->PSC = 0; // count every clock
-	CCTIMER->CR1 = 1;
-	CCTIMER->EGR = 1; // reinit, start the timer
+	TIM14->CR1 = 0;
+	TIM14->PSC = 0; // count every clock
+	TIM14->CR1 = 1;
+	TIM14->EGR = 1; // reinit, start the timer
 }
 
 #endif

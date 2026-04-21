@@ -18,20 +18,19 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwpins_stm32.h
- *  brief:    STM32 Pin/Pad and GPIO configuration
- *  version:  1.00
- *  date:     2018-02-10
+ *  file:     hwpins_py32.h
+ *  brief:    PY32 Pin/Pad and GPIO configuration
+ *  date:     2026-04-21
  *  authors:  nvitya
 */
 
-#ifndef _HWPINS_STM32_H
-#define _HWPINS_STM32_H
+#ifndef _HWPINS_PY32_H
+#define _HWPINS_PY32_H
 
 #define HWPINS_PRE_ONLY
 #include "hwpins.h"
 
-class THwPinCtrl_stm32 : public THwPinCtrl_pre
+class THwPinCtrl_py32 : public THwPinCtrl_pre
 {
 public:
 	// platform specific
@@ -44,22 +43,9 @@ public:
 	void GpioSet(int aportnum, int apinnum, int value);
 
 	inline bool GpioSetup(int aportnum, int apinnum, unsigned flags)  { return PinSetup(aportnum, apinnum, flags); }
-
-	void GpioIrqSetup(int aportnum, int apinnum, int amode); // not implemented yet
 };
 
-class TGpioPort_stm32 : public TGpioPort_pre
-{
-public:
-	void Assign(int aportnum);
-	void Set(unsigned value);
-
-public:
-	GPIO_TypeDef *       regs = nullptr;
-	volatile unsigned *  portptr = nullptr;
-};
-
-class TGpioPin_stm32 : public TGpioPin_common
+class TGpioPin_py32 : public TGpioPin_common
 {
 public:
 	GPIO_TypeDef *   regs = nullptr;
@@ -73,8 +59,8 @@ public:
 	void SwitchDirection(int adirection);
 };
 
-#define HWPINCTRL_IMPL   THwPinCtrl_stm32
-#define HWGPIOPORT_IMPL  TGpioPort_stm32
-#define HWGPIOPIN_IMPL   TGpioPin_stm32
+#define HWPINCTRL_IMPL   THwPinCtrl_py32
+#define HWGPIOPORT_IMPL  TGpioPort_py32
+#define HWGPIOPIN_IMPL   TGpioPin_py32
 
-#endif /* HWPINS_STM32_H_ */
+#endif /* HWPINS_PY32_H_ */

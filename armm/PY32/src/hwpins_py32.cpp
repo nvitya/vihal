@@ -18,48 +18,20 @@
  * 3. This notice may not be removed or altered from any source distribution.
  * --------------------------------------------------------------------------- */
 /*
- *  file:     hwpins_stm32.cpp
- *  brief:    STM32 Pin/Pad and GPIO configuration
- *  created:  2018-02-10
+ *  file:     hwpins_py32.cpp
+ *  brief:    PY32 Pin/Pad and GPIO configuration
+ *  created:  2026-04-21
  *  authors:  nvitya
 */
 
 #include "platform.h"
 #include "hwpins.h"
 
-#if defined(GPIOP_BASE)
-  #define MAX_PORT_NUMBER 16
-#elif defined(GPIOO_BASE)
-  #define MAX_PORT_NUMBER 15
-#elif defined(GPION_BASE)
-  #define MAX_PORT_NUMBER 14
-#elif defined(GPIOM_BASE)
-  #define MAX_PORT_NUMBER 13
-#elif defined(GPIOL_BASE)
-  #define MAX_PORT_NUMBER 12
-#elif defined(GPIOK_BASE)
-  #define MAX_PORT_NUMBER 11
-#elif defined(GPIOJ_BASE)
-  #define MAX_PORT_NUMBER 10
-#elif defined(GPIOI_BASE)
-  #define MAX_PORT_NUMBER  9
-#elif defined(GPIOH_BASE)
-  #define MAX_PORT_NUMBER  8
-#elif defined(GPIOG_BASE)
-  #define MAX_PORT_NUMBER  7
-#elif defined(GPIOF_BASE)
-  #define MAX_PORT_NUMBER  6
-#elif defined(GPIOE_BASE)
-  #define MAX_PORT_NUMBER  5
-#elif defined(GPIOC_BASE)
-  #define MAX_PORT_NUMBER  4
-#else
-  #define MAX_PORT_NUMBER  3
-#endif
+#define MAX_PORT_NUMBER  6  // only A, B and F is available !
 
-GPIO_TypeDef * THwPinCtrl_stm32::GetGpioRegs(int aportnum)
+GPIO_TypeDef * THwPinCtrl_py32::GetGpioRegs(int aportnum)
 {
-	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
+	if ((aportnum != PORTNUM_A) && (aportnum != PORTNUM_B) && (aportnum != PORTNUM_F))
 	{
 		return nullptr;
 	}
@@ -69,7 +41,7 @@ GPIO_TypeDef * THwPinCtrl_stm32::GetGpioRegs(int aportnum)
 	}
 }
 
-bool THwPinCtrl_stm32::PinSetup(int aportnum, int apinnum, unsigned flags)
+bool THwPinCtrl_py32::PinSetup(int aportnum, int apinnum, unsigned flags)
 {
 	// STM32 version
   GPIO_TypeDef * regs = GetGpioRegs(aportnum);
@@ -85,76 +57,6 @@ bool THwPinCtrl_stm32::PinSetup(int aportnum, int apinnum, unsigned flags)
 
 	// 1. turn on port power
 	GpioPortEnable(aportnum);
-
-#if defined(MCUSF_F1)
-  unsigned pinconf = 0;
-
-	if (flags & PINCFG_AF_MASK)  // for alternate functions the pin must be configured as output
-	{
-		flags |= PINCFG_OUTPUT;
-	}
-
-  if (flags & PINCFG_OUTPUT)
-  {
-  	if ((flags & PINCFG_SPEED_MASK) == PINCFG_SPEED_SLOW)
-		{
-			pinconf |= 2;
-		}
-		else if ((flags & PINCFG_SPEED_MASK) == PINCFG_SPEED_FAST)
-		{
-			pinconf |= 3;
-		}
-		else
-		{
-			pinconf |= 1;
-		}
-
-		if (flags & PINCFG_OPENDRAIN)
-		{
-			pinconf |= 4;
-		}
-
-		if (flags & PINCFG_AF_MASK)
-		{
-			pinconf |= 8;
-		}
-  }
-  else  // input
-  {
-  	// leave the mode bits at 0 = input mode
-    if (flags & PINCFG_ANALOGUE)
-    {
-    	// pinconf |= 0;
-    }
-    else if (flags & PINCFG_PULLUP)
-    {
-    	pinconf |= 8;
-    	regs->BSRR = (1 << apinnum);
-    }
-    else if (flags & PINCFG_PULLDOWN)
-    {
-    	pinconf |= 8;
-    	regs->BSRR = (1 << apinnum) << 16;
-    }
-    else
-    {
-    	pinconf |= 4;  // floating input
-    }
-  }
-
-  // set the pinconf reg
-  if (apinnum < 8)
-  {
-  	regs->CRL &= ~(0xF << (apinnum * 4));
-  	regs->CRL |= pinconf << (apinnum * 4);
-  }
-  else
-  {
-  	regs->CRH &= ~(0xF << ((apinnum-8) * 4));
-  	regs->CRH |= pinconf << ((apinnum-8) * 4);
-  }
-
-#else  // F0, F4, F7
 
   unsigned n;
   int pinx2 = apinnum * 2;
@@ -176,7 +78,7 @@ bool THwPinCtrl_stm32::PinSetup(int aportnum, int apinnum, unsigned flags)
 	}
 	else if (flags & PINCFG_ANALOGUE)
 	{
-		n = 3;
+		n = 0; // set to input for analogue
 	}
 	else if (flags & PINCFG_OUTPUT)
 	{
@@ -188,6 +90,20 @@ bool THwPinCtrl_stm32::PinSetup(int aportnum, int apinnum, unsigned flags)
 	}
 	regs->MODER &= ~(3 << pinx2);
 	regs->MODER |= (n << pinx2);
+
+	// PY32 speciality: enable enalogue mode for the pins
+	volatile uint32_t * port_ana2en_reg;
+	if      (aportnum == PORTNUM_F)  port_ana2en_reg = &SYSCFG->PF_ANA2EN;
+	else if (aportnum == PORTNUM_B)  port_ana2en_reg = &SYSCFG->PB_ANA2EN;
+	else                             port_ana2en_reg = &SYSCFG->PA_ANA2EN;
+	if (flags & PINCFG_ANALOGUE)
+	{
+		*port_ana2en_reg |= (1 << apinnum);
+	}
+	else
+	{
+		*port_ana2en_reg &= ~(1 << apinnum);
+	}
 
   // 3. set open-drain
   if (flags & PINCFG_OPENDRAIN)
@@ -242,12 +158,10 @@ bool THwPinCtrl_stm32::PinSetup(int aportnum, int apinnum, unsigned flags)
 		}
 	}
 
-#endif
-
   return true;
 }
 
-bool THwPinCtrl_stm32::GpioPortEnable(int aportnum)
+bool THwPinCtrl_py32::GpioPortEnable(int aportnum)
 {
 	if ((aportnum < 0) || (aportnum >= MAX_PORT_NUMBER))
 	{
@@ -255,30 +169,15 @@ bool THwPinCtrl_stm32::GpioPortEnable(int aportnum)
 	}
 
 	// 1. turn on port power
-#if defined(RCC_IOPENR_IOPAEN)
-  RCC->IOPENR |= (RCC_IOPENR_IOPAEN << aportnum);
-#elif defined(RCC_AHBENR_GPIOAEN)
-  RCC->AHBENR |= (RCC_AHBENR_GPIOAEN << aportnum);
-#elif defined(RCC_APB2ENR_IOPAEN)
-  RCC->APB2ENR |= (RCC_APB2ENR_IOPAEN << aportnum);
-#elif defined(RCC_AHB2ENR_GPIOAEN)
-  RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN << aportnum);
-#elif defined(RCC_AHB4ENR_GPIOAEN)
-  RCC->AHB4ENR |= (RCC_AHB4ENR_GPIOAEN << aportnum);
-#elif defined(RCC_IOPENR_GPIOAEN)
   RCC->IOPENR |= (RCC_IOPENR_GPIOAEN << aportnum);
-#else
-  RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN << aportnum);
-#endif
-
   return true;
 }
 
-void THwPinCtrl_stm32::GpioSet(int aportnum, int apinnum, int value)
+void THwPinCtrl_py32::GpioSet(int aportnum, int apinnum, int value)
 {
 	GPIO_TypeDef * regs = (GPIO_TypeDef *)(GPIOA_BASE + (GPIOB_BASE-GPIOA_BASE)*(aportnum));
 
-  if (1 == value)
+  if (1 == value) // set
   {
   	regs->BSRR = (1 << apinnum);
   }
@@ -286,43 +185,15 @@ void THwPinCtrl_stm32::GpioSet(int aportnum, int apinnum, int value)
   {
   	regs->ODR ^= (1 << apinnum);
   }
-  else
+  else // reset
   {
-#if defined(MCUSF_F0) || defined(MCUSF_F1) || defined(MCUSF_G0)
   	regs->BRR = (1 << apinnum);
-#else
-  	regs->BSRR = (1 << apinnum) << 16;
-#endif
   }
-}
-
-void THwPinCtrl_stm32::GpioIrqSetup(int aportnum, int apinnum, int amode)
-{
-
-}
-
-// GPIO Port
-
-void TGpioPort_stm32::Assign(int aportnum)
-{
-	if ((aportnum < 0) || (aportnum > 6))
-	{
-		regs = nullptr;
-		return;
-	}
-
-  regs = (GPIO_TypeDef *)(GPIOA_BASE + (GPIOB_BASE-GPIOA_BASE)*(aportnum));
-  portptr = (volatile unsigned *)&(regs->ODR);
-}
-
-void TGpioPort_stm32::Set(unsigned value)
-{
-  *portptr = value;
 }
 
 // GPIO Pin
 
-void TGpioPin_stm32::Assign(int aportnum, int apinnum, bool ainvert)
+void TGpioPin_py32::Assign(int aportnum, int apinnum, bool ainvert)
 {
 	portnum = aportnum;
   pinnum = apinnum;
@@ -358,41 +229,14 @@ void TGpioPin_stm32::Assign(int aportnum, int apinnum, bool ainvert)
   }
 }
 
-void TGpioPin_stm32::Toggle()
+void TGpioPin_py32::Toggle()
 {
   unsigned pinbit = (1 << pinnum);
   regs->BSRR = (pinbit << 16) | (regs->ODR ^ pinbit);
 }
 
-void TGpioPin_stm32::SwitchDirection(int adirection)
+void TGpioPin_py32::SwitchDirection(int adirection)
 {
-#if defined(MCUSF_F1)
-
-	// here we override previous pull-up/down open-drain settings !
-
-	unsigned pinconf;
-
-  if (adirection)
-  {
-  	pinconf = 1;  // push-pull output
-  }
-  else
-  {
-  	pinconf = 4;  // floating input
-  }
-
-  if (pinnum < 8)
-  {
-  	regs->CRL &= ~(0xF << (pinnum * 4));
-  	regs->CRL |= pinconf << (pinnum * 4);
-  }
-  else
-  {
-  	regs->CRH &= ~(0xF << ((pinnum-8) * 4));
-  	regs->CRH |= pinconf << ((pinnum-8) * 4);
-  }
-
-#else
   int pinx2 = pinnum * 2;
 
   if (adirection)
@@ -403,6 +247,5 @@ void TGpioPin_stm32::SwitchDirection(int adirection)
   {
   	regs->MODER &= ~(1 << pinx2);
   }
-#endif
 }
 
