@@ -79,7 +79,7 @@ private:
   typedef TLedStripe_base super;
 
 public:
-  unsigned       resetbytes = 30; // both head and tail
+  unsigned       resetbytes = 90; // both head and tail
 
   void           Init(THwSpi * aspi, uint32_t aledcount, uint8_t * admabuf, unsigned abufsize);
 
