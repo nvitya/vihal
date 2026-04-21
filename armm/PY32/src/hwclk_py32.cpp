@@ -31,12 +31,6 @@ void hwclk_start_ext_osc(unsigned aextspeed)
 {
 }
 
-static bool is_divisible(unsigned nom, unsigned div)
-{
-  unsigned res = nom / div;
-  return (res * div == nom);
-}
-
 void hwclk_prepare_hispeed(unsigned acpuspeed)
 {
 	if (acpuspeed <= 24000000)
@@ -99,8 +93,10 @@ bool hwclk_init(unsigned external_clock_hz, unsigned target_speed_hz)
   unsigned pllsrc;
   if (external_clock_hz)
   {
-    hwclk_start_ext_osc(external_clock_hz);
-    basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
+    return false;  // not implemented yet.
+
+    //hwclk_start_ext_osc(external_clock_hz);
+    //basespeed = (external_clock_hz & HWCLK_EXTCLK_MASK);
   }
   else
   {
