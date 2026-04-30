@@ -54,10 +54,10 @@ class THwDmaChannel_pre
 {
 public:
 	bool               istx = false;  // mem to periph ?
-	void *             periphaddr = nullptr;
-	int           		 chnum = -1;
 	bool               initialized = false;
-	int                priority = 0;
+	int8_t         		 chnum = -1;
+	uint8_t            priority = 0;
+	void *             periphaddr = nullptr;
 };
 
 #endif // ndef HWDMA_H_PRE_

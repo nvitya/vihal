@@ -41,7 +41,7 @@ class THwAdc_pre
 public:	// settings
 	bool 					 initialized = false;
 
-	int      			 devnum = -1;
+	int8_t  			 devnum = -1;
 
 	uint32_t       sampling_time_ns = 0; // 0 = smallest possible
 	uint32_t       adc_clock = 0;        // actual ADC clock
