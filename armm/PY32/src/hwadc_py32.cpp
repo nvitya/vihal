@@ -55,18 +55,19 @@ bool THwAdc_py32::Init(int adevnum, uint32_t achannel_map)
   dmach.Init(1, dmaalloc & 15, 0);  // dma request 0 = ADC
 	dmach.Prepare(false, (void *)&regs->DR, 0);
 
-	ADC1_COMMON->CCR |= ADC_CCR_TSVREFINTEN;  // enable temp sensor + internal reference
-
-	regs->CFGR2 = 0
-	  | (0 << 30)  // CLKMODE(2), 0 = ADCCLK (14 MHz), 1 = PCLK / 2, 2 = PCLK / 4
-	;
-
 	// disable the ADC first
 	while (regs->CR & 1)
 	{
 		regs->CR |= (1 << 1); // disable the ADC first
 	}
 	delay_us(10);
+
+	ADC1_COMMON->CCR |= ADC_CCR_TSVREFINTEN;  // enable temp sensor + internal reference
+
+	// Set the ADC clock to HSI/2 = 12 MHz
+	regs->CFGR2 = (0
+		| (9 << 28)  // CKMODE(4): 0-6 = PCLK / (2^CLKMODE[2:0]), 8-14 = HSI / (2^CLKMODE[2:0])
+	);
 
 	uint32_t cr = (regs->CR & 0x7FFFFF00);
 	// ADC CR reg bits:
@@ -122,11 +123,6 @@ bool THwAdc_py32::Init(int adevnum, uint32_t achannel_map)
 	  | (1 <<  0)  // DMAEN: 1 = DMA enabled
 	;
 
-	// Set the ADC clock to HSI/2 = 12 MHz
-	regs->CFGR2 = (0
-		| (9 << 28)  // CKMODE(4): 0-6 = PCLK / (2^CLKMODE[2:0]), 8-14 = HSI / (2^CLKMODE[2:0])
-	);
-
 	adc_clock = 12000000;
 
 	// setup channel sampling time registers
@@ -156,7 +152,7 @@ bool THwAdc_py32::Init(int adevnum, uint32_t achannel_map)
 	// calculate the actual conversion rate
 
 	// total conversion cycles:  12.5 ADC clocks + sampling time (= 1.5 ADC clocks)
-	conv_adc_clocks = 14;
+	conv_adc_clocks = 12 + sampling_clocks[stcode];
 	act_conv_rate = adc_clock / conv_adc_clocks;
 
 	// setup the regular sequence based on the channel map and start the cyclic conversion
@@ -171,6 +167,12 @@ bool THwAdc_py32::Init(int adevnum, uint32_t achannel_map)
 void THwAdc_py32::SetupChannels(uint32_t achsel)
 {
 	channel_map = achsel;
+
+	// disable the ADC first
+	while (regs->CR & 1)
+	{
+		regs->CR |= (1 << 1); // disable the ADC first
+	}
 
 	uint32_t    ch;
 	uint32_t    sqr[2] = {0, 0};
@@ -240,6 +242,15 @@ void THwAdc_py32::StopFreeRun()
 
 void THwAdc_py32::StartContConv()
 {
+	if (0 == (regs->CR & 1))
+	{
+		regs->CR |= (1 << 0); // enable the ADC
+		while ((regs->CR & 1) == 0)
+		{
+			// wait until enabled
+		}
+	}
+
 	// and start the conversion
 	regs->CR |= ADC_CR_ADSTART; // start the ADC
 }
