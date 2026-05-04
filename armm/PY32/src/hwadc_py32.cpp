@@ -80,7 +80,7 @@ bool THwAdc_py32::Init(int adevnum, uint32_t achannel_map)
 	//    1 | ADDIS
 	//    0 | ADEN
 
-	cr |= (7 << 5); // enable the internal reference for 2.5V
+	//cr |= (7 << 5); // enable the reference buffer + set to 2.5V
 	regs->CR = cr;
 	delay_us(10);
 	regs->CR |= (1u << 31); // start calibration
@@ -131,7 +131,7 @@ bool THwAdc_py32::Init(int adevnum, uint32_t achannel_map)
 
 	uint32_t stcode = 0; // sampling time code, index for the following array
   uint32_t sampling_clocks[8] = {4, 6, 8, 14, 29, 42, 135, 240};  // actually its 0.5 CLK less
-	uint32_t target_sampling_clocks = (sampling_time_ns * 1000) / (adc_clock / 1000);
+	uint32_t target_sampling_clocks = (sampling_time_ns * (adc_clock / 1000000)) / 1000;
 	while ((stcode < 7) && (sampling_clocks[stcode] < target_sampling_clocks))
 	{
 		++stcode;
@@ -178,6 +178,8 @@ void THwAdc_py32::SetupChannels(uint32_t achsel)
 	uint32_t    sqr[2] = {0, 0};
 	uint32_t *  psqr = &sqr[0];
 	uint32_t    bitshift = 0;
+	uint32_t    sqsel = 0;
+
 
 	for (ch = 0; ch < HWADC_MAX_CHANNELS; ++ch)
 	{
@@ -193,7 +195,7 @@ void THwAdc_py32::SetupChannels(uint32_t achsel)
 			// add this channel
 			*psqr |= (ch << bitshift);
 			databyid[ch] = &dmadata[dmadatacnt]; // set the decode map
-
+			sqsel |= (1 << dmadatacnt);
 			++dmadatacnt;
 
 			bitshift += HWADC_SQREG_SHIFT;
@@ -206,9 +208,9 @@ void THwAdc_py32::SetupChannels(uint32_t achsel)
 		}
 	}
 
-	regs->CHSELR = channel_map;
 	regs->SEQR0 = sqr[0];
 	regs->SEQR1 = sqr[1];
+	regs->CHSELR = sqsel;  // for this write the ADC must be disabled
 }
 
 void THwAdc_py32::StartFreeRun(uint32_t achsel)
@@ -228,16 +230,15 @@ void THwAdc_py32::StartFreeRun(uint32_t achsel)
 
 void THwAdc_py32::StopFreeRun()
 {
-	dmach.Disable();
-
 	// disable continuous mode
 	regs->CR |= ADC_CR_ADSTP;
 	while (regs->CR & ADC_CR_ADSTP)
 	{
 		// wait until stopped
 	}
-	///regs->CR2 &= ~ADC_CR2_CONT;  // disable the continuous mode
 	delay_us(10);
+
+	dmach.Disable();
 }
 
 void THwAdc_py32::StartContConv()
