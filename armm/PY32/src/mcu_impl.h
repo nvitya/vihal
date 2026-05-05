@@ -29,4 +29,8 @@
   #include "hwadc_py32.h"
 #endif
 
+#ifdef HWPWM_H_
+  #include "hwpwm_py32.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING
