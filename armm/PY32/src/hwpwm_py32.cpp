@@ -169,7 +169,7 @@ bool THwPwmChannel_py32::Init(int atimernum, int achnum, int aoutnum) // outnum:
 
 	regs->CR1 = 0
 	  | (0 <<  8)  // CKD(2): clock division
-	  | (0 <<  7)  // ARPE: Auto-reload preload enable, 1 = buffered ARR
+	  | (1 <<  7)  // ARPE: Auto-reload preload enable, 1 = buffered ARR
 	  | (0 <<  5)  // CMS(2): Center aligned mode, 0 = edge aligned
 	  | (0 <<  4)  // DIR: 0 = upcounter, 1 = downcounter
 	  | (0 <<  3)  // OPM: one pulse mode
