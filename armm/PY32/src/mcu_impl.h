@@ -33,4 +33,8 @@
   #include "hwpwm_py32.h"
 #endif
 
+#ifdef HWI2CSLAVE_H_
+  #include "hwi2cslave_py32.h"
+#endif
+
 #define SKIP_UNIMPLEMENTED_WARNING
