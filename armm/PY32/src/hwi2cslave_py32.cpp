@@ -72,7 +72,7 @@ bool THwI2cSlave_py32::InitHw(int adevnum)
 	regs->CR1 = cr1;
 
 	// setup address
-	// this device does not support address mask
+	// this device does not support address mask !
 
 	regs->OAR1 = ((address & 0x7F) << 1);
 
@@ -89,12 +89,8 @@ bool THwI2cSlave_py32::InitHw(int adevnum)
 	;
 	regs->CR2 = tmp;
 
-	cr1 |= 0
-		| I2C_CR1_ACK   // ACKnowledge must be enabled, otherwise even the own address won't be handled
-	  | I2C_CR1_PE    // Enable
-	;
-
-	regs->CR1 = cr1;
+	regs->CR1 |= I2C_CR1_PE;    // Enable
+	regs->CR1 |= I2C_CR1_ACK;   // ACKnowledge must be enabled, otherwise even the own address won't be handled
 
 	initialized = true;
 
@@ -116,7 +112,7 @@ void THwI2cSlave_py32::HandleIrq()
 	//TRACE("[I2C IRQ %04X %04X]\r\n", sr1, sr2);
 
 	// check errors
-	if (sr1 & 0xFF00)
+	if (sr1 & 0x0F00)
 	{
 		if (sr1 & I2C_SR1_AF)  // ACK Failure ?
 		{
@@ -126,7 +122,7 @@ void THwI2cSlave_py32::HandleIrq()
 		else
 		{
 			//TRACE("I2C errors: %04X\r\n", sr1);
-			regs->SR1 = ~(sr1 & 0xFF00); // clear errors
+			regs->SR1 = ~(sr1 & 0x0F00); // clear errors
 		}
 	}
 
@@ -182,15 +178,17 @@ void THwI2cSlave_py32::HandleIrq()
 
 		// the CR1 must be written in order to clear this flag
 		runstate = 0;
-		uint32_t cr1 = regs->CR1;
-		cr1 &= ~I2C_CR1_STOP;
-		cr1 |= I2C_CR1_ACK;  // restore the ACK
-		regs->CR1 = cr1;
+
+		// WARNING: the PY32F031 has a bug, that after handling an address it acknowledges unknown addresses too
+		//          so after a stop detection disable the peripheral first
+
+		regs->CR1 = 0;  // disable I2C first to not acknowledge the upcoming unknown addresses
+		regs->CR1 = (I2C_CR1_PE); // enable first
+		regs->CR1 = (I2C_CR1_PE | I2C_CR1_ACK);  // add ACK FLAG
 	}
 
 	if (sr2)  // to keep sr2 if unused
 	{
-
 	}
 }
 
