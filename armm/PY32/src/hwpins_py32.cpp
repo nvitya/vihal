@@ -249,3 +249,71 @@ void TGpioPin_py32::SwitchDirection(int adirection)
   }
 }
 
+// Lightwheight classes
+
+TGpioOut::TGpioOut(int aportnum, int apinnum, bool ainvert)
+{
+	Assign(aportnum, apinnum, ainvert);
+}
+
+bool TGpioOut::Setup(unsigned flags)
+{
+	if (inverted)
+	{
+	  flags |= PINCFG_GPIO_INVERT;
+	}
+
+	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
+}
+
+void TGpioOut::Assign(int aportnum, int apinnum, bool ainvert)
+{
+	portnum = aportnum;
+  pinnum = apinnum;
+  inverted = ainvert;
+
+  GPIO_TypeDef * regs = hwpinctrl.GetGpioRegs(aportnum);
+	if (!regs)
+	{
+		return;
+	}
+
+  setbitptr = (uint32_t *)&(regs->BSRR);
+
+  if (ainvert)
+  {
+  	setbitvalue = (1 << pinnum) << 16;
+  	clrbitvalue = (1 << pinnum);
+  }
+  else
+  {
+  	setbitvalue = (1 << pinnum);
+  	clrbitvalue = (1 << pinnum) << 16;
+  }
+
+}
+
+TGpioIn::TGpioIn(int aportnum, int apinnum, bool ainvert)
+{
+	Assign(aportnum, apinnum, ainvert);
+}
+
+bool TGpioIn::Setup(unsigned flags)
+{
+	return hwpinctrl.GpioSetup(this->portnum, this->pinnum, flags);
+}
+
+void TGpioIn::Assign(int aportnum, int apinnum, bool ainvert)
+{
+	portnum = aportnum;
+  pinnum = apinnum;
+
+  GPIO_TypeDef * regs = hwpinctrl.GetGpioRegs(aportnum);
+	if (!regs)
+	{
+		return;
+	}
+
+  getbitptr = (uint32_t *)&(regs->IDR);
+}
+

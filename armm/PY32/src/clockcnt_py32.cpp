@@ -32,12 +32,12 @@
 
 void clockcnt_init()
 {
-	RCC->APBENR2 |= RCC_APBENR2_TIM14EN;
+	RCC->APBENR1 |= RCC_APBENR1_TIM2EN;
 
-	TIM14->CR1 = 0;
-	TIM14->PSC = 0; // count every clock
-	TIM14->CR1 = 1;
-	TIM14->EGR = 1; // reinit, start the timer
+	TIM2->CR1 = 0;
+	TIM2->PSC = 0; // count every clock
+	TIM2->CR1 = 1;
+	TIM2->EGR = 1; // reinit, start the timer
 }
 
 #endif

@@ -13,10 +13,6 @@
   #include "hwuart_py32.h"
 #endif
 
-#ifdef HWUSCOUNTER_H_
-  #include "hwuscounter_py32.h"
-#endif
-
 #ifdef HWSPI_H_
   //#include "hwspi_py32.h"
 #endif
