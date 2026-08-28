@@ -213,7 +213,7 @@ const uint8_t rk3506_rmio_lookup[] = // values here: (gpio_port << 5) | gpio_pin
 /* 10 */ 0x0A,
 /* 11 */ 0x0B,
 /* 12 */ 0x0C,
-/* 13 */ 0x0F,
+/* 13 */ 0x0D,
 /* 14 */ 0x0E,
 /* 15 */ 0x0F,
 

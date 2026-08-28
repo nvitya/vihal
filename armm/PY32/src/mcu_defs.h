@@ -33,6 +33,8 @@
     #define MAX_CLOCK_SPEED         72000000
   #endif
 
+  #define MAX_IRQ_HANDLER_COUNT     32
+
 #endif
 
 #ifndef MCU_INTERNAL_RC_SPEED
